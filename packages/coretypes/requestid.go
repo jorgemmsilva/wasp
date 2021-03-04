@@ -7,14 +7,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	valuetransaction "github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/transaction"
+	"io"
+
+	"github.com/iotaledger/goshimmer/packages/ledgerstate"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/mr-tron/base58"
-	"io"
 )
 
 // RequestIDLength size of the RequestID in bytes
-const RequestIDLength = valuetransaction.IDLength + 2
+const RequestIDLength = ledgerstate.TransactionIDLength + 2
 
 // RequestID is a global ID of any smart contract request.
 // In ISCP, each request is a section in the smart contract transaction (sctransaction.Transaction).
@@ -22,9 +23,9 @@ const RequestIDLength = valuetransaction.IDLength + 2
 type RequestID [RequestIDLength]byte
 
 // NewRequestID a constructor
-func NewRequestID(txid valuetransaction.ID, index uint16) (ret RequestID) {
-	copy(ret[:valuetransaction.IDLength], txid.Bytes())
-	copy(ret[valuetransaction.IDLength:], util.Uint16To2Bytes(index))
+func NewRequestID(txid ledgerstate.TransactionID, index uint16) (ret RequestID) {
+	copy(ret[:ledgerstate.TransactionIDLength], txid.Bytes())
+	copy(ret[ledgerstate.TransactionIDLength:], util.Uint16To2Bytes(index))
 	return
 }
 
@@ -45,15 +46,15 @@ func NewRequestIDFromBytes(data []byte) (ret RequestID, err error) {
 }
 
 // TransactionID of the request ID (copy)
-func (rid *RequestID) TransactionID() *valuetransaction.ID {
-	var ret valuetransaction.ID
-	copy(ret[:], rid[:valuetransaction.IDLength])
+func (rid *RequestID) TransactionID() *ledgerstate.TransactionID {
+	var ret ledgerstate.TransactionID
+	copy(ret[:], rid[:ledgerstate.TransactionIDLength])
 	return &ret
 }
 
 // Index of the request ID
 func (rid *RequestID) Index() uint16 {
-	return util.MustUint16From2Bytes(rid[valuetransaction.IDLength:])
+	return util.MustUint16From2Bytes(rid[ledgerstate.TransactionIDLength:])
 }
 
 func (rid *RequestID) Write(w io.Writer) error {

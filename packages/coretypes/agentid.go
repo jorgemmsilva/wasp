@@ -6,19 +6,18 @@ package coretypes
 import (
 	"bytes"
 	"errors"
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/address/signaturescheme"
 	"io"
 
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/address"
+	"github.com/iotaledger/goshimmer/packages/ledgerstate"
 	"github.com/mr-tron/base58"
 )
 
 // AgentIDLength is the size of AgentID in bytes
-const AgentIDLength = ContractIDLength // max(ContractIDLength, address.Length)
+const AgentIDLength = ContractIDLength // max(ContractIDLength, ledgerstate.AddressLength)
 
 // AgentID represents exactly one of two types of entities on the ISCP ledger in one ID:
 //  - It can represent an address on the Tangle (controlled by some private key). In this case it can be
-//    interpreted as address.Address type (see MustAddress).
+//    interpreted as ledgerstate.Address type (see MustAddress).
 //  - alternatively, it can represent a smart contract on the ISCP. In this case it can be interpreted as
 //    a coretypes.ContractID type (see MustContractID)
 // Type of ID represented by the AgentID can be recognized with IsAddress call.
@@ -31,15 +30,10 @@ func NewAgentIDFromContractID(id ContractID) (ret AgentID) {
 	return
 }
 
-// NewAgentIDFromAddress makes AgentID from address.Address
-func NewAgentIDFromAddress(addr address.Address) AgentID {
+// NewAgentIDFromAddress makes AgentID from ledgerstate.Address
+func NewAgentIDFromAddress(addr ledgerstate.Address) AgentID {
 	// 0 is a reserved hname
-	return NewAgentIDFromContractID(NewContractID(ChainID(addr), 0))
-}
-
-// NewAgentIDFromSigScheme makes AgentID from signaturescheme.SignatureScheme
-func NewAgentIDFromSigScheme(sigScheme signaturescheme.SignatureScheme) AgentID {
-	return NewAgentIDFromAddress(sigScheme.Address())
+	return NewAgentIDFromContractID(NewContractID(ChainID(addr.Array()), 0))
 }
 
 // NewAgentIDFromBytes makes an AgentID from binary representation
@@ -50,13 +44,6 @@ func NewAgentIDFromBytes(data []byte) (ret AgentID, err error) {
 	}
 	copy(ret[:], data)
 	return
-}
-
-// NewRandomAgentID creates random AgentID
-func NewRandomAgentID() AgentID {
-	chainID := NewRandomChainID()
-	hname := Hn("testFunction")
-	return NewAgentIDFromContractID(NewContractID(chainID, hname))
 }
 
 func (a *AgentID) chainIDField() []byte {
@@ -75,12 +62,15 @@ func (a AgentID) IsAddress() bool {
 }
 
 // MustAddress takes address or panic if not address
-func (a AgentID) MustAddress() (ret address.Address) {
+func (a AgentID) MustAddress() ledgerstate.Address {
 	if !a.IsAddress() {
 		panic("not an address")
 	}
-	copy(ret[:], a.chainIDField())
-	return
+	addr, _, err := ledgerstate.AddressFromBytes(a.chainIDField())
+	if err != nil {
+		panic(err)
+	}
+	return addr
 }
 
 // MustContractID takes contract ID or panics if not a contract ID
@@ -109,8 +99,8 @@ func NewAgentIDFromString(s string) (ret AgentID, err error) {
 	}
 	switch s[:2] {
 	case "A/":
-		var addr address.Address
-		addr, err = address.FromBase58(s[2:])
+		var addr ledgerstate.Address
+		addr, err = ledgerstate.AddressFromBase58EncodedString(s[2:])
 		if err != nil {
 			return
 		}

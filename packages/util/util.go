@@ -2,13 +2,14 @@ package util
 
 import (
 	"errors"
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/balance"
+
+	"github.com/iotaledger/goshimmer/packages/ledgerstate"
 	"github.com/mr-tron/base58"
 )
 
-func ColorFromString(cs string) (ret balance.Color, err error) {
+func ColorFromString(cs string) (ret ledgerstate.Color, err error) {
 	if cs == "IOTA" {
-		ret = balance.ColorIOTA
+		ret = ledgerstate.ColorIOTA
 		return
 	}
 	var bin []byte
@@ -20,8 +21,8 @@ func ColorFromString(cs string) (ret balance.Color, err error) {
 	return
 }
 
-func ColorFromBytes(cb []byte) (ret balance.Color, err error) {
-	if len(cb) != balance.ColorLength {
+func ColorFromBytes(cb []byte) (ret ledgerstate.Color, err error) {
+	if len(cb) != ledgerstate.ColorLength {
 		err = errors.New("must be exactly 32 bytes for color")
 		return
 	}

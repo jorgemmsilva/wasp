@@ -14,10 +14,10 @@ import (
 	"sort"
 )
 
-type coloredBalances map[balance.Color]int64
+type coloredBalances map[ledgerstate.Color]int64
 
 // Nil represents empty colorded balances
-var Nil = coretypes.ColoredBalances(coloredBalances(make(map[balance.Color]int64)))
+var Nil = coretypes.ColoredBalances(coloredBalances(make(map[ledgerstate.Color]int64)))
 
 func Str(b coretypes.ColoredBalances) string {
 	if b == nil {
@@ -27,11 +27,11 @@ func Str(b coretypes.ColoredBalances) string {
 }
 
 // NewFromMap new ColoredBalances from map
-func NewFromMap(m map[balance.Color]int64) coretypes.ColoredBalances {
+func NewFromMap(m map[ledgerstate.Color]int64) coretypes.ColoredBalances {
 	if m == nil {
 		return Nil
 	}
-	ret := make(map[balance.Color]int64)
+	ret := make(map[ledgerstate.Color]int64)
 	for c, b := range m {
 		if b != 0 {
 			ret[c] = b
@@ -41,7 +41,7 @@ func NewFromMap(m map[balance.Color]int64) coretypes.ColoredBalances {
 }
 
 func NewIotasOnly(amount int64) coretypes.ColoredBalances {
-	return NewFromMap(map[balance.Color]int64{balance.ColorIOTA: amount})
+	return NewFromMap(map[ledgerstate.Color]int64{balance.ColorIOTA: amount})
 }
 
 // NewFromBalances from balances in the form of transaction output
@@ -49,7 +49,7 @@ func NewFromBalances(bals []*balance.Balance) coretypes.ColoredBalances {
 	if bals == nil {
 		return Nil
 	}
-	ret := make(map[balance.Color]int64, len(bals))
+	ret := make(map[ledgerstate.Color]int64, len(bals))
 	for _, b := range bals {
 		s, _ := ret[b.Color]
 		ret[b.Color] = s + b.Value
@@ -57,7 +57,7 @@ func NewFromBalances(bals []*balance.Balance) coretypes.ColoredBalances {
 	return NewFromMap(ret)
 }
 
-func (b coloredBalances) Balance(col balance.Color) int64 {
+func (b coloredBalances) Balance(col ledgerstate.Color) int64 {
 	if b == nil {
 		return 0
 	}
@@ -70,14 +70,14 @@ func (b coloredBalances) String() string {
 		return "(empty)"
 	}
 	ret := ""
-	b.IterateDeterministic(func(col balance.Color, bal int64) bool {
+	b.IterateDeterministic(func(col ledgerstate.Color, bal int64) bool {
 		ret += fmt.Sprintf("       %s: %d\n", col.String(), bal)
 		return true
 	})
 	return ret
 }
 
-func (b coloredBalances) Iterate(f func(col balance.Color, bal int64) bool) {
+func (b coloredBalances) Iterate(f func(col ledgerstate.Color, bal int64) bool) {
 	for col, bal := range b {
 		if bal == 0 {
 			continue
@@ -88,8 +88,8 @@ func (b coloredBalances) Iterate(f func(col balance.Color, bal int64) bool) {
 	}
 }
 
-func (b coloredBalances) IterateDeterministic(f func(col balance.Color, bal int64) bool) {
-	sorted := make([]balance.Color, 0, len(b))
+func (b coloredBalances) IterateDeterministic(f func(col ledgerstate.Color, bal int64) bool) {
+	sorted := make([]ledgerstate.Color, 0, len(b))
 	for col, bal := range b {
 		if bal == 0 {
 			continue
@@ -122,7 +122,7 @@ func (b coloredBalances) Equal(b1 coretypes.ColoredBalances) bool {
 		return false
 	}
 	ret := true
-	b.Iterate(func(col balance.Color, bal int64) bool {
+	b.Iterate(func(col ledgerstate.Color, bal int64) bool {
 		if bal != b1.Balance(col) {
 			ret = false
 			return false
@@ -133,15 +133,15 @@ func (b coloredBalances) Equal(b1 coretypes.ColoredBalances) bool {
 }
 
 func (b coloredBalances) Diff(b1 coretypes.ColoredBalances) coretypes.ColoredBalances {
-	ret := make(map[balance.Color]int64)
+	ret := make(map[ledgerstate.Color]int64)
 	if b == nil && b1 == nil {
 		return Nil
 	}
-	allColors := make(map[balance.Color]bool)
+	allColors := make(map[ledgerstate.Color]bool)
 	for c := range b {
 		allColors[c] = true
 	}
-	b1.Iterate(func(c balance.Color, _ int64) bool {
+	b1.Iterate(func(c ledgerstate.Color, _ int64) bool {
 		allColors[c] = true
 		return true
 	})
@@ -157,7 +157,7 @@ func (b coloredBalances) Diff(b1 coretypes.ColoredBalances) coretypes.ColoredBal
 
 func (b coloredBalances) NonNegative() bool {
 	ret := true
-	b.Iterate(func(col balance.Color, bal int64) bool {
+	b.Iterate(func(col ledgerstate.Color, bal int64) bool {
 		if bal < 0 {
 			ret = false
 			return false
@@ -167,8 +167,8 @@ func (b coloredBalances) NonNegative() bool {
 	return ret
 }
 
-func (b coloredBalances) AddToMap(m map[balance.Color]int64) {
-	b.Iterate(func(col balance.Color, bal int64) bool {
+func (b coloredBalances) AddToMap(m map[ledgerstate.Color]int64) {
+	b.Iterate(func(col ledgerstate.Color, bal int64) bool {
 		s, _ := m[col]
 		m[col] = s + bal
 		return true
@@ -177,12 +177,12 @@ func (b coloredBalances) AddToMap(m map[balance.Color]int64) {
 
 // TakeColor takes out all tokens with specific color
 // return what has left
-func (b coloredBalances) TakeOutColor(col balance.Color) coretypes.ColoredBalances {
+func (b coloredBalances) TakeOutColor(col ledgerstate.Color) coretypes.ColoredBalances {
 	bal := b.Balance(col)
 	if bal == 0 {
 		return b
 	}
-	ret := map[balance.Color]int64{col: -bal}
+	ret := map[ledgerstate.Color]int64{col: -bal}
 	b.AddToMap(ret)
 	return NewFromMap(ret)
 }
@@ -200,7 +200,7 @@ func WriteColoredBalances(w io.Writer, b coretypes.ColoredBalances) error {
 		return nil
 	}
 	var err error
-	b.IterateDeterministic(func(col balance.Color, bal int64) bool {
+	b.IterateDeterministic(func(col ledgerstate.Color, bal int64) bool {
 		if _, e := w.Write(col[:]); e != nil {
 			err = e
 			return false
@@ -220,7 +220,7 @@ func ReadColoredBalance(r io.Reader) (coretypes.ColoredBalances, error) {
 		return nil, err
 	}
 	ret := make(coloredBalances)
-	var col balance.Color
+	var col ledgerstate.Color
 	var bal int64
 	for i := uint16(0); i < size; i++ {
 		if err := util.ReadColor(r, &col); err != nil {

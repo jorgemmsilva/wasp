@@ -61,19 +61,19 @@ func NewContractIDFromString(s string) (ret ContractID, err error) {
 }
 
 // ChainID returns ID of the native chain of the contract
-func (scid ContractID) ChainID() (ret ChainID) {
+func (scid *ContractID) ChainID() (ret ChainID) {
 	copy(ret[:ChainIDLength], scid[:ChainIDLength])
 	return
 }
 
 // Hname returns hashed name of the contract, local ID on the chain
-func (scid ContractID) Hname() Hname {
+func (scid *ContractID) Hname() Hname {
 	ret, _ := NewHnameFromBytes(scid[ChainIDLength:])
 	return ret
 }
 
 // Base58 base58 representation of the binary representation
-func (scid ContractID) Base58() string {
+func (scid *ContractID) Base58() string {
 	return base58.Encode(scid[:])
 }
 
@@ -84,12 +84,14 @@ const (
 
 // String human readable representation of the contract ID <chainID>::<hanme>
 func (scid *ContractID) String() string {
-	return fmt.Sprintf(long_format, scid.ChainID().String(), scid.Hname().String())
+	chid := scid.ChainID()
+	return fmt.Sprintf(long_format, chid.String(), scid.Hname().String())
 }
 
 // Short human readable representation in short form
 func (scid *ContractID) Short() string {
-	return fmt.Sprintf(short_format, scid.ChainID().String()[:8], scid.Hname().String())
+	chid := scid.ChainID()
+	return fmt.Sprintf(short_format, chid.String()[:8], scid.Hname().String())
 }
 
 // Read from reader

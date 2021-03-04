@@ -1,13 +1,10 @@
 package nodeconn
 
 import (
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/address"
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/balance"
-	"github.com/iotaledger/goshimmer/dapps/waspconn/packages/waspconn"
 	"github.com/iotaledger/wasp/packages/parameters"
 )
 
-func Subscribe(addr address.Address, color balance.Color) {
+func Subscribe(addr ledgerstate.Address, color balance.Color) {
 	bconnMutex.Lock()
 	defer bconnMutex.Unlock()
 
@@ -17,7 +14,7 @@ func Subscribe(addr address.Address, color balance.Color) {
 	subscriptions[addr] = color
 }
 
-func Unsubscribe(addr address.Address) {
+func Unsubscribe(addr ledgerstate.Address) {
 	bconnMutex.Lock()
 	defer bconnMutex.Unlock()
 

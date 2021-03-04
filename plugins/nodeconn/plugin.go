@@ -4,9 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/address"
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/balance"
-	"github.com/iotaledger/goshimmer/dapps/waspconn/packages/chopper"
 	"github.com/iotaledger/hive.go/daemon"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/netutil/buffconn"
@@ -22,7 +19,7 @@ var (
 
 	bconn             *buffconn.BufferedConnection
 	bconnMutex        = &sync.Mutex{}
-	subscriptions     = make(map[address.Address]balance.Color)
+	subscriptions     = make(map[ledgerstate.Address]balance.Color)
 	msgChopper        = chopper.NewChopper()
 	subscriptionsSent bool
 )

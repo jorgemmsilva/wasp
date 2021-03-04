@@ -7,18 +7,18 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/iotaledger/goshimmer/dapps/valuetransfers/packages/address"
+	"github.com/iotaledger/goshimmer/packages/ledgerstate"
 	"github.com/mr-tron/base58"
 )
 
 // ChainIDLength size of the ChainID in bytes
-const ChainIDLength = address.Length
+const ChainIDLength = ledgerstate.AddressLength
 
 // ChainID represents the global identifier of the chain
 //
-// Currently it is an alias for the chain address (type address.Address)
-// In the future it will be refactored as an alias for chain color (type balance.Color)
-type ChainID address.Address
+// Currently it is an alias for the chain address (type ledgerstate.Address)
+// In the future it will be refactored as an alias for chain color (type ledgerstate.Color)
+type ChainID [ledgerstate.AddressLength]byte
 
 var NilChainID = ChainID{}
 
@@ -43,14 +43,13 @@ func NewChainIDFromBytes(data []byte) (ret ChainID, err error) {
 	return
 }
 
-// NewRandomChainID creates a random chain ID.
-func NewRandomChainID() ChainID {
-	return ChainID(address.RandomOfType(address.VersionBLS))
-}
-
 // String human readable form (base58 encoding)
-func (chid ChainID) String() string {
-	return address.Address(chid).String()
+func (chid *ChainID) String() string {
+	addr, _, err := ledgerstate.AddressFromBytes(chid[:])
+	if err != nil {
+		panic(err)
+	}
+	return addr.String()
 }
 
 // Write to writer

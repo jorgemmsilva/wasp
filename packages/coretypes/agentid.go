@@ -36,6 +36,13 @@ func NewAgentIDFromAddress(addr ledgerstate.Address) AgentID {
 	return NewAgentIDFromContractID(NewContractID(ChainID(addr.Array()), 0))
 }
 
+// NewRandomAgentID creates random AgentID
+func NewRandomAgentID() AgentID {
+	chainID := NewRandomChainID()
+	hname := Hn("testFunction")
+	return NewAgentIDFromContractID(NewContractID(chainID, hname))
+}
+
 // NewAgentIDFromBytes makes an AgentID from binary representation
 func NewAgentIDFromBytes(data []byte) (ret AgentID, err error) {
 	if len(data) != AgentIDLength {

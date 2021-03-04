@@ -8,6 +8,8 @@ import (
 	"io"
 
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
+	"github.com/iotaledger/hive.go/crypto/ed25519"
+	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/mr-tron/base58"
 )
 
@@ -40,6 +42,18 @@ func NewChainIDFromBase58(b58 string) (ret ChainID, err error) {
 // NewChainIDFromBytes reconstructs a ChainID from its binary representation.
 func NewChainIDFromBytes(data []byte) (ret ChainID, err error) {
 	err = ret.Read(bytes.NewReader(data))
+	return
+}
+
+// NewRandomChainID creates a random chain ID.
+func NewRandomChainID(seed ...[]byte) (ret ChainID) {
+	var h hashing.HashValue
+	if len(seed) > 0 {
+		h = hashing.HashData(seed[0])
+	} else {
+		h = hashing.RandomHash(nil)
+	}
+	copy(ret[:], ledgerstate.NewED25519Address(ed25519.NewSeed(h[:]).KeyPair(0).PublicKey).Bytes())
 	return
 }
 

@@ -59,6 +59,7 @@ func NewCallParams(scName, funName string, params ...interface{}) *CallParams {
 	return NewCallParamsFromDic(scName, funName, codec.MakeDict(toMap(params...)))
 }
 
+//nolint:ineffassign,gomnd // TODO revisit: optsize seems obsolete, its unused after assignment
 func NewCallParamsOptimized(scName, funName string, optSize int, params ...interface{}) (*CallParams, map[kv.Key][]byte) {
 	if optSize <= 32 {
 		optSize = 32
@@ -219,6 +220,7 @@ func (ch *Chain) PostRequestSyncTx(req *CallParams, keyPair *ed25519.KeyPair) (*
 
 // callViewFull calls the view entry point of the smart contract
 // with params wrapped into the CallParams object. The transfer part, fs any, is ignored
+//nolint:unused
 func (ch *Chain) callViewFull(req *CallParams) (dict.Dict, error) {
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
@@ -234,7 +236,7 @@ func (ch *Chain) callViewFull(req *CallParams) (dict.Dict, error) {
 // CallView calls the view entry point of the smart contract.
 // The call params should be in pairs ('paramName', 'paramValue') where 'paramName' is a string
 // and 'paramValue' must be of type accepted by the 'codec' package
-func (ch *Chain) CallView(scName string, funName string, params ...interface{}) (dict.Dict, error) {
+func (ch *Chain) CallView(scName, funName string, params ...interface{}) (dict.Dict, error) {
 	ch.Log.Infof("callView: %s::%s", scName, funName)
 
 	p := codec.MakeDict(toMap(params...))
@@ -266,6 +268,6 @@ func (ch *Chain) WaitForRequestsThrough(numReq int, maxWait ...time.Duration) bo
 				maxw, numReq, mstats.InBufCounter, mstats.OutPoolCounter)
 			return false
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(10 * time.Millisecond) //nolint:gomnd
 	}
 }

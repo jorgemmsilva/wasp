@@ -3,18 +3,14 @@ package consensus
 import (
 	"time"
 
-	"github.com/iotaledger/wasp/packages/coretypes/assert"
-
-	"github.com/iotaledger/wasp/packages/hashing"
-
-	"github.com/iotaledger/wasp/packages/vm"
-	"github.com/iotaledger/wasp/packages/vm/runvm"
-
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
-	"github.com/iotaledger/wasp/packages/state"
-
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/coretypes/assert"
+	"github.com/iotaledger/wasp/packages/hashing"
+	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/vm"
+	"github.com/iotaledger/wasp/packages/vm/runvm"
 	"go.uber.org/atomic"
 )
 

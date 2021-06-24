@@ -191,6 +191,11 @@ func RequestsOnLedgerFromTransaction(tx *ledgerstate.Transaction, targetAddr led
 	return ret, nil
 }
 
+func RequestOnLedgerFromBytes(bytes []byte) (*RequestOnLedger, error) {
+	// TODO IMPLEMENT
+	return nil, nil
+}
+
 func (req *RequestOnLedger) ID() coretypes.RequestID {
 	return coretypes.RequestID(req.Output().ID())
 }

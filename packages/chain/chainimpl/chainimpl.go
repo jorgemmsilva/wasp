@@ -7,22 +7,6 @@ import (
 	"bytes"
 	"sync"
 
-	"github.com/iotaledger/wasp/packages/registry/committee_record"
-
-	"github.com/iotaledger/wasp/packages/util"
-
-	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
-
-	"github.com/iotaledger/wasp/packages/coretypes/chainid"
-
-	"github.com/iotaledger/wasp/packages/coretypes/coreutil"
-
-	"github.com/iotaledger/wasp/packages/chain/consensus"
-	"github.com/iotaledger/wasp/packages/chain/mempool"
-
-	"github.com/iotaledger/wasp/packages/chain/statemgr"
-	"github.com/iotaledger/wasp/packages/state"
-
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
 	txstream "github.com/iotaledger/goshimmer/packages/txstream/client"
 	"github.com/iotaledger/hive.go/events"
@@ -30,10 +14,20 @@ import (
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chain/committee"
+	"github.com/iotaledger/wasp/packages/chain/consensus"
+	"github.com/iotaledger/wasp/packages/chain/mempool"
 	"github.com/iotaledger/wasp/packages/chain/nodeconnimpl"
+	"github.com/iotaledger/wasp/packages/chain/statemgr"
 	"github.com/iotaledger/wasp/packages/coretypes"
+	"github.com/iotaledger/wasp/packages/coretypes/chainid"
+	"github.com/iotaledger/wasp/packages/coretypes/coreutil"
 	"github.com/iotaledger/wasp/packages/hashing"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/peering"
+	"github.com/iotaledger/wasp/packages/registry/committee_record"
+	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/util"
+	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 	"go.uber.org/atomic"
 	"golang.org/x/xerrors"
@@ -138,29 +132,37 @@ func (c *chainObj) dispatchMessage(msg interface{}) {
 	switch msgt := msg.(type) {
 	case *peering.PeerMessage:
 		c.processPeerMessage(msgt)
+		break
 	case *chain.DismissChainMsg:
 		c.Dismiss(msgt.Reason)
+		break
 	case *chain.StateTransitionMsg:
 		if c.consensus != nil {
 			c.consensus.EventStateTransitionMsg(msgt)
 		}
+		break
 	case *chain.StateCandidateMsg:
 		c.stateMgr.EventStateCandidateMsg(msgt)
+		break
 	case *chain.InclusionStateMsg:
 		if c.consensus != nil {
 			c.consensus.EventInclusionsStateMsg(msgt)
 		}
+		break
 	case *chain.StateMsg:
 		c.processStateMessage(msgt)
+		break
 	case *chain.VMResultMsg:
 		// VM finished working
 		if c.consensus != nil {
 			c.consensus.EventVMResultMsg(msgt)
 		}
+		break
 	case *chain.AsynchronousCommonSubsetMsg:
 		if c.consensus != nil {
 			c.consensus.EventAsynchronousCommonSubsetMsg(msgt)
 		}
+		break
 	case chain.TimerTick:
 		if msgt%2 == 0 {
 			c.stateMgr.EventTimerMsg(msgt / 2)
@@ -186,6 +188,7 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 		}
 		msgt.SenderNetID = msg.SenderNetID
 		c.stateMgr.EventGetBlockMsg(msgt)
+		break
 
 	case chain.MsgBlock:
 		msgt := &chain.BlockMsg{}
@@ -195,6 +198,7 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 		}
 		msgt.SenderNetID = msg.SenderNetID
 		c.stateMgr.EventBlockMsg(msgt)
+		break
 
 	case chain.MsgSignedResult:
 		msgt := &chain.SignedResultMsg{}
@@ -206,15 +210,37 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 		if c.consensus != nil {
 			c.consensus.EventSignedResultMsg(msgt)
 		}
+		break
 	case chain.MsgOffLedgerRequest:
-		msg, err := chain.OffLedgerRequestMsgFromBytes(msg.MsgData)
+		msgt, err := chain.OffLedgerRequestMsgFromBytes(msg.MsgData)
 		if err != nil {
 			c.log.Error(err)
 			return
 		}
-		c.ReceiveOffLedgerRequest(msg.Req)
-		return
-
+		c.ReceiveOffLedgerRequest(msgt.Req)
+		break
+	case chain.MsgMissingRequestIDs:
+		if !parameters.GetBool(parameters.PullMissingRequestsFromCommittee) {
+			return
+		}
+		msgt, err := chain.MissingRequestIDsMsgFromBytes(msg.MsgData)
+		if err != nil {
+			c.log.Error(err)
+			return
+		}
+		c.SendMissingRequestsToPeer(msgt, msg.SenderNetID)
+		break
+	case chain.MsgMissingRequest:
+		if !parameters.GetBool(parameters.PullMissingRequestsFromCommittee) {
+			return
+		}
+		msgt, err := chain.MissingRequestMsgFromBytes(msg.MsgData)
+		if err != nil {
+			c.log.Error(err)
+			return
+		}
+		c.mempool.ReceiveRequest(msgt.Request)
+		break
 	default:
 		c.log.Errorf("processPeerMessage: wrong msg type")
 	}

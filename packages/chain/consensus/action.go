@@ -5,22 +5,18 @@ import (
 	"sort"
 	"time"
 
-	"github.com/iotaledger/wasp/packages/coretypes/rotate"
-
-	"github.com/iotaledger/wasp/packages/transaction"
-
-	"golang.org/x/xerrors"
-
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
-
+	"github.com/iotaledger/hive.go/identity"
 	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/coretypes"
+	"github.com/iotaledger/wasp/packages/coretypes/rotate"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
-
-	"github.com/iotaledger/hive.go/identity"
-	"github.com/iotaledger/wasp/packages/coretypes"
+	"golang.org/x/xerrors"
 )
 
 // takeAction triggers actions whenever relevant
@@ -81,12 +77,18 @@ func (c *Consensus) runVMIfNeeded() {
 	if time.Now().Before(c.delayRunVMUntil) {
 		return
 	}
-	reqs, allArrived := c.mempool.ReadyFromIDs(c.consensusBatch.Timestamp, c.consensusBatch.RequestIDs...)
+	reqs, missingRequestIds, allArrived := c.mempool.ReadyFromIDs(c.consensusBatch.Timestamp, c.consensusBatch.RequestIDs...)
 	if !allArrived {
 		// some requests are not ready, so skip VM call this time. Maybe next time will be more luck
 		c.delayRunVMUntil = time.Now().Add(waitReadyRequestsDelay)
 		c.log.Infof("runVMIfNeeded: some requests didn't arrive yet")
-		return
+
+		// send message to other committee nodes asking for the missing requests
+		if !parameters.GetBool(parameters.PullMissingRequestsFromCommittee) {
+			return
+		}
+		msgData := chain.NewMissingRequestIDsMsg(&missingRequestIds).Bytes()
+		c.committee.SendMsgToPeers(chain.MsgMissingRequestIDs, msgData, time.Now().UnixNano())
 	}
 	if len(reqs) == 0 {
 		// due to change in time, all requests became non processable ACS must be run again

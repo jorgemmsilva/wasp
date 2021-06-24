@@ -6,24 +6,19 @@ package chainimpl
 import (
 	"time"
 
-	"github.com/iotaledger/wasp/packages/coretypes/chainid"
-	"github.com/iotaledger/wasp/packages/parameters"
-
-	"github.com/iotaledger/hive.go/logger"
-
-	"github.com/iotaledger/wasp/packages/coretypes/coreutil"
-
-	"github.com/iotaledger/wasp/packages/coretypes/request"
-	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
-
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
-	"github.com/iotaledger/wasp/packages/transaction"
-
 	"github.com/iotaledger/hive.go/events"
+	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/coretypes"
+	"github.com/iotaledger/wasp/packages/coretypes/chainid"
+	"github.com/iotaledger/wasp/packages/coretypes/coreutil"
+	"github.com/iotaledger/wasp/packages/coretypes/request"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 )
 
@@ -116,6 +111,15 @@ func (c *chainObj) ReceiveOffLedgerRequest(req *request.RequestOffLedger) {
 	}
 	gossipUpToNPeers := parameters.GetInt(parameters.OffledgerGossipUpToNPeers)
 	(*c.peers).SendMsgToRandomPeersSimple(uint16(gossipUpToNPeers), chain.MsgOffLedgerRequest, msgData)
+}
+
+// SendMissingRequestsToPeer sends the requested missing requests by a peer
+func (c *chainObj) SendMissingRequestsToPeer(msg chain.MissingRequestIDsMsg, peerID string) {
+	for _, reqID := range msg.IDs {
+		req := c.mempool.GetRequest(reqID)
+		msg := chain.NewMissingRequestMsg(req)
+		(*c.peers).SendSimple(peerID, chain.MsgMissingRequest, msg.Bytes())
+	}
 }
 
 func (c *chainObj) ReceiveTransaction(tx *ledgerstate.Transaction) {

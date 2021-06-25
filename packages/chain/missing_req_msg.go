@@ -103,11 +103,11 @@ func (msg *MissingRequestMsg) read(r io.Reader) error {
 		return xerrors.Errorf("failed to read request: %w", err)
 	}
 	if msg.IsOffledger {
-		if msg.Request, err = request.NewRequestOffLedgerFromBytes(reqBytes); err != nil {
+		if msg.Request, err = request.FromBytes(reqBytes); err != nil {
 			return xerrors.Errorf("failed to read request: %w", err)
 		}
 	} else {
-		if msg.Request, err = request.RequestOnLedgerFromBytes(reqBytes); err != nil { // TODO
+		if msg.Request, err = request.FromBytes(reqBytes); err != nil { // TODO
 			return xerrors.Errorf("failed to read request: %w", err)
 		}
 	}

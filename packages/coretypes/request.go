@@ -39,6 +39,8 @@ type Request interface {
 	Tokens() *ledgerstate.ColoredBalances
 	// returns binary representation of the request
 	Bytes() []byte
+	// returns the hash of the request (used for consensus)
+	Hash() [32]byte
 }
 
 func TakeRequestIDs(reqs ...Request) []RequestID {

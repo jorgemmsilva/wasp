@@ -132,37 +132,29 @@ func (c *chainObj) dispatchMessage(msg interface{}) {
 	switch msgt := msg.(type) {
 	case *peering.PeerMessage:
 		c.processPeerMessage(msgt)
-		break
 	case *chain.DismissChainMsg:
 		c.Dismiss(msgt.Reason)
-		break
 	case *chain.StateTransitionMsg:
 		if c.consensus != nil {
 			c.consensus.EventStateTransitionMsg(msgt)
 		}
-		break
 	case *chain.StateCandidateMsg:
 		c.stateMgr.EventStateCandidateMsg(msgt)
-		break
 	case *chain.InclusionStateMsg:
 		if c.consensus != nil {
 			c.consensus.EventInclusionsStateMsg(msgt)
 		}
-		break
 	case *chain.StateMsg:
 		c.processStateMessage(msgt)
-		break
 	case *chain.VMResultMsg:
 		// VM finished working
 		if c.consensus != nil {
 			c.consensus.EventVMResultMsg(msgt)
 		}
-		break
 	case *chain.AsynchronousCommonSubsetMsg:
 		if c.consensus != nil {
 			c.consensus.EventAsynchronousCommonSubsetMsg(msgt)
 		}
-		break
 	case chain.TimerTick:
 		if msgt%2 == 0 {
 			c.stateMgr.EventTimerMsg(msgt / 2)
@@ -188,7 +180,6 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 		}
 		msgt.SenderNetID = msg.SenderNetID
 		c.stateMgr.EventGetBlockMsg(msgt)
-		break
 
 	case chain.MsgBlock:
 		msgt := &chain.BlockMsg{}
@@ -198,7 +189,6 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 		}
 		msgt.SenderNetID = msg.SenderNetID
 		c.stateMgr.EventBlockMsg(msgt)
-		break
 
 	case chain.MsgSignedResult:
 		msgt := &chain.SignedResultMsg{}
@@ -210,7 +200,6 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 		if c.consensus != nil {
 			c.consensus.EventSignedResultMsg(msgt)
 		}
-		break
 	case chain.MsgOffLedgerRequest:
 		msgt, err := chain.OffLedgerRequestMsgFromBytes(msg.MsgData)
 		if err != nil {
@@ -218,7 +207,6 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 			return
 		}
 		c.ReceiveOffLedgerRequest(msgt.Req)
-		break
 	case chain.MsgMissingRequestIDs:
 		if !parameters.GetBool(parameters.PullMissingRequestsFromCommittee) {
 			return
@@ -229,7 +217,6 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 			return
 		}
 		c.SendMissingRequestsToPeer(msgt, msg.SenderNetID)
-		break
 	case chain.MsgMissingRequest:
 		if !parameters.GetBool(parameters.PullMissingRequestsFromCommittee) {
 			return
@@ -239,8 +226,9 @@ func (c *chainObj) processPeerMessage(msg *peering.PeerMessage) {
 			c.log.Error(err)
 			return
 		}
-		c.mempool.ReceiveRequest(msgt.Request)
-		break
+		if c.consensus.ShouldReceiveMissingRequest(msgt.Request) {
+			c.mempool.ReceiveRequest(msgt.Request)
+		}
 	default:
 		c.log.Errorf("processPeerMessage: wrong msg type")
 	}

@@ -6,6 +6,7 @@ import (
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/coretypes"
 	"github.com/iotaledger/wasp/packages/coretypes/assert"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/state"
@@ -50,6 +51,7 @@ type Consensus struct {
 	eventTimerMsgCh            chan chain.TimerTick
 	closeCh                    chan struct{}
 	assert                     assert.Assert
+	missingRequestsFromBatch   map[coretypes.RequestID][32]byte
 }
 
 type workflowFlags struct {

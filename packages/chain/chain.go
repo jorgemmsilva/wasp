@@ -115,6 +115,7 @@ type Consensus interface {
 	IsReady() bool
 	Close()
 	GetStatusSnapshot() *ConsensusInfo
+	ShouldReceiveMissingRequest(req coretypes.Request) bool
 }
 
 type Mempool interface {

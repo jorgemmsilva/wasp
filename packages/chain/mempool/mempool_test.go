@@ -405,7 +405,7 @@ func TestReadyFromIDs(t *testing.T) {
 	require.EqualValues(t, 5, stats.TotalPool)
 	require.EqualValues(t, 5, stats.Ready)
 
-	ready, _, result := pool.ReadyFromIDs(time.Now(),
+	ready, missingIndexes, result := pool.ReadyFromIDs(time.Now(),
 		requests[0].ID(),
 		requests[1].ID(),
 		requests[2].ID(),
@@ -419,6 +419,7 @@ func TestReadyFromIDs(t *testing.T) {
 	require.Contains(t, ready, requests[2])
 	require.Contains(t, ready, requests[3])
 	require.Contains(t, ready, requests[4])
+	require.Empty(t, missingIndexes)
 	stats = pool.Stats()
 	require.EqualValues(t, 5, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
@@ -426,19 +427,21 @@ func TestReadyFromIDs(t *testing.T) {
 	require.EqualValues(t, 5, stats.Ready)
 
 	pool.RemoveRequests(requests[3].ID())
-	_, _, result = pool.ReadyFromIDs(time.Now(),
+	_, missingIndexes, result = pool.ReadyFromIDs(time.Now(),
 		requests[0].ID(),
 		requests[1].ID(),
 		requests[2].ID(),
 		requests[3].ID(), // Request was removed from mempool
 	)
 	require.False(t, result)
-	_, _, result = pool.ReadyFromIDs(time.Now(),
+	require.EqualValues(t, missingIndexes, []int{3})
+	_, missingIndexes, result = pool.ReadyFromIDs(time.Now(),
 		requests[5].ID(), // Request hasn't been received by mempool
 		requests[4].ID(),
 		requests[2].ID(),
 	)
 	require.False(t, result)
+	require.EqualValues(t, missingIndexes, []int{0})
 	ready, _, result = pool.ReadyFromIDs(time.Now(),
 		requests[0].ID(),
 		requests[1].ID(),

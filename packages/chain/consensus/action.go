@@ -77,7 +77,7 @@ func (c *Consensus) runVMIfNeeded() {
 	if time.Now().Before(c.delayRunVMUntil) {
 		return
 	}
-	reqs, missingRequestIds, allArrived := c.mempool.ReadyFromIDs(c.consensusBatch.Timestamp, c.consensusBatch.RequestIDs...)
+	reqs, missingRequestIndexes, allArrived := c.mempool.ReadyFromIDs(c.consensusBatch.Timestamp, c.consensusBatch.RequestIDs...)
 
 	c.missingRequestsMutex.Lock()
 	defer c.missingRequestsMutex.Unlock()
@@ -92,9 +92,14 @@ func (c *Consensus) runVMIfNeeded() {
 		if !parameters.GetBool(parameters.PullMissingRequestsFromCommittee) {
 			return
 		}
-		for _, reqID := range missingRequestIds {
-			c.missingRequestsFromBatch[reqID] = [32]byte{} // TODO set hash of reqeust here
+		missingRequestIds := []coretypes.RequestID{}
+		for _, idx := range missingRequestIndexes {
+			reqID := c.consensusBatch.RequestIDs[idx]
+			reqHash := c.consensusBatch.RequestHashes[idx]
+			c.missingRequestsFromBatch[reqID] = reqHash
+			missingRequestIds = append(missingRequestIds, reqID)
 		}
+		c.log.Debugf("runVMIfNeeded: asking for missing requests, ids: %v", missingRequestIds)
 		msgData := chain.NewMissingRequestIDsMsg(&missingRequestIds).Bytes()
 		c.committee.SendMsgToPeers(chain.MsgMissingRequestIDs, msgData, time.Now().UnixNano())
 	}

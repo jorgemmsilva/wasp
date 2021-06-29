@@ -275,22 +275,18 @@ func (m *Mempool) ReadyNow(now ...time.Time) []coretypes.Request {
 // - (a list of processable requests), true if the list can be deterministically calculated
 // Note that (a list of processable requests) can be empty if none satisfies nowis time constraint (timelock, fallback)
 // For requests which are known and solidified, the result is deterministic
-func (m *Mempool) ReadyFromIDs(nowis time.Time, reqids ...coretypes.RequestID) ([]coretypes.Request, []coretypes.RequestID, bool) {
+func (m *Mempool) ReadyFromIDs(nowis time.Time, reqids ...coretypes.RequestID) ([]coretypes.Request, []int, bool) {
 	requests := make([]coretypes.Request, 0, len(reqids))
-	missingRequestIDs := make([]coretypes.RequestID, 0, len(reqids))
-	for _, reqid := range reqids {
+	missingRequestIndexes := []int{}
+	for i, reqid := range reqids {
 		reqref, ok := m.pool[reqid]
 		if !ok {
-			missingRequestIDs = append(missingRequestIDs, reqid)
-		}
-		if isRequestReady(reqref, nowis) {
+			missingRequestIndexes = append(missingRequestIndexes, i)
+		} else if isRequestReady(reqref, nowis) {
 			requests = append(requests, reqref.req)
 		}
 	}
-	if len(missingRequestIDs) > 0 {
-		return requests, missingRequestIDs, false
-	}
-	return requests, missingRequestIDs, true
+	return requests, missingRequestIndexes, len(missingRequestIndexes) == 0
 }
 
 // HasRequest checks if the request is in the pool
@@ -306,7 +302,7 @@ func (m *Mempool) GetRequest(id coretypes.RequestID) coretypes.Request {
 	m.poolMutex.RLock()
 	defer m.poolMutex.RUnlock()
 
-	reqRef, _ := m.pool[id]
+	reqRef := m.pool[id]
 	return reqRef.req
 }
 

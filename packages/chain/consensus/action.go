@@ -78,7 +78,11 @@ func (c *Consensus) runVMIfNeeded() {
 		return
 	}
 	reqs, missingRequestIds, allArrived := c.mempool.ReadyFromIDs(c.consensusBatch.Timestamp, c.consensusBatch.RequestIDs...)
+
+	c.missingRequestsMutex.Lock()
+	defer c.missingRequestsMutex.Unlock()
 	c.missingRequestsFromBatch = make(map[coretypes.RequestID][32]byte) // reset list of missing requests
+
 	if !allArrived {
 		// some requests are not ready, so skip VM call this time. Maybe next time will be more luck
 		c.delayRunVMUntil = time.Now().Add(waitReadyRequestsDelay)
@@ -293,14 +297,16 @@ func (c *Consensus) prepareBatchProposal(reqs []coretypes.Request) *BatchProposa
 		ValidatorIndex:          c.committee.OwnPeerIndex(),
 		StateOutputID:           c.stateOutput.ID(),
 		RequestIDs:              make([]coretypes.RequestID, len(reqs)),
+		RequestHashes:           make([][32]byte, len(reqs)),
 		Timestamp:               ts,
 		ConsensusManaPledge:     consensusManaPledge,
 		AccessManaPledge:        accessManaPledge,
 		FeeDestination:          feeDestination,
 		SigShareOfStateOutputID: sigShare,
 	}
-	for i := range ret.RequestIDs {
-		ret.RequestIDs[i] = reqs[i].ID()
+	for i, req := range reqs {
+		ret.RequestIDs[i] = req.ID()
+		ret.RequestHashes[i] = req.Hash()
 	}
 	return ret
 }
@@ -581,7 +587,10 @@ func (c *Consensus) receiveSignedResult(msg *chain.SignedResultMsg) {
 	c.log.Debugf("stored sig share from sender %d", msg.SenderIndex)
 }
 
+// ShouldReceiveMissingRequest returns whether or not a request is missing, if the incoming request matches the expetec ID/Hash it is removed from the list
 func (c *Consensus) ShouldReceiveMissingRequest(req coretypes.Request) bool {
+	c.missingRequestsMutex.Lock()
+	defer c.missingRequestsMutex.Unlock()
 	expectedHash, exists := c.missingRequestsFromBatch[req.ID()]
 	if !exists {
 		return false

@@ -18,6 +18,7 @@ type BatchProposal struct {
 	ValidatorIndex          uint16
 	StateOutputID           ledgerstate.OutputID
 	RequestIDs              []coretypes.RequestID
+	RequestHashes           [][32]byte
 	Timestamp               time.Time
 	ConsensusManaPledge     identity.ID
 	AccessManaPledge        identity.ID
@@ -78,8 +79,15 @@ func BatchProposalFromMarshalUtil(mu *marshalutil.MarshalUtil) (*BatchProposal, 
 		return nil, xerrors.Errorf(errFmt, err)
 	}
 	ret.RequestIDs = make([]coretypes.RequestID, size)
+	ret.RequestHashes = make([][32]byte, size)
 	for i := range ret.RequestIDs {
 		ret.RequestIDs[i], err = coretypes.RequestIDFromMarshalUtil(mu)
+		if err != nil {
+			return nil, xerrors.Errorf(errFmt, err)
+		}
+
+		hashBytes, err := mu.ReadBytes(32)
+		copy(ret.RequestHashes[i][:], hashBytes)
 		if err != nil {
 			return nil, xerrors.Errorf(errFmt, err)
 		}
@@ -100,6 +108,7 @@ func (b *BatchProposal) Bytes() []byte {
 		WriteBytes(b.SigShareOfStateOutputID)
 	for i := range b.RequestIDs {
 		mu.Write(b.RequestIDs[i])
+		mu.WriteBytes(b.RequestHashes[i][:])
 	}
 	return mu.Bytes()
 }

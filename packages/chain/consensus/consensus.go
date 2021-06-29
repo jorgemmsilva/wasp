@@ -1,6 +1,7 @@
 package consensus
 
 import (
+	"sync"
 	"time"
 
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
@@ -52,6 +53,7 @@ type Consensus struct {
 	closeCh                    chan struct{}
 	assert                     assert.Assert
 	missingRequestsFromBatch   map[coretypes.RequestID][32]byte
+	missingRequestsMutex       sync.Mutex
 }
 
 type workflowFlags struct {

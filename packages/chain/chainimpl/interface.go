@@ -99,18 +99,46 @@ func (c *chainObj) ReceiveMessage(msg interface{}) {
 	}
 }
 
+// TODO make configurable
+const gossipInterval = 1 * time.Second
+
+func (c *chainObj) gossipOffLedgerRequest(req *request.RequestOffLedger) {
+	msgData := chain.NewOffledgerRequestMsg(&c.chainID, req).Bytes()
+	committee := c.getCommittee()
+	var sendMessage func()
+
+	if committee != nil {
+		sendMessage = func() {
+			committee.SendMsgToPeers(chain.MsgOffLedgerRequest, msgData, time.Now().UnixNano())
+		}
+	} else {
+		sendMessage = func() {
+			gossipUpToNPeers := parameters.GetInt(parameters.OffledgerGossipUpToNPeers)
+			(*c.peers).SendMsgToRandomPeersSimple(uint16(gossipUpToNPeers), chain.MsgOffLedgerRequest, msgData)
+		}
+	}
+	ticker := time.NewTicker(gossipInterval)
+	// TODO expire after a set amount of time
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				// check if processed (request already left the mempool)
+				if !c.mempool.HasRequest(req.ID()) {
+					ticker.Stop()
+					return
+				}
+				sendMessage()
+			}
+		}
+	}()
+}
+
 func (c *chainObj) ReceiveOffLedgerRequest(req *request.RequestOffLedger) {
 	if !c.mempool.ReceiveRequest(req) {
 		return
 	}
-	msgData := chain.NewOffledgerRequestMsg(&c.chainID, req).Bytes()
-	committee := c.getCommittee()
-	if committee != nil {
-		committee.SendMsgToPeers(chain.MsgOffLedgerRequest, msgData, time.Now().UnixNano())
-		return
-	}
-	gossipUpToNPeers := parameters.GetInt(parameters.OffledgerGossipUpToNPeers)
-	(*c.peers).SendMsgToRandomPeersSimple(uint16(gossipUpToNPeers), chain.MsgOffLedgerRequest, msgData)
+	c.gossipOffLedgerRequest(req)
 }
 
 // SendMissingRequestsToPeer sends the requested missing requests by a peer

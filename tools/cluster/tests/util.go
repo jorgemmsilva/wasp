@@ -4,19 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"testing"
-
-	"github.com/iotaledger/wasp/packages/coretypes/chainid"
+	"time"
 
 	"github.com/iotaledger/goshimmer/packages/ledgerstate"
-	"github.com/iotaledger/wasp/packages/solo"
-	"github.com/iotaledger/wasp/packages/vm/core"
-
+	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/coretypes"
+	"github.com/iotaledger/wasp/packages/coretypes/chainid"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/util"
+	"github.com/iotaledger/wasp/packages/vm/core"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/tools/cluster"
@@ -275,3 +275,46 @@ func findContract(chain *cluster.Chain, name string) (*root.ContractRecord, erro
 	}
 	return root.DecodeContractRecord(recBin)
 }
+
+// region waitUntilProcessed ///////////////////////////////////////////////////
+
+const pollPeriod = 500 * time.Millisecond
+
+func waitTrue(timeout time.Duration, fun func() bool) bool {
+	deadline := time.Now().Add(timeout)
+	for {
+		if fun() {
+			return true
+		}
+		time.Sleep(pollPeriod)
+		if time.Now().After(deadline) {
+			return false
+		}
+	}
+}
+
+func createCheckCounterFn(chain *cluster.Chain, expected int64) conditionFn {
+	return func(t *testing.T, nodeIndex int) bool {
+		ret, err := chain.Cluster.WaspClient(nodeIndex).CallView(
+			chain.ChainID, incCounterSCHname, inccounter.FuncGetCounter,
+		)
+		require.NoError(t, err)
+		counter, _, err := codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
+		require.NoError(t, err)
+		return counter == expected
+	}
+}
+
+type conditionFn func(t *testing.T, nodeIndex int) bool
+
+func waitUntilProcessed(t *testing.T, nodeIndexes []int, timeout time.Duration, fn conditionFn) {
+	for _, nodeIndex := range nodeIndexes {
+		require.True(t,
+			waitTrue(timeout, func() bool {
+				return fn(t, nodeIndex)
+			}),
+		)
+	}
+}
+
+// endregion ///////////////////////////////////////////////////////////////

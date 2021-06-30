@@ -43,9 +43,7 @@ func TestAccessNode(t *testing.T) {
 	_, err = chain1.DeployContract(incCounterSCName, programHash.String(), description, nil)
 	require.NoError(t, err)
 
-	rec, err := findContract(chain1, incCounterSCName)
-	require.NoError(t, err)
-	require.EqualValues(t, incCounterSCName, rec.Name)
+	waitUntil(t, createCheckContractDeployedFn(chain1, incCounterSCName), clu1.Config.AllNodes(), 30*time.Second)
 
 	kp := wallet.KeyPair(1)
 	myAddress := ledgerstate.NewED25519Address(kp.PublicKey)
@@ -88,9 +86,7 @@ func TestRotation(t *testing.T) {
 	_, err = chain1.DeployContract(incCounterSCName, programHash.String(), description, nil)
 	require.NoError(t, err)
 
-	rec, err := findContract(chain1, incCounterSCName)
-	require.NoError(t, err)
-	require.EqualValues(t, incCounterSCName, rec.Name)
+	waitUntil(t, createCheckContractDeployedFn(chain1, incCounterSCName), clu1.Config.AllNodes(), 30*time.Second)
 
 	require.True(t, waitStateController(t, chain1, 0, addr1, 5*time.Second))
 	require.True(t, waitStateController(t, chain1, 9, addr1, 5*time.Second))
@@ -209,9 +205,7 @@ func TestRotationMany(t *testing.T) {
 	_, err = chain1.DeployContract(incCounterSCName, programHash.String(), description, nil)
 	require.NoError(t, err)
 
-	rec, err := findContract(chain1, incCounterSCName)
-	require.NoError(t, err)
-	require.EqualValues(t, incCounterSCName, rec.Name)
+	waitUntil(t, createCheckContractDeployedFn(chain1, incCounterSCName), clu1.Config.AllNodes(), 30*time.Second)
 
 	addrIndex := 0
 	kp := wallet.KeyPair(1)

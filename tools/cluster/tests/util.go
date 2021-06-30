@@ -313,13 +313,16 @@ func createCheckCounterFn(chain *cluster.Chain, expected int64) conditionFn {
 func createCheckContractDeployedFn(chain *cluster.Chain, contractName string) conditionFn {
 	return func(t *testing.T, nodeIndex int) bool {
 		ret, err := findContract(chain, contractName, nodeIndex)
-		return err == nil && ret != nil
+		if err != nil {
+			return false
+		}
+		return ret.Name == contractName
 	}
 }
 
 type conditionFn func(t *testing.T, nodeIndex int) bool
 
-func waitUntilProcessed(t *testing.T, nodeIndexes []int, timeout time.Duration, fn conditionFn) {
+func waitUntil(t *testing.T, fn conditionFn, nodeIndexes []int, timeout time.Duration) {
 	for _, nodeIndex := range nodeIndexes {
 		require.True(t,
 			waitTrue(timeout, func() bool {

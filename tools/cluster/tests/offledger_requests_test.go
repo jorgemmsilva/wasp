@@ -135,7 +135,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 
 	deployIncCounterSC(t, chain1, nil)
 
-	waitUntilProcessed(t, makeRange(0, 9), 30*time.Second, createCheckContractDeployedFn(chain1, incCounterSCName))
+	waitUntil(t, createCheckContractDeployedFn(chain1, incCounterSCName), makeRange(0, 9), 30*time.Second)
 
 	// use an access node to create the chainClient
 	chClient := newWalletWithFunds(t, clu1, chain1, 5, 1, 100)
@@ -144,7 +144,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 	_, err = chClient.PostOffLedgerRequest(incCounterSCHname, coretypes.Hn(inccounter.FuncIncCounter))
 	check(err, t)
 
-	waitUntilProcessed(t, []int{0, 1, 2, 3, 6}, 30*time.Second, createCheckCounterFn(chain1, 43))
+	waitUntil(t, createCheckCounterFn(chain1, 43), []int{0, 1, 2, 3, 6}, 30*time.Second)
 
 	// check off-ledger request was successfully processed (check by asking another access node)
 	ret, err := clu1.WaspClient(6).CallView(

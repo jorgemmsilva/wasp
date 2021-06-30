@@ -59,7 +59,7 @@ func TestAccessNode(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	waitUntilProcessed(t, []int{7, 8, 9, 4, 5, 6, 1}, 5*time.Second, createCheckCounterFn(chain1, int64(numRequests)))
+	waitUntil(t, createCheckCounterFn(chain1, int64(numRequests)), []int{7, 8, 9, 4, 5, 6, 1}, 5*time.Second)
 }
 
 // cluster of 10 access nodes and two overlapping committees
@@ -107,7 +107,7 @@ func TestRotation(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	waitUntilProcessed(t, []int{0, 3, 8, 9}, 5*time.Second, createCheckCounterFn(chain1, int64(numRequests)))
+	waitUntil(t, createCheckCounterFn(chain1, int64(numRequests)), []int{0, 3, 8, 9}, 5*time.Second)
 
 	govClient := chain1.SCClient(governance.Interface.Hname(), chain1.OriginatorKeyPair())
 
@@ -151,7 +151,7 @@ func TestRotation(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	waitUntilProcessed(t, []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 5*time.Second, createCheckCounterFn(chain1, int64(2*numRequests)))
+	waitUntil(t, createCheckCounterFn(chain1, int64(2*numRequests)), []int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, 5*time.Second)
 }
 
 func TestRotationMany(t *testing.T) {
@@ -231,7 +231,7 @@ func TestRotationMany(t *testing.T) {
 			require.NoError(t, err)
 		}
 
-		waitUntilProcessed(t, []int{0, 3, 8, 9}, 5*time.Second, createCheckCounterFn(chain1, int64(numRequests*(i+1))))
+		waitUntil(t, createCheckCounterFn(chain1, int64(numRequests*(i+1))), []int{0, 3, 8, 9}, 5*time.Second)
 
 		addrIndex = (addrIndex + 1) % numCmt
 

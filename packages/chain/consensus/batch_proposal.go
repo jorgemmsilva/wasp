@@ -162,24 +162,33 @@ func (c *Consensus) calcBatchParameters(props []*BatchProposal) (*consensusBatch
 // calcIntersection a simple algorithm to calculate acceptable intersection. It simply takes all requests
 // seen by 1/3+1 node. The assumptions is there can be at max 1/3 of bizantine nodes, so if something is reported
 // by more that 1/3 of nodes it means it is correct
+const keyLen = ledgerstate.OutputIDLength + 32
+
 func calcIntersection(acs []*BatchProposal, n uint16) []coretypes.RequestID {
 	minNumberMentioned := n/3 + 1
-	numMentioned := make(map[coretypes.RequestID]uint16)
+	numMentioned := make(map[[keyLen]byte]uint16)
 
 	maxLen := 0
 	for _, prop := range acs {
-		for _, reqid := range prop.RequestIDs {
-			s := numMentioned[reqid]
-			numMentioned[reqid] = s + 1
+		for i, reqid := range prop.RequestIDs {
+			// save ID + Hash as key to avoid batching requests where different nodes have mismatching request content with the same ID
+			hash := prop.RequestHashes[i]
+			var key [keyLen]byte
+			copy(key[:], append(reqid.Bytes(), hash[:]...))
+			numMentioned[key]++
 		}
 		if len(prop.RequestIDs) > maxLen {
 			maxLen = len(prop.RequestIDs)
 		}
 	}
 	ret := make([]coretypes.RequestID, 0, maxLen)
-	for reqid, num := range numMentioned {
+	for key, num := range numMentioned {
 		if num >= minNumberMentioned {
-			ret = append(ret, reqid)
+			reqID, err := coretypes.RequestIDFromBytes(key[:])
+			if err != nil {
+				continue
+			}
+			ret = append(ret, reqID)
 		}
 	}
 	return ret

@@ -259,9 +259,14 @@ func getChainInfo(t *testing.T, chain *cluster.Chain) (chainid.ChainID, coretype
 	return chainID, ownerID
 }
 
-func findContract(chain *cluster.Chain, name string) (*root.ContractRecord, error) {
+func findContract(chain *cluster.Chain, name string, nodeIndex ...int) (*root.ContractRecord, error) {
+	i := 0
+	if len(nodeIndex) > 0 {
+		i = nodeIndex[0]
+	}
+
 	hname := coretypes.Hn(name)
-	ret, err := chain.Cluster.WaspClient(0).CallView(
+	ret, err := chain.Cluster.WaspClient(i).CallView(
 		chain.ChainID, root.Interface.Hname(), root.FuncFindContract,
 		dict.Dict{
 			root.ParamHname: codec.EncodeHname(hname),
@@ -305,6 +310,13 @@ func createCheckCounterFn(chain *cluster.Chain, expected int64) conditionFn {
 	}
 }
 
+func createCheckContractDeployedFn(chain *cluster.Chain, contractName string) conditionFn {
+	return func(t *testing.T, nodeIndex int) bool {
+		ret, err := findContract(chain, contractName, nodeIndex)
+		return err == nil && ret != nil
+	}
+}
+
 type conditionFn func(t *testing.T, nodeIndex int) bool
 
 func waitUntilProcessed(t *testing.T, nodeIndexes []int, timeout time.Duration, fn conditionFn) {
@@ -318,3 +330,11 @@ func waitUntilProcessed(t *testing.T, nodeIndexes []int, timeout time.Duration, 
 }
 
 // endregion ///////////////////////////////////////////////////////////////
+
+func makeRange(min, max int) []int {
+	a := make([]int, max-min+1)
+	for i := range a {
+		a[i] = min + i
+	}
+	return a
+}

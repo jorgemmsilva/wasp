@@ -135,6 +135,8 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 
 	deployIncCounterSC(t, chain1, nil)
 
+	waitUntilProcessed(t, makeRange(0, 9), 30*time.Second, createCheckContractDeployedFn(chain1, incCounterSCName))
+
 	// use an access node to create the chainClient
 	chClient := newWalletWithFunds(t, clu1, chain1, 5, 1, 100)
 

@@ -211,7 +211,7 @@ func (c *chainObj) GetRequestProcessingStatus(reqID coretypes.RequestID) chain.R
 	return chain.RequestProcessingStatusCompleted
 }
 
-func (c *chainObj) Processors() *processors.ProcessorCache {
+func (c *chainObj) Processors() *processors.Cache {
 	return c.procset
 }
 

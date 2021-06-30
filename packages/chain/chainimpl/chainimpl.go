@@ -41,7 +41,7 @@ type chainObj struct {
 	chainID               chainid.ChainID
 	chainStateSync        coreutil.ChainStateSync
 	stateReader           state.OptimisticStateReader
-	procset               *processors.ProcessorCache
+	procset               *processors.Cache
 	chMsg                 chan interface{}
 	stateMgr              chain.StateManager
 	consensus             chain.Consensus
@@ -74,6 +74,7 @@ func NewChain(
 	dksProvider coretypes.DKShareRegistryProvider,
 	committeeRegistry coretypes.CommitteeRegistryProvider,
 	blobProvider coretypes.BlobCache,
+	processorConfig *processors.Config,
 ) chain.Chain {
 	log.Debugf("creating chain object for %s", chainID.String())
 
@@ -81,7 +82,7 @@ func NewChain(
 	chainStateSync := coreutil.NewChainStateSync()
 	ret := &chainObj{
 		mempool:           mempool.New(state.NewOptimisticStateReader(db, chainStateSync), blobProvider, chainLog),
-		procset:           processors.MustNew(),
+		procset:           processors.MustNew(processorConfig),
 		chMsg:             make(chan interface{}, 100),
 		chainID:           *chainID,
 		log:               chainLog,

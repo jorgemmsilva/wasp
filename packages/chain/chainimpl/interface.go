@@ -118,18 +118,16 @@ func (c *chainObj) gossipOffLedgerRequest(req *request.RequestOffLedger) {
 		}
 	}
 	ticker := time.NewTicker(gossipInterval)
-	// TODO expire after a set amount of time
+
 	go func() {
 		for {
-			select {
-			case <-ticker.C:
-				// check if processed (request already left the mempool)
-				if !c.mempool.HasRequest(req.ID()) {
-					ticker.Stop()
-					return
-				}
-				sendMessage()
+			<-ticker.C
+			// check if processed (request already left the mempool)
+			if !c.mempool.HasRequest(req.ID()) {
+				ticker.Stop()
+				return
 			}
+			sendMessage()
 		}
 	}()
 }

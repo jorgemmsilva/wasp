@@ -3,14 +3,11 @@
 
 pragma solidity >=0.8.0;
 
+import "@iscpcontract/iscp.sol";
+
 contract ISCPTest {
-    address constant public iscpAddress = 0x0000000000000000000000000000000000001074;
-
-    function getChainId() public view returns (bytes32) {
-        return ISCP(iscpAddress).chainId();
+    function getChainId() public view returns (ISCPAddress memory) {
+		ISCPAddress memory r = ISCP(ISCP_CONTRACT_ADDRESS).getChainId();
+		return r;
     }
-}
-
-interface ISCP {
-    function chainId() external view returns (bytes32);
 }

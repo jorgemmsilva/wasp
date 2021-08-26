@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/iotaledger/wasp/contracts/native/evmchain/iscpcontract"
 	"github.com/iotaledger/wasp/packages/evm"
 	"github.com/iotaledger/wasp/packages/iscp"
 	"github.com/iotaledger/wasp/packages/iscp/assert"
@@ -51,8 +52,8 @@ func initialize(ctx iscp.Sandbox) (dict.Dict, error) {
 	genesisAlloc, err := DecodeGenesisAlloc(ctx.Params().MustGet(FieldGenesisAlloc))
 	a.RequireNoError(err)
 
-	// add the ISCP contract
-	genesisAlloc[ISCPContractAddress] = iscpGenesisAccount(ctx.ChainID())
+	// add the standard ISCP contract at arbitrary address 0x1074
+	genesisAlloc[iscpcontract.EVMAddress] = iscpcontract.GenesisAccount(ctx.ChainID())
 
 	chainID, ok, err := codec.DecodeUint16(ctx.Params().MustGet(FieldChainID))
 	a.RequireNoError(err)

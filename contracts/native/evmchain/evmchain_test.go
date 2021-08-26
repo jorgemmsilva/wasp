@@ -355,10 +355,19 @@ func TestPrePaidFees(t *testing.T) {
 }
 
 func TestISCPContract(t *testing.T) {
+	// deploy the evmchain contract, which starts an EVM chain and automatically
+	// deploys the iscp.sol EVM contract at address 0x1074
 	evmChain := initEVMChain(t)
+
+	// deploy the iscp-test.sol EVM contract
 	iscpTest := evmChain.deployISCPTestContract(evmChain.faucetKey)
+
+	// call the getChainId() view function of iscp-test.sol which in turn:
+	//  calls the getChainId() view function of iscp.sol, which:
+	//   returns the ChainID of the underlying ISCP chain
 	chainID := iscpTest.getChainID()
-	require.Equal(t, chainID.Array(), evmChain.soloChain.ChainID.Array())
+
+	require.Equal(t, evmChain.soloChain.ChainID.Array(), chainID.Array())
 }
 
 func initBenchmark(b *testing.B) (*solo.Chain, []*solo.CallParams) {

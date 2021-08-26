@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iotaledger/hive.go/crypto/ed25519"
+	"github.com/iotaledger/wasp/contracts/native/evmchain/iscpcontract"
 	"github.com/iotaledger/wasp/contracts/native/evmchain/iscptest"
 	"github.com/iotaledger/wasp/packages/evm"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
@@ -385,9 +386,9 @@ func (e *evmContractInstance) callView(opts []ethCallOptions, fnName string, arg
 }
 
 func (i *iscpTestContractInstance) getChainID() *iscp.ChainID {
-	var v [32]byte
-	i.callView(nil, "getChainId", nil, &v)
-	return ChainIDFromEVMHash(common.Hash(v))
+	var iscpAddress iscpcontract.ISCPAddress
+	i.callView(nil, "getChainId", nil, &iscpAddress)
+	return iscpcontract.ChainIDFromISCPAddress(iscpAddress)
 }
 
 func (s *storageContractInstance) retrieve() uint32 {

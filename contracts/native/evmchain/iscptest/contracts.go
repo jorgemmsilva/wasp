@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	//go:embed iscp-test.abi.json
+	//go:embed ISCPTest.abi
 	ISCPTestContractABI string
-	//go:embed iscp-test.bytecode.hex
+	//go:embed ISCPTest.bin
 	iscpTestContractBytecodeHex string
 	ISCPTestContractBytecode    = common.FromHex(strings.TrimSpace(iscpTestContractBytecodeHex))
 )

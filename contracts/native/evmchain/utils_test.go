@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iotaledger/hive.go/crypto/ed25519"
+	"github.com/iotaledger/wasp/contracts/native/evmchain/iscptest"
 	"github.com/iotaledger/wasp/packages/evm"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
 	"github.com/iotaledger/wasp/packages/iscp"
@@ -40,6 +41,10 @@ type evmContractInstance struct {
 	creator *ecdsa.PrivateKey
 	address common.Address
 	abi     abi.ABI
+}
+
+type iscpTestContractInstance struct {
+	*evmContractInstance
 }
 
 type storageContractInstance struct {
@@ -190,6 +195,10 @@ func (e *evmChainInstance) getOwner() iscp.AgentID {
 	owner, _, err := codec.DecodeAgentID(ret.MustGet(FieldResult))
 	require.NoError(e.t, err)
 	return owner
+}
+
+func (e *evmChainInstance) deployISCPTestContract(creator *ecdsa.PrivateKey) *iscpTestContractInstance {
+	return &iscpTestContractInstance{e.deployContract(creator, iscptest.ISCPTestContractABI, iscptest.ISCPTestContractBytecode)}
 }
 
 func (e *evmChainInstance) deployStorageContract(creator *ecdsa.PrivateKey, n uint32) *storageContractInstance { // nolint:unparam
@@ -373,6 +382,12 @@ func (e *evmContractInstance) callView(opts []ethCallOptions, fnName string, arg
 		err = e.abi.UnpackIntoInterface(v, fnName, ret.MustGet(FieldResult))
 		require.NoError(e.chain.t, err)
 	}
+}
+
+func (i *iscpTestContractInstance) getChainID() *iscp.ChainID {
+	var v [32]byte
+	i.callView(nil, "getChainId", nil, &v)
+	return ChainIDFromEVMHash(common.Hash(v))
 }
 
 func (s *storageContractInstance) retrieve() uint32 {

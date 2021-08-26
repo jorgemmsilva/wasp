@@ -50,6 +50,10 @@ func initialize(ctx iscp.Sandbox) (dict.Dict, error) {
 	a := assert.NewAssert(ctx.Log())
 	genesisAlloc, err := DecodeGenesisAlloc(ctx.Params().MustGet(FieldGenesisAlloc))
 	a.RequireNoError(err)
+
+	// add the ISCP contract
+	genesisAlloc[ISCPContractAddress] = iscpGenesisAccount(ctx.ChainID())
+
 	chainID, ok, err := codec.DecodeUint16(ctx.Params().MustGet(FieldChainID))
 	a.RequireNoError(err)
 	if !ok {

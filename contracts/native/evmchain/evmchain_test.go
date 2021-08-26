@@ -354,6 +354,13 @@ func TestPrePaidFees(t *testing.T) {
 	require.EqualValues(t, 999, storage.retrieve())
 }
 
+func TestISCPContract(t *testing.T) {
+	evmChain := initEVMChain(t)
+	iscpTest := evmChain.deployISCPTestContract(evmChain.faucetKey)
+	chainID := iscpTest.getChainID()
+	require.Equal(t, chainID.Array(), evmChain.soloChain.ChainID.Array())
+}
+
 func initBenchmark(b *testing.B) (*solo.Chain, []*solo.CallParams) {
 	// setup: deploy the evmchain contract
 	log := testlogger.NewSilentLogger(b.Name(), true)

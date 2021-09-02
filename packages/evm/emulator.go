@@ -79,7 +79,8 @@ func MakeConfig(chainID int) *params.ChainConfig {
 		IstanbulBlock:       big.NewInt(0),
 		MuirGlacierBlock:    big.NewInt(0),
 		BerlinBlock:         big.NewInt(0),
-		Ethash:              &params.EthashConfig{},
+		// TODO: update to London fork?
+		Ethash: &params.EthashConfig{},
 	}
 }
 

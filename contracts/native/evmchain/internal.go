@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/iotaledger/wasp/contracts/native/evmchain/iscpcontract"
 	"github.com/iotaledger/wasp/packages/evm"
 	"github.com/iotaledger/wasp/packages/iscp"
 	"github.com/iotaledger/wasp/packages/iscp/assert"
@@ -42,7 +43,9 @@ func getOrCreateEmulator(ctx iscp.Sandbox) *evm.EVMEmulator {
 }
 
 func createEmulator(ctx iscp.Sandbox) interface{} {
-	return evm.NewEVMEmulator(rawdb.NewDatabase(evm.NewKVAdapter(ctx.State())), timestamp(ctx))
+	emu := evm.NewEVMEmulator(rawdb.NewDatabase(evm.NewKVAdapter(ctx.State())), timestamp(ctx))
+	iscpcontract.UpdateState(ctx, emu)
+	return emu
 }
 
 // timestamp returns the current timestamp in seconds since epoch

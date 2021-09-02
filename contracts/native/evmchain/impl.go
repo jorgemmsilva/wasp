@@ -53,7 +53,7 @@ func initialize(ctx iscp.Sandbox) (dict.Dict, error) {
 	a.RequireNoError(err)
 
 	// add the standard ISCP contract at arbitrary address 0x1074
-	genesisAlloc[iscpcontract.EVMAddress] = iscpcontract.GenesisAccount(ctx.ChainID())
+	iscpcontract.InitGenesisAccount(genesisAlloc, ctx.ChainID())
 
 	chainID, ok, err := codec.DecodeUint16(ctx.Params().MustGet(FieldChainID))
 	a.RequireNoError(err)

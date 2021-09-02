@@ -391,6 +391,16 @@ func (i *iscpTestContractInstance) getChainID() *iscp.ChainID {
 	return iscpcontract.ChainIDFromISCPAddress(iscpAddress)
 }
 
+func (i *iscpTestContractInstance) storeEntropy() {
+	i.callFn(nil, "storeEntropy")
+}
+
+func (i *iscpTestContractInstance) getEntropy() common.Hash {
+	var entropy common.Hash
+	i.callView(nil, "getEntropy", nil, &entropy)
+	return entropy
+}
+
 func (s *storageContractInstance) retrieve() uint32 {
 	var v uint32
 	s.callView(nil, "retrieve", nil, &v)

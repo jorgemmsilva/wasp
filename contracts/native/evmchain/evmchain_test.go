@@ -8,6 +8,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
@@ -366,8 +367,14 @@ func TestISCPContract(t *testing.T) {
 	//  calls the getChainId() view function of iscp.sol, which:
 	//   returns the ChainID of the underlying ISCP chain
 	chainID := iscpTest.getChainID()
-
 	require.Equal(t, evmChain.soloChain.ChainID.Array(), chainID.Array())
+
+	// test the entropy mechanism:
+	// send a tx that queries the entropy value and stores it in the ISCPTest state
+	iscpTest.storeEntropy()
+	// get the latest entropy value in ISCPTest
+	entropy := iscpTest.getEntropy()
+	require.NotEqual(t, common.Hash{}, entropy)
 }
 
 func initBenchmark(b *testing.B) (*solo.Chain, []*solo.CallParams) {

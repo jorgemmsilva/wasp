@@ -6,11 +6,11 @@ pragma solidity ^0.8.3;
 import "./IOTAToken.sol";
 
 contract IOTAFactory {
-    mapping(TokenId => address) private _tokenAddresses;
+    mapping(bytes => address) internal _tokenAddresses;
 
     // event TokenCreated(address tokenAddress);
 
-    function deployNewToken(TokenId memory tokenId) internal returns (address) {
+    function deployNewToken(bytes memory tokenId) internal returns (address) {
         IOTAToken t = new IOTAToken(
             "IOTA ERC-20",
             "IOTA",

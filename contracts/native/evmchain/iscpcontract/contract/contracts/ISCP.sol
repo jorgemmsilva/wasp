@@ -3,23 +3,15 @@
 
 pragma solidity ^0.8.3;
 
-// import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "./ERC20/IOTAFactory.sol";
-
-// ISCP addresses are 33 bytes which is sadly larger than EVM's bytes32 type, so
-// it will use two 32-byte slots.
-struct ISCPAddress {
-    bytes1 typeId;
-    bytes32 digest;
-}
 
 address constant ISCP_CONTRACT_ADDRESS = 0x0000000000000000000000000000000000001074;
 
 // The standard ISCP contract present in all EVM ISCP chains at ISCP_CONTRACT_ADDRESS
 contract ISCP is IOTAFactory {
     // The ChainID of the underlying ISCP chain
-    ISCPAddress public chainId;
+    bytes public chainId;
 
     // result of calling ctx.GetEntropy(); automatically updated at the beginning of the ISCP block
     bytes32 public entropy;
@@ -33,19 +25,9 @@ contract ISCP is IOTAFactory {
         _;
     }
 
-    constructor(string memory _chainId) {
-        console.log("Deploying an ISCP contract with chainID:", chainId);
+    constructor(bytes memory _chainId) {
         chainId = _chainId;
     }
-
-    // TODO check - getters should be generated automatically because those are public fields
-    // function getChainId() public view returns (ISCPAddress memory) {
-    //     return _chainId;
-    // }
-
-    // function getEntropy() public view returns (bytes32) {
-    //     return entropy;
-    // }
 
     // Locks the contract for the current block, so that no more changes are accepted
     function lockForBlock() public {
@@ -61,13 +43,13 @@ contract ISCP is IOTAFactory {
     event WrappedIOTAs(
         address indexed _cenas,
         uint256 amount,
-        TokenId indexed tokenId
+        bytes indexed tokenId
     );
 
     function wrapIotas(
-        TokenId memory tokenId,
-        address memory target,
-        uint256 memory amount
+        bytes memory tokenId,
+        address target,
+        uint256 amount
     ) public unlocked {
         address tokenAddress = _tokenAddresses[tokenId];
         if (tokenAddress == address(0)) {
@@ -81,18 +63,12 @@ contract ISCP is IOTAFactory {
 
     // Unwrapping logic
 
-    event UnwrappedIOTAs(
-        address indexed _cenas,
-        uint256 amount,
-        TokenId indexed tokenId
-    );
+    event UnwrappedIOTAs(address _cenas, uint256 amount, bytes indexed tokenId);
 
     // it is expected that the caller has "allowed" the ERC20 to be spent by the ISCP contract before calling to unwrap
-    function unwrapIotas(address memory tokenAddress, uint256 memory amount)
-        external
-    {
-        ERC20 token = ERC20(tokenAddress);
+    function unwrapIotas(address tokenAddress, uint256 amount) external {
+        IOTAToken token = IOTAToken(tokenAddress);
         require(token.transferFrom(msg.sender, address(this), amount));
-        emit UnwrappedIOTAs(msg.sender, amount, tokenId);
+        emit UnwrappedIOTAs(msg.sender, amount, token.tokenId());
     }
 }

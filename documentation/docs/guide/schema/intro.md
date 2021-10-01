@@ -64,31 +64,6 @@ experience in any C-style language you should quickly feel comfortable writing s
 contracts in either language, without having to dive deeply into all aspects of the chosen
 language.
 
-Here is a list of the topics this tutorial will cover:
-
-* [Data Access Proxies](proxies.md)
-* [WasmLib Data Types](types.md)
-* [Function Call Context](context.md)
-* [Smart Contract Schema Tool](schema.md)
-* [Using the Schema Tool](usage.md)
-* [Structured Data Types](structs.md)
-* [Type Definitions](typedefs.md)
-* [Smart Contract State](state.md)
-* [Function Definitions](funcs.md)
-* [Limiting Access](access.md)
-* [Function Parameters](params.md)
-* [Function Results](results.md)
-* [Thunk Functions](thunks.md)
-* [View-Only Functions](views.md)
-* [Smart Contract Initialization](init.md)
-* [Token Transfers](transfers.md)
-* [Function Descriptors](funcdesc.md)
-* [Calling Functions](call.md)
-* [Posting Asynchronous Requests](post.md)
-* [Testing Smart Contracts](test.md)
-* [Example Tests](examples.md)
-* [Colored Tokens and Time Locks](timelock.md)
-
 Let's start by diving deeper into a concept that is central to WasmLib smart contract
 programming: proxy objects.
 

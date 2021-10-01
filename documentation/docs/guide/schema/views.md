@@ -1,4 +1,4 @@
-## View-Only Functions
+# View-Only Functions
 
 View-only functions, or Views for short, are smart contract functions that only allow you
 to *retrieve* state information about the smart contract. They have a special, limited

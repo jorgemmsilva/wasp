@@ -1,4 +1,4 @@
-## Smart Contracts Schemas for ISCP
+# Smart Contracts Schemas for ISCP
 
 The Iota Smart Contracts Protocol (ISCP) provides us with a very flexible way of
 programming smart contracts. It does this by providing an API to a sandboxed environment

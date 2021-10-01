@@ -1,4 +1,4 @@
-## Using the Schema Tool
+# Using the Schema Tool
 
 We tried to make the creation of smart contracts as simple as possible. The `schema`
 tool will assist you along the way as unobtrusively as possible. We will now walk you

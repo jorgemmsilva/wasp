@@ -1,4 +1,4 @@
-## Function Parameters
+# Function Parameters
 
 The optional `params` subsection contains field definitions for each of the parameters
 that a function takes. The layout of the field definitions is identical to that of

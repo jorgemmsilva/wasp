@@ -1,4 +1,4 @@
-#### Calling Functions
+# Calling Functions
 
 Synchronous function calls between smart contracts act very similar to how normal function
 calls work in any programming language, but with a slight twist. With normal function

@@ -1,4 +1,4 @@
-## Function Call Context
+# Function Call Context
 
 We saw that proxy objects provide generic access capabilities to the data on the host. It
 is now time to introduce the gateway to the host that allows us to access the

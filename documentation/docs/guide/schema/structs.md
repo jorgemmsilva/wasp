@@ -1,4 +1,4 @@
-## Structured Data Types
+# Structured Data Types
 
 The schema tool allows you to define your own structured data types that are composed of
 the predefined WasmLib value data types. The tool will generate a struct with named fields

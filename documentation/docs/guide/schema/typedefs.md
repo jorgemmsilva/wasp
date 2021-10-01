@@ -1,4 +1,4 @@
-## Type Definitions
+# Type Definitions
 
 Since we allow nesting of container types it is a bit difficult to create proper
 declarations for such nested types. Especially because in a field definition you can only

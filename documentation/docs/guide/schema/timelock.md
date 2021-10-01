@@ -1,4 +1,4 @@
-## Colored Tokens and Time Locks
+# Colored Tokens and Time Locks
 
 Let's examine some less commonly used member functions of the SoloContext. We will 
 switch to the `fairauction` example to show their usage. Here is the startAuction() 

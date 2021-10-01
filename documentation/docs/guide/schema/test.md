@@ -1,4 +1,4 @@
-## Testing Smart Contracts
+# Testing Smart Contracts
 
 Testing of smart contracts initially happens in the Solo testing environment. This enables
 synchronous, deterministic testing of smart contract functionality without the overhead of

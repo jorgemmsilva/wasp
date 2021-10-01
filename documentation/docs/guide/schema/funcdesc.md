@@ -1,4 +1,4 @@
-## Function Descriptors
+# Function Descriptors
 
 The schema tool provides us with an easy way to access to smart contract functions through
 so-called _function descriptors_. These are structures that provide access to the optional

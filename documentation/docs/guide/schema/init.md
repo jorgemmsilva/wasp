@@ -1,4 +1,4 @@
-## Smart Contract Initialization
+# Smart Contract Initialization
 
 Smart contracts start out with a completely blank state. Sometimes you want to be able to
 define initial state, for example if your contract is configurable. You want to be able to

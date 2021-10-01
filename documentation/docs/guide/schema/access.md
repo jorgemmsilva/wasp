@@ -1,4 +1,4 @@
-## Limiting Access
+# Limiting Access
 
 The optional `access` subsection is made of a single definition. It indicates the agent
 who is allowed to access the function. When this definition is omitted anyone is allowed

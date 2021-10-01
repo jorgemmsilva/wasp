@@ -1,4 +1,4 @@
-## Example Tests
+# Example Tests
 
 We saw in the previous section how you can call() or post() function requests. We also
 created a few wrapper functions to simplify calling these functions even further. Now we

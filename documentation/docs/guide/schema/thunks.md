@@ -1,4 +1,4 @@
-## Thunk Functions
+# Thunk Functions
 
 In computer programming, a thunk is a function used to inject a calculation into another
 function. Thunks are used to insert operations at the beginning or end of the other

@@ -1,4 +1,4 @@
-## Smart Contract Schema Tool
+# Smart Contract Schema Tool
 
 Smart contracts need to be very robust. Preferably it would be very hard to make mistakes
 when writing smart contract code. The generic nature of WasmLib allows for a lot of

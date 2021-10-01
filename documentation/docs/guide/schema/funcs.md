@@ -1,4 +1,4 @@
-## Function Definitions
+# Function Definitions
 
 Here is the full schema.json file for the `dividend` example. We will now focus on
 its `funcs` and `views` sections. Since they are structured identically we will only need

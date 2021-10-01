@@ -1,4 +1,4 @@
-## Data Access Proxies
+# Data Access Proxies
 
 To recap why we need a library to access the sandbox functionality: we cannot call the
 ISCP sandbox functions directly. There is no way for the Wasm code to access any memory

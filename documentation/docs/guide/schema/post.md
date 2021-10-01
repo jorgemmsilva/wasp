@@ -1,4 +1,4 @@
-#### Posting Asynchronous Requests
+# Posting Asynchronous Requests
 
 Asynchronous function calls between smart contracts are posted as requests on the Tangle.
 They allow you to invoke any smart contract function that is not a View on any smart

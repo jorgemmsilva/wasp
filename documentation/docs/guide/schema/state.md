@@ -1,4 +1,4 @@
-## Smart Contract State
+# Smart Contract State
 
 The smart contract state storage on the host consists of a single key/value map. Both key
 and value are raw data bytes. As long as we access the data in the same way that we used

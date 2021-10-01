@@ -1,4 +1,4 @@
-## Function Results
+# Function Results
 
 The optional `results` subsection contains field definitions for each of the results a
 function produces. The layout of the field definitions is identical to that of

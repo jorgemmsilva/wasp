@@ -1,4 +1,4 @@
-## WasmLib Data Types
+# WasmLib Data Types
 
 When creating smart contracts you will want to manipulate some data. WasmLib provides
 direct support for the following value data types:

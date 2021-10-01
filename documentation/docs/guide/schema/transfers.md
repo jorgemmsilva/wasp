@@ -1,4 +1,4 @@
-## Token Transfers
+# Token Transfers
 
 There are two methods in the ISCP function context that deal with token balances. The
 first one is the `balances()` method, which can be used to determine the current total

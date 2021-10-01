@@ -87,5 +87,3 @@ seamless testing of smart contracts
 
 In the next section we will go deeper into how the helper member functions of the 
 SoloContext are used to simplify tests.
-
-[Example Tests](examples.md)

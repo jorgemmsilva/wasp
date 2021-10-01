@@ -39,6 +39,3 @@ Note that the schema tool will also generate a mutable version of the structure,
 for providing the parameters when calling this smart contract function.
 
 In the next section we will look at the `results` subsection.
-
-Next: [Function Results](results.md)
-

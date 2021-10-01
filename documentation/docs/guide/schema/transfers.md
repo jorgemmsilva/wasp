@@ -97,5 +97,3 @@ pub fn func_divide(ctx: &ScFuncContext, f: &DivideContext) {
 
 In the next section we will introduce function descriptors that can be used to initiate
 smart contract functions.
-
-Next: [Function Descriptors](funcdesc.md)

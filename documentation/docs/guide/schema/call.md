@@ -77,6 +77,3 @@ div.func.of_contract(altContract).transfer_iotas(1000).call();
 
 In the next section we will look at how we can request smart contract functions in a
 different chain to be executed in a similar way.
-
-Next: [Posting Asynchronous Requests](post.md)
-

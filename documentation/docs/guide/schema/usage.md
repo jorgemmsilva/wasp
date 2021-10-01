@@ -139,5 +139,3 @@ since the last time it generated the code. You can force the schema tool to rege
 code by adding the `-force` flag to its command line parameter.
 
 In the next section we will look at how a smart contract uses state storage.
-
-Next:[Smart Contract State](state.md)

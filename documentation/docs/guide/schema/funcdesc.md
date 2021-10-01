@@ -107,6 +107,3 @@ respective function descriptor, initialize it properly, and returns it.
 
 In the next section we will look at how to use function descriptors to call a smart
 contract function synchronously.
-
-Next: [Calling Functions](call.md)
-

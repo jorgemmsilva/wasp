@@ -27,5 +27,3 @@ Note that there can be different access identifiers for different functions as n
 can set up as many access identifiers as you like.
 
 In the next section we will look at the `params` subsection.
-
-Next: [Function Parameters](params.md)

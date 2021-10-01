@@ -109,6 +109,3 @@ function has completed successfully. Remember that any error within the user fun
 cause a panic, so this logging will never happen in that case.
 
 In the next section we will look at the specifics of view functions.
-
-Next: [View-Only Functions](views.md)
-

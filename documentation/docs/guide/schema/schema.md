@@ -65,5 +65,3 @@ of a web API for smart contracts. The schema file can also provide a starting po
 other tooling, for example a tool that automatically audits a smart contract
 
 In the next section we will look at how the schema tool works.
-
-Next: [Using the Schema Tool](usage.md)

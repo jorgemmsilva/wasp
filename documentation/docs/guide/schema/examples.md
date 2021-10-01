@@ -216,6 +216,3 @@ factors for each member in reverse order and verify its value.
 
 In the next section we will describe a few more helper member functions of the
 SoloContext.
-
-Next: [Colored Tokens and Time Locks](timelock.md)
-

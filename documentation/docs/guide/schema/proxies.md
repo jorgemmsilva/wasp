@@ -58,5 +58,3 @@ storage. In practice a function will only define proxies to data that it actuall
 access.
 
 In the next section we will go into more detail about the supported data types.
-
-Next: [WasmLib Data Types](types.md)

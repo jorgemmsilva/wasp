@@ -64,5 +64,3 @@ optional subsections.
 
 We will now examine each subsection in more detail. In the next section we will first look
 at the `access` subsection.
-
-Next: [Limiting Access](access.md)

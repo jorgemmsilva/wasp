@@ -46,6 +46,3 @@ Funcs do not necessarily return values to the caller. The schema tool will set u
 function-specific `results` structure with proxies to the result fields in this map.
 
 In the next section we will look at smart contract initialization.
-
-Next: [Smart Contract Initialization](init.md)
-

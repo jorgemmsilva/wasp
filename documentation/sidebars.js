@@ -246,7 +246,7 @@ module.exports = {
                     items: [
                         {
                             type: 'doc',
-                            label: 'Schema tool',
+                            label: 'Smart Contract Schemas',
                             id: 'guide/schema/intro',
                         },
                         {

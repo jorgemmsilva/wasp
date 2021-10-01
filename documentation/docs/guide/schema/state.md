@@ -80,5 +80,3 @@ of such automatically generated proxy types. See the full `state.rs` for more de
 
 In the next section we will look at how to define our own structured data types in the
 schema definition file.
-
-Next: [Structured Data Types](structs.md)

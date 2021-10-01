@@ -192,5 +192,3 @@ The end result is an ImmutableBettingState and MutableBettingState structure tha
 directly interface to the state of the betting contract.
 
 In the next section we will look at how to make even more complex type definitions.
-
-Next: [Type Definitions](typedefs.md)

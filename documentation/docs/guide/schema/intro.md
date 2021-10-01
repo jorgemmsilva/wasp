@@ -1,4 +1,4 @@
-# Smart Contracts Schemas for ISCP
+# Smart Contract Schemas for ISCP
 
 The Iota Smart Contracts Protocol (ISCP) provides us with a very flexible way of
 programming smart contracts. It does this by providing an API to a sandboxed environment
@@ -66,6 +66,3 @@ language.
 
 Let's start by diving deeper into a concept that is central to WasmLib smart contract
 programming: proxy objects.
-
-Next: [Data Access Proxies](proxies.md)
-

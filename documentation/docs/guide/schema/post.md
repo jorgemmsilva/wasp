@@ -48,7 +48,3 @@ looking at providing a generic mechanism for this.
 
 In the next section we will look at how we can use the function descriptors when testing
 smart contracts with Solo.
-
-Next: [Testing Smart Contracts](test.md)
-
-

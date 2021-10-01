@@ -103,5 +103,3 @@ turned on and off at the host.
 
 In the next section we will introduce the `schema` tool that simplifies smart contract
 programming a lot.
-
-Next: [Smart Contract Schema Tool](schema.md)

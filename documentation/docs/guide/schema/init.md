@@ -93,6 +93,3 @@ stress enough how important it is to think through every aspect of a smart contr
 deployment.
 
 In the next section we will look at how a smart contract can transfer tokens.
-
-Next: [Token Transfers](transfers.md)
-

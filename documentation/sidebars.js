@@ -242,7 +242,7 @@ module.exports = {
             items: [
                 {
                     type: 'doc',
-                    label: 'Introduction',
+                    label: 'Introduction to WasmLib',
                     id: 'guide/rust_wasm/introduction',
                 },
             ]

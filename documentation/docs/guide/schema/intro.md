@@ -94,6 +94,3 @@ programming: proxy objects.
 
 Next: [Data Access Proxies](proxies.md)
 
-Golang version:  [Data Access Proxies](go-proxies.md)
-
-

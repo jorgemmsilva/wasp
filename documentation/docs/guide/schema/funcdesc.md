@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Function Descriptors
 
 The schema tool provides us with an easy way to access to smart contract functions through
@@ -11,6 +14,13 @@ will also generate an interface called ScFuncs that can be used to create and in
 each function descriptor. Here is the code generated for the `dividend` example
 in `contract.rs`:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
+
+<TabItem value="go">
 ```go
 package dividend
 
@@ -84,7 +94,8 @@ func (sc Funcs) GetOwner(ctx wasmlib.ScViewCallContext) *GetOwnerCall {
 	return f
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 // @formatter:off
 
@@ -169,7 +180,8 @@ impl ScFuncs {
 
 // @formatter:on
 ```
-
+</TabItem>
+</Tabs>
 As you can see a struct has been generated for each of the funcs and views. Note that the
 structs only provide access to `params` or `results` when these are specified for the
 function. Also note that each struct has a `func` member that can be used to initiate the

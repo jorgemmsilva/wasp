@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Thunk Functions
 
 In computer programming, a thunk is a function used to inject a calculation into another
@@ -6,6 +9,14 @@ function to adapt it to changing requirements. If you remember from
 the [function call context](context.md) section, the `on_load` function and skeleton
 function signatures looked like this:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 func OnLoad() {
     exports := wasmlib.NewScExports()
@@ -24,7 +35,8 @@ func funcSetOwner(ctx wasmlib.ScFuncContext) {}
 func viewGetFactor(ctx wasmlib.ScViewContext) {}
 func viewGetOwner(ctx wasmlib.ScViewContext) {}
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 fn on_load() {
     let exports = ScExports::new();
@@ -43,12 +55,14 @@ fn func_set_owner(ctx: &ScFuncContext) {}
 fn view_get_factor(ctx: &ScViewContext) {}
 fn view_get_owner(ctx: &ScViewContext) {}
 ```
-
+</TabItem>
+</Tabs>
 Now that the schema tool introduces a bunch of automatically generated features, that is
 no longer sufficient. Luckily, the schema tool also generates thunks to inject these
 features, before calling the function implementations that are maintained by the user.
 Here is the new `on_load` function for the `dividend` contract:
 
+<TabItem value="go">
 ```go
 func OnLoad() {
     exports := wasmlib.NewScExports()
@@ -64,7 +78,8 @@ func OnLoad() {
     }
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 fn on_load() {
     let exports = ScExports::new();
@@ -82,7 +97,7 @@ fn on_load() {
     }
 }
 ```
-
+</TabItem>
 As you can see instead of calling the user functions directly, we now call thunk versions
 of these functions. We also added initialization of a local array that holds all key IDs
 negotiated with the host, so that we can simply use (generated) indexes into this array
@@ -92,6 +107,7 @@ code will use those indexes whenever a known key is used.
 Here is an example of a thunk function for the `setOwner` contract function. You can
 examine the other thunks that all follow the same pattern in the generated `lib.rs`:
 
+<TabItem value="go">
 ```go
 type SetOwnerContext struct {
     Params ImmutableSetOwnerParams
@@ -118,7 +134,8 @@ func funcSetOwnerThunk(ctx wasmlib.ScFuncContext) {
     ctx.Log("dividend.funcSetOwner ok")
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 pub struct SetOwnerContext {
     params: ImmutableSetOwnerParams,
@@ -145,7 +162,7 @@ fn func_set_owner_thunk(ctx: &ScFuncContext) {
     ctx.log("dividend.funcSetOwner ok");
 }
 ```
-
+</TabItem>
 The thunk first logs the contract and function name to show the call has started. Then it
 sets up the access control for the function according to schema.json. In this case it
 retrieves the `owner` state variable, requires that it exists, and then requires that the

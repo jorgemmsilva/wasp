@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Calling Functions
 
 Synchronous function calls between smart contracts act very similar to how normal function
@@ -30,49 +33,54 @@ needs to be passed to the member function that creates the function descriptor.
 Here's how a smart contract would tell a `dividend` contract on the same chain to divide
 the 1000 tokens it passes to the function:
 
-```go
-...
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
 
+<TabItem value="go">
+```go
+// ...
 div := dividend.ScFuncs.Divide(ctx)
 div.Func.TransferIotas(1000).Call()
-
-...
+// ...
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
-...
-
+// ...
 let div = dividend::ScFuncs::divide(ctx);
 div.func.transfer_iotas(1000).call();
-
-...
+// ...
 ```
+</TabItem>
+</Tabs>
 
 And here is how a smart contract would ask a `dividend` contract on the same chain to
 return the dispersion factor for a specific address:
 
+<TabItem value="go">
 ```go
-...
-
+// ...
 gf := dividend.ScFuncs.GetFactor(ctx)
 gf.Params.Address().SetValue(address)
 gf.Func.Call()
 factor := gf.Results.Factor().Value()
-
-...
+// ...
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
-...
-
+// ...
 let gf = dividend::ScFuncs::get_factor(ctx);
 gf.params.address().set_value( & address);
 gf.func.call();
 let factor = gf.results.factor().value();
-
-...
+// ...
 ```
-
+</TabItem>
 You see how we first create a function descriptor for the desired function, then use
 the `params` proxy in the function descriptor to set any required parameters, then direct
 the `func` member of the function descriptor to call the associated function, and finally
@@ -85,25 +93,23 @@ deployed the contract that contains the function you want to call under a differ
 then you would have to provide its associated Hname to the `func` member through the
 of_contract() member function like this:
 
+<TabItem value="go">
 ```go
-...
-
+// ...
 altContract := NewScHname("alternateName")
 div := dividend.ScFuncs.Divide(ctx)
 div.Func.OfContract(altContract).TransferIotas(1000).Call()
-
-...
+// ...
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
-...
-
+// ...
 let altContract = ScHname::new("alternateName");
 let div = dividend::ScFuncs::divide(ctx);
 div.func.of_contract(altContract).transfer_iotas(1000).call();
-
-...
+// ...
 ```
-
+</TabItem>
 In the next section we will look at how we can request smart contract functions in a
 different chain to be executed in a similar way.

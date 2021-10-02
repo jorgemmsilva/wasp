@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Token Transfers
 
 There are two methods in the ISCP function context that deal with token balances. The
@@ -31,6 +34,14 @@ will receive 50/100th, address B will receive 30/100th, and address C will recei
 
 Here is the `divide` function:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 // 'divide' is a function that will take any iotas it receives and properly
 // disperse them to the addresses in the member list according to the dispersion
@@ -93,7 +104,8 @@ func funcDivide(ctx wasmlib.ScFuncContext, f *DivideContext) {
     }
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 // 'divide' is a function that will take any iotas it receives and properly
 // disperse them to the addresses in the member list according to the dispersion
@@ -157,6 +169,7 @@ pub fn func_divide(ctx: &ScFuncContext, f: &DivideContext) {
     }
 }
 ```
-
+</TabItem>
+</Tabs>
 In the next section we will introduce function descriptors that can be used to initiate
 smart contract functions.

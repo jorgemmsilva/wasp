@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Function Parameters
 
 The optional `params` subsection contains field definitions for each of the parameters
@@ -18,6 +21,14 @@ passed to the function.
 For example, here is the structure generated for the immutable params for the `member`
 function:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 type ImmutableMemberParams struct {
     id int32
@@ -31,7 +42,8 @@ func (s ImmutableMemberParams) Factor() wasmlib.ScImmutableInt64 {
     return wasmlib.NewScImmutableInt64(s.id, idxMap[IdxParamFactor])
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 #[derive(Clone, Copy)]
 pub struct ImmutableMemberParams {
@@ -48,7 +60,8 @@ impl ImmutableMemberParams {
     }
 }
 ```
-
+</TabItem>
+</Tabs>
 Note that the schema tool will also generate a mutable version of the structure, suitable
 for providing the parameters when calling this smart contract function.
 

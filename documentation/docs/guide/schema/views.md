@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # View-Only Functions
 
 View-only functions, or Views for short, are smart contract functions that only allow you
@@ -17,6 +20,14 @@ show up elsewhere.
 For demonstration purposes we provided a View function with the `dividend` smart contract,
 called 'getFactor':
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 // 'getFactor' is a simple View function. It will retrieve the factor
 // associated with the (mandatory) address parameter it was provided with.
@@ -38,7 +49,8 @@ func viewGetFactor(ctx wasmlib.ScViewContext, f *GetFactorContext) {
     f.Results.Factor().SetValue(factor)
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 // 'getFactor' is a simple View function. It will retrieve the factor
 // associated with the (mandatory) address parameter it was provided with.
@@ -61,7 +73,8 @@ pub fn view_get_factor(_ctx: &ScViewContext, f: &GetFactorContext) {
     f.results.factor().set_value(factor);
 }
 ```
-
+</TabItem>
+</Tabs>
 Return values are passed to the caller through the predefined `results` map associated
 with the ISCP function context. Again, this works the same way as for Funcs, although
 Funcs do not necessarily return values to the caller. The schema tool will set up a

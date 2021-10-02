@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Posting Asynchronous Requests
 
 Asynchronous function calls between smart contracts are posted as requests on the Tangle.
@@ -14,6 +17,14 @@ execution of the request. Note that this is of particular interest to smart cont
 need a delayed action, like betting contracts with a timed betting round, or to create
 time-lock functionality in a smart contract. Here's how that works:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 ...
 
@@ -22,7 +33,8 @@ eor.Func.Delay(3600).TransferIotas(1).Post()
 
 ...
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 ...
 
@@ -31,7 +43,8 @@ eor.func.delay(3600).transfer_iotas(1).post();
 
 ...
 ```
-
+</TabItem>
+</Tabs>
 Note that an asynchronous request always needs to send at least 1 token, because it is
 posted as a request on the Tangle, and it is not possible to have a request without a
 transfer. So if you post to a function that expects tokens you just specify the amount of

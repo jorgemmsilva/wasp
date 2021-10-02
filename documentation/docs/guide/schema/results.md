@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Function Results
 
 The optional `results` subsection contains field definitions for each of the results a
@@ -14,6 +17,14 @@ passed to the function.
 For example, here is the structure generated for the mutable results for the `getFactor`
 function:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 type MutableGetFactorResults struct {
     id int32
@@ -23,7 +34,8 @@ func (s MutableGetFactorResults) Factor() wasmlib.ScMutableInt64 {
     return wasmlib.NewScMutableInt64(s.id, idxMap[IdxResultFactor])
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 #[derive(Clone, Copy)]
 pub struct MutableGetFactorResults {
@@ -36,7 +48,8 @@ impl MutableGetFactorResults {
     }
 }
 ```
-
+</TabItem>
+</Tabs>
 Note that the schema tool will also generate an immutable version of the structure,
 suitable for accessing the results after calling this smart contract function.
 

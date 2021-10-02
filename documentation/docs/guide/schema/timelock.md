@@ -1,9 +1,20 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Colored Tokens and Time Locks
 
 Let's examine some less commonly used member functions of the SoloContext. We will switch
 to the `fairauction` example to show their usage. Here is the startAuction()
 function of the fairauction test suite:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 var (
     auctioneer *wasmsolo.SoloAgent
@@ -33,7 +44,8 @@ func startAuction(t *testing.T) *wasmsolo.SoloContext {
     return ctx
 }
 ```
-
+</TabItem>
+</Tabs>
 The function first sets up the SoloContext as usual, and then it performs quite a bit of
 extra work. This is because we want the startAuction() function to start an auction, so
 that the tests that subsequently use startAuction() can then focus on testing all kinds of
@@ -78,6 +90,7 @@ SoloContext. That concludes the startAuction() function.
 
 Here is the first test function that uses our startAuction() function:
 
+<TabItem value="go">
 ```go
 func TestFaStartAuction(t *testing.T) {
     ctx := startAuction(t)
@@ -96,7 +109,7 @@ func TestFaStartAuction(t *testing.T) {
     require.True(t, ctx.WaitForPendingRequests(1))
 }
 ```
-
+</TabItem>
 The `startAuction` function of the smart contract will have posted a time-locked request
 to the `finalizeAuction` function by using the Delay() method. This request needed 1 iota
 for the request, but the request is still 'in transit' until it is unlocked. We can verify

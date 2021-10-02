@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Smart Contract State
 
 The smart contract state storage on the host consists of a single key/value map. Both key
@@ -16,6 +19,14 @@ The schema tool will use this information to generate the specific code that acc
 state variables in a type-safe way. Let's examine the `state` section of the `dividend`
 example in more detail:
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="json">
 ```json
 {
   "state": {
@@ -26,7 +37,8 @@ example in more detail:
   }
 }
 ```
-
+</TabItem>
+</Tabs>
 Let's start with the simplest state variables. `totalFactor` is an Int64, and `owner` is
 an AgentID. Both are predefined [WasmLib value types](types.md).
 
@@ -43,6 +55,7 @@ Here is part of the Rust code in `state.rs` that the schema tool has generated. 
 MutableDividendState struct defines a type-safe interface to access each of the state
 variables through mutable proxies:
 
+<TabItem value="go">
 ```go
 type MutableDividendState struct {
     id int32
@@ -66,7 +79,8 @@ func (s MutableDividendState) TotalFactor() wasmlib.ScMutableInt64 {
     return wasmlib.NewScMutableInt64(s.id, idxMap[IdxStateTotalFactor])
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 #[derive(Clone, Copy)]
 pub struct MutableDividendState {
@@ -93,7 +107,7 @@ impl MutableDividendState {
     }
 }
 ```
-
+</TabItem>
 As you can see the schema tool has generated a proxy interface for the mutable `dividend`
 state, called `MutableDividendState`. It has a 1-to-1 correspondence to the `state`
 section in schema.json. Each member function accesses a type-safe proxy object for the

@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Function Call Context
 
 We saw that proxy objects provide generic access capabilities to the data on the host. It
@@ -41,6 +44,13 @@ other function-related data through its context object.
 Here is a (simplified) example from the `dividend` example smart contract that we will use
 to showcase some features of WasmLib:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
+
+<TabItem value="go">
 ```go
 func OnLoad() {
 	exports := wasmlib.NewScExports()
@@ -52,7 +62,8 @@ func OnLoad() {
 	exports.AddView("getOwner", viewGetOwner)
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 fn on_load() {
 	let exports = ScExports::new();
@@ -64,7 +75,8 @@ fn on_load() {
 	exports.add_view("getOwner", view_get_owner);
 }
 ```
-
+</TabItem>
+</Tabs>
 As you can see this on_load() function first creates the required ScExports context and
 then proceeds to define four Funcs named `divide`, `init`, `member`, and `setOwner`. It
 does this by calling the add_func() method of the ScExports context. Next it defines two
@@ -77,6 +89,7 @@ In its simplest form this is all that is necessary to initialize a smart contrac
 finalize this example, here is what the skeleton function implementations for the above
 smart contract definition would look like:
 
+<TabItem value="go">
 ```go
 func funcDivide(ctx wasmlib.ScFuncContext) {
 	ctx.Log("dividend.funcDivide")
@@ -102,7 +115,8 @@ func viewGetOwner(ctx wasmlib.ScViewContext) {
 	ctx.Log("dividend.viewGetOwner")
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 fn func_divide(ctx: &ScFuncContext) {
 	ctx.log("Calling dividend.divide");
@@ -128,7 +142,7 @@ fn view_get_owner(ctx: &ScViewContext) {
 	ctx.log("Calling dividend.getOwner");
 }
 ```
-
+</TabItem>
 As you can see the functions are each provided with a context parameter, which is
 conventionally named _ctx_. Notice that the four Funcs are passed an ScFuncContext,
 whereas the two Views receive an ScViewContext. We're also already showcasing an important

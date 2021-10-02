@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Example Tests
 
 We saw in the previous section how you can call() or post() function requests. We also
@@ -8,6 +11,14 @@ will look at how to use the SoloContext to create full-blown tests for the
 Let's start with a simple test. We're going to use the `member` function to add a valid
 new member/factor combination to the member group.
 
+<Tabs defaultValue="go"
+    values={[
+        {label: 'Go', value: 'go'},
+        {label: 'Json', value: 'json'},
+        {label: 'Rust', value: 'rust'},
+    ]}>
+
+<TabItem value="go">
 ```go
 func TestAddMemberOk(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
@@ -17,7 +28,8 @@ func TestAddMemberOk(t *testing.T) {
     require.NoError(t, ctx.Err)
 }
 ```
-
+</TabItem>
+</Tabs>
 The above test first deploys the `dividend` smart contract to a new chain and returns a
 SoloContext `ctx`. Then it uses ctx to create a new SoloAgent. A SoloAgent is an actor
 with its own Tangle address, which contains solo.Saldo tokens. The SoloAgent can be used
@@ -38,6 +50,7 @@ in both cases one required parameter is omitted. The idea is to test that the fu
 properly panics by checking the ctx.Err value is not nil after the call. Finally, the
 error message text is checked to contain the correct error message.
 
+<TabItem value="go">
 ```go
 func TestAddMemberFailMissingAddress(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
@@ -60,7 +73,7 @@ func TestAddMemberFailMissingFactor(t *testing.T) {
     require.True(t, strings.HasSuffix(ctx.Err.Error(), "missing mandatory factor"))
 }
 ```
-
+</TabItem>
 Notice how each test has to set up the chain/contract/context from scratch. We will often
 use a specific setupTest() function to do all setup work that is shared by many tests.
 
@@ -70,6 +83,7 @@ removed the Params initialization we wanted to be missing.
 
 Now let's see a more complex example:
 
+<TabItem value="go">
 ```go
 func TestDivide1Member(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
@@ -88,7 +102,7 @@ func TestDivide1Member(t *testing.T) {
     require.EqualValues(t, 0, ctx.Balance(nil))
 }
 ```
-
+</TabItem>
 The first half of the code is identical to our first test above. We set up the test,
 create an agent, set the factor for that agent to 100, and verify that no error occurred.
 Then in the next line we verify that the smart contract associated with ctx now holds a
@@ -103,6 +117,7 @@ member1. And the contract account should end up empty.
 
 Now let's skip to the most complex test of all:
 
+<TabItem value="go">
 ```go
 func TestDivide3Members(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
@@ -132,7 +147,7 @@ func TestDivide3Members(t *testing.T) {
     require.EqualValues(t, 1, ctx.Balance(nil))
 }
 ```
-
+</TabItem>
 This function creates 3 agents, and associates factors of 25, 50, and 75, respectively, to
 them. Since that required 3 `member` requests, the contract account should now contain 3
 iotas. Next the `divide` function is called, with 97 iotas passed to it, for a total of
@@ -147,6 +162,7 @@ amount when the next `divide` call request is executed.
 We can test this behavior by adding extra calls to `divide` at the end of this test like
 this:
 
+<TabItem value="go">
 ```go
     dividendDivide(ctx, 100)
     require.NoError(t, ctx.Err)
@@ -168,7 +184,7 @@ this:
     // managed to give every one an exact integer amount, so no remainder
     require.EqualValues(t, 0, ctx.Balance(nil))
 ```
-
+</TabItem>
 Note how after the final `divide` call we ended up with the exact amounts to disperse, so
 no remainder iotas were left in the contract account.
 
@@ -179,6 +195,7 @@ Finally, we will show how to test Views and/or Funcs that return a result. Since
 executes post() requests synchronously it is possible to have a Func return a result and
 test for certain result values
 
+<TabItem value="go">
 ```go
 func TestGetFactor(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
@@ -210,7 +227,7 @@ func TestGetFactor(t *testing.T) {
     require.EqualValues(t, 25, value)
 }
 ```
-
+</TabItem>
 Here we first set up the same 3 dispersion factors, and then we retrieve the dispersion
 factors for each member in reverse order and verify its value.
 

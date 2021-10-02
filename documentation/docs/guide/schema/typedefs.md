@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Type Definitions
 
 Since we allow nesting of container types it is a bit difficult to create proper
@@ -15,6 +18,13 @@ round you could not easily define it if it weren't for typedefs.
 
 Instead, now you add the following to your schema.json:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
+
+<TabItem value="json">
 ```json
 {
   "typedefs": {
@@ -25,9 +35,11 @@ Instead, now you add the following to your schema.json:
   }
 }
 ```
-
+</TabItem>
+</Tabs>
 The schema tool will generate the following proxies in `typedefs.rs`:
 
+<TabItem value="go">
 ```go
 package betting
 
@@ -65,7 +77,8 @@ func (a ArrayOfMutableBet) GetBet(index int32) MutableBet {
 	return MutableBet{objID: a.objID, keyID: wasmlib.Key32(index)}
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 // @formatter:off
 
@@ -114,11 +127,12 @@ impl ArrayOfMutableBet {
 
 // @formatter:on
 ```
-
+</TabItem>
 Note how ImmutableBettingRound and MutableBettingRound type aliases are created for the
 types ArrayOfImmutableBet and ArrayOfMutableBet. These are subsequently used in the state
 definition in `state.rs`:
 
+<TabItem value="go">
 ```go
 package betting
 
@@ -180,7 +194,8 @@ func (s MutableBettingState) Rounds() ArrayOfMutableBettingRound {
 	return ArrayOfMutableBettingRound{objID: arrID}
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -259,7 +274,7 @@ impl MutableBettingState {
     }
 }
 ```
-
+</TabItem>
 Notice how the rounds() member function returns a proxy to an array of BettingRound. Which
 in turn is an array of Bet. So the desired result has been achieved. And every access step
 along the way only allows you to take the path laid out which is checked at compile-time.

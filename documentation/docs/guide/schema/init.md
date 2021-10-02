@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Smart Contract Initialization
 
 Smart contracts start out with a completely blank state. Sometimes you want to be able to
@@ -18,6 +21,13 @@ To show how creating a smart contract with WasmLib works we will slowly start fl
 the smart contract functions of the `dividend` example in this tutorial. Here is the first
 part of the Rust code that implements it, which contains the 'init' function:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
+
+<TabItem value="go">
 ```go
 // This example implements 'dividend', a simple smart contract that will
 // automatically disperse iota tokens which are sent to the contract to a group
@@ -65,7 +75,8 @@ func funcInit(ctx wasmlib.ScFuncContext, f *InitContext) {
 	f.State.Owner().SetValue(owner)
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 // This example implements 'dividend', a simple smart contract that will
 // automatically disperse iota tokens which are sent to the contract to a group
@@ -110,7 +121,8 @@ pub fn func_init(ctx: &ScFuncContext, f: &InitContext) {
     f.state.owner().set_value(&owner);
 }
 ```
-
+</TabItem>
+</Tabs>
 We define an owner variable and allow it to be something other than the default value of
 contract creator. It is always a good idea to be flexible enough to be able to transfer
 ownership to another entity if necessary. Remember that once a smart contract has been
@@ -118,6 +130,7 @@ deployed it is no longer possible to change this. Therefore, it is good practice
 through those situations that could require change in advance and allow the contract
 itself to handle such changes through its state by providing a proper function interface:
 
+<TabItem value="go">
 ```go
 // 'setOwner' is used to change the owner of the smart contract.
 // It updates the 'owner' state variable with the provided agent id.
@@ -133,7 +146,8 @@ func funcSetOwner(ctx wasmlib.ScFuncContext, f *SetOwnerContext) {
     f.State.Owner().SetValue(f.Params.Owner().Value())
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 // 'setOwner' is used to change the owner of the smart contract.
 // It updates the 'owner' state variable with the provided agent id.
@@ -149,7 +163,7 @@ pub fn func_set_owner(_ctx: &ScFuncContext, f: &SetOwnerContext) {
     f.state.owner().set_value(&f.params.owner().value());
 }
 ```
-
+</TabItem>
 Note that we only define a single owner here. Proper fall-back could require multiple
 owners in case the owner entity could disappear, which would allow others to take over
 instead of the contract becoming immutable w.r.t. owner functionality. Again, we cannot

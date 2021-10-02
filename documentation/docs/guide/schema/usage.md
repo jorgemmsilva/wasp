@@ -1,3 +1,6 @@
+import Tabs from "@theme/Tabs"
+import TabItem from "@theme/TabItem"
+
 # Using the Schema Tool
 
 We tried to make the creation of smart contracts as simple as possible. The `schema`
@@ -21,6 +24,13 @@ schema definition file `schema.json` inside this subfolder. Note that the genera
 subfolder name is all lower case. This is due to best practices for package names both in
 Rust and in Go. The generated schema.json looks like this:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
+
+<TabItem value="json">
 ```json
 {
   "name": "MySmartContract",
@@ -52,7 +62,8 @@ Rust and in Go. The generated schema.json looks like this:
   }
 }
 ```
-
+</TabItem>
+</Tabs>
 Schema.json has been pre-populated with all sections that you could need, and some
 functions that allow you to maintain the ownership of the smart contract. Now that
 schema.json exists it is up to you to modify it further to reflect the requirements of
@@ -105,6 +116,7 @@ files with the same name, and you will see what we mean.
 Anyway, to show you an example of the initially generated Rust code, `mysmartcontract.rs`
 looks like this before you even start modifying it:
 
+<TabItem value="go">
 ```go
 package mysmartcontract
 
@@ -126,7 +138,8 @@ func viewGetOwner(ctx wasmlib.ScViewContext, f *GetOwnerContext) {
 	f.Results.Owner().SetValue(f.State.Owner().Value())
 }
 ```
-
+</TabItem>
+<TabItem value="rust">
 ```rust
 use wasmlib::*;
 
@@ -148,7 +161,7 @@ pub fn view_get_owner(_ctx: &ScViewContext, f: &GetOwnerContext) {
     f.results.owner().set_value(f.state.owner().value());
 }
 ```
-
+</TabItem>
 As you can see the schema tool generated an initial working version of the functions that
 are used to maintain the smart contract owner that will suffice for most cases.
 

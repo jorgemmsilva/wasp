@@ -10,11 +10,11 @@ new member/factor combination to the member group.
 
 ```go
 func TestAddMemberOk(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    
-    member1 := ctx.NewSoloAgent()
-    dividendMember(ctx, member1, 100)
-    require.NoError(t, ctx.Err)
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+
+member1 := ctx.NewSoloAgent()
+dividendMember(ctx, member1, 100)
+require.NoError(t, ctx.Err)
 }
 ```
 
@@ -40,24 +40,24 @@ error message text is checked to contain the correct error message.
 
 ```go
 func TestAddMemberFailMissingAddress(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    
-    member := dividend.ScFuncs.Member(ctx)
-    member.Params.Factor().SetValue(100)
-    member.Func.TransferIotas(1).Post()
-    require.Error(t, ctx.Err)
-    require.True(t, strings.HasSuffix(ctx.Err.Error(), "missing mandatory address"))
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+
+member := dividend.ScFuncs.Member(ctx)
+member.Params.Factor().SetValue(100)
+member.Func.TransferIotas(1).Post()
+require.Error(t, ctx.Err)
+require.True(t, strings.HasSuffix(ctx.Err.Error(), "missing mandatory address"))
 }
 
 func TestAddMemberFailMissingFactor(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    
-    member1 := ctx.NewSoloAgent()
-    member := dividend.ScFuncs.Member(ctx)
-    member.Params.Address().SetValue(member1.ScAddress())
-    member.Func.TransferIotas(1).Post()
-    require.Error(t, ctx.Err)
-    require.True(t, strings.HasSuffix(ctx.Err.Error(), "missing mandatory factor"))
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+
+member1 := ctx.NewSoloAgent()
+member := dividend.ScFuncs.Member(ctx)
+member.Params.Address().SetValue(member1.ScAddress())
+member.Func.TransferIotas(1).Post()
+require.Error(t, ctx.Err)
+require.True(t, strings.HasSuffix(ctx.Err.Error(), "missing mandatory factor"))
 }
 ```
 
@@ -72,20 +72,20 @@ Now let's see a more complex example:
 
 ```go
 func TestDivide1Member(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    
-    member1 := ctx.NewSoloAgent()
-    dividendMember(ctx, member1, 100)
-    require.NoError(t, ctx.Err)
-    
-    require.EqualValues(t, 1, ctx.Balance(nil))
-    
-    dividendDivide(ctx, 99)
-    require.NoError(t, ctx.Err)
-    
-    // 99 from divide() + 1 from the member() call
-    require.EqualValues(t, solo.Saldo+100, member1.Balance())
-    require.EqualValues(t, 0, ctx.Balance(nil))
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+
+member1 := ctx.NewSoloAgent()
+dividendMember(ctx, member1, 100)
+require.NoError(t, ctx.Err)
+
+require.EqualValues(t, 1, ctx.Balance(nil))
+
+dividendDivide(ctx, 99)
+require.NoError(t, ctx.Err)
+
+// 99 from divide() + 1 from the member() call
+require.EqualValues(t, solo.Saldo+100, member1.Balance())
+require.EqualValues(t, 0, ctx.Balance(nil))
 }
 ```
 
@@ -105,31 +105,31 @@ Now let's skip to the most complex test of all:
 
 ```go
 func TestDivide3Members(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    
-    member1 := ctx.NewSoloAgent()
-    dividendMember(ctx, member1, 25)
-    require.NoError(t, ctx.Err)
-    
-    member2 := ctx.NewSoloAgent()
-    dividendMember(ctx, member2, 50)
-    require.NoError(t, ctx.Err)
-    
-    member3 := ctx.NewSoloAgent()
-    dividendMember(ctx, member3, 75)
-    require.NoError(t, ctx.Err)
-    
-    require.EqualValues(t, 3, ctx.Balance(nil))
-    
-    dividendDivide(ctx, 97)
-    require.NoError(t, ctx.Err)
-    
-    // 97 from divide() + 3 from the member() calls
-    require.EqualValues(t, solo.Saldo+16, member1.Balance())
-    require.EqualValues(t, solo.Saldo+33, member2.Balance())
-    require.EqualValues(t, solo.Saldo+50, member3.Balance())
-    // 1 remaining due to fractions
-    require.EqualValues(t, 1, ctx.Balance(nil))
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+
+member1 := ctx.NewSoloAgent()
+dividendMember(ctx, member1, 25)
+require.NoError(t, ctx.Err)
+
+member2 := ctx.NewSoloAgent()
+dividendMember(ctx, member2, 50)
+require.NoError(t, ctx.Err)
+
+member3 := ctx.NewSoloAgent()
+dividendMember(ctx, member3, 75)
+require.NoError(t, ctx.Err)
+
+require.EqualValues(t, 3, ctx.Balance(nil))
+
+dividendDivide(ctx, 97)
+require.NoError(t, ctx.Err)
+
+// 97 from divide() + 3 from the member() calls
+require.EqualValues(t, solo.Saldo+16, member1.Balance())
+require.EqualValues(t, solo.Saldo+33, member2.Balance())
+require.EqualValues(t, solo.Saldo+50, member3.Balance())
+// 1 remaining due to fractions
+require.EqualValues(t, 1, ctx.Balance(nil))
 }
 ```
 
@@ -181,33 +181,33 @@ test for certain result values
 
 ```go
 func TestGetFactor(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    
-    member1 := ctx.NewSoloAgent()
-    dividendMember(ctx, member1, 25)
-    require.NoError(t, ctx.Err)
-    
-    member2 := ctx.NewSoloAgent()
-    dividendMember(ctx, member2, 50)
-    require.NoError(t, ctx.Err)
-    
-    member3 := ctx.NewSoloAgent()
-    dividendMember(ctx, member3, 75)
-    require.NoError(t, ctx.Err)
-    
-    require.EqualValues(t, 3, ctx.Balance(nil))
-    
-    value := dividendGetFactor(ctx, member3)
-    require.NoError(t, ctx.Err)
-    require.EqualValues(t, 75, value)
-    
-    value = dividendGetFactor(ctx, member2)
-    require.NoError(t, ctx.Err)
-    require.EqualValues(t, 50, value)
-    
-    value = dividendGetFactor(ctx, member1)
-    require.NoError(t, ctx.Err)
-    require.EqualValues(t, 25, value)
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+
+member1 := ctx.NewSoloAgent()
+dividendMember(ctx, member1, 25)
+require.NoError(t, ctx.Err)
+
+member2 := ctx.NewSoloAgent()
+dividendMember(ctx, member2, 50)
+require.NoError(t, ctx.Err)
+
+member3 := ctx.NewSoloAgent()
+dividendMember(ctx, member3, 75)
+require.NoError(t, ctx.Err)
+
+require.EqualValues(t, 3, ctx.Balance(nil))
+
+value := dividendGetFactor(ctx, member3)
+require.NoError(t, ctx.Err)
+require.EqualValues(t, 75, value)
+
+value = dividendGetFactor(ctx, member2)
+require.NoError(t, ctx.Err)
+require.EqualValues(t, 50, value)
+
+value = dividendGetFactor(ctx, member1)
+require.NoError(t, ctx.Err)
+require.EqualValues(t, 25, value)
 }
 ```
 

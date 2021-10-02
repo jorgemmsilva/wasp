@@ -54,9 +54,8 @@ in advance, we can now generate code that will negotiate the corresponding key I
 the host only once in the `on_load` function and cache those values for use in future
 function calls.
 
-The previous two optimizations mean that the code becomes both simpler and more 
-efficient. Note
-that all the improvements described above are independent of the programming language 
+The previous two optimizations mean that the code becomes both simpler and more efficient.
+Note that all the improvements described above are independent of the programming language
 used.
 
 Future additions to the schema tool that we envision are the automatic generation of smart

@@ -8,8 +8,8 @@ descriptor you will now use the post() or post_to_chain() methods. The former po
 request within the current chain, and the latter takes the chain ID of the desired chain
 as parameter.
 
-In addition to the previously discussed transfer_iotas() and of_contract() methods you
-can modify the behavior further by providing a delay() in seconds, which enables delayed
+In addition to the previously discussed transfer_iotas() and of_contract() methods you can
+modify the behavior further by providing a delay() in seconds, which enables delayed
 execution of the request. Note that this is of particular interest to smart contracts that
 need a delayed action, like betting contracts with a timed betting round, or to create
 time-lock functionality in a smart contract. Here's how that works:

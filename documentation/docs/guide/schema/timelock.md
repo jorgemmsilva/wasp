@@ -1,36 +1,36 @@
 # Colored Tokens and Time Locks
 
-Let's examine some less commonly used member functions of the SoloContext. We will 
-switch to the `fairauction` example to show their usage. Here is the startAuction() 
+Let's examine some less commonly used member functions of the SoloContext. We will switch
+to the `fairauction` example to show their usage. Here is the startAuction()
 function of the fairauction test suite:
 
 ```go
 var (
-    auctioneer *wasmsolo.SoloAgent
-    tokenColor wasmlib.ScColor
+auctioneer *wasmsolo.SoloAgent
+tokenColor wasmlib.ScColor
 )
 
 func startAuction(t *testing.T) *wasmsolo.SoloContext {
-    ctx := wasmsolo.NewSoloContract(t, fairauction.ScName, fairauction.OnLoad)
-    
-    // set up auctioneer account and mint some tokens to auction off
-    auctioneer = ctx.NewSoloAgent()
-    tokenColor, ctx.Err = auctioneer.Mint(10)
-    require.NoError(t, ctx.Err)
-    require.EqualValues(t, solo.Saldo-10, auctioneer.Balance())
-    require.EqualValues(t, 10, auctioneer.Balance(tokenColor))
-    
-    // start the auction
-    sa := fairauction.ScFuncs.StartAuction(ctx.Sign(auctioneer))
-    sa.Params.Color().SetValue(tokenColor)
-    sa.Params.MinimumBid().SetValue(500)
-    sa.Params.Description().SetValue("Cool tokens for sale!")
-    transfer := ctx.Transfer()
-    transfer.Set(wasmlib.IOTA, 25) // deposit, must be >=minimum*margin
-    transfer.Set(tokenColor, 10)   // the tokens to auction
-    sa.Func.Transfer(transfer).Post()
-    require.NoError(t, ctx.Err)
-    return ctx
+ctx := wasmsolo.NewSoloContract(t, fairauction.ScName, fairauction.OnLoad)
+
+// set up auctioneer account and mint some tokens to auction off
+auctioneer = ctx.NewSoloAgent()
+tokenColor, ctx.Err = auctioneer.Mint(10)
+require.NoError(t, ctx.Err)
+require.EqualValues(t, solo.Saldo-10, auctioneer.Balance())
+require.EqualValues(t, 10, auctioneer.Balance(tokenColor))
+
+// start the auction
+sa := fairauction.ScFuncs.StartAuction(ctx.Sign(auctioneer))
+sa.Params.Color().SetValue(tokenColor)
+sa.Params.MinimumBid().SetValue(500)
+sa.Params.Description().SetValue("Cool tokens for sale!")
+transfer := ctx.Transfer()
+transfer.Set(wasmlib.IOTA, 25) // deposit, must be >=minimum*margin
+transfer.Set(tokenColor, 10) // the tokens to auction
+sa.Func.Transfer(transfer).Post()
+require.NoError(t, ctx.Err)
+return ctx
 }
 ```
 
@@ -43,9 +43,9 @@ First, we're going to need an agent that functions as the `auctioneer`. This auc
 will auction off some colored tokens. To provide the auctioneer with colored tokens we use
 the `Mint()` method to convert 10 of his plain iota tokens into colored tokens. The mint
 process will assign the color value, which is equal to the hash of the Tangle transaction
-that minted them. We save the resulting ScColor value in `tokenColor`. Note that both 
-`auctioneer` and `tokenColor` are global variables that are accessible by any test 
-that needs them.
+that minted them. We save the resulting ScColor value in `tokenColor`. Note that both
+`auctioneer` and `tokenColor` are global variables that are accessible by any test that
+needs them.
 
 Next we check that no error occurred during the minting process, and then we verify that
 the auctioneer now has 10 less plain iota and also has a balance of 10 tokens with the
@@ -73,27 +73,27 @@ can be used instead when all you need to transfer is plain iotas and which encap
 the creation of the Transfer proxy and the initialization with the required amount of
 iotas.
 
-Finally, we make sure there was no error while posting the request and return the 
+Finally, we make sure there was no error while posting the request and return the
 SoloContext. That concludes the startAuction() function.
 
 Here is the first test function that uses our startAuction() function:
 
 ```go
 func TestFaStartAuction(t *testing.T) {
-    ctx := startAuction(t)
-    
-    // note 1 iota should be stuck in the delayed finalize_auction
-    require.EqualValues(t, 25-1, ctx.Balance(nil))
-    require.EqualValues(t, 10, ctx.Balance(nil, tokenColor))
-    
-    // auctioneer sent 25 deposit + 10 tokenColor
-    require.EqualValues(t, solo.Saldo-25-10, auctioneer.Balance())
-    require.EqualValues(t, 0, auctioneer.Balance(tokenColor))
-    require.EqualValues(t, 0, ctx.Balance(auctioneer))
-    
-    // remove pending finalize_auction from backlog
-    ctx.AdvanceClockBy(61 * time.Minute)
-    require.True(t, ctx.WaitForPendingRequests(1))
+ctx := startAuction(t)
+
+// note 1 iota should be stuck in the delayed finalize_auction
+require.EqualValues(t, 25-1, ctx.Balance(nil))
+require.EqualValues(t, 10, ctx.Balance(nil, tokenColor))
+
+// auctioneer sent 25 deposit + 10 tokenColor
+require.EqualValues(t, solo.Saldo-25-10, auctioneer.Balance())
+require.EqualValues(t, 0, auctioneer.Balance(tokenColor))
+require.EqualValues(t, 0, ctx.Balance(auctioneer))
+
+// remove pending finalize_auction from backlog
+ctx.AdvanceClockBy(61 * time.Minute)
+require.True(t, ctx.WaitForPendingRequests(1))
 }
 ```
 
@@ -104,17 +104,17 @@ the contract balance after the transfer of 25 iota plus 10 colorToken, minus the
 still locked. Note how we again have an account Balance() method where the color parameter
 can be omitted, in which case it defaults to the account balance of plain iotas.
 
-We also verify the address balance of the auctioneer after sending the startAuction 
+We also verify the address balance of the auctioneer after sending the startAuction
 request. And double-check that no tokens ended up in his contract account.
 
-The final 2 lines of the code are used to remove the pending `finalizeAuction` request 
-from the backlog. First we move the logical clock forward to a point when that request 
-is supposed to have triggered. Then we wait for this request to actually be processed. 
-Note that this will happen in a separate goroutine in the background, so we explicitly 
-wait for the request counters to catch up with the one request that is pending.
+The final 2 lines of the code are used to remove the pending `finalizeAuction` request
+from the backlog. First we move the logical clock forward to a point when that request is
+supposed to have triggered. Then we wait for this request to actually be processed. Note
+that this will happen in a separate goroutine in the background, so we explicitly wait for
+the request counters to catch up with the one request that is pending.
 
-The WaitForPendingRequests() method can also be used whenever a smart contract 
-function is known to Post() a request to itself. Such requests are not immediately 
-executed, but added to the backlog. So you need to wait for these pending requests to 
-actually be processed. The advantage here is that you can inspect the in-between state,
-which means that you can test even a function that posts a request in isolation.
+The WaitForPendingRequests() method can also be used whenever a smart contract function is
+known to Post() a request to itself. Such requests are not immediately executed, but added
+to the backlog. So you need to wait for these pending requests to actually be processed.
+The advantage here is that you can inspect the in-between state, which means that you can
+test even a function that posts a request in isolation.

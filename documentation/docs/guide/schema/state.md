@@ -45,25 +45,25 @@ variables through mutable proxies:
 
 ```go
 type MutableDividendState struct {
-    id int32
+id int32
 }
 
 func (s MutableDividendState) MemberList() ArrayOfMutableAddress {
-    arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateMemberList], wasmlib.TYPE_ARRAY|wasmlib.TYPE_ADDRESS)
-    return ArrayOfMutableAddress{objID: arrID}
+arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateMemberList], wasmlib.TYPE_ARRAY|wasmlib.TYPE_ADDRESS)
+return ArrayOfMutableAddress{objID: arrID}
 }
 
 func (s MutableDividendState) Members() MapAddressToMutableInt64 {
-    mapID := wasmlib.GetObjectID(s.id, idxMap[IdxStateMembers], wasmlib.TYPE_MAP)
-    return MapAddressToMutableInt64{objID: mapID}
+mapID := wasmlib.GetObjectID(s.id, idxMap[IdxStateMembers], wasmlib.TYPE_MAP)
+return MapAddressToMutableInt64{objID: mapID}
 }
 
 func (s MutableDividendState) Owner() wasmlib.ScMutableAgentID {
-    return wasmlib.NewScMutableAgentID(s.id, idxMap[IdxStateOwner])
+return wasmlib.NewScMutableAgentID(s.id, idxMap[IdxStateOwner])
 }
 
 func (s MutableDividendState) TotalFactor() wasmlib.ScMutableInt64 {
-    return wasmlib.NewScMutableInt64(s.id, idxMap[IdxStateTotalFactor])
+return wasmlib.NewScMutableInt64(s.id, idxMap[IdxStateTotalFactor])
 }
 ```
 

@@ -6,9 +6,10 @@ having to start nodes, set up a committee, and send transactions over the Tangle
 we can use Go's built-in test environment in combination with Solo to deploy chains and
 smart contracts and simulate transactions.
 
-Solo directly interacts with the ISCP code and uses all the data types that are 
-[defined in the ISCP code](https://github.com/iotaledger/wasp/blob/develop/documentation/docs/misc/coretypes.md) directly. But our Wasm smart contracts cannot access these types directly
-because they run in a sandboxed environment. Therefore, WasmLib implements its
+Solo directly interacts with the ISCP code and uses all the data types that are
+[defined in the ISCP code](https://github.com/iotaledger/wasp/blob/develop/documentation/docs/misc/coretypes.md)
+directly. But our Wasm smart contracts cannot access these types directly because they run
+in a sandboxed environment. Therefore, WasmLib implements its
 [own versions](types.md) of these data types and the VM layer acts as a data type
 translator between both systems.
 
@@ -40,8 +41,8 @@ Let's look at the simplest way of initializing a smart contract by using the new
 
 ```go
 func TestDeploy(t *testing.T) {
-    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-    require.NoError(t, ctx.ContractExists(dividend.ScName))
+ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+require.NoError(t, ctx.ContractExists(dividend.ScName))
 }
 ```
 
@@ -55,23 +56,23 @@ calls to smart contract functions that are used in multiple tests:
 
 ```go
 func dividendMember(ctx *wasmsolo.SoloContext, agent *wasmsolo.SoloAgent, factor int64) {
-    member := dividend.ScFuncs.Member(ctx)
-    member.Params.Address().SetValue(agent.ScAddress())
-    member.Params.Factor().SetValue(factor)
-    member.Func.TransferIotas(1).Post()
+member := dividend.ScFuncs.Member(ctx)
+member.Params.Address().SetValue(agent.ScAddress())
+member.Params.Factor().SetValue(factor)
+member.Func.TransferIotas(1).Post()
 }
 
 func dividendDivide(ctx *wasmsolo.SoloContext, amount int64) {
-    divide := dividend.ScFuncs.Divide(ctx)
-    divide.Func.TransferIotas(amount).Post()
+divide := dividend.ScFuncs.Divide(ctx)
+divide.Func.TransferIotas(amount).Post()
 }
 
 func dividendGetFactor(ctx *wasmsolo.SoloContext, member3 *wasmsolo.SoloAgent) int64 {
-    getFactor := dividend.ScFuncs.GetFactor(ctx)
-    getFactor.Params.Address().SetValue(member3.ScAddress())
-    getFactor.Func.Call()
-    value := getFactor.Results.Factor().Value()
-    return value
+getFactor := dividend.ScFuncs.GetFactor(ctx)
+getFactor.Params.Address().SetValue(member3.ScAddress())
+getFactor.Func.Call()
+value := getFactor.Results.Factor().Value()
+return value
 }
 ```
 
@@ -85,5 +86,5 @@ As you can see there is literally no difference in the way the function interfac
 with the ISCP function context in WasmLib and with the SoloContext. This makes for
 seamless testing of smart contracts
 
-In the next section we will go deeper into how the helper member functions of the 
+In the next section we will go deeper into how the helper member functions of the
 SoloContext are used to simplify tests.

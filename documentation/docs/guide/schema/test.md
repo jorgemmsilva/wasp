@@ -41,8 +41,8 @@ Let's look at the simplest way of initializing a smart contract by using the new
 
 ```go
 func TestDeploy(t *testing.T) {
-ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
-require.NoError(t, ctx.ContractExists(dividend.ScName))
+    ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
+    require.NoError(t, ctx.ContractExists(dividend.ScName))
 }
 ```
 
@@ -56,23 +56,23 @@ calls to smart contract functions that are used in multiple tests:
 
 ```go
 func dividendMember(ctx *wasmsolo.SoloContext, agent *wasmsolo.SoloAgent, factor int64) {
-member := dividend.ScFuncs.Member(ctx)
-member.Params.Address().SetValue(agent.ScAddress())
-member.Params.Factor().SetValue(factor)
-member.Func.TransferIotas(1).Post()
+    member := dividend.ScFuncs.Member(ctx)
+    member.Params.Address().SetValue(agent.ScAddress())
+    member.Params.Factor().SetValue(factor)
+    member.Func.TransferIotas(1).Post()
 }
 
 func dividendDivide(ctx *wasmsolo.SoloContext, amount int64) {
-divide := dividend.ScFuncs.Divide(ctx)
-divide.Func.TransferIotas(amount).Post()
+    divide := dividend.ScFuncs.Divide(ctx)
+    divide.Func.TransferIotas(amount).Post()
 }
 
 func dividendGetFactor(ctx *wasmsolo.SoloContext, member3 *wasmsolo.SoloAgent) int64 {
-getFactor := dividend.ScFuncs.GetFactor(ctx)
-getFactor.Params.Address().SetValue(member3.ScAddress())
-getFactor.Func.Call()
-value := getFactor.Results.Factor().Value()
-return value
+    getFactor := dividend.ScFuncs.GetFactor(ctx)
+    getFactor.Params.Address().SetValue(member3.ScAddress())
+    getFactor.Func.Call()
+    value := getFactor.Results.Factor().Value()
+    return value
 }
 ```
 

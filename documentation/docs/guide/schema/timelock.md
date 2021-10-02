@@ -6,31 +6,31 @@ function of the fairauction test suite:
 
 ```go
 var (
-auctioneer *wasmsolo.SoloAgent
-tokenColor wasmlib.ScColor
+    auctioneer *wasmsolo.SoloAgent
+    tokenColor wasmlib.ScColor
 )
 
 func startAuction(t *testing.T) *wasmsolo.SoloContext {
-ctx := wasmsolo.NewSoloContract(t, fairauction.ScName, fairauction.OnLoad)
-
-// set up auctioneer account and mint some tokens to auction off
-auctioneer = ctx.NewSoloAgent()
-tokenColor, ctx.Err = auctioneer.Mint(10)
-require.NoError(t, ctx.Err)
-require.EqualValues(t, solo.Saldo-10, auctioneer.Balance())
-require.EqualValues(t, 10, auctioneer.Balance(tokenColor))
-
-// start the auction
-sa := fairauction.ScFuncs.StartAuction(ctx.Sign(auctioneer))
-sa.Params.Color().SetValue(tokenColor)
-sa.Params.MinimumBid().SetValue(500)
-sa.Params.Description().SetValue("Cool tokens for sale!")
-transfer := ctx.Transfer()
-transfer.Set(wasmlib.IOTA, 25) // deposit, must be >=minimum*margin
-transfer.Set(tokenColor, 10) // the tokens to auction
-sa.Func.Transfer(transfer).Post()
-require.NoError(t, ctx.Err)
-return ctx
+    ctx := wasmsolo.NewSoloContract(t, fairauction.ScName, fairauction.OnLoad)
+    
+    // set up auctioneer account and mint some tokens to auction off
+    auctioneer = ctx.NewSoloAgent()
+    tokenColor, ctx.Err = auctioneer.Mint(10)
+    require.NoError(t, ctx.Err)
+    require.EqualValues(t, solo.Saldo-10, auctioneer.Balance())
+    require.EqualValues(t, 10, auctioneer.Balance(tokenColor))
+    
+    // start the auction
+    sa := fairauction.ScFuncs.StartAuction(ctx.Sign(auctioneer))
+    sa.Params.Color().SetValue(tokenColor)
+    sa.Params.MinimumBid().SetValue(500)
+    sa.Params.Description().SetValue("Cool tokens for sale!")
+    transfer := ctx.Transfer()
+    transfer.Set(wasmlib.IOTA, 25) // deposit, must be >=minimum*margin
+    transfer.Set(tokenColor, 10) // the tokens to auction
+    sa.Func.Transfer(transfer).Post()
+    require.NoError(t, ctx.Err)
+    return ctx
 }
 ```
 
@@ -80,20 +80,20 @@ Here is the first test function that uses our startAuction() function:
 
 ```go
 func TestFaStartAuction(t *testing.T) {
-ctx := startAuction(t)
-
-// note 1 iota should be stuck in the delayed finalize_auction
-require.EqualValues(t, 25-1, ctx.Balance(nil))
-require.EqualValues(t, 10, ctx.Balance(nil, tokenColor))
-
-// auctioneer sent 25 deposit + 10 tokenColor
-require.EqualValues(t, solo.Saldo-25-10, auctioneer.Balance())
-require.EqualValues(t, 0, auctioneer.Balance(tokenColor))
-require.EqualValues(t, 0, ctx.Balance(auctioneer))
-
-// remove pending finalize_auction from backlog
-ctx.AdvanceClockBy(61 * time.Minute)
-require.True(t, ctx.WaitForPendingRequests(1))
+    ctx := startAuction(t)
+    
+    // note 1 iota should be stuck in the delayed finalize_auction
+    require.EqualValues(t, 25-1, ctx.Balance(nil))
+    require.EqualValues(t, 10, ctx.Balance(nil, tokenColor))
+    
+    // auctioneer sent 25 deposit + 10 tokenColor
+    require.EqualValues(t, solo.Saldo-25-10, auctioneer.Balance())
+    require.EqualValues(t, 0, auctioneer.Balance(tokenColor))
+    require.EqualValues(t, 0, ctx.Balance(auctioneer))
+    
+    // remove pending finalize_auction from backlog
+    ctx.AdvanceClockBy(61 * time.Minute)
+    require.True(t, ctx.WaitForPendingRequests(1))
 }
 ```
 

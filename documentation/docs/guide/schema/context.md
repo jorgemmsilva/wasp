@@ -43,25 +43,25 @@ to showcase some features of WasmLib:
 
 ```go
 func OnLoad() {
-exports := wasmlib.NewScExports()
-exports.AddFunc("divide", funcDivide)
-exports.AddFunc("init", funcInit)
-exports.AddFunc("member", funcMember)
-exports.AddFunc("setOwner", funcSetOwner)
-exports.AddView("getFactor", viewGetFactor)
-exports.AddView("getOwner", viewGetOwner)
+	exports := wasmlib.NewScExports()
+	exports.AddFunc("divide", funcDivide)
+	exports.AddFunc("init", funcInit)
+	exports.AddFunc("member", funcMember)
+	exports.AddFunc("setOwner", funcSetOwner)
+	exports.AddView("getFactor", viewGetFactor)
+	exports.AddView("getOwner", viewGetOwner)
 }
 ```
 
 ```rust
 fn on_load() {
-    let exports = ScExports::new();
-    exports.add_func("divide", func_divide);
-    exports.add_func("init", func_init);
-    exports.add_func("member", func_member);
-    exports.add_func("setOwner", func_set_owner);
-    exports.add_view("getFactor", view_get_factor);
-    exports.add_view("getOwner", view_get_owner);
+	let exports = ScExports::new();
+	exports.add_func("divide", func_divide);
+	exports.add_func("init", func_init);
+	exports.add_func("member", func_member);
+	exports.add_func("setOwner", func_set_owner);
+	exports.add_view("getFactor", view_get_factor);
+	exports.add_view("getOwner", view_get_owner);
 }
 ```
 
@@ -79,53 +79,53 @@ smart contract definition would look like:
 
 ```go
 func funcDivide(ctx wasmlib.ScFuncContext) {
-ctx.Log("dividend.funcDivide")
+	ctx.Log("dividend.funcDivide")
 }
 
 func funcInit(ctx wasmlib.ScFuncContext) {
-ctx.Log("dividend.funcInit")
+	ctx.Log("dividend.funcInit")
 }
 
 func funcMember(ctx wasmlib.ScFuncContext) {
-ctx.Log("dividend.funcMember")
+	ctx.Log("dividend.funcMember")
 }
 
 func funcSetOwner(ctx wasmlib.ScFuncContext) {
-ctx.Log("dividend.funcSetOwner")
+	ctx.Log("dividend.funcSetOwner")
 }
 
 func viewGetFactor(ctx wasmlib.ScViewContext) {
-ctx.Log("dividend.viewGetFactor")
+	ctx.Log("dividend.viewGetFactor")
 }
 
 func viewGetOwner(ctx wasmlib.ScViewContext) {
-ctx.Log("dividend.viewGetOwner")
+	ctx.Log("dividend.viewGetOwner")
 }
 ```
 
 ```rust
 fn func_divide(ctx: &ScFuncContext) {
-    ctx.log("Calling dividend.divide");
+	ctx.log("Calling dividend.divide");
 }
 
 fn func_init(ctx: &ScFuncContext) {
-    ctx.log("Calling dividend.init");
+	ctx.log("Calling dividend.init");
 }
 
 fn func_member(ctx: &ScFuncContext) {
-    ctx.log("Calling dividend.member");
+	ctx.log("Calling dividend.member");
 }
 
 fn func_set_owner(ctx: &ScFuncContext) {
-    ctx.log("Calling dividend.setOwner");
+	ctx.log("Calling dividend.setOwner");
 }
 
 fn view_get_factor(ctx: &ScViewContext) {
-    ctx.log("Calling dividend.getFactor");
+	ctx.log("Calling dividend.getFactor");
 }
 
 fn view_get_owner(ctx: &ScViewContext) {
-    ctx.log("Calling dividend.getOwner");
+	ctx.log("Calling dividend.getOwner");
 }
 ```
 

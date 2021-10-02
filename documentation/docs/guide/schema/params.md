@@ -20,15 +20,15 @@ function:
 
 ```go
 type ImmutableMemberParams struct {
-id int32
+    id int32
 }
 
 func (s ImmutableMemberParams) Address() wasmlib.ScImmutableAddress {
-return wasmlib.NewScImmutableAddress(s.id, idxMap[IdxParamAddress])
+    return wasmlib.NewScImmutableAddress(s.id, idxMap[IdxParamAddress])
 }
 
 func (s ImmutableMemberParams) Factor() wasmlib.ScImmutableInt64 {
-return wasmlib.NewScImmutableInt64(s.id, idxMap[IdxParamFactor])
+    return wasmlib.NewScImmutableInt64(s.id, idxMap[IdxParamFactor])
 }
 ```
 

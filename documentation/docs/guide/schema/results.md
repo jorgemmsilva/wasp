@@ -16,11 +16,11 @@ function:
 
 ```go
 type MutableGetFactorResults struct {
-id int32
+    id int32
 }
 
 func (s MutableGetFactorResults) Factor() wasmlib.ScMutableInt64 {
-return wasmlib.NewScMutableInt64(s.id, idxMap[IdxResultFactor])
+    return wasmlib.NewScMutableInt64(s.id, idxMap[IdxResultFactor])
 }
 ```
 

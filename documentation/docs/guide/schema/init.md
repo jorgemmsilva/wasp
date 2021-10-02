@@ -125,12 +125,12 @@ itself to handle such changes through its state by providing a proper function i
 // - 'owner', which is the agent id of the entity that will own the contract.
 // Only the current owner can change the owner.
 func funcSetOwner(ctx wasmlib.ScFuncContext, f *SetOwnerContext) {
-// Note that the schema tool has already dealt with making sure that this function
-// can only be called by the owner and that the required parameter is present.
-// So once we get to this point in the code we can take that as a given.
-
-// Save the new owner parameter value in the 'owner' variable in state storage.
-f.State.Owner().SetValue(f.Params.Owner().Value())
+    // Note that the schema tool has already dealt with making sure that this function
+    // can only be called by the owner and that the required parameter is present.
+    // So once we get to this point in the code we can take that as a given.
+    
+    // Save the new owner parameter value in the 'owner' variable in state storage.
+    f.State.Owner().SetValue(f.Params.Owner().Value())
 }
 ```
 

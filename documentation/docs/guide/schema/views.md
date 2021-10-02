@@ -21,21 +21,21 @@ called 'getFactor':
 // 'getFactor' is a simple View function. It will retrieve the factor
 // associated with the (mandatory) address parameter it was provided with.
 func viewGetFactor(ctx wasmlib.ScViewContext, f *GetFactorContext) {
-// Since we are sure that the 'address' parameter actually exists we can
-// retrieve its actual value into an ScAddress value type.
-var address wasmlib.ScAddress = f.Params.Address().Value()
-
-// Create an ScImmutableMap proxy to the 'members' map in the state storage.
-// Note that for views this is an *immutable* map as opposed to the *mutable*
-// map we can access from the *mutable* state that gets passed to funcs.
-var members MapAddressToImmutableInt64 = f.State.Members()
-
-// Retrieve the factor associated with the address parameter.
-var factor int64 = members.GetInt64(address).Value()
-
-// Set the factor in the results map of the function context.
-// The contents of this results map is returned to the caller of the function.
-f.Results.Factor().SetValue(factor)
+    // Since we are sure that the 'address' parameter actually exists we can
+    // retrieve its actual value into an ScAddress value type.
+    var address wasmlib.ScAddress = f.Params.Address().Value()
+    
+    // Create an ScImmutableMap proxy to the 'members' map in the state storage.
+    // Note that for views this is an *immutable* map as opposed to the *mutable*
+    // map we can access from the *mutable* state that gets passed to funcs.
+    var members MapAddressToImmutableInt64 = f.State.Members()
+    
+    // Retrieve the factor associated with the address parameter.
+    var factor int64 = members.GetInt64(address).Value()
+    
+    // Set the factor in the results map of the function context.
+    // The contents of this results map is returned to the caller of the function.
+    f.Results.Factor().SetValue(factor)
 }
 ```
 

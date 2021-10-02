@@ -14,6 +14,16 @@ passed to the function.
 For example, here is the structure generated for the mutable results for the `getFactor`
 function:
 
+```go
+type MutableGetFactorResults struct {
+    id int32
+}
+
+func (s MutableGetFactorResults) Factor() wasmlib.ScMutableInt64 {
+    return wasmlib.NewScMutableInt64(s.id, idxMap[IdxResultFactor])
+}
+```
+
 ```rust
 #[derive(Clone, Copy)]
 pub struct MutableGetFactorResults {

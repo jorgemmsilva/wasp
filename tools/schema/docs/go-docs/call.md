@@ -30,7 +30,7 @@ needs to be passed to the member function that creates the function descriptor.
 Here's how a smart contract would tell a `dividend` contract on the same chain to divide
 the 1000 tokens it passes to the function:
 
-```golang
+```go
 ...
 
 div := dividend.ScFuncs.Divide(ctx)
@@ -42,7 +42,7 @@ div.Func.TransferIotas(1000).Call()
 And here is how a smart contract would ask a `dividend` contract on the same chain to
 return the dispersion factor for a specific address:
 
-```golang
+```go
 ...
 
 gf := dividend.ScFuncs.GetFactor(ctx)
@@ -65,7 +65,7 @@ deployed the contract that contains the function you want to call under a differ
 then you would have to provide its associated Hname to the `Func` member through the
 OfContract() member function like this:
 
-```golang
+```go
 ...
 
 altContract := NewScHname("alternateName")

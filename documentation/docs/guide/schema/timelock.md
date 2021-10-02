@@ -4,7 +4,7 @@ Let's examine some less commonly used member functions of the SoloContext. We wi
 switch to the `fairauction` example to show their usage. Here is the startAuction() 
 function of the fairauction test suite:
 
-```golang
+```go
 var (
     auctioneer *wasmsolo.SoloAgent
     tokenColor wasmlib.ScColor
@@ -78,7 +78,7 @@ SoloContext. That concludes the startAuction() function.
 
 Here is the first test function that uses our startAuction() function:
 
-```golang
+```go
 func TestFaStartAuction(t *testing.T) {
     ctx := startAuction(t)
     

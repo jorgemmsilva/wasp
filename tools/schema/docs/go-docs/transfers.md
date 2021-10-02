@@ -31,7 +31,7 @@ will receive 50/100th, address B will receive 30/100th, and address C will recei
 
 Here is the `divide` function:
 
-```golang
+```go
 // 'divide' is a function that will take any iotas it receives and properly
 // disperse them to the addresses in the member list according to the dispersion
 // factors associated with these addresses.

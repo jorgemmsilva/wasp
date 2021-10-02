@@ -41,7 +41,7 @@ other function-related data through its context object.
 Here is a (simplified) example from the `dividend` example smart contract that we will use
 to showcase some features of WasmLib:
 
-```golang
+```go
 func OnLoad() {
   exports := wasmlib.NewScExports()
   exports.AddFunc("divide", funcDivide)
@@ -65,7 +65,7 @@ In its simplest form this is all that is necessary to initialize a smart contrac
 finalize this example, here is what the skeleton function implementations for the above
 smart contract definition would look like:
 
-```golang
+```go
 func funcDivide(ctx wasmlib.ScFuncContext) {
     ctx.Log("dividend.funcDivide")
 }

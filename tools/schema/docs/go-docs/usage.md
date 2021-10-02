@@ -105,7 +105,7 @@ files with the same name, and you will see what we mean.
 Anyway, to show you an example of the initially generated Go code, `mysmartcontract.go`
 looks like this before you even start modifying it:
 
-```golang
+```go
 package mysmartcontract
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"

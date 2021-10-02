@@ -6,7 +6,7 @@ function to adapt it to changing requirements. If you remember from
 the [function call context](context.md) section, the `OnLoad` function and skeleton 
 function signatures looked like this:
 
-```golang
+```go
 func OnLoad() {
     exports := wasmlib.NewScExports()
     exports.AddFunc("divide", funcDivide)
@@ -30,7 +30,7 @@ is no longer sufficient. Luckily, the schema tool also generates thunks
 to inject these features, before calling the function implementations that are 
 maintained by the user. Here is the new `OnLoad` function for the `dividend` contract:
 
-```rust
+```go
 func OnLoad() {
     exports := wasmlib.NewScExports()
     exports.AddFunc(FuncDivide, funcDivideThunk)
@@ -55,7 +55,7 @@ rest of the generated code will use those indexes whenever a known key is used.
 Here is an example of a thunk function for the `setOwner` contract function. You can 
 examine the other thunks that all follow the same pattern in the generated `lib.go`:
 
-```golang
+```go
 type SetOwnerContext struct {
     Params ImmutableSetOwnerParams
     State  MutableDividendState

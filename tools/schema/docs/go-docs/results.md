@@ -14,7 +14,7 @@ passed to the function.
 For example, here is the structure generated for the mutable results for the `getFactor`
 function:
 
-```golang
+```go
 type MutableGetFactorResults struct {
     id int32
 }

@@ -14,7 +14,7 @@ execution of the request. Note that this is of particular interest to smart cont
 need a delayed action, like betting contracts with a timed betting round, or to create
 time-lock functionality in a smart contract. Here's how that works:
 
-```golang
+```go
 ...
 
 eor := ScFuncs.EndOfRound(ctx)

@@ -18,6 +18,20 @@ passed to the function.
 For example, here is the structure generated for the immutable params for the `member`
 function:
 
+```go
+type ImmutableMemberParams struct {
+    id int32
+}
+
+func (s ImmutableMemberParams) Address() wasmlib.ScImmutableAddress {
+    return wasmlib.NewScImmutableAddress(s.id, idxMap[IdxParamAddress])
+}
+
+func (s ImmutableMemberParams) Factor() wasmlib.ScImmutableInt64 {
+    return wasmlib.NewScImmutableInt64(s.id, idxMap[IdxParamFactor])
+}
+```
+
 ```rust
 #[derive(Clone, Copy)]
 pub struct ImmutableMemberParams {

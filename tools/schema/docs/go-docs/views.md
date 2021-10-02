@@ -17,7 +17,7 @@ show up elsewhere.
 For demonstration purposes we provided a View function with the `dividend` smart contract,
 called 'getFactor':
 
-```golang
+```go
 // 'getFactor' is a simple View function. It will retrieve the factor
 // associated with the (mandatory) address parameter it was provided with.
 func viewGetFactor(ctx wasmlib.ScViewContext, f *GetFactorContext) {

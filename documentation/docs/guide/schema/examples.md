@@ -8,7 +8,7 @@ will look at how to use the SoloContext to create full-blown tests for the
 Let's start with a simple test. We're going to use the `member` function to add a valid
 new member/factor combination to the member group.
 
-```golang
+```go
 func TestAddMemberOk(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     
@@ -38,7 +38,7 @@ in both cases one required parameter is omitted. The idea is to test that the fu
 properly panics by checking the ctx.Err value is not nil after the call. Finally, the
 error message text is checked to contain the correct error message.
 
-```golang
+```go
 func TestAddMemberFailMissingAddress(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     
@@ -70,7 +70,7 @@ removed the Params initialization we wanted to be missing.
 
 Now let's see a more complex example:
 
-```golang
+```go
 func TestDivide1Member(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     
@@ -103,7 +103,7 @@ member1. And the contract account should end up empty.
 
 Now let's skip to the most complex test of all:
 
-```golang
+```go
 func TestDivide3Members(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     
@@ -147,7 +147,7 @@ amount when the next `divide` call request is executed.
 We can test this behavior by adding extra calls to `divide` at the end of this test like
 this:
 
-```golang
+```go
 dividendDivide(ctx, 100)
 require.NoError(t, ctx.Err)
 
@@ -179,7 +179,7 @@ Finally, we will show how to test Views and/or Funcs that return a result. Since
 executes post() requests synchronously it is possible to have a Func return a result and
 test for certain result values
 
-```golang
+```go
 func TestGetFactor(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     

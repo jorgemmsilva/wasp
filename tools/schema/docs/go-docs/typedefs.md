@@ -28,7 +28,7 @@ Instead, now you add the following to your schema.json:
 
 The schema tool will generate the following proxies in `typedefs.go`:
 
-```golang
+```go
 package betting
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"
@@ -70,7 +70,7 @@ Note how ImmutableBettingRound and MutableBettingRound type aliases are created 
 types ArrayOfImmutableBet and ArrayOfMutableBet. These are subsequently used in the state
 definition in `state.go`:
 
-```golang
+```go
 package betting
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"

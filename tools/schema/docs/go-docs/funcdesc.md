@@ -11,7 +11,7 @@ will also generate an interface called ScFuncs that can be used to create and in
 each function descriptor. Here is the code generated for the `dividend` example
 in `contract.go`:
 
-```golang
+```go
 package dividend
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"

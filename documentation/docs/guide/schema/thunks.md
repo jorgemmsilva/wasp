@@ -6,6 +6,25 @@ function to adapt it to changing requirements. If you remember from
 the [function call context](context.md) section, the `on_load` function and skeleton 
 function signatures looked like this:
 
+```go
+func OnLoad() {
+    exports := wasmlib.NewScExports()
+    exports.AddFunc("divide", funcDivide)
+    exports.AddFunc("init", funcInit)
+    exports.AddFunc("member", funcMember)
+    exports.AddFunc("setOwner", funcSetOwner)
+    exports.AddView("getFactor", viewGetFactor)
+    exports.AddView("getOwner", viewGetOwner)
+}
+
+func funcDivide(ctx wasmlib.ScFuncContext) {}
+func funcInit(ctx wasmlib.ScFuncContext) {}
+func funcMember(ctx wasmlib.ScFuncContext) {}
+func funcSetOwner(ctx wasmlib.ScFuncContext) {}
+func viewGetFactor(ctx wasmlib.ScViewContext) {}
+func viewGetOwner(ctx wasmlib.ScViewContext) {}
+```
+
 ```rust
 fn on_load() {
     let exports = ScExports::new();
@@ -29,6 +48,22 @@ Now that the schema tool introduces a bunch of automatically generated features,
 is no longer sufficient. Luckily, the schema tool also generates thunks 
 to inject these features, before calling the function implementations that are 
 maintained by the user. Here is the new `on_load` function for the `dividend` contract:
+
+```go
+func OnLoad() {
+    exports := wasmlib.NewScExports()
+    exports.AddFunc(FuncDivide, funcDivideThunk)
+    exports.AddFunc(FuncInit, funcInitThunk)
+    exports.AddFunc(FuncMember, funcMemberThunk)
+    exports.AddFunc(FuncSetOwner, funcSetOwnerThunk)
+    exports.AddView(ViewGetFactor, viewGetFactorThunk)
+    exports.AddView(ViewGetOwner, viewGetOwnerThunk)
+    
+    for i, key := range keyMap {
+        idxMap[i] = key.KeyID()
+    }
+}
+```
 
 ```rust
 fn on_load() {
@@ -56,6 +91,33 @@ rest of the generated code will use those indexes whenever a known key is used.
 
 Here is an example of a thunk function for the `setOwner` contract function. You can 
 examine the other thunks that all follow the same pattern in the generated `lib.rs`:
+
+```go
+type SetOwnerContext struct {
+    Params ImmutableSetOwnerParams
+    State  MutableDividendState
+}
+
+func funcSetOwnerThunk(ctx wasmlib.ScFuncContext) {
+    ctx.Log("dividend.funcSetOwner")
+    // only defined owner of contract can change owner
+    access := ctx.State().GetAgentID(wasmlib.Key("owner"))
+    ctx.Require(access.Exists(), "access not set: owner")
+    ctx.Require(ctx.Caller() == access.Value(), "no permission")
+    
+    f := &SetOwnerContext{
+        Params: ImmutableSetOwnerParams{
+            id: wasmlib.OBJ_ID_PARAMS,
+        },
+        State: MutableDividendState{
+            id: wasmlib.OBJ_ID_STATE,
+        },
+    }
+    ctx.Require(f.Params.Owner().Exists(), "missing mandatory owner")
+    funcSetOwner(ctx, f)
+    ctx.Log("dividend.funcSetOwner ok")
+}
+```
 
 ```rust
 pub struct SetOwnerContext {

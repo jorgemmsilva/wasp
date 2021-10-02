@@ -41,6 +41,18 @@ other function-related data through its context object.
 Here is a (simplified) example from the `dividend` example smart contract that we will use
 to showcase some features of WasmLib:
 
+```go
+func OnLoad() {
+exports := wasmlib.NewScExports()
+exports.AddFunc("divide", funcDivide)
+exports.AddFunc("init", funcInit)
+exports.AddFunc("member", funcMember)
+exports.AddFunc("setOwner", funcSetOwner)
+exports.AddView("getFactor", viewGetFactor)
+exports.AddView("getOwner", viewGetOwner)
+}
+```
+
 ```rust
 fn on_load() {
     let exports = ScExports::new();
@@ -64,6 +76,32 @@ identifier to the function and then send everything to the host.
 In its simplest form this is all that is necessary to initialize a smart contract. To
 finalize this example, here is what the skeleton function implementations for the above
 smart contract definition would look like:
+
+```go
+func funcDivide(ctx wasmlib.ScFuncContext) {
+ctx.Log("dividend.funcDivide")
+}
+
+func funcInit(ctx wasmlib.ScFuncContext) {
+ctx.Log("dividend.funcInit")
+}
+
+func funcMember(ctx wasmlib.ScFuncContext) {
+ctx.Log("dividend.funcMember")
+}
+
+func funcSetOwner(ctx wasmlib.ScFuncContext) {
+ctx.Log("dividend.funcSetOwner")
+}
+
+func viewGetFactor(ctx wasmlib.ScViewContext) {
+ctx.Log("dividend.viewGetFactor")
+}
+
+func viewGetOwner(ctx wasmlib.ScViewContext) {
+ctx.Log("dividend.viewGetOwner")
+}
+```
 
 ```rust
 fn func_divide(ctx: &ScFuncContext) {
@@ -93,13 +131,13 @@ fn view_get_owner(ctx: &ScViewContext) {
 
 As you can see the functions are each provided with a context parameter, which is
 conventionally named _ctx_. Notice that the four Funcs are passed an ScFuncContext,
-whereas the two Views receive an ScViewContext. We're also already showcasing an
-important feature of the contexts: the log() method. This can be used to log
-human-readable text to the host's log output. Logging text is the only way to add tracing
-to a smart contract, because it does not have any I/O capabilities other than what the
-host provides. There is a second logging method, called trace(), that can be used to
-provide extra debug information to the host's log output. This output can be selectively
-turned on and off at the host.
+whereas the two Views receive an ScViewContext. We're also already showcasing an important
+feature of the contexts: the log() method. This can be used to log human-readable text to
+the host's log output. Logging text is the only way to add tracing to a smart contract,
+because it does not have any I/O capabilities other than what the host provides. There is
+a second logging method, called trace(), that can be used to provide extra debug
+information to the host's log output. This output can be selectively turned on and off at
+the host.
 
 In the next section we will introduce the `schema` tool that simplifies smart contract
 programming a lot.

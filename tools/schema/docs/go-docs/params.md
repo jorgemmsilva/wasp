@@ -18,7 +18,7 @@ passed to the function.
 For example, here is the structure generated for the immutable params for the `member`
 function:
 
-```golang
+```go
 type ImmutableMemberParams struct {
     id int32
 }

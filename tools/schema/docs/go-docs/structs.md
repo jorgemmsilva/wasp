@@ -34,7 +34,7 @@ You would insert the following into schema.json:
 The schema tool will generate `types.go` which contains the following code for the Bet
 struct:
 
-```golang
+```go
 package betting
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"
@@ -102,7 +102,7 @@ NewBetFromBytes() (de)serialization code to automatically transform byte arrays 
 
 The generated code in `state.go` that implements the state interface is shown here:
 
-```golang
+```go
 package betting
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"

@@ -30,6 +30,15 @@ needs to be passed to the member function that creates the function descriptor.
 Here's how a smart contract would tell a `dividend` contract on the same chain to divide
 the 1000 tokens it passes to the function:
 
+```go
+...
+
+div := dividend.ScFuncs.Divide(ctx)
+div.Func.TransferIotas(1000).Call()
+
+...
+```
+
 ```rust
 ...
 
@@ -41,6 +50,17 @@ div.func.transfer_iotas(1000).call();
 
 And here is how a smart contract would ask a `dividend` contract on the same chain to
 return the dispersion factor for a specific address:
+
+```go
+...
+
+gf := dividend.ScFuncs.GetFactor(ctx)
+gf.Params.Address().SetValue(address)
+gf.Func.Call()
+factor := gf.Results.Factor().Value()
+
+...
+```
 
 ```rust
 ...
@@ -64,6 +84,16 @@ with the default Hname of the contract, in this case ScHname::new("dividend"). I
 deployed the contract that contains the function you want to call under a different name
 then you would have to provide its associated Hname to the `func` member through the
 of_contract() member function like this:
+
+```go
+...
+
+altContract := NewScHname("alternateName")
+div := dividend.ScFuncs.Divide(ctx)
+div.Func.OfContract(altContract).TransferIotas(1000).Call()
+
+...
+```
 
 ```rust
 ...

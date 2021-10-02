@@ -38,7 +38,7 @@ are already familiar with.
 Let's look at the simplest way of initializing a smart contract by using the new
 `SoloContext` in a test function:
 
-```golang
+```go
 func TestDeploy(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     require.NoError(t, ctx.ContractExists(dividend.ScName))
@@ -53,7 +53,7 @@ the context.
 Here is another part of the `dividend` test code, where you can see how we wrap repetitive
 calls to smart contract functions that are used in multiple tests:
 
-```golang
+```go
 func dividendMember(ctx *wasmsolo.SoloContext, agent *wasmsolo.SoloAgent, factor int64) {
     member := dividend.ScFuncs.Member(ctx)
     member.Params.Address().SetValue(agent.ScAddress())

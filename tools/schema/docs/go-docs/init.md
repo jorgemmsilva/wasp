@@ -18,7 +18,7 @@ To show how creating a smart contract with WasmLib works we will slowly start fl
 the smart contract functions of the `dividend` example in this tutorial. Here is the first
 part of the Go code that implements it, which contains the 'init' function:
 
-```golang
+```go
 // 'init' is used as a way to initialize a smart contract. It is an optional
 // function that will automatically be called upon contract deployment. In this
 // case we use it to initialize the 'owner' state variable so that we can later
@@ -56,7 +56,7 @@ deployed it is no longer possible to change this. Therefore, it is good practice
 through those situations that could require change in advance and allow the contract
 itself to handle such changes through its state by providing a proper function interface:
 
-```golang
+```go
 // 'setOwner' is used to change the owner of the smart contract.
 // It updates the 'owner' state variable with the provided agent id.
 // The 'setOwner' function takes a single mandatory parameter:

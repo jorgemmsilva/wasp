@@ -28,6 +28,44 @@ Instead, now you add the following to your schema.json:
 
 The schema tool will generate the following proxies in `typedefs.rs`:
 
+```go
+package betting
+
+import "github.com/iotaledger/wasp/packages/vm/wasmlib"
+
+type ImmutableBettingRound = ArrayOfImmutableBet
+
+type ArrayOfImmutableBet struct {
+	objID int32
+}
+
+func (a ArrayOfImmutableBet) Length() int32 {
+	return wasmlib.GetLength(a.objID)
+}
+
+func (a ArrayOfImmutableBet) GetBet(index int32) ImmutableBet {
+	return ImmutableBet{objID: a.objID, keyID: wasmlib.Key32(index)}
+}
+
+type MutableBettingRound = ArrayOfMutableBet
+
+type ArrayOfMutableBet struct {
+	objID int32
+}
+
+func (a ArrayOfMutableBet) Clear() {
+	wasmlib.Clear(a.objID)
+}
+
+func (a ArrayOfMutableBet) Length() int32 {
+	return wasmlib.GetLength(a.objID)
+}
+
+func (a ArrayOfMutableBet) GetBet(index int32) MutableBet {
+	return MutableBet{objID: a.objID, keyID: wasmlib.Key32(index)}
+}
+```
+
 ```rust
 // @formatter:off
 
@@ -80,6 +118,68 @@ impl ArrayOfMutableBet {
 Note how ImmutableBettingRound and MutableBettingRound type aliases are created for the
 types ArrayOfImmutableBet and ArrayOfMutableBet. These are subsequently used in the state
 definition in `state.rs`:
+
+```go
+package betting
+
+import "github.com/iotaledger/wasp/packages/vm/wasmlib"
+
+type ArrayOfImmutableBettingRound struct {
+	objID int32
+}
+
+func (a ArrayOfImmutableBettingRound) Length() int32 {
+	return wasmlib.GetLength(a.objID)
+}
+
+func (a ArrayOfImmutableBettingRound) GetBettingRound(index int32) ImmutableBettingRound {
+	subID := wasmlib.GetObjectID(a.objID, wasmlib.Key32(index), wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+	return ImmutableBettingRound{objID: subID}
+}
+
+type ImmutableBettingState struct {
+	id int32
+}
+
+func (s ImmutableBettingState) Owner() wasmlib.ScImmutableAgentID {
+	return wasmlib.NewScImmutableAgentID(s.id, idxMap[IdxStateOwner])
+}
+
+func (s ImmutableBettingState) Rounds() ArrayOfImmutableBettingRound {
+	arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateRounds], wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+	return ArrayOfImmutableBettingRound{objID: arrID}
+}
+
+type ArrayOfMutableBettingRound struct {
+	objID int32
+}
+
+func (a ArrayOfMutableBettingRound) Clear() {
+	wasmlib.Clear(a.objID)
+}
+
+func (a ArrayOfMutableBettingRound) Length() int32 {
+	return wasmlib.GetLength(a.objID)
+}
+
+func (a ArrayOfMutableBettingRound) GetBettingRound(index int32) MutableBettingRound {
+	subID := wasmlib.GetObjectID(a.objID, wasmlib.Key32(index), wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+	return MutableBettingRound{objID: subID}
+}
+
+type MutableBettingState struct {
+	id int32
+}
+
+func (s MutableBettingState) Owner() wasmlib.ScMutableAgentID {
+	return wasmlib.NewScMutableAgentID(s.id, idxMap[IdxStateOwner])
+}
+
+func (s MutableBettingState) Rounds() ArrayOfMutableBettingRound {
+	arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateRounds], wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+	return ArrayOfMutableBettingRound{objID: arrID}
+}
+```
 
 ```rust
 #![allow(dead_code)]

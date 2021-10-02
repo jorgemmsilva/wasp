@@ -43,7 +43,7 @@ Here is part of the Go code in `state.go` that the schema tool has generated. Th
 MutableDividendState struct defines a type-safe interface to access each of the state
 variables through mutable proxies:
 
-```golang
+```go
 type MutableDividendState struct {
     id int32
 }

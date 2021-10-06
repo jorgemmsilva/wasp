@@ -20,168 +20,171 @@ in `contract.rs`:
 		{label: 'Rust', value: 'rust'},
 	]}>
 
-<TabItem value="go">
-```go
-package dividend
+    <TabItem value="go">
+    ```go
+    package dividend
 
-import "github.com/iotaledger/wasp/packages/vm/wasmlib"
+    import "github.com/iotaledger/wasp/packages/vm/wasmlib"
 
-type DivideCall struct {
-	Func *wasmlib.ScFunc
-}
+    type DivideCall struct {
+        Func *wasmlib.ScFunc
+    }
 
-type InitCall struct {
-	Func   *wasmlib.ScInitFunc
-	Params MutableInitParams
-}
+    type InitCall struct {
+        Func   *wasmlib.ScInitFunc
+        Params MutableInitParams
+    }
 
-type MemberCall struct {
-	Func   *wasmlib.ScFunc
-	Params MutableMemberParams
-}
+    type MemberCall struct {
+        Func   *wasmlib.ScFunc
+        Params MutableMemberParams
+    }
 
-type SetOwnerCall struct {
-	Func   *wasmlib.ScFunc
-	Params MutableSetOwnerParams
-}
+    type SetOwnerCall struct {
+        Func   *wasmlib.ScFunc
+        Params MutableSetOwnerParams
+    }
 
-type GetFactorCall struct {
-	Func    *wasmlib.ScView
-	Params  MutableGetFactorParams
-	Results ImmutableGetFactorResults
-}
+    type GetFactorCall struct {
+        Func    *wasmlib.ScView
+        Params  MutableGetFactorParams
+        Results ImmutableGetFactorResults
+    }
 
-type GetOwnerCall struct {
-	Func    *wasmlib.ScView
-	Results ImmutableGetOwnerResults
-}
+    type GetOwnerCall struct {
+        Func    *wasmlib.ScView
+        Results ImmutableGetOwnerResults
+    }
 
-type Funcs struct{}
+    type Funcs struct{}
 
-var ScFuncs Funcs
+    var ScFuncs Funcs
 
-func (sc Funcs) Divide(ctx wasmlib.ScFuncCallContext) *DivideCall {
-	return &DivideCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncDivide)}
-}
+    func (sc Funcs) Divide(ctx wasmlib.ScFuncCallContext) *DivideCall {
+        return &DivideCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncDivide)}
+    }
 
-func (sc Funcs) Init(ctx wasmlib.ScFuncCallContext) *InitCall {
-	f := &InitCall{Func: wasmlib.NewScInitFunc(ctx, HScName, HFuncInit, keyMap[:], idxMap[:])}
-	f.Func.SetPtrs(&f.Params.id, nil)
-	return f
-}
+    func (sc Funcs) Init(ctx wasmlib.ScFuncCallContext) *InitCall {
+        f := &InitCall{Func: wasmlib.NewScInitFunc(ctx, HScName, HFuncInit, keyMap[:], idxMap[:])}
+        f.Func.SetPtrs(&f.Params.id, nil)
+        return f
+    }
 
-func (sc Funcs) Member(ctx wasmlib.ScFuncCallContext) *MemberCall {
-	f := &MemberCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncMember)}
-	f.Func.SetPtrs(&f.Params.id, nil)
-	return f
-}
+    func (sc Funcs) Member(ctx wasmlib.ScFuncCallContext) *MemberCall {
+        f := &MemberCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncMember)}
+        f.Func.SetPtrs(&f.Params.id, nil)
+        return f
+    }
 
-func (sc Funcs) SetOwner(ctx wasmlib.ScFuncCallContext) *SetOwnerCall {
-	f := &SetOwnerCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncSetOwner)}
-	f.Func.SetPtrs(&f.Params.id, nil)
-	return f
-}
+    func (sc Funcs) SetOwner(ctx wasmlib.ScFuncCallContext) *SetOwnerCall {
+        f := &SetOwnerCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncSetOwner)}
+        f.Func.SetPtrs(&f.Params.id, nil)
+        return f
+    }
 
-func (sc Funcs) GetFactor(ctx wasmlib.ScViewCallContext) *GetFactorCall {
-	f := &GetFactorCall{Func: wasmlib.NewScView(ctx, HScName, HViewGetFactor)}
-	f.Func.SetPtrs(&f.Params.id, &f.Results.id)
-	return f
-}
+    func (sc Funcs) GetFactor(ctx wasmlib.ScViewCallContext) *GetFactorCall {
+        f := &GetFactorCall{Func: wasmlib.NewScView(ctx, HScName, HViewGetFactor)}
+        f.Func.SetPtrs(&f.Params.id, &f.Results.id)
+        return f
+    }
 
-func (sc Funcs) GetOwner(ctx wasmlib.ScViewCallContext) *GetOwnerCall {
-	f := &GetOwnerCall{Func: wasmlib.NewScView(ctx, HScName, HViewGetOwner)}
-	f.Func.SetPtrs(nil, &f.Results.id)
-	return f
-}
-```
-</TabItem>
-<TabItem value="rust">
-```rust
-// @formatter:off
+    func (sc Funcs) GetOwner(ctx wasmlib.ScViewCallContext) *GetOwnerCall {
+        f := &GetOwnerCall{Func: wasmlib.NewScView(ctx, HScName, HViewGetOwner)}
+        f.Func.SetPtrs(nil, &f.Results.id)
+        return f
+    }
+    ```
+    </TabItem>
 
-#![allow(dead_code)]
+    <TabItem value="rust">
+        ```rust
+        // @formatter:off
 
-use std::ptr;
+        #![allow(dead_code)]
 
-use wasmlib::*;
+        use std::ptr;
 
-use crate::consts::*;
-use crate::params::*;
-use crate::results::*;
+        use wasmlib::*;
 
-pub struct DivideCall {
-    pub func: ScFunc,
-}
+        use crate::consts::*;
+        use crate::params::*;
+        use crate::results::*;
 
-pub struct InitCall {
-    pub func:   ScFunc,
-    pub params: MutableInitParams,
-}
-
-pub struct MemberCall {
-    pub func:   ScFunc,
-    pub params: MutableMemberParams,
-}
-
-pub struct SetOwnerCall {
-    pub func:   ScFunc,
-    pub params: MutableSetOwnerParams,
-}
-
-pub struct GetFactorCall {
-    pub func:    ScView,
-    pub params:  MutableGetFactorParams,
-    pub results: ImmutableGetFactorResults,
-}
-
-pub struct ScFuncs {
-}
-
-impl ScFuncs {
-    pub fn divide(_ctx: & dyn ScFuncCallContext) -> DivideCall {
-        DivideCall {
-            func: ScFunc::new(HSC_NAME, HFUNC_DIVIDE),
+        pub struct DivideCall {
+            pub func: ScFunc,
         }
-    }
-    pub fn init(_ctx: & dyn ScFuncCallContext) -> InitCall {
-        let mut f = InitCall {
-            func:   ScFunc::new(HSC_NAME, HFUNC_INIT),
-            params: MutableInitParams { id: 0 },
-        };
-        f.func.set_ptrs(&mut f.params.id, ptr::null_mut());
-        f
-    }
-    pub fn member(_ctx: & dyn ScFuncCallContext) -> MemberCall {
-        let mut f = MemberCall {
-            func:   ScFunc::new(HSC_NAME, HFUNC_MEMBER),
-            params: MutableMemberParams { id: 0 },
-        };
-        f.func.set_ptrs(&mut f.params.id, ptr::null_mut());
-        f
-    }
-    pub fn set_owner(_ctx: & dyn ScFuncCallContext) -> SetOwnerCall {
-        let mut f = SetOwnerCall {
-            func:   ScFunc::new(HSC_NAME, HFUNC_SET_OWNER),
-            params: MutableSetOwnerParams { id: 0 },
-        };
-        f.func.set_ptrs(&mut f.params.id, ptr::null_mut());
-        f
-    }
-    pub fn get_factor(_ctx: & dyn ScViewCallContext) -> GetFactorCall {
-        let mut f = GetFactorCall {
-            func:    ScView::new(HSC_NAME, HVIEW_GET_FACTOR),
-            params:  MutableGetFactorParams { id: 0 },
-            results: ImmutableGetFactorResults { id: 0 },
-        };
-        f.func.set_ptrs(&mut f.params.id, &mut f.results.id);
-        f
-    }
-}
 
-// @formatter:on
-```
-</TabItem>
+        pub struct InitCall {
+            pub func:   ScFunc,
+            pub params: MutableInitParams,
+        }
+
+        pub struct MemberCall {
+            pub func:   ScFunc,
+            pub params: MutableMemberParams,
+        }
+
+        pub struct SetOwnerCall {
+            pub func:   ScFunc,
+            pub params: MutableSetOwnerParams,
+        }
+
+        pub struct GetFactorCall {
+            pub func:    ScView,
+            pub params:  MutableGetFactorParams,
+            pub results: ImmutableGetFactorResults,
+        }
+
+        pub struct ScFuncs {
+        }
+
+        impl ScFuncs {
+            pub fn divide(_ctx: & dyn ScFuncCallContext) -> DivideCall {
+                DivideCall {
+                    func: ScFunc::new(HSC_NAME, HFUNC_DIVIDE),
+                }
+            }
+            pub fn init(_ctx: & dyn ScFuncCallContext) -> InitCall {
+                let mut f = InitCall {
+                    func:   ScFunc::new(HSC_NAME, HFUNC_INIT),
+                    params: MutableInitParams { id: 0 },
+                };
+                f.func.set_ptrs(&mut f.params.id, ptr::null_mut());
+                f
+            }
+            pub fn member(_ctx: & dyn ScFuncCallContext) -> MemberCall {
+                let mut f = MemberCall {
+                    func:   ScFunc::new(HSC_NAME, HFUNC_MEMBER),
+                    params: MutableMemberParams { id: 0 },
+                };
+                f.func.set_ptrs(&mut f.params.id, ptr::null_mut());
+                f
+            }
+            pub fn set_owner(_ctx: & dyn ScFuncCallContext) -> SetOwnerCall {
+                let mut f = SetOwnerCall {
+                    func:   ScFunc::new(HSC_NAME, HFUNC_SET_OWNER),
+                    params: MutableSetOwnerParams { id: 0 },
+                };
+                f.func.set_ptrs(&mut f.params.id, ptr::null_mut());
+                f
+            }
+            pub fn get_factor(_ctx: & dyn ScViewCallContext) -> GetFactorCall {
+                let mut f = GetFactorCall {
+                    func:    ScView::new(HSC_NAME, HVIEW_GET_FACTOR),
+                    params:  MutableGetFactorParams { id: 0 },
+                    results: ImmutableGetFactorResults { id: 0 },
+                };
+                f.func.set_ptrs(&mut f.params.id, &mut f.results.id);
+                f
+            }
+        }
+
+        // @formatter:on
+        ```
+    </TabItem>
+
 </Tabs>
+
 As you can see a struct has been generated for each of the funcs and views. Note that the
 structs only provide access to `params` or `results` when these are specified for the
 function. Also note that each struct has a `func` member that can be used to initiate the

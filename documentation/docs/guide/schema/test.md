@@ -1,6 +1,3 @@
-import Tabs from "@theme/Tabs"
-import TabItem from "@theme/TabItem"
-
 # Testing Smart Contracts
 
 Testing of smart contracts initially happens in the Solo testing environment. This enables
@@ -13,7 +10,7 @@ Solo directly interacts with the ISCP code and uses all the data types that are
 [defined in the ISCP code](https://github.com/iotaledger/wasp/blob/develop/documentation/docs/misc/coretypes.md)
 directly. But our Wasm smart contracts cannot access these types directly because they run
 in a sandboxed environment. Therefore, WasmLib implements its
-[own versions](types.md) of these data types and the VM layer acts as a data type
+[own versions](types.mdx) of these data types and the VM layer acts as a data type
 translator between both systems.
 
 The impact of this type transformation used to be that to be able to write tests in the
@@ -42,22 +39,13 @@ are already familiar with.
 Let's look at the simplest way of initializing a smart contract by using the new
 `SoloContext` in a test function:
 
-<Tabs defaultValue="go"
-    values={[
-        {label: 'Go', value: 'go'},
-        {label: 'Json', value: 'json'},
-        {label: 'Rust', value: 'rust'},
-    ]}>
-
-<TabItem value="go">
 ```go
 func TestDeploy(t *testing.T) {
     ctx := wasmsolo.NewSoloContext(t, dividend.ScName, dividend.OnLoad)
     require.NoError(t, ctx.ContractExists(dividend.ScName))
 }
 ```
-</TabItem>
-</Tabs>
+
 The first line will automatically create a new chain and upload and deploy the provided
 example `dividend` contract to this chain. It returns a `SoloContext` for further use. The
 second line verifies the existence of the deployed contract on the chain associated with
@@ -66,7 +54,6 @@ the context.
 Here is another part of the `dividend` test code, where you can see how we wrap repetitive
 calls to smart contract functions that are used in multiple tests:
 
-<TabItem value="go">
 ```go
 func dividendMember(ctx *wasmsolo.SoloContext, agent *wasmsolo.SoloAgent, factor int64) {
     member := dividend.ScFuncs.Member(ctx)
@@ -88,7 +75,7 @@ func dividendGetFactor(ctx *wasmsolo.SoloContext, member3 *wasmsolo.SoloAgent) i
     return value
 }
 ```
-</TabItem>
+
 As you can see we pass in the SoloContext and the parameters to the wrapper functions,
 then use the context to create a function descriptor for the wrapped function, pass any
 parameters through the `Params` proxy, and then either post the function request or call

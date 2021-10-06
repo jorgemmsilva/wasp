@@ -5,7 +5,7 @@ import TabItem from "@theme/TabItem"
 
 The optional `params` subsection contains field definitions for each of the parameters
 that a function takes. The layout of the field definitions is identical to that of
-the [state](state.md) field definitions, with one addition. The field type can be prefixed
+the [state](state.mdx) field definitions, with one addition. The field type can be prefixed
 with a question mark, which indicates that that parameter is optional.
 
 The schema tool will automatically generate an immutable structure with member variables
@@ -24,44 +24,46 @@ function:
 <Tabs defaultValue="go"
     values={[
         {label: 'Go', value: 'go'},
-        {label: 'Json', value: 'json'},
         {label: 'Rust', value: 'rust'},
-    ]}>
+    ]}
+>
 
-<TabItem value="go">
-```go
-type ImmutableMemberParams struct {
-    id int32
-}
-
-func (s ImmutableMemberParams) Address() wasmlib.ScImmutableAddress {
-    return wasmlib.NewScImmutableAddress(s.id, idxMap[IdxParamAddress])
-}
-
-func (s ImmutableMemberParams) Factor() wasmlib.ScImmutableInt64 {
-    return wasmlib.NewScImmutableInt64(s.id, idxMap[IdxParamFactor])
-}
-```
-</TabItem>
-<TabItem value="rust">
-```rust
-#[derive(Clone, Copy)]
-pub struct ImmutableMemberParams {
-    pub(crate) id: i32,
-}
-
-impl ImmutableMemberParams {
-    pub fn address(&self) -> ScImmutableAddress {
-        ScImmutableAddress::new(self.id, idx_map(IDX_PARAM_ADDRESS))
+    <TabItem value="go">
+    ```go
+    type ImmutableMemberParams struct {
+        id int32
     }
 
-    pub fn factor(&self) -> ScImmutableInt64 {
-        ScImmutableInt64::new(self.id, idx_map(IDX_PARAM_FACTOR))
+    func (s ImmutableMemberParams) Address() wasmlib.ScImmutableAddress {
+        return wasmlib.NewScImmutableAddress(s.id, idxMap[IdxParamAddress])
     }
-}
-```
-</TabItem>
+
+    func (s ImmutableMemberParams) Factor() wasmlib.ScImmutableInt64 {
+        return wasmlib.NewScImmutableInt64(s.id, idxMap[IdxParamFactor])
+    }
+    ```
+    </TabItem>
+    <TabItem value="rust">
+    ```rust
+    #[derive(Clone, Copy)]
+    pub struct ImmutableMemberParams {
+        pub(crate) id: i32,
+    }
+
+    impl ImmutableMemberParams {
+        pub fn address(&self) -> ScImmutableAddress {
+            ScImmutableAddress::new(self.id, idx_map(IDX_PARAM_ADDRESS))
+        }
+
+        pub fn factor(&self) -> ScImmutableInt64 {
+            ScImmutableInt64::new(self.id, idx_map(IDX_PARAM_FACTOR))
+        }
+    }
+    ```
+    </TabItem>
+
 </Tabs>
+
 Note that the schema tool will also generate a mutable version of the structure, suitable
 for providing the parameters when calling this smart contract function.
 

@@ -18,13 +18,6 @@ round you could not easily define it if it weren't for typedefs.
 
 Instead, now you add the following to your schema.json:
 
-<Tabs defaultValue="go"
-	values={[
-		{label: 'Go', value: 'go'},
-		{label: 'Rust', value: 'rust'},
-	]}>
-
-<TabItem value="json">
 ```json
 {
   "typedefs": {
@@ -35,11 +28,16 @@ Instead, now you add the following to your schema.json:
   }
 }
 ```
-</TabItem>
-</Tabs>
+
 The schema tool will generate the following proxies in `typedefs.rs`:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
 <TabItem value="go">
+
 ```go
 package betting
 
@@ -77,8 +75,10 @@ func (a ArrayOfMutableBet) GetBet(index int32) MutableBet {
 	return MutableBet{objID: a.objID, keyID: wasmlib.Key32(index)}
 }
 ```
+
 </TabItem>
 <TabItem value="rust">
+
 ```rust
 // @formatter:off
 
@@ -127,75 +127,86 @@ impl ArrayOfMutableBet {
 
 // @formatter:on
 ```
+
 </TabItem>
+</Tabs>
+
 Note how ImmutableBettingRound and MutableBettingRound type aliases are created for the
 types ArrayOfImmutableBet and ArrayOfMutableBet. These are subsequently used in the state
 definition in `state.rs`:
 
+<Tabs defaultValue="go"
+	values={[
+		{label: 'Go', value: 'go'},
+		{label: 'Rust', value: 'rust'},
+	]}>
 <TabItem value="go">
+
 ```go
 package betting
 
 import "github.com/iotaledger/wasp/packages/vm/wasmlib"
 
 type ArrayOfImmutableBettingRound struct {
-	objID int32
+objID int32
 }
 
 func (a ArrayOfImmutableBettingRound) Length() int32 {
-	return wasmlib.GetLength(a.objID)
+return wasmlib.GetLength(a.objID)
 }
 
 func (a ArrayOfImmutableBettingRound) GetBettingRound(index int32) ImmutableBettingRound {
-	subID := wasmlib.GetObjectID(a.objID, wasmlib.Key32(index), wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
-	return ImmutableBettingRound{objID: subID}
+subID := wasmlib.GetObjectID(a.objID, wasmlib.Key32(index), wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+return ImmutableBettingRound{objID: subID}
 }
 
 type ImmutableBettingState struct {
-	id int32
+id int32
 }
 
 func (s ImmutableBettingState) Owner() wasmlib.ScImmutableAgentID {
-	return wasmlib.NewScImmutableAgentID(s.id, idxMap[IdxStateOwner])
+return wasmlib.NewScImmutableAgentID(s.id, idxMap[IdxStateOwner])
 }
 
 func (s ImmutableBettingState) Rounds() ArrayOfImmutableBettingRound {
-	arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateRounds], wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
-	return ArrayOfImmutableBettingRound{objID: arrID}
+arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateRounds], wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+return ArrayOfImmutableBettingRound{objID: arrID}
 }
 
 type ArrayOfMutableBettingRound struct {
-	objID int32
+objID int32
 }
 
 func (a ArrayOfMutableBettingRound) Clear() {
-	wasmlib.Clear(a.objID)
+wasmlib.Clear(a.objID)
 }
 
 func (a ArrayOfMutableBettingRound) Length() int32 {
-	return wasmlib.GetLength(a.objID)
+return wasmlib.GetLength(a.objID)
 }
 
 func (a ArrayOfMutableBettingRound) GetBettingRound(index int32) MutableBettingRound {
-	subID := wasmlib.GetObjectID(a.objID, wasmlib.Key32(index), wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
-	return MutableBettingRound{objID: subID}
+subID := wasmlib.GetObjectID(a.objID, wasmlib.Key32(index), wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+return MutableBettingRound{objID: subID}
 }
 
 type MutableBettingState struct {
-	id int32
+id int32
 }
 
 func (s MutableBettingState) Owner() wasmlib.ScMutableAgentID {
-	return wasmlib.NewScMutableAgentID(s.id, idxMap[IdxStateOwner])
+return wasmlib.NewScMutableAgentID(s.id, idxMap[IdxStateOwner])
 }
 
 func (s MutableBettingState) Rounds() ArrayOfMutableBettingRound {
-	arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateRounds], wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
-	return ArrayOfMutableBettingRound{objID: arrID}
+arrID := wasmlib.GetObjectID(s.id, idxMap[IdxStateRounds], wasmlib.TYPE_ARRAY|wasmlib.TYPE_BYTES)
+return ArrayOfMutableBettingRound{objID: arrID}
 }
 ```
+
 </TabItem>
 <TabItem value="rust">
+
 ```rust
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -274,7 +285,10 @@ impl MutableBettingState {
     }
 }
 ```
+
 </TabItem>
+</Tabs>
+
 Notice how the rounds() member function returns a proxy to an array of BettingRound. Which
 in turn is an array of Bet. So the desired result has been achieved. And every access step
 along the way only allows you to take the path laid out which is checked at compile-time.

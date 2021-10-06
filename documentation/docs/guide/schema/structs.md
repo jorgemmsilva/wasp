@@ -1,6 +1,3 @@
-import Tabs from "@theme/Tabs"
-import TabItem from "@theme/TabItem"
-
 # Structured Data Types
 
 The schema tool allows you to define your own structured data types that are composed of
@@ -18,13 +15,6 @@ of the bet, the number of the item that was bet on, and the agent ID of the one 
 the bet. And you would keep track of all bets in state storage in an array of Bet structs.
 You would insert the following into schema.json:
 
-<Tabs defaultValue="go"
-	values={[
-		{label: 'Go', value: 'go'},
-		{label: 'Rust', value: 'rust'},
-	]}>
-
-<TabItem value="json">
 ```json
 {
   "structs": {
@@ -40,12 +30,10 @@ You would insert the following into schema.json:
   }
 }
 ```
-</TabItem>
-</Tabs>
+
 The schema tool will generate `types.rs` which contains the following code for the Bet
 struct:
 
-<TabItem value="go">
 ```go
 package betting
 
@@ -108,11 +96,8 @@ func (o MutableBet) Value() *Bet {
 	return NewBetFromBytes(wasmlib.GetBytes(o.objID, o.keyID, wasmlib.TYPE_BYTES))
 }
 ```
-</TabItem>
-<TabItem value="rust">
-```rust
-// @formatter:off
 
+```rust
 #![allow(dead_code)]
 
 use wasmlib::*;
@@ -179,16 +164,13 @@ impl MutableBet {
         Bet::from_bytes(&get_bytes(self.obj_id, self.key_id, TYPE_BYTES))
     }
 }
-
-// @formatter:on
 ```
-</TabItem>
+
 Notice how the generated ImmutableBet and MutableBet proxies use the from_bytes() and
 to_bytes() (de)serialization code to automatically transform byte arrays into Bet structs.
 
 The generated code in `state.rs` that implements the state interface is shown here:
 
-<TabItem value="go">
 ```go
 package betting
 
@@ -248,8 +230,7 @@ func (s MutableBettingState) Owner() wasmlib.ScMutableAgentID {
 	return wasmlib.NewScMutableAgentID(s.id, idxMap[IdxStateOwner])
 }
 ```
-</TabItem>
-<TabItem value="rust">
+
 ```rust
 #![allow(dead_code)]
 #![allow(unused_imports)]
@@ -325,7 +306,7 @@ impl MutableBettingState {
     }
 }
 ```
-</TabItem>
+
 The end result is an ImmutableBettingState and MutableBettingState structure that can
 directly interface to the state of the betting contract.
 

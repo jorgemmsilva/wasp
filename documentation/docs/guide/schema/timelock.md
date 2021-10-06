@@ -1,20 +1,9 @@
-import Tabs from "@theme/Tabs"
-import TabItem from "@theme/TabItem"
-
 # Colored Tokens and Time Locks
 
 Let's examine some less commonly used member functions of the SoloContext. We will switch
 to the `fairauction` example to show their usage. Here is the startAuction()
 function of the fairauction test suite:
 
-<Tabs defaultValue="go"
-    values={[
-        {label: 'Go', value: 'go'},
-        {label: 'Json', value: 'json'},
-        {label: 'Rust', value: 'rust'},
-    ]}>
-
-<TabItem value="go">
 ```go
 var (
     auctioneer *wasmsolo.SoloAgent
@@ -23,14 +12,14 @@ var (
 
 func startAuction(t *testing.T) *wasmsolo.SoloContext {
     ctx := wasmsolo.NewSoloContract(t, fairauction.ScName, fairauction.OnLoad)
-    
+
     // set up auctioneer account and mint some tokens to auction off
     auctioneer = ctx.NewSoloAgent()
     tokenColor, ctx.Err = auctioneer.Mint(10)
     require.NoError(t, ctx.Err)
     require.EqualValues(t, solo.Saldo-10, auctioneer.Balance())
     require.EqualValues(t, 10, auctioneer.Balance(tokenColor))
-    
+
     // start the auction
     sa := fairauction.ScFuncs.StartAuction(ctx.Sign(auctioneer))
     sa.Params.Color().SetValue(tokenColor)
@@ -44,8 +33,7 @@ func startAuction(t *testing.T) *wasmsolo.SoloContext {
     return ctx
 }
 ```
-</TabItem>
-</Tabs>
+
 The function first sets up the SoloContext as usual, and then it performs quite a bit of
 extra work. This is because we want the startAuction() function to start an auction, so
 that the tests that subsequently use startAuction() can then focus on testing all kinds of
@@ -90,26 +78,25 @@ SoloContext. That concludes the startAuction() function.
 
 Here is the first test function that uses our startAuction() function:
 
-<TabItem value="go">
 ```go
 func TestFaStartAuction(t *testing.T) {
     ctx := startAuction(t)
-    
+
     // note 1 iota should be stuck in the delayed finalize_auction
     require.EqualValues(t, 25-1, ctx.Balance(nil))
     require.EqualValues(t, 10, ctx.Balance(nil, tokenColor))
-    
+
     // auctioneer sent 25 deposit + 10 tokenColor
     require.EqualValues(t, solo.Saldo-25-10, auctioneer.Balance())
     require.EqualValues(t, 0, auctioneer.Balance(tokenColor))
     require.EqualValues(t, 0, ctx.Balance(auctioneer))
-    
+
     // remove pending finalize_auction from backlog
     ctx.AdvanceClockBy(61 * time.Minute)
     require.True(t, ctx.WaitForPendingRequests(1))
 }
 ```
-</TabItem>
+
 The `startAuction` function of the smart contract will have posted a time-locked request
 to the `finalizeAuction` function by using the Delay() method. This request needed 1 iota
 for the request, but the request is still 'in transit' until it is unlocked. We can verify

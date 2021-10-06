@@ -50,33 +50,35 @@ to showcase some features of WasmLib:
 		{label: 'Rust', value: 'rust'},
 	]}>
 
-<TabItem value="go">
-```go
-func OnLoad() {
-	exports := wasmlib.NewScExports()
-	exports.AddFunc("divide", funcDivide)
-	exports.AddFunc("init", funcInit)
-	exports.AddFunc("member", funcMember)
-	exports.AddFunc("setOwner", funcSetOwner)
-	exports.AddView("getFactor", viewGetFactor)
-	exports.AddView("getOwner", viewGetOwner)
-}
-```
-</TabItem>
-<TabItem value="rust">
-```rust
-fn on_load() {
-	let exports = ScExports::new();
-	exports.add_func("divide", func_divide);
-	exports.add_func("init", func_init);
-	exports.add_func("member", func_member);
-	exports.add_func("setOwner", func_set_owner);
-	exports.add_view("getFactor", view_get_factor);
-	exports.add_view("getOwner", view_get_owner);
-}
-```
-</TabItem>
+    <TabItem value="go">
+    ```go
+    func OnLoad() {
+    	exports := wasmlib.NewScExports()
+    	exports.AddFunc("divide", funcDivide)
+    	exports.AddFunc("init", funcInit)
+    	exports.AddFunc("member", funcMember)
+    	exports.AddFunc("setOwner", funcSetOwner)
+    	exports.AddView("getFactor", viewGetFactor)
+    	exports.AddView("getOwner", viewGetOwner)
+    }
+    ```
+    </TabItem>
+    <TabItem value="rust">
+    ```rust
+    fn on_load() {
+    	let exports = ScExports::new();
+    	exports.add_func("divide", func_divide);
+    	exports.add_func("init", func_init);
+    	exports.add_func("member", func_member);
+    	exports.add_func("setOwner", func_set_owner);
+    	exports.add_view("getFactor", view_get_factor);
+    	exports.add_view("getOwner", view_get_owner);
+    }
+    ```
+    </TabItem>
+
 </Tabs>
+
 As you can see this on_load() function first creates the required ScExports context and
 then proceeds to define four Funcs named `divide`, `init`, `member`, and `setOwner`. It
 does this by calling the add_func() method of the ScExports context. Next it defines two
@@ -89,60 +91,71 @@ In its simplest form this is all that is necessary to initialize a smart contrac
 finalize this example, here is what the skeleton function implementations for the above
 smart contract definition would look like:
 
-<TabItem value="go">
-```go
-func funcDivide(ctx wasmlib.ScFuncContext) {
-	ctx.Log("dividend.funcDivide")
-}
+<Tabs
+  defaultValue="go"
+  values={[
+    { label: "Go", value: "go" },
+    { label: "Rust", value: "rust" },
+  ]}
+>
 
-func funcInit(ctx wasmlib.ScFuncContext) {
-	ctx.Log("dividend.funcInit")
-}
+    <TabItem value="go">
+    	```go
+    	func funcDivide(ctx wasmlib.ScFuncContext) {
+    		ctx.Log("dividend.funcDivide")
+    	}
 
-func funcMember(ctx wasmlib.ScFuncContext) {
-	ctx.Log("dividend.funcMember")
-}
+    	func funcInit(ctx wasmlib.ScFuncContext) {
+    	ctx.Log("dividend.funcInit")
+    	}
 
-func funcSetOwner(ctx wasmlib.ScFuncContext) {
-	ctx.Log("dividend.funcSetOwner")
-}
+    	func funcMember(ctx wasmlib.ScFuncContext) {
+    	ctx.Log("dividend.funcMember")
+    	}
 
-func viewGetFactor(ctx wasmlib.ScViewContext) {
-	ctx.Log("dividend.viewGetFactor")
-}
+    	func funcSetOwner(ctx wasmlib.ScFuncContext) {
+    	ctx.Log("dividend.funcSetOwner")
+    	}
 
-func viewGetOwner(ctx wasmlib.ScViewContext) {
-	ctx.Log("dividend.viewGetOwner")
-}
-```
-</TabItem>
-<TabItem value="rust">
-```rust
-fn func_divide(ctx: &ScFuncContext) {
-	ctx.log("Calling dividend.divide");
-}
+    	func viewGetFactor(ctx wasmlib.ScViewContext) {
+    	ctx.Log("dividend.viewGetFactor")
+    	}
 
-fn func_init(ctx: &ScFuncContext) {
-	ctx.log("Calling dividend.init");
-}
+    	func viewGetOwner(ctx wasmlib.ScViewContext) {
+    	ctx.Log("dividend.viewGetOwner")
+    	}
+    	```
+    </TabItem>
+    <TabItem value="rust">
+    	```rust
+    	fn func_divide(ctx: &ScFuncContext) {
+    		ctx.log("Calling dividend.divide");
+    	}
 
-fn func_member(ctx: &ScFuncContext) {
-	ctx.log("Calling dividend.member");
-}
+    	fn func_init(ctx: &ScFuncContext) {
+    		ctx.log("Calling dividend.init");
+    	}
 
-fn func_set_owner(ctx: &ScFuncContext) {
-	ctx.log("Calling dividend.setOwner");
-}
+    	fn func_member(ctx: &ScFuncContext) {
+    		ctx.log("Calling dividend.member");
+    	}
 
-fn view_get_factor(ctx: &ScViewContext) {
-	ctx.log("Calling dividend.getFactor");
-}
+    	fn func_set_owner(ctx: &ScFuncContext) {
+    		ctx.log("Calling dividend.setOwner");
+    	}
 
-fn view_get_owner(ctx: &ScViewContext) {
-	ctx.log("Calling dividend.getOwner");
-}
-```
-</TabItem>
+    	fn view_get_factor(ctx: &ScViewContext) {
+    		ctx.log("Calling dividend.getFactor");
+    	}
+
+    	fn view_get_owner(ctx: &ScViewContext) {
+    		ctx.log("Calling dividend.getOwner");
+    	}
+    	```
+    </TabItem>
+
+</Tabs>
+
 As you can see the functions are each provided with a context parameter, which is
 conventionally named _ctx_. Notice that the four Funcs are passed an ScFuncContext,
 whereas the two Views receive an ScViewContext. We're also already showcasing an important

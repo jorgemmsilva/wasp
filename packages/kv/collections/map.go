@@ -66,11 +66,11 @@ func (m *Map) addToSize(amount int) error {
 		return err
 	}
 	n = uint32(int(n) + amount)
-	if n == 0 {
-		m.kvw.Del(kv.Key(MapSizeKey(m.name)))
-	} else {
-		m.kvw.Set(kv.Key(MapSizeKey(m.name)), util.Uint32To4Bytes(n))
-	}
+	// if n == 0 {
+	// 	m.kvw.Del(kv.Key(MapSizeKey(m.name))) // for some reason deleting the key results in the len still being 1, instead of 0
+	// } else {
+	m.kvw.Set(kv.Key(MapSizeKey(m.name)), util.Uint32To4Bytes(n))
+	// }
 	return nil
 }
 
@@ -95,7 +95,11 @@ func (m *Map) SetAt(key, value []byte) error {
 	if err != nil {
 		return err
 	}
-	if !ok {
+	length, err := m.Len()
+	if err != nil {
+		return err
+	}
+	if !ok || length == 0 { // if the map is empty, setting some value to the `nil` key will return ok = true, but that is not correct
 		err = m.addToSize(1)
 		if err != nil {
 			return err

@@ -166,16 +166,15 @@ func harvest(ctx iscp.Sandbox) dict.Dict {
 	checkLedger(state, "accounts.harvest.begin")
 	defer checkLedger(state, "accounts.harvest.exit")
 
-	bottomIotas := ctx.Params().MustGetUint64(ParamForceMinimumIotas, MinimumIotasOnCommonAccount)
+	minIotasRemaining := ctx.Params().MustGetUint64(ParamForceMinimumIotas, MinimumIotasOnCommonAccount)
 	commonAccount := ctx.ChainID().CommonAccount()
-	toWithdraw := GetAccountAssets(state, commonAccount)
-	if toWithdraw.IsEmpty() {
-		// empty toWithdraw, nothing to withdraw. Can't be
+	assetsInCommonAccount := GetAccountAssets(state, commonAccount)
+	if assetsInCommonAccount.IsEmpty() || assetsInCommonAccount.Iotas <= minIotasRemaining {
+		// can't withdraw past the minimum amount to remain in the common account
 		return nil
 	}
-	if toWithdraw.Iotas > bottomIotas {
-		toWithdraw.Iotas -= bottomIotas
-	}
+	toWithdraw := assetsInCommonAccount.Clone()
+	toWithdraw.Iotas -= minIotasRemaining // always leave min amount in common accoun
 	MustMoveBetweenAccounts(state, commonAccount, ctx.Caller(), toWithdraw, nil)
 	return nil
 }

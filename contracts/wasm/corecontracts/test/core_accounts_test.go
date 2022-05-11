@@ -80,7 +80,6 @@ func TestWithdraw(t *testing.T) {
 }
 
 func TestHarvest(t *testing.T) {
-	t.SkipNow()
 	ctx := setupAccounts(t)
 	var withdrawAmount uint64 = 10_000
 

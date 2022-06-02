@@ -1,15 +1,12 @@
 package dbmanager
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/logger"
-	"github.com/iotaledger/hive.go/timeutil"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/database/registrykvstore"
 	"github.com/iotaledger/wasp/packages/database/textdb"
@@ -27,16 +24,16 @@ type DBManager struct {
 	databases     map[*iotago.AliasID]DB
 	stores        map[*iotago.AliasID]kvstore.KVStore
 	mutex         sync.RWMutex
-	inMemory      bool
+	engine        string
 }
 
-func NewDBManager(log *logger.Logger, inMemory bool, registryConfig *registry.Config) *DBManager {
+func NewDBManager(log *logger.Logger, dbEngine string, registryConfig *registry.Config) *DBManager {
 	dbm := DBManager{
 		log:       log,
 		databases: make(map[*iotago.AliasID]DB),
 		stores:    make(map[*iotago.AliasID]kvstore.KVStore),
 		mutex:     sync.RWMutex{},
-		inMemory:  inMemory,
+		engine:    dbEngine,
 	}
 	// registry db is created with an empty chainID
 	dbm.registryDB = dbm.createDB(nil)
@@ -61,15 +58,6 @@ func (m *DBManager) createDB(chainID *iscp.ChainID) DB {
 
 	chainIDStr := getChainString(chainID)
 
-	if m.inMemory {
-		m.log.Infof("creating new in-memory database for: %s", chainIDStr)
-		db, err := NewMemDB()
-		if err != nil {
-			m.log.Fatal(err)
-		}
-		return db
-	}
-
 	dbDir := parameters.GetString(parameters.DatabaseDir)
 	if _, err := os.Stat(dbDir); os.IsNotExist(err) {
 		// create a new database dir if none exists
@@ -87,7 +75,7 @@ func (m *DBManager) createDB(chainID *iscp.ChainID) DB {
 		m.log.Infof("using existing database for: %s.", chainIDStr)
 	}
 
-	db, err := NewDB(instanceDir)
+	db, err := NewDB(instanceDir, m.engine)
 	if err != nil {
 		m.log.Fatal(err)
 	}
@@ -121,24 +109,4 @@ func (m *DBManager) Close() {
 	for _, instance := range m.databases {
 		instance.Close()
 	}
-}
-
-func (m *DBManager) RunGC(_ context.Context) {
-	m.gc(m.registryDB)
-	for _, db := range m.databases {
-		m.gc(db)
-	}
-}
-
-func (m *DBManager) gc(db DB) {
-	if !db.RequiresGC() {
-		return
-	}
-	// run the garbage collection with the given interval
-	gcTimeInterval := 5 * time.Minute
-	timeutil.NewTicker(func() {
-		if err := db.GC(); err != nil {
-			m.log.Warnf("Garbage collection failed: %s", err)
-		}
-	}, gcTimeInterval)
 }

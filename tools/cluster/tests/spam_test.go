@@ -92,7 +92,6 @@ func TestSpamOnledger(t *testing.T) {
 	println(events)
 }
 
-// !! WARNING !! - this test should only be run with `database.inMemory` set to `false`. Otherwise it is WAY slower, and will probably time out or take a LONG time
 func TestSpamOffLedger(t *testing.T) {
 	testutil.RunHeavy(t)
 

@@ -149,7 +149,7 @@ func New(t TestContext, initOptions ...*InitOptions) *Solo {
 	ret := &Solo{
 		T:                            t,
 		logger:                       opt.Log,
-		dbmanager:                    dbmanager.NewDBManager(opt.Log.Named("db"), true, registry.DefaultConfig()),
+		dbmanager:                    dbmanager.NewDBManager(opt.Log.Named("db"), "pebble", registry.DefaultConfig()),
 		utxoDB:                       utxodb.New(utxoDBinitParams),
 		chains:                       make(map[iscp.ChainID]*Chain),
 		vmRunner:                     runvm.NewVMRunner(),

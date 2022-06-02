@@ -22,12 +22,12 @@ var dbm *dbmanager.DBManager
 
 // Init is an entry point for the plugin.
 func Init() *node.Plugin {
-	return node.NewPlugin(pluginName, nil, node.Enabled, configure, run)
+	return node.NewPlugin(pluginName, nil, node.Enabled, configure)
 }
 
 func configure(_ *node.Plugin) {
 	log = logger.NewLogger(pluginName)
-	dbm = dbmanager.NewDBManager(logger.NewLogger("dbmanager"), parameters.GetBool(parameters.DatabaseInMemory), registryConfig())
+	dbm = dbmanager.NewDBManager(logger.NewLogger("dbmanager"), parameters.GetString(parameters.DatabaseEngine), registryConfig())
 
 	// we open the database in the configure, so we must also make sure it's closed here
 	err := daemon.BackgroundWorker(pluginName, func(ctx context.Context) {
@@ -38,13 +38,6 @@ func configure(_ *node.Plugin) {
 	}, parameters.PriorityDatabase)
 	if err != nil {
 		log.Panicf("failed to start a daemon: %s", err)
-	}
-}
-
-func run(_ *node.Plugin) {
-	err := daemon.BackgroundWorker(pluginName+"[GC]", dbm.RunGC, parameters.PriorityDBGarbageCollection)
-	if err != nil {
-		log.Errorf("failed to start as daemon: %s", err)
 	}
 }
 

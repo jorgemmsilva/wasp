@@ -19,7 +19,7 @@ type WaspConfigParams struct {
 const WaspConfig = `
 {
   "database": {
-    "inMemory": false,
+    "engine": pebble,
     "directory": "waspdb"
   },
   "logger": {

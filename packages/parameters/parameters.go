@@ -25,8 +25,8 @@ const (
 	LoggerOutputPaths       = "logger.outputPaths"
 	LoggerDisableEvents     = "logger.disableEvents"
 
-	DatabaseDir      = "database.directory"
-	DatabaseInMemory = "database.inMemory"
+	DatabaseDir    = "database.directory"
+	DatabaseEngine = "database.engine"
 
 	WebAPIBindAddress            = "webapi.bindAddress"
 	WebAPIAdminWhitelist         = "webapi.adminWhitelist"
@@ -82,7 +82,7 @@ func Init() *configuration.Configuration {
 	flag.Bool(LoggerDisableEvents, true, "disable logger events")
 
 	flag.String(DatabaseDir, "waspdb", "path to the database folder")
-	flag.Bool(DatabaseInMemory, false, "whether the database is only kept in memory and not persisted")
+	flag.String(DatabaseEngine, "rocksdb", "what engine to use for the DB options are: \"rockdb\" or \"pebble\"")
 
 	flag.String(WebAPIBindAddress, "127.0.0.1:8080", "the bind address for the web API")
 	flag.StringSlice(WebAPIAdminWhitelist, []string{}, "IP whitelist for /adm wndpoints")

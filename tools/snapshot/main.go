@@ -78,7 +78,7 @@ func restoreDb(prop *snapshot.FileProperties) {
 		os.Exit(1)
 	}
 	fmt.Printf("creating new database for chain ID %s\n", prop.ChainID)
-	db, err := dbmanager.NewDB(dbDir)
+	db, err := dbmanager.NewDB(dbDir, "pebble")
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
@@ -128,7 +128,7 @@ func verify(prop *snapshot.FileProperties) {
 	}
 	fmt.Printf("verifying database for chain ID %s\n", prop.ChainID)
 
-	db, err := dbmanager.NewDB(dbDir)
+	db, err := dbmanager.NewDB(dbDir, "rocksdb")
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)
@@ -207,7 +207,7 @@ func createSnapshot(chainID *iscp.ChainID) {
 	}
 	fmt.Printf("creating shapshot for chain ID %s\n", chainID)
 
-	db, err := dbmanager.NewDB(dbDir)
+	db, err := dbmanager.NewDB(dbDir, "rocksdb")
 	if err != nil {
 		fmt.Printf("error: %v\n", err)
 		os.Exit(1)

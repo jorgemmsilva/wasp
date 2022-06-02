@@ -1,6 +1,6 @@
 GIT_COMMIT_SHA := $(shell git rev-list -1 HEAD)
 BUILD_TAGS = rocksdb,builtin_static
-BUILD_LD_FLAGS = "-X github.com/iotaledger/wasp/packages/wasp.VersionHash=$(GIT_COMMIT_SHA)"
+BUILD_LD_FLAGS = "-X github.com/iotaledger/wasp/packages/wasp.VersionHash=$(GIT_COMMIT_SHA) -extldflags '-Wl,--allow-multiple-definition'"
 
 #
 # You can override these e.g. as

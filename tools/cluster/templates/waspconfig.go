@@ -19,11 +19,11 @@ type WaspConfigParams struct {
 const WaspConfig = `
 {
   "database": {
-    "engine": pebble,
+    "engine": "pebble",
     "directory": "waspdb"
   },
   "logger": {
-    "level": "info",
+    "level": "debug",
     "disableCaller": false,
     "disableStacktrace": true,
     "encoding": "console",

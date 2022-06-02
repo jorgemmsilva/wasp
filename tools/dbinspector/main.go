@@ -14,7 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/iscp"
 )
 
-//nolint:unused // false positive
+
 var dbKeysNames = map[byte]string{
 	dbkeys.ObjectTypeDBSchemaVersion:    "Schema Version",
 	dbkeys.ObjectTypeChainRecord:        "Chain Record",
@@ -36,7 +36,7 @@ func printDbEntries(dbDir fs.DirEntry, dbpath string) {
 		fmt.Printf("Not a directory, skipping %s\n", dbDir.Name())
 		return
 	}
-	db, err := dbmanager.NewDB(fmt.Sprintf("%s/%s", dbpath, dbDir.Name()))
+	db, err := dbmanager.NewDB(fmt.Sprintf("%s/%s", dbpath, dbDir.Name()), "rocksdb")
 	if err != nil {
 		panic(err)
 	}

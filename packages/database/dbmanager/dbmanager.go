@@ -35,6 +35,7 @@ func NewDBManager(log *logger.Logger, dbEngine string, registryConfig *registry.
 		mutex:     sync.RWMutex{},
 		engine:    dbEngine,
 	}
+	println("WTF")
 	// registry db is created with an empty chainID
 	dbm.registryDB = dbm.createDB(nil)
 	if registryConfig.UseText {

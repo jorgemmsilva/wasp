@@ -51,7 +51,15 @@ variable "wasp_config" {
 	},
 	"nanomsg":{
 		"port": {{ env "NOMAD_PORT_nanomsg" }}
-	}
+	},
+  "wal": {
+    "directory": "wal",
+    "enabled": true
+  },
+  "debug": {
+    "rawblocksEnabled": true,
+    "rawblocksDirectory": "{{ env "NOMAD_TASK_DIR" }}/blocks"
+  }
 }
 EOH
 }

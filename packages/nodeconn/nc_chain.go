@@ -5,7 +5,6 @@ package nodeconn
 
 import (
 	"context"
-	"encoding/json"
 	"time"
 
 	"github.com/iotaledger/hive.go/events"
@@ -71,32 +70,6 @@ func (ncc *ncChain) PublishTransaction(tx *iotago.Transaction, timeout ...time.D
 		return err
 	}
 	ncc.log.Debugf("publishing transaction %v: posted", isc.TxID(txID))
-
-	txMsgID, err := txMsg.ID()
-	if err != nil {
-		return xerrors.Errorf("publishing transaction %v: failed to extract a tx Block ID: %w", isc.TxID(txID), err)
-	}
-	msgMetaChanges, subInfo := ncc.nc.mqttClient.BlockMetadataChange(txMsgID)
-	if subInfo.Error() != nil {
-		return xerrors.Errorf("publishing transaction %v: failed to subscribe: %w", isc.TxID(txID), subInfo.Error())
-	}
-	go func() {
-		ncc.log.Debugf("publishing transaction %v: listening to inclusion states...", isc.TxID(txID))
-		for msgMetaChange := range msgMetaChanges {
-			if msgMetaChange.LedgerInclusionState != "" {
-				str, err := json.Marshal(msgMetaChange)
-				if err != nil {
-					ncc.log.Errorf("publishing transaction %v: unexpected error trying to marshal msgMetadataChange: %s", isc.TxID(txID), err)
-				} else {
-					ncc.log.Debugf("publishing transaction %v: msgMetadataChange: %s", isc.TxID(txID), str)
-				}
-				ncc.inclusionStates.Trigger(txID, msgMetaChange.LedgerInclusionState)
-			}
-		}
-		ncc.log.Debugf("publishing transaction %v: listening to inclusion states completed", isc.TxID(txID))
-	}()
-
-	// TODO should promote/re-attach logic not be blocking?
 	return ncc.nc.waitUntilConfirmed(ctxWithTimeout, txMsg)
 }
 

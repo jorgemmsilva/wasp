@@ -157,11 +157,11 @@ func longTermDKGRobustLT(t *testing.T, peerIdentities []*cryptolib.KeyPair, f in
 		peerPubKeys[i] = peerIdentities[i].GetPublicKey()
 	}
 	for i := range nodeIDs {
-		kyberEdDSSA := eddsa.EdDSA{}
 		nodeIDs[i] = gpa.NodeID(peerIdentities[i].GetPublicKey().String())
-		require.NoError(t, kyberEdDSSA.UnmarshalBinary(peerIdentities[i].GetPrivateKey().AsBytes()))
-		nodePKs[nodeIDs[i]] = kyberEdDSSA.Public
-		nodeSKs[nodeIDs[i]] = kyberEdDSSA.Secret
+		nodeKeyPair, err := peerIdentities[i].GetPrivateKey().AsKyberKeyPair()
+		require.NoError(t, err)
+		nodePKs[nodeIDs[i]] = nodeKeyPair.Public
+		nodeSKs[nodeIDs[i]] = nodeKeyPair.Private
 	}
 	longTermPK, longTermSecretShares := adkg.MakeTestDistributedKey(t, tcrypto.DefaultEd25519Suite(), nodeIDs, nodeSKs, nodePKs, f, log)
 	for i := range dkShares {
@@ -259,6 +259,10 @@ func (f *fakeDKShare) DSSVerifyMasterSignature(data, signature []byte) error {
 
 func (f *fakeDKShare) DSSSecretShare() tcrypto.SecretShare {
 	return f.dssSecretShare
+}
+
+func (f *fakeDKShare) BLSThreshold() uint16 {
+	panic(xerrors.New("not important"))
 }
 
 func (f *fakeDKShare) BLSSharedPublic() kyber.Point {

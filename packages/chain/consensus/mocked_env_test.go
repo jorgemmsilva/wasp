@@ -19,7 +19,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/peering"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -80,7 +79,7 @@ func newMockedEnv(t *testing.T, n, quorum uint16, debug, mockACS bool) *MockedEn
 	log.Infof("running DKG and setting up mocked network..")
 	ret.NodeIDs, ret.NodeKeyPairs = testpeers.SetupKeys(n)
 	var err error
-	var dksRegistries []registry.DKShareRegistryProvider
+	var dksRegistries []tcrypto.DKShareRegistryProvider
 	ret.StateAddress, dksRegistries = testpeers.SetupDkgPregenerated(t, quorum, ret.NodeKeyPairs)
 	ret.DKShares = make([]tcrypto.DKShare, len(dksRegistries))
 	for i := range dksRegistries {

@@ -25,8 +25,8 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
@@ -464,7 +464,7 @@ func newTestConsInst(
 	nodeIDs []gpa.NodeID,
 	nodeStates map[gpa.NodeID]*testNodeState,
 	peerIdentities []*cryptolib.KeyPair,
-	dkShareProviders []registry.DKShareRegistryProvider,
+	dkShareProviders []tcrypto.DKShareRegistryProvider,
 	requests []isc.Request,
 	doneCB func(nextInput *testInstInput),
 	log *logger.Logger,

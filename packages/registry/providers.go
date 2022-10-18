@@ -4,12 +4,8 @@
 package registry
 
 import (
-	"errors"
-
-	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/tcrypto"
 )
 
 type Provider func() *Impl
@@ -18,15 +14,6 @@ type NodeIdentityProvider interface {
 	GetNodeIdentity() *cryptolib.KeyPair
 	GetNodePublicKey() *cryptolib.PublicKey
 }
-
-// DKShareRegistryProvider stands for a partial registry interface, needed for this package.
-// It should be implemented by registry.impl
-type DKShareRegistryProvider interface {
-	SaveDKShare(dkShare tcrypto.DKShare) error
-	LoadDKShare(sharedAddress iotago.Address) (tcrypto.DKShare, error)
-}
-
-var ErrDKShareNotFound = errors.New("dkShare not found")
 
 // ChainRecordRegistryProvider stands for a partial registry interface, needed for this package.
 type ChainRecordRegistryProvider interface {

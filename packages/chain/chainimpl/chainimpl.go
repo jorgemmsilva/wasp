@@ -29,6 +29,7 @@ import (
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/util/pipe"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
@@ -61,7 +62,7 @@ type chainObj struct {
 	nodeConn                           chain.ChainNodeConnection
 	db                                 kvstore.KVStore
 	netProvider                        peering.NetworkProvider
-	dksProvider                        registry.DKShareRegistryProvider
+	dksProvider                        tcrypto.DKShareRegistryProvider
 	eventRequestProcessed              *events.Event
 	eventChainTransition               *events.Event
 	eventChainTransitionClosure        *events.Closure
@@ -97,7 +98,7 @@ func NewChain(
 	nc chain.NodeConnection,
 	db kvstore.KVStore,
 	netProvider peering.NetworkProvider,
-	dksProvider registry.DKShareRegistryProvider,
+	dksProvider tcrypto.DKShareRegistryProvider,
 	nidProvider registry.NodeIdentityProvider,
 	processorConfig *processors.Config,
 	offledgerBroadcastUpToNPeers int,

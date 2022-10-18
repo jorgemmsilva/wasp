@@ -19,7 +19,6 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/dkg"
 	"github.com/iotaledger/wasp/packages/peering"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
@@ -50,13 +49,13 @@ func SetupDkg(
 	peerIdentities []*cryptolib.KeyPair,
 	suite tcrypto.Suite,
 	log *logger.Logger,
-) (iotago.Address, []registry.DKShareRegistryProvider) {
+) (iotago.Address, []tcrypto.DKShareRegistryProvider) {
 	timeout := 300 * time.Second
 	networkProviders, networkCloser := SetupNet(peerNetIDs, peerIdentities, testutil.NewPeeringNetReliable(log), log)
 	//
 	// Initialize the DKG subsystem in each node.
 	dkgNodes := make([]*dkg.Node, len(peerNetIDs))
-	registries := make([]registry.DKShareRegistryProvider, len(peerNetIDs))
+	registries := make([]tcrypto.DKShareRegistryProvider, len(peerNetIDs))
 	for i := range peerNetIDs {
 		registries[i] = testutil.NewDkgRegistryProvider(peerIdentities[i].GetPrivateKey())
 		dkgNode, err := dkg.NewNode(
@@ -86,8 +85,8 @@ func SetupDkgTrivial(
 	t *testing.T,
 	n, f int,
 	peerIdentities []*cryptolib.KeyPair,
-	dkShareRegistries []registry.DKShareRegistryProvider, // Will be used if not nil.
-) (iotago.Address, []registry.DKShareRegistryProvider) {
+	dkShareRegistries []tcrypto.DKShareRegistryProvider, // Will be used if not nil.
+) (iotago.Address, []tcrypto.DKShareRegistryProvider) {
 	nodePubKeys := PublicKeys(peerIdentities)
 	dssSuite := tcrypto.DefaultEd25519Suite()
 	blsSuite := tcrypto.DefaultBLSSuite()
@@ -110,7 +109,7 @@ func SetupDkgTrivial(
 	//
 	// Create the DKShare objects.
 	if dkShareRegistries == nil {
-		dkShareRegistries = make([]registry.DKShareRegistryProvider, len(peerIdentities))
+		dkShareRegistries = make([]tcrypto.DKShareRegistryProvider, len(peerIdentities))
 	}
 	require.Equal(t, n, len(dkShareRegistries))
 	var address iotago.Address
@@ -158,7 +157,7 @@ func SetupDkgPregenerated( // TODO: Remove.
 	t *testing.T,
 	threshold uint16,
 	identities []*cryptolib.KeyPair,
-) (iotago.Address, []registry.DKShareRegistryProvider) {
+) (iotago.Address, []tcrypto.DKShareRegistryProvider) {
 	var err error
 	serializedDks := pregeneratedDksRead(uint16(len(identities)), threshold)
 	nodePubKeys := make([]*cryptolib.PublicKey, len(identities))
@@ -166,7 +165,7 @@ func SetupDkgPregenerated( // TODO: Remove.
 		nodePubKeys[i] = identities[i].GetPublicKey()
 	}
 	dks := make([]tcrypto.DKShare, len(serializedDks))
-	registries := make([]registry.DKShareRegistryProvider, len(identities))
+	registries := make([]tcrypto.DKShareRegistryProvider, len(identities))
 	for i := range dks {
 		dks[i], err = tcrypto.DKShareFromBytes(serializedDks[i], tcrypto.DefaultEd25519Suite(), tcrypto.DefaultBLSSuite(), identities[i].GetPrivateKey())
 		require.Nil(t, err)

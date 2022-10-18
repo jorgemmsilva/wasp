@@ -16,8 +16,8 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/cmtLog"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
-	"github.com/iotaledger/wasp/packages/chain/consensus/journal"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -108,7 +108,7 @@ func testGeneric(t *testing.T, n, f int, reliable bool) {
 	chainInitReqs := tcl.MakeTxChainInit()
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	require.NoError(t, err)
-	logIndex := journal.LogIndex(0)
+	logIndex := cmtLog.LogIndex(0)
 	for i := range peerIdentities {
 		procCache := processors.MustNew(procConfig)
 		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)

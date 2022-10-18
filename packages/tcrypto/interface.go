@@ -4,6 +4,8 @@
 package tcrypto
 
 import (
+	"errors"
+
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/share"
 	"go.dedis.ch/kyber/v3/sign/dss"
@@ -58,3 +60,12 @@ type DKShare interface {
 	AssignCommonData(dks DKShare)
 	ClearCommonData()
 }
+
+// DKShareRegistryProvider stands for a partial registry interface, needed for this package.
+// It should be implemented by registry.impl
+type DKShareRegistryProvider interface {
+	SaveDKShare(dkShare DKShare) error
+	LoadDKShare(sharedAddress iotago.Address) (DKShare, error)
+}
+
+var ErrDKShareNotFound = errors.New("dkShare not found")

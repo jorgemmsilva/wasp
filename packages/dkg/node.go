@@ -17,7 +17,6 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/peering"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 )
 
@@ -27,17 +26,17 @@ type NodeProvider func() *Node
 // It receives commands from the initiator as a dkg.NodeProvider,
 // and communicates with other DKG nodes via the peering network.
 type Node struct {
-	identity     *cryptolib.KeyPair               // Keys of the current node.
-	secKey       kyber.Scalar                     // Derived from the identity.
-	pubKey       kyber.Point                      // Derived from the identity.
-	blsSuite     Suite                            // Cryptography to use for the Pairing based operations.
-	edSuite      suites.Suite                     // Cryptography to use for the Ed25519 based operations.
-	netProvider  peering.NetworkProvider          // Network to communicate through.
-	registry     registry.DKShareRegistryProvider // Where to store the generated keys.
-	processes    map[string]*proc                 // Only for introspection.
-	procLock     *sync.RWMutex                    // To guard access to the process pool.
-	initMsgQueue chan *initiatorInitMsgIn         // Incoming events processed async.
-	attachID     interface{}                      // Peering attach ID
+	identity     *cryptolib.KeyPair              // Keys of the current node.
+	secKey       kyber.Scalar                    // Derived from the identity.
+	pubKey       kyber.Point                     // Derived from the identity.
+	blsSuite     Suite                           // Cryptography to use for the Pairing based operations.
+	edSuite      suites.Suite                    // Cryptography to use for the Ed25519 based operations.
+	netProvider  peering.NetworkProvider         // Network to communicate through.
+	registry     tcrypto.DKShareRegistryProvider // Where to store the generated keys.
+	processes    map[string]*proc                // Only for introspection.
+	procLock     *sync.RWMutex                   // To guard access to the process pool.
+	initMsgQueue chan *initiatorInitMsgIn        // Incoming events processed async.
+	attachID     interface{}                     // Peering attach ID
 	log          *logger.Logger
 }
 
@@ -46,7 +45,7 @@ type Node struct {
 func NewNode(
 	identity *cryptolib.KeyPair,
 	netProvider peering.NetworkProvider,
-	reg registry.DKShareRegistryProvider,
+	reg tcrypto.DKShareRegistryProvider,
 	log *logger.Logger,
 ) (*Node, error) {
 	kyberKeyPair, err := identity.GetPrivateKey().AsKyberKeyPair()

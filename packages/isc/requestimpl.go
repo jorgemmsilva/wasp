@@ -598,7 +598,7 @@ const RequestIDSeparator = "-"
 
 type RequestRef struct {
 	ID   RequestID
-	Hash [32]byte // TODO: Why the constant is left as number?
+	Hash hashing.HashValue
 }
 
 const RequestRefKeyLen = iotago.OutputIDLength + 32
@@ -606,7 +606,7 @@ const RequestRefKeyLen = iotago.OutputIDLength + 32
 type RequestRefKey [RequestRefKeyLen]byte
 
 func RequestRefFromRequest(req Request) *RequestRef {
-	return &RequestRef{ID: req.ID(), Hash: hashing.HashDataBlake2b(req.Bytes())}
+	return &RequestRef{ID: req.ID(), Hash: RequestHash(req)}
 }
 
 func RequestRefsFromRequests(reqs []Request) []*RequestRef {
@@ -627,7 +627,7 @@ func (rr *RequestRef) IsFor(req Request) bool {
 	if rr.ID != req.ID() {
 		return false
 	}
-	return rr.Hash == hashing.HashDataBlake2b(req.Bytes())
+	return rr.Hash == RequestHash(req)
 }
 
 // RequestLookupDigest is shortened version of the request id. It is guaranteed to be unique

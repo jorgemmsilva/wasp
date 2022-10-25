@@ -8,6 +8,7 @@ import (
 )
 
 type Mempool interface {
+	consGR.Mempool
 	ReceiveRequests(reqs ...isc.Request) []bool
 	RemoveRequests(reqs ...isc.RequestID)
 	HasRequest(id isc.RequestID) bool

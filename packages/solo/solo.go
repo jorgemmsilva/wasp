@@ -429,10 +429,8 @@ func (ch *Chain) collateBatch() []isc.Request {
 	now := ch.Env.GlobalTime()
 
 	// get the requests from the mempool
-	requestRefsChan := ch.mempool.ConsensusProposalsAsync(context.Background(), nil)
-	reqRefs := <-requestRefsChan
-	requestsChan := ch.mempool.ConsensusRequestsAsync(context.Background(), reqRefs)
-	requests := <-requestsChan
+	reqRefs := <-ch.mempool.ConsensusProposalsAsync(context.Background(), nil)
+	requests := <-ch.mempool.ConsensusRequestsAsync(context.Background(), reqRefs)
 	batchSize := len(requests)
 
 	if batchSize > maxBatch {

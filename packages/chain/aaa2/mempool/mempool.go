@@ -9,9 +9,10 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
+	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/optimism"
-	"github.com/iotaledger/wasp/packages/metrics"
+	metrics_pkg "github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
@@ -26,7 +27,7 @@ type mempool struct {
 	pool                   map[isc.RequestID]isc.Request
 	ctx                    context.Context
 	log                    *logger.Logger
-	mempoolMetrics         metrics.MempoolMetrics
+	metrics                metrics_pkg.MempoolMetrics
 }
 
 var _ consGR.Mempool = &mempool{}
@@ -36,14 +37,14 @@ func New(
 	chainAddress iotago.Address,
 	stateReader state.OptimisticStateReader,
 	log *logger.Logger,
-	mempoolMetrics metrics.MempoolMetrics,
+	mempoolMetrics metrics_pkg.MempoolMetrics,
 ) Mempool {
 	ret := &mempool{
 		chainAddress:           chainAddress,
 		pool:                   make(map[isc.RequestID]isc.Request),
 		ctx:                    ctx,
 		log:                    log.Named("mempool"),
-		mempoolMetrics:         mempoolMetrics,
+		metrics:                mempoolMetrics,
 		stateReader:            stateReader,
 		timelockedRequestsChan: make(chan isc.OnLedgerRequest),
 	}
@@ -136,7 +137,7 @@ func (m *mempool) addTimelockedRequestsToMempool() {
 				panic("request without timelock shouldn't have been added here")
 			}
 			unlockTime := time.Unix(int64(timelock.UnixTime), 0)
-			if unlockTime.Before(nextUnlock) {
+			if nextUnlock.IsZero() || unlockTime.Before(nextUnlock) {
 				nextUnlock = unlockTime
 				nextUnlockReqs = make(map[isc.RequestID]isc.Request)
 				nextUnlockReqs[req.ID()] = req
@@ -179,8 +180,11 @@ func (m *mempool) addToPoolNoLock(req isc.Request) bool {
 	if shouldBeRemoved(req, time.Now()) {
 		return false // if expired or shouldn't even be processed, don't add to mempool
 	}
-	// checking in the state if request is processed.
+	// checking in the state if request is processed or already in mempool.
 	reqid := req.ID()
+	if _, ok := m.pool[reqid]; ok {
+		return false
+	}
 	alreadyProcessed, err := m.hasBeenProcessed(&reqid)
 	if err != nil || alreadyProcessed {
 		// could not check if it is processed or not, leave it in the in-buffer
@@ -188,7 +192,8 @@ func (m *mempool) addToPoolNoLock(req isc.Request) bool {
 	}
 	m.pool[reqid] = req
 	m.log.Debugf("IN MEMPOOL %s (+%d / -%d)", req.ID(), m.inPoolCounter, m.outPoolCounter)
-	m.mempoolMetrics.CountRequestIn(req)
+	m.inPoolCounter++
+	m.metrics.CountRequestIn(req)
 	return true
 }
 
@@ -229,8 +234,8 @@ func (m *mempool) removeFromPoolNoLock(reqID isc.RequestID) {
 	m.outPoolCounter++
 	delete(m.pool, reqID)
 	m.log.Debugf("OUT MEMPOOL %s (+%d / -%d)", reqID, m.inPoolCounter, m.outPoolCounter)
-	m.mempoolMetrics.CountRequestOut()
-	m.mempoolMetrics.CountBlocksPerChain()
+	m.metrics.CountRequestOut()
+	m.metrics.CountBlocksPerChain()
 }
 
 func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
@@ -250,6 +255,7 @@ func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
 
 // ConsensusProposalsAsync returns a list of requests to be sent as a batch proposal
 func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef {
+	// TODO ctx not used here
 	retChan := make(chan []*isc.RequestRef, 1)
 
 	go func() {
@@ -278,24 +284,49 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 	return retChan
 }
 
+func (m *mempool) getRequestsFromRefs(requestRefs []*isc.RequestRef) (requests []isc.Request, missingIndexes map[hashing.HashValue]int) {
+	m.poolMutex.RLock()
+	defer m.poolMutex.RUnlock()
+
+	requests = make([]isc.Request, len(requestRefs))
+	missingIndexes = make(map[hashing.HashValue]int)
+	for i, ref := range requestRefs {
+		req, ok := m.pool[ref.ID]
+		if ok {
+			requests[i] = req
+		} else {
+			missingIndexes[ref.Hash] = i
+		}
+	}
+	return requests, missingIndexes
+}
+
 // ConsensusRequestsAsync return a list of requests to be processed
 func (m *mempool) ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc.RequestRef) <-chan []isc.Request {
 	retChan := make(chan []isc.Request, 1)
 
 	go func() {
-		m.poolMutex.RLock()
-		defer m.poolMutex.RUnlock()
-
-		ret := make([]isc.Request, len(requestRefs))
-		for i, ref := range requestRefs {
-			req, ok := m.pool[ref.ID]
-			if ok {
-				ret[i] = req
-			} else {
+		requests, missingIndexes := m.getRequestsFromRefs(requestRefs)
+		for len(missingIndexes) > 0 {
+			var missingRequestsChan chan isc.Request
+			for _, idx := range missingIndexes {
+				missingRef := requestRefs[idx]
+				println(missingRef.Hash[:])
+				// TODO
 				panic("TODO fetch requests that are not present in the mempool")
 			}
+			select {
+			case req := <-missingRequestsChan:
+				idx := missingIndexes[isc.RequestHash(req)]
+				requests[idx] = req
+				m.poolMutex.Lock()
+				m.addToPoolNoLock(req)
+				m.poolMutex.Unlock()
+			case <-ctx.Done():
+				return
+			}
 		}
-		retChan <- ret
+		retChan <- requests
 	}()
 
 	return retChan

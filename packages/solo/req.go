@@ -14,7 +14,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/trie.go/models/trie_blake2b"
 	"github.com/iotaledger/trie.go/trie"
-	"github.com/iotaledger/wasp/packages/chain/mempool"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -556,12 +556,7 @@ func (ch *Chain) WaitUntilMempoolIsEmpty(timeout ...time.Duration) bool {
 	if len(timeout) > 0 {
 		realTimeout = timeout[0]
 	}
-	startTime := time.Now()
-	ret := ch.mempool.WaitInBufferEmpty(timeout...)
-	if !ret {
-		return false
-	}
-	remainingTimeout := realTimeout - time.Since(startTime)
+	remainingTimeout := realTimeout - time.Since(time.Now())
 	return ch.mempool.WaitPoolEmpty(remainingTimeout)
 }
 
@@ -569,7 +564,7 @@ func (ch *Chain) WaitUntilMempoolIsEmpty(timeout ...time.Duration) bool {
 // requests in the mempool of the chain both become equal to the specified number
 func (ch *Chain) WaitForRequestsThrough(numReq int, maxWait ...time.Duration) bool {
 	return ch.WaitUntil(func(mstats mempool.MempoolInfo) bool {
-		return mstats.InBufCounter == numReq && mstats.OutPoolCounter == numReq
+		return mstats.OutPoolCounter == numReq
 	}, maxWait...)
 }
 

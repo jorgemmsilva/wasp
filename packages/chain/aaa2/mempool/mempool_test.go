@@ -1,6 +1,6 @@
 package mempool
 
-// var chainAddress = tpkg.RandEd25519Address()
+// var chainAddrress = tpkg.RandEd25519Address()
 
 // func createStateReader(t *testing.T, glb coreutil.ChainStateSync) (state.OptimisticStateReader, state.VirtualStateAccess) {
 // 	store := mapdb.NewMapDB()

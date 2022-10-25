@@ -4,6 +4,7 @@
 package solo
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -18,7 +19,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/trie.go/trie"
 	"github.com/iotaledger/wasp/packages/chain"
-	"github.com/iotaledger/wasp/packages/chain/mempool"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database/dbmanager"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -105,7 +106,7 @@ type Chain struct {
 	// related to asynchronous backlog processing
 	runVMMutex sync.Mutex
 	// mempool of the chain is used in Solo to mimic a real node
-	mempool mempool.Mempool
+	mempool mempool.SoloMempool
 	// used for non-standard VMs
 	bypassStardustVM bool
 }
@@ -297,7 +298,8 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    chainlog,
 	}
-	ret.mempool = mempool.New(chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
+	m := mempool.New(context.Background(), chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
+	ret.mempool = m.(mempool.SoloMempool)
 	require.NoError(env.T, err)
 
 	// creating origin transaction with the origin of the Alias chain
@@ -384,7 +386,6 @@ func (env *Solo) AddRequestsToChainMempoolWaitUntilInbufferEmpty(ch *Chain, reqs
 	defer ch.runVMMutex.Unlock()
 
 	ch.mempool.ReceiveRequests(reqs...)
-	ch.mempool.WaitInBufferEmpty(timeout...)
 }
 
 // EnqueueRequests adds requests contained in the transaction to mempools of respective target chains
@@ -426,13 +427,19 @@ func (ch *Chain) collateBatch() []isc.Request {
 	maxBatch := MaxRequestsInBlock - rand.Intn(MaxRequestsInBlock/3)
 
 	now := ch.Env.GlobalTime()
-	ready := ch.mempool.ReadyNow(now)
-	batchSize := len(ready)
+
+	// get the requests from the mempool
+	requestRefsChan := ch.mempool.ConsensusProposalsAsync(context.Background(), nil)
+	reqRefs := <-requestRefsChan
+	requestsChan := ch.mempool.ConsensusRequestsAsync(context.Background(), reqRefs)
+	requests := <-requestsChan
+	batchSize := len(requests)
+
 	if batchSize > maxBatch {
 		batchSize = maxBatch
 	}
 	ret := make([]isc.Request, 0)
-	for _, req := range ready[:batchSize] {
+	for _, req := range requests[:batchSize] {
 		if !req.IsOffLedger() {
 			if !isc.RequestIsUnlockable(req.(isc.OnLedgerRequest), ch.ChainID.AsAddress(), now) {
 				continue
@@ -480,7 +487,7 @@ func (ch *Chain) collateAndRunBatch() bool {
 // BacklogLen is a thread-safe function to return size of the current backlog
 func (ch *Chain) BacklogLen() int {
 	mstats := ch.MempoolInfo()
-	return mstats.InBufCounter - mstats.OutPoolCounter
+	return mstats.OutPoolCounter
 }
 
 func (ch *Chain) GetCandidateNodes() []*governance.AccessNodeInfo {

@@ -619,7 +619,7 @@ func RequestRefsFromRequests(reqs []Request) []*RequestRef {
 
 func (rr *RequestRef) AsKey() RequestRefKey {
 	var key RequestRefKey
-	copy(key[:], append(rr.ID.Bytes(), rr.Hash[:]...))
+	copy(key[:], rr.Bytes())
 	return key
 }
 
@@ -628,6 +628,25 @@ func (rr *RequestRef) IsFor(req Request) bool {
 		return false
 	}
 	return rr.Hash == RequestHash(req)
+}
+
+func (rr *RequestRef) Bytes() []byte {
+	ret := rr.Hash[:]
+	ret = append(ret, rr.ID.Bytes()...)
+	return ret
+}
+
+func RequestRefFromBytes(data []byte) (*RequestRef, error) {
+	reqID, err := RequestIDFromBytes(data[hashing.HashSize:])
+	if err != nil {
+		return nil, err
+	}
+	ret := &RequestRef{
+		ID: reqID,
+	}
+	copy(ret.Hash[:], data[:hashing.HashSize])
+
+	return ret, nil
 }
 
 // RequestLookupDigest is shortened version of the request id. It is guaranteed to be unique

@@ -6,13 +6,17 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iotaledger/hive.go/core/events"
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
+	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/optimism"
 	metrics_pkg "github.com/iotaledger/wasp/packages/metrics"
+	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
@@ -25,31 +29,70 @@ type mempool struct {
 	inPoolCounter          int
 	outPoolCounter         int
 	pool                   map[isc.RequestID]isc.Request
+	net                    peering.NetworkProvider
+	netPeeringID           peering.PeeringID
+	peers                  map[gpa.NodeID]*cryptolib.PublicKey
+	netDisconnect          func()
+	incomingRequests       *events.Event
 	ctx                    context.Context
 	log                    *logger.Logger
 	metrics                metrics_pkg.MempoolMetrics
+	asGPA                  gpa.GPA
 }
 
 var _ consGR.Mempool = &mempool{}
 
 func New(
 	ctx context.Context,
+	chainID *isc.ChainID,
+	myNodeID gpa.NodeID,
+	net peering.NetworkProvider,
 	chainAddress iotago.Address,
 	stateReader state.OptimisticStateReader,
 	log *logger.Logger,
 	mempoolMetrics metrics_pkg.MempoolMetrics,
 ) Mempool {
-	ret := &mempool{
-		chainAddress:           chainAddress,
-		pool:                   make(map[isc.RequestID]isc.Request),
+	pool := &mempool{
+		chainAddress: chainAddress,
+		pool:         make(map[isc.RequestID]isc.Request),
+		net:          net,
+		// TODO how to keep the list of peers????
+		peers:                  make(map[gpa.NodeID]*cryptolib.PublicKey),
 		ctx:                    ctx,
 		log:                    log.Named("mempool"),
 		metrics:                mempoolMetrics,
 		stateReader:            stateReader,
 		timelockedRequestsChan: make(chan isc.OnLedgerRequest),
+		incomingRequests: events.NewEvent(func(handler interface{}, params ...interface{}) {
+			handler.(func(_ isc.Request))(params[0].(isc.Request))
+		}),
 	}
-	go ret.addTimelockedRequestsToMempool()
-	return ret
+	// TODO split GPA in a separate pkg (only to handle msgs, not networking)
+	pool.asGPA = gpa.NewOwnHandler(myNodeID, pool)
+	go pool.addTimelockedRequestsToMempool()
+
+	pool.netPeeringID = peering.PeeringIDFromBytes(
+		hashing.HashDataBlake2b(chainID.Bytes(), []byte("mempool")).Bytes(),
+	)
+
+	attachID := net.Attach(&pool.netPeeringID, peering.PeerMessageReceiverMempool, func(recv *peering.PeerMessageIn) {
+		if recv.MsgType != msgTypeMempool {
+			pool.log.Warnf("Unexpected message, type=%v", recv.MsgType)
+			return
+		}
+		pool.ReceivePeerMsg(recv)
+	})
+	pool.netDisconnect = func() {
+		net.Detach(attachID)
+	}
+
+	return pool
+}
+
+func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Closure {
+	closure := events.NewClosure(handler)
+	m.incomingRequests.Hook(closure)
+	return closure
 }
 
 func (m *mempool) hasBeenProcessed(reqID *isc.RequestID) (hasBeenProcessed bool, err error) {
@@ -85,6 +128,7 @@ func (m *mempool) isRequestReady(req isc.Request) bool {
 }
 
 func (m *mempool) Close() {
+	m.netDisconnect()
 	m.ctx.Done()
 }
 
@@ -194,6 +238,7 @@ func (m *mempool) addToPoolNoLock(req isc.Request) bool {
 	m.log.Debugf("IN MEMPOOL %s (+%d / -%d)", req.ID(), m.inPoolCounter, m.outPoolCounter)
 	m.inPoolCounter++
 	m.metrics.CountRequestIn(req)
+	m.incomingRequests.Trigger(req)
 	return true
 }
 
@@ -223,7 +268,7 @@ func (m *mempool) ReceiveRequests(reqs ...isc.Request) []bool {
 				}
 			}
 		} else {
-			// TODO share with other peers
+			m.Input(newMsgShareRequest(req))
 		}
 		ret[i] = m.addToPoolNoLock(req)
 	}
@@ -255,7 +300,7 @@ func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
 
 // ConsensusProposalsAsync returns a list of requests to be sent as a batch proposal
 func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef {
-	// TODO ctx not used here
+	// TODO ctx not used here, nor is aliasOutput
 	retChan := make(chan []*isc.RequestRef, 1)
 
 	go func() {
@@ -284,21 +329,21 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 	return retChan
 }
 
-func (m *mempool) getRequestsFromRefs(requestRefs []*isc.RequestRef) (requests []isc.Request, missingIndexes map[hashing.HashValue]int) {
+func (m *mempool) getRequestsFromRefs(requestRefs []*isc.RequestRef) (requests []isc.Request, missingReqs map[hashing.HashValue]int) {
 	m.poolMutex.RLock()
 	defer m.poolMutex.RUnlock()
 
 	requests = make([]isc.Request, len(requestRefs))
-	missingIndexes = make(map[hashing.HashValue]int)
+	missingReqs = make(map[hashing.HashValue]int)
 	for i, ref := range requestRefs {
 		req, ok := m.pool[ref.ID]
 		if ok {
 			requests[i] = req
 		} else {
-			missingIndexes[ref.Hash] = i
+			missingReqs[ref.Hash] = i
 		}
 	}
-	return requests, missingIndexes
+	return requests, missingReqs
 }
 
 // ConsensusRequestsAsync return a list of requests to be processed
@@ -306,24 +351,30 @@ func (m *mempool) ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc
 	retChan := make(chan []isc.Request, 1)
 
 	go func() {
-		requests, missingIndexes := m.getRequestsFromRefs(requestRefs)
-		for len(missingIndexes) > 0 {
+		requests, missingReqs := m.getRequestsFromRefs(requestRefs)
+		for len(missingReqs) > 0 {
 			var missingRequestsChan chan isc.Request
-			for _, idx := range missingIndexes {
+			for _, idx := range missingReqs {
 				missingRef := requestRefs[idx]
-				println(missingRef.Hash[:])
-				// TODO
-				panic("TODO fetch requests that are not present in the mempool")
+				m.Input(newMsgMissingRequest(missingRef))
 			}
-			select {
-			case req := <-missingRequestsChan:
-				idx := missingIndexes[isc.RequestHash(req)]
-				requests[idx] = req
-				m.poolMutex.Lock()
-				m.addToPoolNoLock(req)
-				m.poolMutex.Unlock()
-			case <-ctx.Done():
-				return
+			// go m.waitMissingRequests(ctx,missingRequestsChan,)
+			closure := m.attachToIncomingRequests(func(req isc.Request) {
+				// if req.ID()
+				// TODO check if its the request we need
+				missingRequestsChan <- req
+			})
+			defer m.incomingRequests.Detach(closure)
+
+			for {
+				select {
+				case req := <-missingRequestsChan:
+					idx := missingReqs[isc.RequestHash(req)]
+					requests[idx] = req
+					break
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 		retChan <- requests

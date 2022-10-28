@@ -298,7 +298,7 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    chainlog,
 	}
-	m := mempool.New(context.Background(), chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
+	m := mempool.New(context.Background(), "", chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
 	ret.mempool = m.(mempool.SoloMempool)
 	require.NoError(env.T, err)
 

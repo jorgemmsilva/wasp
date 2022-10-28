@@ -39,6 +39,7 @@ const (
 // Interfaces required from other components (MP, SM)
 
 type Mempool interface {
+	gpa.GPA
 	ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef
 	ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc.RequestRef) <-chan []isc.Request
 }

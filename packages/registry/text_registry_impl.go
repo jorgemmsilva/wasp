@@ -218,7 +218,7 @@ func (r *textImpl) LoadDKShare(sharedAddress iotago.Address) (tcrypto.DKShare, e
 	data, err := r.store.Get(key)
 	if err != nil {
 		if errors.Is(err, kvstore.ErrKeyNotFound) {
-			return nil, ErrDKShareNotFound
+			return nil, tcrypto.ErrDKShareNotFound
 		}
 		return nil, err
 	}

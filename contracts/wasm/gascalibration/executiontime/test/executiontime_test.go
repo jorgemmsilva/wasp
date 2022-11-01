@@ -7,11 +7,12 @@ import (
 	"flag"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/iotaledger/wasp/contracts/wasm/gascalibration"
 	"github.com/iotaledger/wasp/contracts/wasm/gascalibration/executiontime/go/executiontime"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
-	"github.com/stretchr/testify/require"
 )
 
 var force = flag.Bool("force", false, "")
@@ -22,7 +23,7 @@ func TestCallF(t *testing.T) {
 		t.SkipNow()
 	}
 	wasmlib.ConnectHost(nil)
-	ctx := wasmsolo.NewSoloContext(t, executiontime.ScName, executiontime.OnLoad)
+	ctx := wasmsolo.NewSoloContext(t, executiontime.ScName, executiontime.OnDispatch)
 	require.NoError(t, ctx.Err)
 
 	f := executiontime.ScFuncs.F(ctx)

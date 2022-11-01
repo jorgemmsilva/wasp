@@ -28,7 +28,7 @@ type waspServicesMock struct {
 	chains map[[iotago.AliasIDLength]byte]*solo.Chain
 }
 
-var _ WaspServices = &waspServicesMock{}
+var _ WaspServicesInterface = &waspServicesMock{}
 
 func (w *waspServicesMock) ConfigDump() map[string]interface{} {
 	return map[string]interface{}{
@@ -112,14 +112,6 @@ func (w *waspServicesMock) GetChainCommitteeInfo(chainID *isc.ChainID) (*chain.C
 	if !ok {
 		return nil, xerrors.Errorf("chain not found")
 	}
-	pubKey0, err := cryptolib.NewPublicKeyFromBase58String("AaKwV3ezdM8DcGKwJ6eRaJ2946D1yghqfpBDatGip1dX")
-	if err != nil {
-		return nil, err
-	}
-	pubKey1, err := cryptolib.NewPublicKeyFromBase58String("AaKwV3ezdM8DcGKwJ6eRaJ2946D1yghqfpBDatGip1dX")
-	if err != nil {
-		return nil, err
-	}
 
 	address := cryptolib.NewKeyPair().GetPublicKey().AsEd25519Address()
 
@@ -132,13 +124,13 @@ func (w *waspServicesMock) GetChainCommitteeInfo(chainID *isc.ChainID) (*chain.C
 			{
 				Index:     0,
 				NetID:     "localhost:2000",
-				PubKey:    pubKey0,
+				PubKey:    cryptolib.NewKeyPair().GetPublicKey(),
 				Connected: true,
 			},
 			{
 				Index:     1,
 				NetID:     "localhost:2001",
-				PubKey:    pubKey1,
+				PubKey:    cryptolib.NewKeyPair().GetPublicKey(),
 				Connected: true,
 			},
 		},
@@ -182,7 +174,7 @@ func initDashboardTest(t *testing.T) *dashboardTestEnv {
 		solo:   s,
 		chains: make(map[[iotago.AliasIDLength]byte]*solo.Chain),
 	}
-	d := Init(e, w, testlogger.NewLogger(t))
+	d := New(testlogger.NewLogger(t), e, w)
 	return &dashboardTestEnv{
 		wasp:      w,
 		echo:      e,

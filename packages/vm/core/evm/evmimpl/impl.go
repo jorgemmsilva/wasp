@@ -4,8 +4,10 @@
 package evmimpl
 
 import (
+	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,6 +20,7 @@ import (
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/emulator"
+	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -63,6 +66,14 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 	// add the standard ISC contract at arbitrary address 0x1074
 	deployMagicContractOnGenesis(genesisAlloc)
 
+	// add the standard ERC20 provider at address 0x1075
+	genesisAlloc[iscmagic.ERC20BaseTokensAddress] = core.GenesisAccount{
+		Code:    iscmagic.ERC20BaseTokensRuntimeBytecode,
+		Storage: map[common.Hash]common.Hash{},
+		Balance: &big.Int{},
+	}
+	addToPrivileged(ctx, iscmagic.ERC20BaseTokensAddress)
+
 	chainID := evmtypes.MustDecodeChainID(ctx.Params().MustGet(evm.FieldChainID), evm.DefaultChainID)
 	emulator.Init(
 		evmStateSubrealm(ctx.State()),
@@ -72,10 +83,13 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 		timestamp(ctx),
 		genesisAlloc,
 		getBalanceFunc(ctx),
+		getSubBalanceFunc(ctx),
+		getAddBalanceFunc(ctx),
 	)
 
 	gasRatio := codec.MustDecodeRatio32(ctx.Params().MustGet(evm.FieldGasRatio), evmtypes.DefaultGasRatio)
 	ctx.State().Set(keyGasRatio, gasRatio.Bytes())
+
 	// storing hname as a terminal value of the contract's state nil key.
 	// This way we will be able to retrieve commitment to the contract's state
 	ctx.State().Set("", ctx.Contract().Bytes())
@@ -123,7 +137,7 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 		}
 	}
 
-	if receipt != nil { // receipt can be nil when "intrinsic gas too low"
+	if receipt != nil { // receipt can be nil when "intrinsic gas too low" or not enough funds
 		// If EVM execution was reverted we must revert the ISC request as well.
 		// Failed txs will be stored when closing the block context.
 		bctx.txs = append(bctx.txs, tx)
@@ -131,7 +145,7 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 	}
 	ctx.RequireNoError(err)
 	ctx.RequireNoError(gasErr)
-	ctx.RequireNoError(result.Err) // panic so that the error is handled by ISC VM logic
+	ctx.RequireNoError(tryGetRevertError(result))
 
 	return nil
 }
@@ -225,11 +239,23 @@ func callContract(ctx isc.SandboxView) dict.Dict {
 	emu := createEmulatorR(ctx)
 	res, err := emu.CallContract(callMsg, nil)
 	ctx.RequireNoError(err)
+	ctx.RequireNoError(tryGetRevertError(res))
 	return result(res.Return())
 }
 
-// TODO: For some reason, when EstimateGasMode == true the gas burned is less. How to automatically calculate this?
-var additionalGasBurned = gas.BurnCodeReadFromState1P.Cost(2)
+func tryGetRevertError(res *core.ExecutionResult) error {
+	// try to include the revert reason in the error
+	if res.Err == nil {
+		return nil
+	}
+	if len(res.Revert()) > 0 {
+		reason, errUnpack := abi.UnpackRevert(res.Revert())
+		if errUnpack == nil {
+			return fmt.Errorf("%s: %v", res.Err.Error(), reason)
+		}
+	}
+	return res.Err
+}
 
 func estimateGas(ctx isc.Sandbox) dict.Dict {
 	// we only want to charge gas for the actual execution of the ethereum tx
@@ -241,14 +267,25 @@ func estimateGas(ctx isc.Sandbox) dict.Dict {
 	ctx.RequireCaller(isc.NewEthereumAddressAgentID(callMsg.From))
 
 	emu := createEmulator(ctx)
+
 	res, err := emu.CallContract(callMsg, ctx.Privileged().GasBurnEnable)
 	ctx.RequireNoError(err)
+	ctx.RequireNoError(res.Err)
 
-	// TODO: this assumes that the initial budget was gas.MaxGasPerCall
-	// see evmOffLedgerEstimateGasRequest::GasBudget()
-	// and VMContext::calculateAffordableGasBudget() when EstimateGasMode == true
-	iscGasBurned := gas.MaxGasPerCall - ctx.Gas().Budget()
 	gasRatio := codec.MustDecodeRatio32(ctx.State().MustGet(keyGasRatio), evmtypes.DefaultGasRatio)
-	evmGasBurnedInISCCalls := evmtypes.ISCGasBurnedToEVM(iscGasBurned, &gasRatio) + additionalGasBurned
-	return result(codec.EncodeUint64(res.UsedGas + evmGasBurnedInISCCalls))
+	{
+		// burn the used EVM gas as it would be done for a normal request call
+		ctx.Privileged().GasBurnEnable(true)
+		gasErr := panicutil.CatchPanic(
+			func() {
+				ctx.Gas().Burn(gas.BurnCodeEVM1P, evmtypes.EVMGasToISC(res.UsedGas, &gasRatio))
+			},
+		)
+		ctx.Privileged().GasBurnEnable(false)
+		ctx.RequireNoError(gasErr)
+	}
+
+	finalEvmGasUsed := evmtypes.ISCGasBurnedToEVM(ctx.Gas().Burned(), &gasRatio)
+
+	return result(codec.EncodeUint64(finalEvmGasUsed))
 }

@@ -7,13 +7,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/iotaledger/wasp/contracts/wasm/fairroulette/go/fairroulette"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
-	"github.com/stretchr/testify/require"
 )
 
 func setupTest(t *testing.T) *wasmsolo.SoloContext {
-	return wasmsolo.NewSoloContext(t, fairroulette.ScName, fairroulette.OnLoad)
+	return wasmsolo.NewSoloContext(t, fairroulette.ScName, fairroulette.OnDispatch)
 }
 
 func TestDeploy(t *testing.T) {

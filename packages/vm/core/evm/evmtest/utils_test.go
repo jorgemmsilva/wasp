@@ -216,6 +216,19 @@ func (e *soloChainEnv) MagicContract(defaultSender *ecdsa.PrivateKey) *iscContra
 	}
 }
 
+func (e *soloChainEnv) ERC20BaseTokens(defaultSender *ecdsa.PrivateKey) *iscContractInstance {
+	erc20BaseABI, err := abi.JSON(strings.NewReader(iscmagic.ERC20BaseTokensABI))
+	require.NoError(e.t, err)
+	return &iscContractInstance{
+		evmContractInstance: &evmContractInstance{
+			chain:         e,
+			defaultSender: defaultSender,
+			address:       iscmagic.ERC20BaseTokensAddress,
+			abi:           erc20BaseABI,
+		},
+	}
+}
+
 func (e *soloChainEnv) deployISCTestContract(creator *ecdsa.PrivateKey) *iscTestContractInstance {
 	return &iscTestContractInstance{e.deployContract(creator, evmtest.ISCTestContractABI, evmtest.ISCTestContractBytecode)}
 }
@@ -299,7 +312,7 @@ func (e *evmContractInstance) callMsg(callMsg ethereum.CallMsg) ethereum.CallMsg
 	return callMsg
 }
 
-func (e *evmContractInstance) parseEthCallOptions(opts []ethCallOptions, callData []byte) ethCallOptions {
+func (e *evmContractInstance) parseEthCallOptions(opts []ethCallOptions, callData []byte) (ethCallOptions, error) {
 	var opt ethCallOptions
 	if len(opts) > 0 {
 		opt = opts[0]
@@ -320,25 +333,28 @@ func (e *evmContractInstance) parseEthCallOptions(opts []ethCallOptions, callDat
 			Value:    opt.value,
 			Data:     callData,
 		})
-		require.NoError(e.chain.t, e.chain.resolveError(err))
+		if err != nil {
+			return opt, fmt.Errorf("error estimating gas limit %v", e.chain.resolveError(err).Error())
+		}
 	}
-	return opt
+	return opt, nil
 }
 
-func (e *evmContractInstance) buildEthTx(opts []ethCallOptions, fnName string, args ...interface{}) *types.Transaction {
-	callArguments, err := e.abi.Pack(fnName, args...)
+func (e *evmContractInstance) buildEthTx(opts []ethCallOptions, fnName string, args ...interface{}) (*types.Transaction, error) {
+	callData, err := e.abi.Pack(fnName, args...)
 	require.NoError(e.chain.t, err)
-	opt := e.parseEthCallOptions(opts, callArguments)
+	opt, err := e.parseEthCallOptions(opts, callData)
+	if err != nil {
+		return nil, err
+	}
 
 	senderAddress := crypto.PubkeyToAddress(opt.sender.PublicKey)
 
 	nonce := e.chain.getNonce(senderAddress)
 
-	unsignedTx := types.NewTransaction(nonce, e.address, opt.value, opt.gasLimit, evm.GasPrice, callArguments)
+	unsignedTx := types.NewTransaction(nonce, e.address, opt.value, opt.gasLimit, evm.GasPrice, callData)
 
-	tx, err := types.SignTx(unsignedTx, e.chain.signer(), opt.sender)
-	require.NoError(e.chain.t, err)
-	return tx
+	return types.SignTx(unsignedTx, e.chain.signer(), opt.sender)
 }
 
 type callFnResult struct {
@@ -350,20 +366,23 @@ type callFnResult struct {
 func (e *evmContractInstance) callFn(opts []ethCallOptions, fnName string, args ...interface{}) (callFnResult, error) {
 	e.chain.t.Logf("callFn: %s %+v", fnName, args)
 
-	res := callFnResult{tx: e.buildEthTx(opts, fnName, args...)}
+	tx, err := e.buildEthTx(opts, fnName, args...)
+	if err != nil {
+		return callFnResult{}, err
+	}
+	res := callFnResult{tx: tx}
 
 	sendTxErr := e.chain.evmChain.SendTransaction(res.tx)
 
 	res.iscReceipt = e.chain.soloChain.LastReceipt()
 
-	var err error
 	res.evmReceipt, err = e.chain.evmChain.TransactionReceipt(res.tx.Hash())
 	require.NoError(e.chain.t, err)
 
 	return res, sendTxErr
 }
 
-func (e *evmContractInstance) callFnExpectEvent(opts []ethCallOptions, eventName string, v interface{}, fnName string, args ...interface{}) {
+func (e *evmContractInstance) callFnExpectEvent(opts []ethCallOptions, eventName string, v interface{}, fnName string, args ...interface{}) callFnResult {
 	res, err := e.callFn(opts, fnName, args...)
 	require.NoError(e.chain.t, err)
 	require.Equal(e.chain.t, types.ReceiptStatusSuccessful, res.evmReceipt.Status)
@@ -372,6 +391,7 @@ func (e *evmContractInstance) callFnExpectEvent(opts []ethCallOptions, eventName
 		err = e.abi.UnpackIntoInterface(v, eventName, res.evmReceipt.Logs[0].Data)
 	}
 	require.NoError(e.chain.t, err)
+	return res
 }
 
 func (e *evmContractInstance) callView(fnName string, args []interface{}, v interface{}) {

@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/xerrors"
 
@@ -48,7 +49,7 @@ func NewL1Commitment(c trie.VCommitment, blockHash BlockHash) *L1Commitment {
 }
 
 func (bh BlockHash) String() string {
-	return hex.EncodeToString(bh[:])
+	return hexutil.Encode(bh[:])
 }
 
 func L1CommitmentFromBytes(data []byte) (L1Commitment, error) {
@@ -112,7 +113,7 @@ func (s *L1Commitment) Read(r io.Reader) error {
 }
 
 func (s *L1Commitment) String() string {
-	return fmt.Sprintf("L1Commitment(%s, %s)", s.StateCommitment.String(), hex.EncodeToString(s.BlockHash[:]))
+	return fmt.Sprintf("L1Commitment(%s, %s)", s.StateCommitment.String(), hexutil.Encode(s.BlockHash[:]))
 }
 
 func L1CommitmentFromAnchorOutput(o *iotago.AliasOutput) (L1Commitment, error) {

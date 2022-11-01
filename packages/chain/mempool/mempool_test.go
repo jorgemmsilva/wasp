@@ -11,7 +11,6 @@ import (
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -20,19 +19,13 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testkey"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/transaction"
-	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
 var chainAddress = tpkg.RandEd25519Address()
 
-func createStateReader(t *testing.T, glb coreutil.ChainStateSync) (state.OptimisticStateReader, state.VirtualStateAccess) {
-	store := mapdb.NewMapDB()
-	vs, err := state.CreateOriginState(store, isc.RandomChainID())
-	require.NoError(t, err)
-	ret := state.NewOptimisticStateReader(store, glb)
-	require.NoError(t, err)
-	return ret, vs
+func createChain(t *testing.T) state.Store {
+	return state.InitChainStore(mapdb.NewMapDB())
 }
 
 func now() time.Time { return time.Now() }
@@ -95,10 +88,9 @@ func (m *MockMempoolMetrics) CountBlocksPerChain() {}
 // Test if mempool is created
 func TestMempool(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync()
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
+	pool := New(chainAddress, chain, log, mempoolMetrics)
 	time.Sleep(2 * moveToPoolLoopDelay)
 	stats := pool.Info(now())
 	require.EqualValues(t, 0, stats.InPoolCounter)
@@ -111,10 +103,9 @@ func TestMempool(t *testing.T) {
 // Test if single on ledger request is added to mempool
 func TestAddRequest(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
+	pool := New(chainAddress, chain, log, mempoolMetrics)
 	requests := getRequestsOnLedger(t, 1)
 
 	pool.ReceiveRequests(requests[0])
@@ -127,41 +118,14 @@ func TestAddRequest(t *testing.T) {
 	require.EqualValues(t, 1, mempoolMetrics.onLedgerRequestCounter)
 }
 
-func TestAddRequestInvalidState(t *testing.T) {
-	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync()
-	glb.InvalidateSolidIndex()
-	rdr, _ := createStateReader(t, glb)
-	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
-	requests := getRequestsOnLedger(t, 1)
-
-	pool.ReceiveRequests(requests[0])
-	require.False(t, pool.WaitRequestInPool(requests[0].ID(), 100*time.Millisecond))
-	stats := pool.Info(now())
-	require.EqualValues(t, 0, stats.InPoolCounter)
-	require.EqualValues(t, 0, stats.OutPoolCounter)
-	require.EqualValues(t, 0, stats.TotalPool)
-	require.EqualValues(t, 0, stats.ReadyCounter)
-
-	glb.SetSolidIndex(1)
-	require.True(t, pool.WaitRequestInPool(requests[0].ID(), 100*time.Millisecond))
-	stats = pool.Info(now())
-	require.EqualValues(t, 1, stats.InPoolCounter)
-	require.EqualValues(t, 0, stats.OutPoolCounter)
-	require.EqualValues(t, 1, stats.TotalPool)
-	require.EqualValues(t, 1, stats.ReadyCounter)
-}
-
 // Test if adding the same on ledger request more than once to the same mempool
 // is handled correctly
 func TestAddRequestTwice(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
+	pool := New(chainAddress, chain, log, mempoolMetrics)
 	requests := getRequestsOnLedger(t, 1)
 
 	pool.ReceiveRequests(requests[0])
@@ -186,10 +150,9 @@ func TestAddRequestTwice(t *testing.T) {
 // Test if adding off ledger requests works as expected
 func TestAddOffLedgerRequest(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
+	pool := New(chainAddress, chain, log, mempoolMetrics)
 
 	offLedgerRequest := isc.NewOffLedgerRequest(isc.RandomChainID(), isc.Hn("dummyContract"), isc.Hn("dummyEP"), dict.New(), 0).
 		Sign(cryptolib.NewKeyPair())
@@ -207,12 +170,10 @@ func TestAddOffLedgerRequest(t *testing.T) {
 // Test if processed request cannot be added to mempool
 func TestProcessedRequest(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, vs := createStateReader(t, glb)
-	wrt := vs.KVStore()
+	chain := createChain(t)
 
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
+	pool := New(chainAddress, chain, log, mempoolMetrics)
 
 	stats := pool.Info(now())
 	require.EqualValues(t, 0, stats.InPoolCounter)
@@ -223,15 +184,17 @@ func TestProcessedRequest(t *testing.T) {
 	requests := getRequestsOnLedger(t, 1)
 
 	// artificially put request log record into the state
-	rec := &blocklog.RequestReceipt{
-		Request: requests[0],
+	{
+		rec := &blocklog.RequestReceipt{
+			Request: requests[0],
+		}
+		draft := chain.NewStateDraft(chain.LatestState().TrieRoot(), time.Now(), state.RandL1Commitment())
+		blocklogPartition := subrealm.New(draft, kv.Key(blocklog.Contract.Hname().Bytes()))
+		err := blocklog.SaveRequestReceipt(blocklogPartition, rec, [6]byte{})
+		require.NoError(t, err)
+		block := chain.Commit(draft)
+		chain.SetLatest(block.TrieRoot())
 	}
-	blocklogPartition := subrealm.New(wrt, kv.Key(blocklog.Contract.Hname().Bytes()))
-	err := blocklog.SaveRequestReceipt(blocklogPartition, rec, [6]byte{})
-	require.NoError(t, err)
-	blocklogPartition.Set(coreutil.StateVarBlockIndex, util.Uint64To8Bytes(1))
-	err = vs.Save()
-	require.NoError(t, err)
 
 	pool.ReceiveRequests(requests[0])
 	require.False(t, pool.WaitRequestInPool(requests[0].ID(), 1*time.Second))
@@ -246,10 +209,9 @@ func TestProcessedRequest(t *testing.T) {
 // Test if adding and removing requests is handled correctly
 func TestAddRemoveRequests(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, log, mempoolMetrics)
+	pool := New(chainAddress, chain, log, mempoolMetrics)
 	requests := getRequestsOnLedger(t, 6)
 
 	pool.ReceiveRequests(
@@ -294,10 +256,9 @@ func TestAddRemoveRequests(t *testing.T) {
 
 // Test if ReadyNow and ReadyFromIDs functions respect the time lock of the request
 func TestTimeLock(t *testing.T) {
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, testlogger.NewLogger(t), mempoolMetrics)
+	pool := New(chainAddress, chain, testlogger.NewLogger(t), mempoolMetrics)
 	start := time.Now()
 	requests := getRequestsOnLedger(t, 6, func(i int, p *isc.RequestParameters) {
 		switch i {
@@ -394,10 +355,9 @@ func TestTimeLock(t *testing.T) {
 }
 
 func TestExpiration(t *testing.T) {
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, testlogger.NewLogger(t), mempoolMetrics)
+	pool := New(chainAddress, chain, testlogger.NewLogger(t), mempoolMetrics)
 	start := time.Now()
 	requests := getRequestsOnLedger(t, 4, func(i int, p *isc.RequestParameters) {
 		switch i {
@@ -467,10 +427,9 @@ func TestExpiration(t *testing.T) {
 
 // Test if ReadyFromIDs function correctly handle non-existing or removed IDs
 func TestReadyFromIDs(t *testing.T) {
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, testlogger.NewLogger(t), mempoolMetrics)
+	pool := New(chainAddress, chain, testlogger.NewLogger(t), mempoolMetrics)
 	requests := getRequestsOnLedger(t, 6)
 
 	pool.ReceiveRequests(
@@ -548,10 +507,9 @@ func TestReadyFromIDs(t *testing.T) {
 }
 
 func TestRotateRequest(t *testing.T) {
-	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
-	rdr, _ := createStateReader(t, glb)
+	chain := createChain(t)
 	mempoolMetrics := new(MockMempoolMetrics)
-	pool := New(chainAddress, rdr, testlogger.NewLogger(t), mempoolMetrics)
+	pool := New(chainAddress, chain, testlogger.NewLogger(t), mempoolMetrics)
 	requests := getRequestsOnLedger(t, 6)
 
 	pool.ReceiveRequests(

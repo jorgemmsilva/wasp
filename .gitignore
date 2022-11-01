@@ -34,8 +34,7 @@ wasp-config-template.json
 goshimmer.log
 /*.sh
 wal/
-snap-cli
+./snap-cli
 *.trie
 *.snapshot
-snapshot
 gascalibration

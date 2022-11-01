@@ -19,7 +19,6 @@ import (
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/vm/processors"
-	"github.com/iotaledger/wasp/packages/wal"
 )
 
 type Provider func() *Chains
@@ -100,7 +99,7 @@ func (c *Chains) ActivateAllFromRegistry(registryProvider registry.Provider, all
 
 	for _, chr := range chainRecords {
 		if chr.Active {
-			if err := c.Activate(chr, registryProvider, allMetrics, w); err != nil {
+			if err := c.Activate(chr, registryProvider, allMetrics); err != nil {
 				c.log.Errorf("cannot activate chain %s: %v", chr.ChainID, err)
 			}
 		}
@@ -112,7 +111,7 @@ func (c *Chains) ActivateAllFromRegistry(registryProvider registry.Provider, all
 // - creates chain object
 // - insert it into the runtime registry
 // - subscribes for related transactions in the L1 node
-func (c *Chains) Activate(chr *registry.ChainRecord, registryProvider registry.Provider, allMetrics *metrics.Metrics, w *wal.WAL) error {
+func (c *Chains) Activate(chr *registry.ChainRecord, registryProvider registry.Provider, allMetrics *metrics.Metrics) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -128,11 +127,6 @@ func (c *Chains) Activate(chr *registry.ChainRecord, registryProvider registry.P
 	defaultRegistry := registryProvider()
 	chainKVStore := c.getOrCreateKVStore(&chr.ChainID)
 	chainMetrics := allMetrics.NewChainMetrics(&chr.ChainID)
-	chainWAL, err := w.NewChainWAL(&chr.ChainID)
-	if err != nil {
-		c.log.Debugf("Error creating wal object: %v", err)
-		chainWAL = wal.NewDefault()
-	}
 	newChain := chainimpl.NewChain(
 		&chr.ChainID,
 		c.log,
@@ -147,7 +141,6 @@ func (c *Chains) Activate(chr *registry.ChainRecord, registryProvider registry.P
 		c.pullMissingRequestsFromCommittee,
 		chainMetrics,
 		defaultRegistry,
-		chainWAL,
 		c.rawBlocksEnabled,
 		c.rawBlocksDir,
 	)

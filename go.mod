@@ -29,12 +29,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
 	github.com/second-state/WasmEdge-go v0.11.0
+	pgregory.net/rapid v0.5.3
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0
 	github.com/stretchr/testify v1.8.0
 	github.com/wasmerio/wasmer-go v1.0.4
-	github.com/leanovate/gopter v0.2.9
 	go.dedis.ch/kyber/v3 v3.0.14
 	go.nanomsg.org/mangos/v3 v3.4.2
 	go.uber.org/atomic v1.10.0

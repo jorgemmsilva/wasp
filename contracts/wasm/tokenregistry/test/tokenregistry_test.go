@@ -6,13 +6,14 @@ package test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/iotaledger/wasp/contracts/wasm/tokenregistry/go/tokenregistry"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
-	"github.com/stretchr/testify/require"
 )
 
 func setupTest(t *testing.T) *wasmsolo.SoloContext {
-	return wasmsolo.NewSoloContext(t, tokenregistry.ScName, tokenregistry.OnLoad)
+	return wasmsolo.NewSoloContext(t, tokenregistry.ScName, tokenregistry.OnDispatch)
 }
 
 func TestDeploy(t *testing.T) {

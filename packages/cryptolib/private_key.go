@@ -2,9 +2,9 @@ package cryptolib
 
 import (
 	"crypto/ed25519"
-	"encoding/hex"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"go.dedis.ch/kyber/v3/sign/eddsa"
 	"go.dedis.ch/kyber/v3/util/key"
 	"golang.org/x/xerrors"
@@ -43,7 +43,7 @@ func (pkT *PrivateKey) AsBytes() []byte {
 }
 
 func (pkT *PrivateKey) String() string {
-	return hex.EncodeToString(pkT.key)
+	return hexutil.Encode(pkT.key)
 }
 
 func (pkT *PrivateKey) AsStdKey() ed25519.PrivateKey {

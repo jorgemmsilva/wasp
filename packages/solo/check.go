@@ -20,7 +20,12 @@ import (
 
 func (ch *Chain) AssertL2NativeTokens(agentID isc.AgentID, tokenID *iotago.NativeTokenID, bal interface{}) {
 	bals := ch.L2Assets(agentID)
-	require.True(ch.Env.T, util.ToBigInt(bal).Cmp(bals.AmountNativeToken(tokenID)) == 0)
+	actualTokenBalance := bals.AmountNativeToken(tokenID)
+	expected := util.ToBigInt(bal)
+	require.Truef(ch.Env.T,
+		expected.Cmp(actualTokenBalance) == 0,
+		"expected: %v, got: %v", expected.String(), actualTokenBalance.String(),
+	)
 }
 
 func (ch *Chain) AssertL2BaseTokens(agentID isc.AgentID, bal uint64) {
@@ -47,7 +52,7 @@ func (ch *Chain) CheckChain() {
 func (ch *Chain) CheckAccountLedger() {
 	total := ch.L2TotalAssets()
 	accs := ch.L2Accounts()
-	sum := isc.NewEmptyAssets()
+	sum := isc.NewEmptyFungibleTokens()
 	for i := range accs {
 		acc := accs[i]
 		sum.Add(ch.L2Assets(acc))

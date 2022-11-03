@@ -253,7 +253,7 @@ func (clu *Cluster) addAllAccessNodes(chain *Chain, nodes []int) error {
 		if err != nil {
 			return err
 		}
-		accessNodePubKey, err := cryptolib.NewPublicKeyFromBase58String(accessNodePeering.PubKey)
+		accessNodePubKey, err := cryptolib.NewPublicKeyFromHexString(accessNodePeering.PubKey)
 		if err != nil {
 			return err
 		}
@@ -287,7 +287,7 @@ func (clu *Cluster) AddAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Tr
 	if err != nil {
 		return nil, err
 	}
-	accessNodePubKey, err := cryptolib.NewPublicKeyFromBase58String(accessNodePeering.PubKey)
+	accessNodePubKey, err := cryptolib.NewPublicKeyFromHexString(accessNodePeering.PubKey)
 	if err != nil {
 		return nil, err
 	}
@@ -669,7 +669,7 @@ func (clu *Cluster) AddressBalances(addr iotago.Address) *isc.FungibleTokens {
 		fmt.Printf("[cluster] GetConfirmedOutputs error: %v\n", err)
 		return nil
 	}
-	balance := isc.NewEmptyAssets()
+	balance := isc.NewEmptyFungibleTokens()
 	for _, out := range outputMap {
 		balance.Add(transaction.AssetsFromOutput(out))
 	}

@@ -70,7 +70,7 @@ func newSeries(node *dssNodeImpl, key string, dkShare tcrypto.DKShare) *dssSerie
 
 func (s *dssSeriesImpl) tick(now time.Time) {
 	for i := range s.dssInsts {
-		s.sendMessages(s.dssInsts[i].asGPA.Message(s.dssInsts[i].asGPA.MakeTickMsg(now)), i)
+		s.sendMessages(s.dssInsts[i].asGPA.Input(s.dssInsts[i].asGPA.MakeTickInput(now)), i)
 		s.tryReportOutput(s.dssInsts[i])
 	}
 }
@@ -105,7 +105,7 @@ func (s *dssSeriesImpl) start(index int, partCB func([]int), sigCB func([]byte))
 	// Start the protocol.
 	if !s.dssInsts[index].hadInput {
 		s.dssInsts[index].hadInput = true
-		s.sendMessages(s.dssInsts[index].asGPA.Input(nil), index)
+		s.sendMessages(s.dssInsts[index].asGPA.Input(dss.NewInputStart()), index)
 		s.tryReportOutput(s.dssInsts[index])
 	}
 	return nil
@@ -230,7 +230,7 @@ func (s *dssSeriesImpl) decidedIndexProposals(index int, decidedIndexProposals [
 				mappedIndexProposals[s.peerNIDs[i]] = decidedIndexProposals[i]
 			}
 		}
-		s.sendMessages(dssInst.asGPA.NestedMessage(dssInst.inst.NewMsgDecided(mappedIndexProposals, messageToSign)), index)
+		s.sendMessages(dssInst.asGPA.Input(dss.NewInputDecided(mappedIndexProposals, messageToSign)), index)
 		s.tryReportOutput(dssInst)
 		return nil
 	}

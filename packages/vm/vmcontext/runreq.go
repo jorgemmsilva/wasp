@@ -134,8 +134,7 @@ func (vmctx *VMContext) prepareGasBudget() {
 	if vmctx.isInitChainRequest() {
 		return
 	}
-	vmctx.calculateAffordableGasBudget()
-	vmctx.gasSetBudget(vmctx.gasBudgetAdjusted)
+	vmctx.gasSetBudget(vmctx.calculateAffordableGasBudget())
 	vmctx.GasBurnEnable(true)
 }
 
@@ -164,6 +163,8 @@ func (vmctx *VMContext) callTheContract() (receipt *blocklog.RequestReceipt, cal
 		callRet = vmctx.callFromRequest()
 		// ensure at least the minimum amount of gas is charged
 		if vmctx.GasBurned() < gas.BurnCodeMinimumGasPerRequest1P.Cost() {
+			vmctx.gasBurnedTotal -= vmctx.gasBurned
+			vmctx.gasBurned = 0
 			vmctx.GasBurn(gas.BurnCodeMinimumGasPerRequest1P, vmctx.GasBurned())
 		}
 	}()
@@ -216,8 +217,7 @@ func (vmctx *VMContext) callFromRequest() dict.Dict {
 		// if sender unknown, follow panic path
 		panic(vm.ErrSenderUnknown)
 	}
-	// TODO check if the comment below holds true
-	// calling only non view entry points. Calling the view will trigger error and fallback
+
 	contract := vmctx.req.CallTarget().Contract
 	entryPoint := vmctx.req.CallTarget().EntryPoint
 
@@ -246,14 +246,18 @@ func (vmctx *VMContext) getGasBudget() uint64 {
 // Affordable gas budget is calculated from gas budget provided in the request by the user and taking into account
 // how many tokens the sender has in its account and how many are allowed for the target.
 // Safe arithmetics is used
-func (vmctx *VMContext) calculateAffordableGasBudget() {
+func (vmctx *VMContext) calculateAffordableGasBudget() uint64 {
 	gasBudget := vmctx.getGasBudget()
 
-	// when estimating gas, if maxUint64 is provided, use the maximum gas budget possible
-	if vmctx.task.EstimateGasMode && gasBudget == math.MaxUint64 {
-		vmctx.gasBudgetAdjusted = gas.MaxGasPerCall
+	// make sure the gasBuget is at least >= than the allowed minimum
+	if gasBudget < gas.MinGasPerRequest {
+		gasBudget = gas.MinGasPerRequest
+	}
+
+	// when estimating gas, if a value bigger than max is provided, use the maximum gas budget possible
+	if vmctx.task.EstimateGasMode && gasBudget > gas.MaxGasPerRequest {
 		vmctx.gasMaxTokensToSpendForGasFee = math.MaxUint64
-		return
+		return gas.MaxGasPerRequest
 	}
 
 	// calculate how many tokens for gas fee can be guaranteed after taking into account the allowance
@@ -266,11 +270,12 @@ func (vmctx *VMContext) calculateAffordableGasBudget() {
 	// adjust gas budget to what is affordable
 	affordable = util.MinUint64(gasBudget, affordable)
 	// cap gas to the maximum allowed per tx
-	vmctx.gasBudgetAdjusted = util.MinUint64(affordable, gas.MaxGasPerCall)
+	return util.MinUint64(affordable, gas.MaxGasPerRequest)
 }
 
-// calcGuaranteedFeeTokens return hiw maximum tokens (base tokens or native) can be guaranteed for the fee,
+// calcGuaranteedFeeTokens return the maximum tokens (base tokens or native) can be guaranteed for the fee,
 // taking into account allowance (which must be 'reserved')
+// TODO this could be potentially problematic when using custom tokens that are expressed in "big.int"
 func (vmctx *VMContext) calcGuaranteedFeeTokens() uint64 {
 	var tokensGuaranteed uint64
 

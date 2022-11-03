@@ -102,7 +102,7 @@ func testGeneric(t *testing.T, n, f int, reliable bool) {
 	nodes := make([]*consGR.ConsGr, len(peerIdentities))
 	mempools := make([]*testMempool, len(peerIdentities))
 	stateMgrs := make([]*testStateMgr, len(peerIdentities))
-	procConfig := coreprocessors.Config().WithNativeContracts(inccounter.Processor)
+	procConfig := coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)
 	tcl := testchain.NewTestChainLedger(t, utxoDB, governor, originator)
 	originAO, chainID := tcl.MakeTxChainOrigin(cmtAddress)
 	chainInitReqs := tcl.MakeTxChainInit()
@@ -275,7 +275,6 @@ func (tsm *testStateMgr) addState(aliasOutput *isc.AliasOutputWithID, stateBasel
 	defer tsm.lock.Unlock()
 	hash := commitmentHashFromAO(aliasOutput)
 	tsm.states[hash] = &consGR.StateMgrDecidedState{
-		AliasOutput:        aliasOutput,
 		StateBaseline:      stateBaseline,
 		VirtualStateAccess: virtualStateAccess,
 	}
@@ -294,13 +293,26 @@ func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, aliasOutput
 
 // State manager has to ensure all the data needed for the specified alias
 // output (presented as aliasOutputID+stateCommitment) is present in the DB.
-func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, aliasOutputID *iotago.OutputID, stateCommitment *state.L1Commitment) <-chan *consGR.StateMgrDecidedState {
+func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan *consGR.StateMgrDecidedState {
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	resp := make(chan *consGR.StateMgrDecidedState, 1)
+	stateCommitment, err := state.L1CommitmentFromAliasOutput(aliasOutput.GetAliasOutput())
+	if err != nil {
+		panic(err)
+	}
 	hash := commitmentHash(stateCommitment)
 	tsm.qDecided[hash] = resp
 	tsm.tryRespond(hash)
+	return resp
+}
+
+func (tsm *testStateMgr) ConsensusProducedBlock(ctx context.Context, block state.Block) <-chan error {
+	tsm.lock.Lock()
+	defer tsm.lock.Unlock()
+	resp := make(chan error, 1)
+	resp <- nil // We don't save it in the test for now, just respond it is already saved.
+	close(resp)
 	return resp
 }
 

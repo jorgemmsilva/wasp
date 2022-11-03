@@ -7,16 +7,17 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreblob"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreroot"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
-	"github.com/stretchr/testify/require"
 )
 
 func setupRoot(t *testing.T) *wasmsolo.SoloContext {
 	ctx := setup(t)
-	ctx = ctx.SoloContextForCore(t, coreroot.ScName, coreroot.OnLoad)
+	ctx = ctx.SoloContextForCore(t, coreroot.ScName, coreroot.OnDispatch)
 	require.NoError(t, ctx.Err)
 	return ctx
 }
@@ -28,7 +29,7 @@ func TestDeployContract(t *testing.T) {
 	}
 	ctxr := setupRoot(t)
 
-	ctxb := ctxr.SoloContextForCore(t, coreblob.ScName, coreblob.OnLoad)
+	ctxb := ctxr.SoloContextForCore(t, coreblob.ScName, coreblob.OnDispatch)
 	require.NoError(t, ctxb.Err)
 	fblob := coreblob.ScFuncs.StoreBlob(ctxb.OffLedger(ctxb.NewSoloAgent()))
 	wasm, err := os.ReadFile("./testdata/testdata.wasm")

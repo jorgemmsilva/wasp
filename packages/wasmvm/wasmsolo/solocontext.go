@@ -4,6 +4,7 @@
 package wasmsolo
 
 import (
+	"errors"
 	"flag"
 	"testing"
 	"time"
@@ -315,11 +316,14 @@ func (ctx *SoloContext) EnqueueRequest() {
 	ctx.isRequest = true
 }
 
-func (ctx *SoloContext) existFile(path, ext string) string {
-	fileName := ctx.scName + ext
+func (ctx *SoloContext) existFile(lang string) string {
+	fileName := ctx.scName + "_" + lang + ".wasm"
 
-	// first check for new file in path
-	pathName := path + fileName
+	// first check for new file in build path
+	pathName := "../" + lang + "/pkg/" + fileName
+	if lang == "bg" {
+		pathName = "../rs/" + ctx.scName + "_main/pkg/" + ctx.scName + "_main_bg.wasm"
+	}
 	exists, _ := util.ExistsFilePath(pathName)
 	if exists {
 		return pathName
@@ -398,11 +402,13 @@ func (ctx *SoloContext) OffLedger(agent *SoloAgent) wasmlib.ScFuncCallContext {
 func (ctx *SoloContext) MintNFT(agent *SoloAgent, metadata []byte) wasmtypes.ScNftID {
 	addr, ok := isc.AddressFromAgentID(agent.AgentID())
 	if !ok {
-		panic("agent should be an address")
+		ctx.Err = errors.New("agent should be an address")
+		return wasmtypes.NftIDFromBytes(nil)
 	}
 	nft, _, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr, metadata)
 	if err != nil {
-		panic(err)
+		ctx.Err = err
+		return wasmtypes.NftIDFromBytes(nil)
 	}
 	if ctx.nfts == nil {
 		ctx.nfts = make(map[iotago.NFTID]*isc.NFT)
@@ -436,13 +442,13 @@ func (ctx *SoloContext) uploadWasm(keyPair *cryptolib.KeyPair) {
 	wasmFile := ""
 	if *GoWasm {
 		// find Go Wasm file
-		wasmFile = ctx.existFile("../go/pkg/", "_go.wasm")
+		wasmFile = ctx.existFile("go")
 	} else if *RsWasm {
 		// find Rust Wasm file
-		wasmFile = ctx.existFile("../pkg/", "_bg.wasm")
+		wasmFile = ctx.existFile("bg")
 	} else if *TsWasm {
 		// find TypeScript Wasm file
-		wasmFile = ctx.existFile("../ts/pkg/", "_ts.wasm")
+		wasmFile = ctx.existFile("ts")
 	} else {
 		// none of the Wasm modes selected, use WasmGoVM to run Go SC code directly
 		ctx.Hprog, ctx.Err = ctx.Chain.UploadWasm(keyPair, []byte("go:"+ctx.scName))

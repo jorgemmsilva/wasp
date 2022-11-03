@@ -29,11 +29,13 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
+// ===== Wasp dependencies ===== // DO NOT DELETE THIS LINE! It is needed for `make deps-versions` command
 // requires hornet, and inx plugins binaries to be in PATH
 // https://github.com/iotaledger/hornet (5b35e2a)
 // https://github.com/iotaledger/inx-indexer (7cdb3ed)
 // https://github.com/iotaledger/inx-coordinator (f84d8dd)
 // https://github.com/iotaledger/inx-faucet (c847f1c) (requires `git submodule update --init --recursive` before building )
+// ============================= // DO NOT DELETE THIS LINE! It is needed for `make deps-versions` command
 
 type LogFunc func(format string, args ...interface{})
 
@@ -79,7 +81,7 @@ func Start(ctx context.Context, baseDir string, basePort, nodeCount int, logfunc
 	pt.generateSnapshot()
 
 	for i := range pt.NodeKeyPairs {
-		pt.startNode(i)                    //nolint:contextcheck // false-positive
+		pt.startNode(i)
 		time.Sleep(500 * time.Millisecond) // TODO: Remove?
 	}
 	pt.logf("Starting... all nodes started.")
@@ -288,7 +290,7 @@ func (pt *PrivTangle) waitAllReturnTips() {
 		if allOK {
 			break
 		}
-		pt.logf("Waiting to all nodes to startup.")
+		pt.logf("Waiting for all nodes to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -308,7 +310,7 @@ func (pt *PrivTangle) waitAllReady() {
 		if allOK {
 			break
 		}
-		pt.logf("Waiting to all nodes to startup.")
+		pt.logf("Waiting for all nodes to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -328,7 +330,7 @@ func (pt *PrivTangle) waitAllHealthy() {
 		if allOK {
 			break
 		}
-		pt.logf("Waiting to all nodes to startup.")
+		pt.logf("Waiting for all nodes to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }
@@ -347,7 +349,7 @@ func (pt *PrivTangle) waitInxPluginsIndexer() {
 		if allOK {
 			return
 		}
-		pt.logf("Waiting to all nodes INX Indexer plugins to startup.")
+		pt.logf("Waiting for all nodes INX Indexer plugins to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }

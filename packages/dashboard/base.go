@@ -5,15 +5,15 @@ package dashboard
 
 import (
 	_ "embed"
-	"encoding/hex"
 	"html/template"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	"github.com/iotaledger/wasp/packages/authentication"
 	"github.com/iotaledger/wasp/packages/webapi/routes"
 
 	"github.com/labstack/echo/v4"
-	"github.com/mr-tron/base58"
 
 	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/wasp/packages/chain"
@@ -43,7 +43,7 @@ type BaseTemplateParams struct {
 	Version         string
 }
 
-type WaspServices interface {
+type WaspServicesInterface interface {
 	ConfigDump() map[string]interface{}
 	ExploreAddressBaseURL() string
 	WebAPIPort() string
@@ -60,20 +60,18 @@ type WaspServices interface {
 }
 
 type Dashboard struct {
-	navPages []Tab
-	stop     chan bool
-	wasp     WaspServices
 	log      *logger.Logger
+	wasp     WaspServicesInterface
+	navPages []Tab
 }
 
-func Init(server *echo.Echo, waspServices WaspServices, log *logger.Logger) *Dashboard {
+func New(log *logger.Logger, server *echo.Echo, waspServices WaspServicesInterface) *Dashboard {
 	r := renderer{}
 	server.Renderer = r
 
 	d := &Dashboard{
-		stop: make(chan bool),
-		wasp: waspServices,
 		log:  log.Named("dashboard"),
+		wasp: waspServices,
 	}
 
 	d.errorInit(server, r)
@@ -87,10 +85,6 @@ func Init(server *echo.Echo, waspServices WaspServices, log *logger.Logger) *Das
 	}
 
 	return d
-}
-
-func (d *Dashboard) Stop() {
-	close(d.stop)
 }
 
 func (d *Dashboard) BaseParams(c echo.Context, breadcrumbs ...Tab) BaseTemplateParams {
@@ -135,12 +129,12 @@ func (d *Dashboard) makeTemplate(e *echo.Echo, parts ...string) *template.Templa
 		"isValidAddress":         d.isValidAddress,
 		"keyToString":            keyToString,
 		"anythingToString":       anythingToString,
-		"base58":                 base58.Encode,
-		"hex":                    hex.EncodeToString,
+		"hex":                    hexutil.Encode,
 		"replace":                strings.Replace,
 		"webapiPort":             d.wasp.WebAPIPort,
 		"evmJSONRPCEndpoint":     routes.EVMJSONRPC,
 		"uri":                    func(s string, p ...interface{}) string { return e.Reverse(s, p...) },
+		"href":                   func(s string) string { return s },
 	})
 	t = template.Must(t.Parse(tplBase))
 	for _, part := range parts {

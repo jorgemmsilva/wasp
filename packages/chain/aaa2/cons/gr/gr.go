@@ -5,8 +5,6 @@
 // as a goroutine and communicate with all the related components.
 package consGR
 
-// TODO: ... func AddProducedBlock(aliasOutput *isc.AliasOutputWithID, block state.Block)
-
 import (
 	"context"
 	"time"
@@ -45,7 +43,6 @@ type Mempool interface {
 }
 
 type StateMgrDecidedState struct {
-	AliasOutput        *isc.AliasOutputWithID
 	StateBaseline      coreutil.StateBaseline
 	VirtualStateAccess state.VirtualStateAccess
 }
@@ -57,15 +54,20 @@ type StateMgr interface {
 	// in the database. Context is used to cancel a request.
 	ConsensusStateProposal(
 		ctx context.Context,
-		aliasOutput *isc.AliasOutputWithID,
+		aliasOutput *isc.AliasOutputWithID, // TODO: Can be replaced by state.L1Commitment after the "read only state" changes.
 	) <-chan interface{}
 	// State manager has to ensure all the data needed for the specified alias
 	// output (presented as aliasOutputID+stateCommitment) is present in the DB.
 	ConsensusDecidedState(
 		ctx context.Context,
-		aliasOutputID *iotago.OutputID,
-		stateCommitment *state.L1Commitment,
+		aliasOutput *isc.AliasOutputWithID, // TODO: Can be replaced by state.L1Commitment after the "read only state" changes.
 	) <-chan *StateMgrDecidedState
+	// State manager has to persistently store the block and respond only after
+	// the block was flushed to the disk. A WAL can be used for that as well.
+	ConsensusProducedBlock(
+		ctx context.Context,
+		block state.Block,
+	) <-chan error
 }
 
 type VM interface {
@@ -109,6 +111,8 @@ type ConsGr struct {
 	stateMgrStateProposalAsked  bool
 	stateMgrDecidedStateRespCh  <-chan *StateMgrDecidedState
 	stateMgrDecidedStateAsked   bool
+	stateMgrSaveBlockRespCh     <-chan error
+	stateMgrSaveBlockAsked      bool
 	vm                          VM
 	vmRespCh                    <-chan *vm.VMTask
 	vmAsked                     bool
@@ -228,43 +232,52 @@ func (cgr *ConsGr) run() { //nolint:gocyclo
 			printStatusCh = time.After(cgr.printStatusPeriod)
 			cgr.outputCh = inp.outputCh
 			cgr.recoverCh = inp.recoverCh
-			cgr.handleInput(inp.baseAliasOutput)
+			cgr.handleConsInput(cons.NewInputProposal(inp.baseAliasOutput))
 		case t, ok := <-cgr.inputTimeCh:
 			if !ok {
 				cgr.inputTimeCh = nil
 				continue
 			}
-			cgr.handleConsMessage(cons.NewMsgTimeData(cgr.me, t))
+			cgr.handleConsInput(cons.NewInputTimeData(t))
 		case resp, ok := <-cgr.mempoolProposalsRespCh:
 			if !ok {
 				cgr.mempoolProposalsRespCh = nil
 				continue
 			}
-			cgr.handleConsMessage(cons.NewMsgMempoolProposal(cgr.me, resp))
+			cgr.handleConsInput(cons.NewInputMempoolProposal(resp))
 		case resp, ok := <-cgr.mempoolRequestsRespCh:
 			if !ok {
 				cgr.mempoolRequestsRespCh = nil
 				continue
 			}
-			cgr.handleConsMessage(cons.NewMsgMempoolRequests(cgr.me, resp))
+			cgr.handleConsInput(cons.NewInputMempoolRequests(resp))
 		case _, ok := <-cgr.stateMgrStateProposalRespCh:
 			if !ok {
 				cgr.stateMgrStateProposalRespCh = nil
 				continue
 			}
-			cgr.handleConsMessage(cons.NewMsgStateMgrProposalConfirmed(cgr.me))
+			cgr.handleConsInput(cons.NewInputStateMgrProposalConfirmed())
 		case resp, ok := <-cgr.stateMgrDecidedStateRespCh:
 			if !ok {
 				cgr.stateMgrDecidedStateRespCh = nil
 				continue
 			}
-			cgr.handleConsMessage(cons.NewMsgStateMgrDecidedVirtualState(cgr.me, resp.AliasOutput, resp.StateBaseline, resp.VirtualStateAccess))
+			cgr.handleConsInput(cons.NewInputStateMgrDecidedVirtualState(resp.StateBaseline, resp.VirtualStateAccess))
+		case err, ok := <-cgr.stateMgrSaveBlockRespCh:
+			if !ok {
+				cgr.stateMgrSaveBlockRespCh = nil
+				continue
+			}
+			if err != nil {
+				panic(xerrors.Errorf("cannot save produced block: %w", err))
+			}
+			cgr.handleConsInput(cons.NewInputStateMgrBlockSaved())
 		case resp, ok := <-cgr.vmRespCh:
 			if !ok {
 				cgr.vmRespCh = nil
 				continue
 			}
-			cgr.handleConsMessage(cons.NewMsgVMResult(cgr.me, resp))
+			cgr.handleConsInput(cons.NewInputVMResult(resp))
 		case t, ok := <-redeliveryTickCh:
 			if !ok {
 				redeliveryTickCh = nil
@@ -292,20 +305,14 @@ func (cgr *ConsGr) run() { //nolint:gocyclo
 	}
 }
 
-func (cgr *ConsGr) handleInput(inp gpa.Input) {
+func (cgr *ConsGr) handleConsInput(inp gpa.Input) {
 	outMsgs := cgr.consInst.Input(inp)
 	cgr.sendMessages(outMsgs)
 	cgr.tryHandleOutput()
 }
 
-func (cgr *ConsGr) handleConsMessage(msg gpa.Message) {
-	outMsgs := cgr.consInst.NestedMessage(msg)
-	cgr.sendMessages(outMsgs)
-	cgr.tryHandleOutput()
-}
-
 func (cgr *ConsGr) handleRedeliveryTick(t time.Time) {
-	outMsgs := cgr.consInst.Message(cgr.consInst.MakeTickMsg(t))
+	outMsgs := cgr.consInst.Input(cgr.consInst.MakeTickInput(t))
 	cgr.sendMessages(outMsgs)
 	cgr.tryHandleOutput()
 }
@@ -322,7 +329,7 @@ func (cgr *ConsGr) handleNetMessage(recv *peering.PeerMessageIn) {
 	cgr.tryHandleOutput()
 }
 
-func (cgr *ConsGr) tryHandleOutput() {
+func (cgr *ConsGr) tryHandleOutput() { //nolint:gocyclo
 	outputUntyped := cgr.consInst.Output()
 	if outputUntyped == nil {
 		return
@@ -341,8 +348,12 @@ func (cgr *ConsGr) tryHandleOutput() {
 		cgr.stateMgrStateProposalAsked = true
 	}
 	if output.NeedStateMgrDecidedState != nil && !cgr.stateMgrDecidedStateAsked {
-		cgr.stateMgrDecidedStateRespCh = cgr.stateMgr.ConsensusDecidedState(cgr.ctx, output.NeedStateMgrDecidedState.AliasOutputID, output.NeedStateMgrDecidedState.StateCommitment)
+		cgr.stateMgrDecidedStateRespCh = cgr.stateMgr.ConsensusDecidedState(cgr.ctx, output.NeedStateMgrDecidedState)
 		cgr.stateMgrDecidedStateAsked = true
+	}
+	if output.NeedStateMgrSaveBlock != nil && !cgr.stateMgrSaveBlockAsked {
+		cgr.stateMgrSaveBlockRespCh = cgr.stateMgr.ConsensusProducedBlock(cgr.ctx, output.NeedStateMgrSaveBlock)
+		cgr.stateMgrSaveBlockAsked = true
 	}
 	if output.NeedVMResult != nil && !cgr.vmAsked {
 		cgr.vmRespCh = cgr.vm.ConsensusRunTask(cgr.ctx, output.NeedVMResult)

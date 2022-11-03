@@ -8,7 +8,7 @@ import (
 )
 
 type Mempool interface {
-	consGR.Mempool
+	consGR.Mempool // TODO should this be unified with the Mempool interface
 	ReceiveRequests(reqs ...isc.Request) []bool
 	RemoveRequests(reqs ...isc.RequestID)
 	HasRequest(id isc.RequestID) bool
@@ -20,7 +20,6 @@ type Mempool interface {
 // for testing (only for use in solo)
 type SoloMempool interface {
 	Mempool
-	consGR.Mempool // TODO should this be unified with the Mempool interface above?
 	WaitPoolEmpty(timeout ...time.Duration) bool
 }
 

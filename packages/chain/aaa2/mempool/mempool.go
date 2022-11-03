@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool/mempool_gpa"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -19,6 +20,10 @@ import (
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
+)
+
+const (
+	msgTypeMempool byte = iota
 )
 
 type mempool struct {
@@ -37,7 +42,7 @@ type mempool struct {
 	ctx                    context.Context
 	log                    *logger.Logger
 	metrics                metrics_pkg.MempoolMetrics
-	asGPA                  gpa.GPA
+	gpa                    gpa.GPA
 }
 
 var _ consGR.Mempool = &mempool{}
@@ -67,26 +72,53 @@ func New(
 			handler.(func(_ isc.Request))(params[0].(isc.Request))
 		}),
 	}
-	// TODO split GPA in a separate pkg (only to handle msgs, not networking)
-	pool.asGPA = gpa.NewOwnHandler(myNodeID, pool)
-	go pool.addTimelockedRequestsToMempool()
 
+	pool.gpa = mempool_gpa.New(
+		pool.sendNetworkMessages,
+		pool.ReceiveRequests,
+		pool.GetRequest,
+		pool.log,
+	)
 	pool.netPeeringID = peering.PeeringIDFromBytes(
 		hashing.HashDataBlake2b(chainID.Bytes(), []byte("mempool")).Bytes(),
 	)
-
 	attachID := net.Attach(&pool.netPeeringID, peering.PeerMessageReceiverMempool, func(recv *peering.PeerMessageIn) {
 		if recv.MsgType != msgTypeMempool {
 			pool.log.Warnf("Unexpected message, type=%v", recv.MsgType)
 			return
 		}
-		pool.ReceivePeerMsg(recv)
+		msg, err := pool.gpa.UnmarshalMessage(recv.MsgData)
+		if err != nil {
+			pool.log.Warnf("cannot parse message: %v", err)
+			return
+		}
+		// process the incoming message and send whatever is needed to other peers
+		pool.sendNetworkMessages(pool.gpa.Message(msg))
 	})
 	pool.netDisconnect = func() {
 		net.Detach(attachID)
 	}
 
+	go pool.addTimelockedRequestsToMempool()
+
 	return pool
+}
+
+func (m *mempool) sendNetworkMessages(outMsgs gpa.OutMessages) {
+	outMsgs.MustIterate(func(msg gpa.Message) {
+		msgData, err := msg.MarshalBinary()
+		if err != nil {
+			m.log.Warnf("Failed to send a message: %v", err)
+			return
+		}
+		peerMsg := &peering.PeerMessageData{
+			PeeringID:   m.netPeeringID,
+			MsgReceiver: peering.PeerMessageReceiverChainCons,
+			MsgType:     msgTypeMempool,
+			MsgData:     msgData,
+		}
+		m.net.SendMsgByPubKey(m.peers[msg.Recipient()], peerMsg)
+	})
 }
 
 func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Closure {
@@ -250,25 +282,27 @@ func (m *mempool) ReceiveRequests(reqs ...isc.Request) []bool {
 	m.poolMutex.Lock()
 	defer m.poolMutex.Unlock()
 	for i, req := range reqs {
-		if onledgerReq, ok := req.(isc.OnLedgerRequest); ok {
-			// if the request is timelocked, maybe it shouldn't be added to the mempool right away
-			timelock := onledgerReq.Output().UnlockConditionSet().Timelock()
-			if timelock != nil {
-				expiration := onledgerReq.Output().UnlockConditionSet().Expiration()
-				if expiration != nil && timelock.UnixTime >= expiration.UnixTime {
-					// can never be processed, just reject
-					ret[i] = false
-					continue
-				}
-				if timelock.UnixTime > uint32(time.Now().Unix()) {
-					// will be unlockable in the future, add to pool later
-					m.timelockedRequestsChan <- onledgerReq
-					ret[i] = true
-					continue
-				}
+		onledgerReq, ok := req.(isc.OnLedgerRequest)
+		if !ok {
+			// offledger
+			go m.sendNetworkMessages(m.gpa.Input(req))
+			continue
+		}
+		// if the request is timelocked, maybe it shouldn't be added to the mempool right away
+		timelock := onledgerReq.Output().UnlockConditionSet().Timelock()
+		if timelock != nil {
+			expiration := onledgerReq.Output().UnlockConditionSet().Expiration()
+			if expiration != nil && timelock.UnixTime >= expiration.UnixTime {
+				// can never be processed, just reject
+				ret[i] = false
+				continue
 			}
-		} else {
-			m.Input(newMsgShareRequest(req))
+			if timelock.UnixTime > uint32(time.Now().Unix()) {
+				// will be unlockable in the future, add to pool later
+				m.timelockedRequestsChan <- onledgerReq
+				ret[i] = true
+				continue
+			}
 		}
 		ret[i] = m.addToPoolNoLock(req)
 	}
@@ -352,32 +386,42 @@ func (m *mempool) ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc
 
 	go func() {
 		requests, missingReqs := m.getRequestsFromRefs(requestRefs)
-		for len(missingReqs) > 0 {
-			var missingRequestsChan chan isc.Request
-			for _, idx := range missingReqs {
-				missingRef := requestRefs[idx]
-				m.Input(newMsgMissingRequest(missingRef))
-			}
-			// go m.waitMissingRequests(ctx,missingRequestsChan,)
-			closure := m.attachToIncomingRequests(func(req isc.Request) {
-				// if req.ID()
-				// TODO check if its the request we need
-				missingRequestsChan <- req
-			})
-			defer m.incomingRequests.Detach(closure)
+		if len(missingReqs) == 0 {
+			// we have all the requests
+			retChan <- requests
+			return
+		}
+		var missingRequestsChan chan isc.Request
+		for _, idx := range missingReqs {
+			missingRef := requestRefs[idx]
+			go m.sendNetworkMessages(
+				m.gpa.Input(missingRef),
+			)
+		}
+		closure := m.attachToIncomingRequests(func(req isc.Request) {
+			missingRequestsChan <- req
+		})
+		defer m.incomingRequests.Detach(closure)
 
-			for {
-				select {
-				case req := <-missingRequestsChan:
-					idx := missingReqs[isc.RequestHash(req)]
-					requests[idx] = req
-					break
-				case <-ctx.Done():
+		for {
+			select {
+			case req := <-missingRequestsChan:
+				reqHash := isc.RequestHash(req)
+				idx, ok := missingReqs[reqHash]
+				if !ok {
+					continue // not the request we're looking for
+				}
+				requests[idx] = req
+				delete(missingReqs, reqHash)
+				if len(missingReqs) == 0 {
+					// we have all the requests
+					retChan <- requests
 					return
 				}
+			case <-ctx.Done():
+				return
 			}
 		}
-		retChan <- requests
 	}()
 
 	return retChan

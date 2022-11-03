@@ -1,4 +1,4 @@
-package mempool
+package mempool_gpa
 
 import (
 	"github.com/iotaledger/wasp/packages/gpa"
@@ -13,14 +13,17 @@ const (
 // share offledger req
 type msgShareRequest struct {
 	gpa.BasicMessage
-	req isc.Request
+	req             isc.Request
+	shouldPropagate bool
 }
 
 var _ gpa.Message = &msgShareRequest{}
 
-func newMsgShareRequest(req isc.Request) *msgShareRequest {
+func newMsgShareRequest(req isc.Request, shouldPropagate bool, receipient gpa.NodeID) *msgShareRequest {
 	return &msgShareRequest{
-		req: req,
+		BasicMessage:    gpa.NewBasicMessage(receipient),
+		req:             req,
+		shouldPropagate: shouldPropagate,
 	}
 }
 
@@ -45,9 +48,10 @@ type msgMissingRequest struct {
 
 var _ gpa.Message = &msgMissingRequest{}
 
-func newMsgMissingRequest(ref *isc.RequestRef) *msgMissingRequest {
+func newMsgMissingRequest(ref *isc.RequestRef, receipient gpa.NodeID) *msgMissingRequest {
 	return &msgMissingRequest{
-		ref: ref,
+		BasicMessage: gpa.NewBasicMessage(receipient),
+		ref:          ref,
 	}
 }
 

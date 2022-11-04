@@ -13,6 +13,7 @@ import (
 type mempoolGPA struct {
 	receiveRequests func(reqs ...isc.Request) []bool
 	getRequest      func(id isc.RequestID) isc.Request
+	peers           []gpa.NodeID
 	log             *logger.Logger
 }
 
@@ -37,7 +38,6 @@ func (m *mempoolGPA) Input(input gpa.Input) gpa.OutMessages {
 		msgs.Add(newMsgShareRequest(inp, true, ""))
 	case *isc.RequestRef:
 		// TODO add peers
-		// TODO should we know
 		msgs.Add(newMsgMissingRequest(inp, ""))
 	default:
 		m.log.Warnf("unexpected input %T: %+v", input, input)
@@ -45,7 +45,7 @@ func (m *mempoolGPA) Input(input gpa.Input) gpa.OutMessages {
 	return msgs
 }
 
-// HANDLE INCOMMING MESSAGE (from other nodes)
+// Message handles INCOMMING messages (from other nodes)
 func (m *mempoolGPA) Message(msg gpa.Message) gpa.OutMessages {
 	switch message := msg.(type) {
 	case *msgShareRequest:

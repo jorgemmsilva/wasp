@@ -10,7 +10,7 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
-	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool/mempool_gpa"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool/mempoolgpa"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -42,7 +42,7 @@ type mempool struct {
 	ctx                    context.Context
 	log                    *logger.Logger
 	metrics                metrics_pkg.MempoolMetrics
-	gpa                    gpa.GPA
+	gpa                    *mempoolgpa.Impl
 }
 
 var _ consGR.Mempool = &mempool{}
@@ -52,17 +52,14 @@ func New(
 	chainID *isc.ChainID,
 	myNodeID gpa.NodeID,
 	net peering.NetworkProvider,
-	chainAddress iotago.Address,
 	stateReader state.OptimisticStateReader,
 	log *logger.Logger,
 	mempoolMetrics metrics_pkg.MempoolMetrics,
 ) Mempool {
 	pool := &mempool{
-		chainAddress: chainAddress,
-		pool:         make(map[isc.RequestID]isc.Request),
-		net:          net,
-		// TODO how to keep the list of peers????
-		peers:                  make(map[gpa.NodeID]*cryptolib.PublicKey),
+		chainAddress:           chainID.AsAddress(),
+		pool:                   make(map[isc.RequestID]isc.Request),
+		net:                    net,
 		ctx:                    ctx,
 		log:                    log.Named("mempool"),
 		metrics:                mempoolMetrics,
@@ -73,10 +70,10 @@ func New(
 		}),
 	}
 
-	pool.gpa = mempool_gpa.New(
-		pool.sendNetworkMessages,
+	pool.gpa = mempoolgpa.New(
 		pool.ReceiveRequests,
 		pool.GetRequest,
+		pool.hasBeenProcessed,
 		pool.log,
 	)
 	pool.netPeeringID = peering.PeeringIDFromBytes(
@@ -104,8 +101,13 @@ func New(
 	return pool
 }
 
-func (m *mempool) sendNetworkMessages(outMsgs gpa.OutMessages) {
-	outMsgs.MustIterate(func(msg gpa.Message) {
+// TODO this must be called from chainMGR
+func (m *mempool) SetPeers(committee []gpa.NodeID, accessNodes []gpa.NodeID) {
+	m.gpa.SetPeers(committee, accessNodes)
+}
+
+func (m *mempool) sendNetworkMessages(outMsgs *mempoolgpa.MempoolMessages) {
+	sendMsg := func(msg gpa.Message) {
 		msgData, err := msg.MarshalBinary()
 		if err != nil {
 			m.log.Warnf("Failed to send a message: %v", err)
@@ -118,6 +120,22 @@ func (m *mempool) sendNetworkMessages(outMsgs gpa.OutMessages) {
 			MsgData:     msgData,
 		}
 		m.net.SendMsgByPubKey(m.peers[msg.Recipient()], peerMsg)
+	}
+	if !outMsgs.Staggered {
+		outMsgs.MustIterate(sendMsg)
+		return
+	}
+	sent := 0
+	outMsgs.MustIterate(func(msg gpa.Message) {
+		sendMsg(msg)
+		sent++
+		if sent == outMsgs.SendNperIteration {
+			time.Sleep(outMsgs.SendInterval)
+			sent = 0
+			if outMsgs.ShouldStopSending() {
+				return
+			}
+		}
 	})
 }
 
@@ -127,14 +145,19 @@ func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Cl
 	return closure
 }
 
-func (m *mempool) hasBeenProcessed(reqID *isc.RequestID) (hasBeenProcessed bool, err error) {
+func (m *mempool) hasBeenProcessed(reqID isc.RequestID) (hasBeenProcessed bool) {
+	var err error
 	err = optimism.RetryOnStateInvalidated(
 		func() error {
-			hasBeenProcessed, err = blocklog.IsRequestProcessed(m.stateReader.KVStoreReader(), reqID)
+			hasBeenProcessed, err = blocklog.IsRequestProcessed(m.stateReader.KVStoreReader(), &reqID)
 			return err
 		},
 	)
-	return hasBeenProcessed, err
+	if err != nil {
+		m.log.Warnf("error while checking hasBeenProcessed, reqID:%s, err:%s", reqID, err.Error())
+		return false
+	}
+	return hasBeenProcessed
 }
 
 func shouldBeRemoved(req isc.Request, currentTime time.Time) bool {
@@ -143,7 +166,7 @@ func shouldBeRemoved(req isc.Request, currentTime time.Time) bool {
 		return false
 	}
 
-	// Do not process anything with SDRUC for now
+	// TODO Do not process anything with SDRUC for now
 	if _, ok := onLedgerReq.Features().ReturnAmount(); ok {
 		return true
 	}
@@ -261,9 +284,7 @@ func (m *mempool) addToPoolNoLock(req isc.Request) bool {
 	if _, ok := m.pool[reqid]; ok {
 		return false
 	}
-	alreadyProcessed, err := m.hasBeenProcessed(&reqid)
-	if err != nil || alreadyProcessed {
-		// could not check if it is processed or not, leave it in the in-buffer
+	if m.hasBeenProcessed(reqid) {
 		return false
 	}
 	m.pool[reqid] = req
@@ -286,6 +307,7 @@ func (m *mempool) ReceiveRequests(reqs ...isc.Request) []bool {
 		if !ok {
 			// offledger
 			go m.sendNetworkMessages(m.gpa.Input(req))
+			ret[i] = m.addToPoolNoLock(req)
 			continue
 		}
 		// if the request is timelocked, maybe it shouldn't be added to the mempool right away

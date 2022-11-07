@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
-	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
@@ -33,7 +32,7 @@ func newTestPool(t *testing.T) Mempool {
 	var peeringNetwork *testutil.PeeringNetwork = testutil.NewPeeringNetwork(
 		[]string{"nodeID"}, []*cryptolib.KeyPair{cryptolib.NewKeyPair()}, 10000,
 		testutil.NewPeeringNetReliable(log),
-		testlogger.WithLevel(log, logger.LevelWarn, false),
+		log,
 	)
 
 	glb := coreutil.NewChainStateSync().SetSolidIndex(0)

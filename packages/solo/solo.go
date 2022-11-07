@@ -22,6 +22,7 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database/dbmanager"
+	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -31,6 +32,7 @@ import (
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/utxodb"
@@ -298,7 +300,22 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    chainlog,
 	}
-	m := mempool.New(context.Background(), "", chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
+
+	var peeringNetwork *testutil.PeeringNetwork = testutil.NewPeeringNetwork(
+		[]string{"nodeID"}, []*cryptolib.KeyPair{cryptolib.NewKeyPair()}, 10000,
+		testutil.NewPeeringNetReliable(chainlog),
+		chainlog,
+	)
+
+	m := mempool.New(
+		context.Background(),
+		chainID,
+		gpa.NodeID("solo"),
+		peeringNetwork.NetworkProviders()[0],
+		ret.StateReader,
+		chainlog,
+		metrics.DefaultChainMetrics(),
+	)
 	ret.mempool = m.(mempool.SoloMempool)
 	require.NoError(env.T, err)
 

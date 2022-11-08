@@ -47,8 +47,8 @@ func SingleMessage(msg gpa.Message) *MempoolMessages {
 // ----------------------------------------------------------------
 
 const (
-	msgTypeShareRequest   byte = iota
-	msgTypeMissingRequest byte = iota
+	msgTypeShareRequest byte = iota
+	msgTypeMissingRequest
 )
 
 // share offledger req

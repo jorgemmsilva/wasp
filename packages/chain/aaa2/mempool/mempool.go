@@ -413,17 +413,21 @@ func (m *mempool) ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc
 			retChan <- requests
 			return
 		}
+
 		var missingRequestsChan chan isc.Request
-		for _, idx := range missingReqs {
-			missingRef := requestRefs[idx]
-			go m.sendNetworkMessages(
-				m.gpa.Input(missingRef),
-			)
+		if len(missingReqs) > 0 {
+			closure := m.attachToIncomingRequests(func(req isc.Request) {
+				missingRequestsChan <- req
+			})
+			defer m.incomingRequests.Detach(closure)
+
+			for _, idx := range missingReqs {
+				missingRef := requestRefs[idx]
+				go m.sendNetworkMessages(
+					m.gpa.Input(missingRef),
+				)
+			}
 		}
-		closure := m.attachToIncomingRequests(func(req isc.Request) {
-			missingRequestsChan <- req
-		})
-		defer m.incomingRequests.Detach(closure)
 
 		for {
 			select {

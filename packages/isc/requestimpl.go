@@ -722,6 +722,10 @@ func (rid RequestID) Bytes() []byte {
 	return buf.Bytes()
 }
 
+func (rid RequestID) Equals(other RequestID) bool {
+	return rid == other
+}
+
 func (rid RequestID) String() string {
 	return OID(rid.UTXOInput())
 }

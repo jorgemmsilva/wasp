@@ -160,7 +160,7 @@ func getCorrectRecordFromLookupKeyList(partition kv.KVStoreReader, keyList Reque
 		if err != nil {
 			return nil, err
 		}
-		if rec.Request.ID() == *reqID {
+		if rec.Request.ID().Equals(*reqID) {
 			rec.BlockIndex = lookupKey.BlockIndex()
 			rec.RequestIndex = lookupKey.RequestIndex()
 			return rec, nil

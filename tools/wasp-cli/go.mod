@@ -6,7 +6,7 @@ replace github.com/iotaledger/wasp => ../../
 
 replace (
 	github.com/anthdm/hbbft => github.com/kape1395/hbbft v0.0.0-20220823095040-07b2628097ef
-	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v0.0.0-20221102180613-7d920af2031d
 	go.dedis.ch/kyber/v3 v3.0.14 => github.com/kape1395/kyber/v3 v3.0.14-0.20210622094514-fefb81148dc3
 )
 
@@ -57,7 +57,7 @@ require (
 	github.com/iotaledger/grocksdb v1.7.5-0.20220808142449-1dc0b8ac4d7d // indirect
 	github.com/iotaledger/hive.go/core v1.0.0-rc.1 // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1 // indirect
-	github.com/iotaledger/inx-app v1.0.0-rc.1 // indirect
+	github.com/iotaledger/inx-app v1.0.0-rc.1.0.20221102091857-058227e94374 // indirect
 	github.com/iotaledger/inx/go v1.0.0-rc.1 // indirect
 	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/iotaledger/trie.go v0.0.0-20220913055112-2b1eae4ebed9 // indirect

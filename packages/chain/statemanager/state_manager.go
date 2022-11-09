@@ -8,6 +8,7 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA"
+	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smInputs"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smUtils"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -57,13 +58,14 @@ func New(
 	me *cryptolib.PublicKey,
 	peerPubKeys []*cryptolib.PublicKey,
 	net peering.NetworkProvider,
-	walFolder string,
+	wal smGPAUtils.BlockWAL,
 	store kvstore.KVStore,
 	log *logger.Logger,
 ) (StateMgr, error) {
 	smLog := log.Named("sm")
 	nr := smUtils.NewNodeRandomiserNoInit(pubKeyAsNodeID(me), smLog)
-	stateManagerGPA, err := smGPA.New(chainID, nr, walFolder, store, smLog)
+
+	stateManagerGPA, err := smGPA.New(chainID, nr, wal, store, smLog)
 	if err != nil {
 		smLog.Errorf("Failed to create state manager GPA: %v", err)
 		return nil, err

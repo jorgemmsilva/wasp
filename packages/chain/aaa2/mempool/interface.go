@@ -14,7 +14,6 @@ type Mempool interface {
 	HasRequest(id isc.RequestID) bool
 	GetRequest(id isc.RequestID) isc.Request
 	Info(currentTime time.Time) MempoolInfo
-	Close()
 }
 
 // for testing (only for use in solo)

@@ -13,6 +13,9 @@ import (
 )
 
 func TestMempoolGpa(t *testing.T) {
+	// TODO use gpa context
+	tc := gpa.NewTestContext(nodes)
+
 	kp := cryptolib.NewKeyPair()
 	requestA := isc.NewOffLedgerRequest(isc.RandomChainID(), isc.Hn("foo"), isc.Hn("bar"), nil, 0).Sign(kp)
 	requestB := isc.NewOffLedgerRequest(isc.RandomChainID(), isc.Hn("foo"), isc.Hn("bar"), nil, 1).Sign(kp)

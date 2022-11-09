@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	shareReqNNodes   = 1
+	shareReqNNodes   = 2
 	shareReqInterval = 1 * time.Second
 )
 
@@ -20,27 +20,35 @@ const (
 	askMissingReqInterval = 300 * time.Millisecond
 )
 
-type Impl struct {
-	receiveRequests         func(reqs ...isc.Request) []bool
-	getRequest              func(id isc.RequestID) isc.Request
-	hasRequestBeenProcessed func(id isc.RequestID) bool
-	committeeNodes          []gpa.NodeID
-	accessNodes             []gpa.NodeID
-	peersMutex              sync.RWMutex
-	log                     *logger.Logger
+type scheduledMessages struct {
+	messages []gpa.Message
+	lastSent time.Time
 }
+type Impl struct {
+	receiveRequests func(reqs ...isc.Request) []bool
+	getRequest      func(id isc.RequestID) isc.Request
+	committeeNodes  []gpa.NodeID
+	accessNodes     []gpa.NodeID
+	peersMutex      sync.RWMutex
+	log             *logger.Logger
+
+	missingReqMsgs      map[isc.RequestID]*scheduledMessages
+	missingReqMsgsMutex sync.Mutex
+	shareReqMsgs        map[isc.RequestID]*scheduledMessages
+	shareReqMsgsMutex   sync.Mutex
+}
+
+var _ gpa.GPA = &Impl{}
 
 func New(
 	receiveRequests func(reqs ...isc.Request) []bool,
 	getRequest func(id isc.RequestID) isc.Request,
-	hasRequestBeenProcessed func(id isc.RequestID) bool,
 	log *logger.Logger,
 ) *Impl {
 	return &Impl{
-		receiveRequests:         receiveRequests,
-		getRequest:              getRequest,
-		hasRequestBeenProcessed: hasRequestBeenProcessed,
-		log:                     log,
+		receiveRequests: receiveRequests,
+		getRequest:      getRequest,
+		log:             log,
 	}
 }
 
@@ -51,52 +59,152 @@ func (m *Impl) SetPeers(committeeNodes, accessNodes []gpa.NodeID) {
 	m.accessNodes = accessNodes
 }
 
-func (m *Impl) NewShareRequestMessages(req isc.Request, receivedFrom gpa.NodeID) *MempoolMessages {
-	msgs := gpa.NoMessages()
-	// share to committee and access nodes
-	allNodes := m.committeeNodes
-	allNodes = append(allNodes, m.accessNodes...)
-	for _, nodeID := range allNodes {
-		if nodeID != receivedFrom {
-			msgs.Add(newMsgShareRequest(req, true, nodeID))
-		}
-	}
-	// TODO keep track of who has the request
-	return NewStaggeredMessages(
-		msgs,
-		shareReqNNodes,
-		shareReqInterval,
-		func() bool {
-			reqHasLeftTheMempool := m.getRequest(req.ID()) == nil
-			return reqHasLeftTheMempool
-		})
+type RemovedFromMempool struct {
+	RequestIDs []isc.RequestID
 }
 
-func (m *Impl) Input(input gpa.Input) *MempoolMessages {
+func (m *Impl) Input(input gpa.Input) gpa.OutMessages {
 	switch inp := input.(type) {
+	case time.Time:
+		return m.handleInputTick(inp)
+	case RemovedFromMempool:
+		return m.handleRemovedFromMempool(inp)
 	case isc.Request:
-		return m.NewShareRequestMessages(inp, gpa.NodeID(""))
+		return m.handleInputRequest(inp)
 	case *isc.RequestRef:
-		msgs := gpa.NoMessages()
-		for _, nodeID := range m.committeeNodes {
-			msgs.Add(newMsgMissingRequest(inp, nodeID))
-		}
-		return NewStaggeredMessages(
-			msgs,
-			askMissingReqNNodes,
-			askMissingReqInterval,
-			func() bool {
-				return m.hasRequestBeenProcessed(inp.ID)
-			},
-		)
+		return m.handleInputRequestRef(inp)
 	default:
 		m.log.Warnf("unexpected input %T: %+v", input, input)
 	}
-	return NoMessages()
+	return nil
+}
+
+func (m *Impl) handleInputTick(t time.Time) gpa.OutMessages {
+	msgs := gpa.NoMessages()
+	msgs.AddMany(m.nextMissingRequestMsgs(t))
+	msgs.AddMany(m.nextShareRequestMsgs(t))
+	return msgs
+}
+
+func (m *Impl) nextMissingRequestMsgs(t time.Time) []gpa.Message {
+	return nextScheduledMsgs(
+		&m.missingReqMsgsMutex,
+		&m.missingReqMsgs,
+		askMissingReqNNodes,
+		askMissingReqInterval,
+		t,
+	)
+}
+
+func (m *Impl) nextShareRequestMsgs(t time.Time) []gpa.Message {
+	return nextScheduledMsgs(
+		&m.shareReqMsgsMutex,
+		&m.shareReqMsgs,
+		shareReqNNodes,
+		shareReqInterval,
+		t,
+	)
+}
+
+func nextScheduledMsgs(
+	mutex *sync.Mutex,
+	msgsMap *map[isc.RequestID]*scheduledMessages,
+	nMessages int,
+	interval time.Duration,
+	t time.Time,
+) []gpa.Message {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	ret := []gpa.Message{}
+	for reqid, msgs := range *msgsMap {
+		if !t.After(msgs.lastSent.Add(interval)) {
+			// only add messages to be sent if the interval has passed
+			continue
+		}
+		if len(msgs.messages) >= nMessages {
+			ret = append(ret, msgs.messages...)
+			delete(*msgsMap, reqid)
+		} else {
+			msgs.lastSent = t
+			ret = append(ret, msgs.messages[nMessages:]...)
+			msgs.messages = msgs.messages[nMessages:]
+		}
+	}
+	return ret
+}
+
+func (m *Impl) handleRemovedFromMempool(r RemovedFromMempool) gpa.OutMessages {
+	m.shareReqMsgsMutex.Lock()
+	defer m.shareReqMsgsMutex.Unlock()
+	for _, rid := range r.RequestIDs {
+		delete(m.shareReqMsgs, rid)
+	}
+	return nil
+}
+
+func (m *Impl) handleInputRequest(req isc.Request) gpa.OutMessages {
+	// empty node ID because this request is comming from webapi
+	return m.newShareRequestMessages(req, gpa.NodeID(""))
+}
+
+func (m *Impl) handleInputRequestRef(ref *isc.RequestRef) gpa.OutMessages {
+	m.peersMutex.RLock()
+	defer m.peersMutex.RUnlock()
+	msgs := make([]gpa.Message, len(m.committeeNodes))
+	for i, nodeID := range m.committeeNodes {
+		msgs[i] = newMsgMissingRequest(ref, nodeID)
+	}
+	if len(msgs) <= askMissingReqNNodes {
+		return gpa.NoMessages().AddMany(msgs)
+	}
+	// send the first iteration of messages right away
+	ret := gpa.NoMessages().AddMany(msgs[:askMissingReqNNodes])
+	// save the rest of the messages to be sent later
+	msgs = msgs[askMissingReqNNodes:]
+	if len(msgs) > 0 {
+		m.missingReqMsgsMutex.Lock()
+		m.missingReqMsgs[ref.ID] = &scheduledMessages{
+			messages: msgs,
+			lastSent: time.Now(),
+		}
+		m.missingReqMsgsMutex.Unlock()
+	}
+	return ret
+}
+
+func (m *Impl) newShareRequestMessages(req isc.Request, receivedFrom gpa.NodeID) gpa.OutMessages {
+	m.peersMutex.RLock()
+	defer m.peersMutex.RUnlock()
+	// share to committee and access nodes
+	allNodes := m.committeeNodes
+	allNodes = append(allNodes, m.accessNodes...)
+	msgs := make([]gpa.Message, len(allNodes))
+	for i, nodeID := range allNodes {
+		if nodeID != receivedFrom {
+			msgs[i] = newMsgShareRequest(req, true, nodeID)
+		}
+	}
+	if len(msgs) <= shareReqNNodes {
+		return gpa.NoMessages().AddMany(msgs)
+	}
+	// send the first iteration of messages right away
+	ret := gpa.NoMessages().AddMany(msgs[:shareReqNNodes])
+	// save the rest of the messages to be sent later
+	msgs = msgs[shareReqNNodes:]
+	if len(msgs) > 0 {
+		m.shareReqMsgsMutex.Lock()
+		m.shareReqMsgs[req.ID()] = &scheduledMessages{
+			messages: msgs,
+			lastSent: time.Now(),
+		}
+		m.shareReqMsgsMutex.Unlock()
+	}
+	return ret
 }
 
 // Message handles INCOMMING messages (from other nodes)
-func (m *Impl) Message(msg gpa.Message) *MempoolMessages {
+func (m *Impl) Message(msg gpa.Message) gpa.OutMessages {
 	switch message := msg.(type) {
 	case *msgShareRequest:
 		return m.receiveMsgShareRequests(message)
@@ -105,34 +213,39 @@ func (m *Impl) Message(msg gpa.Message) *MempoolMessages {
 	default:
 		m.log.Warnf("unexpected message %T: %+v", msg, msg)
 	}
-	return NoMessages()
+	return nil
 }
 
-func (m *Impl) receiveMsgShareRequests(msg *msgShareRequest) *MempoolMessages {
+func (m *Impl) receiveMsgShareRequests(msg *msgShareRequest) gpa.OutMessages {
 	res := m.receiveRequests(msg.req)
 	if len(res) != 1 || !res[0] {
 		// message was rejected by the mempool
-		return NoMessages()
+		return nil
 	}
 	if !msg.shouldPropagate {
-		return NoMessages()
+		// reponses to "missing requests" are sent with shouldPropagate = false
+		m.missingReqMsgsMutex.Lock()
+		defer m.missingReqMsgsMutex.Unlock()
+		reqid := msg.req.ID()
+		if _, ok := m.missingReqMsgs[reqid]; ok {
+			delete(m.missingReqMsgs, reqid) // request received, no need to send any more messages
+		}
+		return nil
 	}
-	return m.NewShareRequestMessages(msg.req, msg.Sender())
+	return m.newShareRequestMessages(msg.req, msg.Sender())
 }
 
 // sender of the message is missing a request
-func (m *Impl) receiveMsgMissingRequest(input *msgMissingRequest) *MempoolMessages {
+func (m *Impl) receiveMsgMissingRequest(input *msgMissingRequest) gpa.OutMessages {
 	req := m.getRequest(input.ref.ID)
 	if req == nil {
-		return NoMessages()
+		return nil
 	}
 	if !input.ref.IsFor(req) {
 		m.log.Warnf("mismatch between requested requestRef and request in mempool. refHash: %s request:%s", input.ref.Hash.Hex(), req.String())
-		return NoMessages()
+		return nil
 	}
-	return SingleMessage(
-		newMsgShareRequest(req, false, input.Sender()),
-	)
+	return gpa.NoMessages().Add(newMsgShareRequest(req, false, input.Sender()))
 }
 
 func (m *Impl) UnmarshalMessage(data []byte) (msg gpa.Message, err error) {
@@ -149,4 +262,13 @@ func (m *Impl) UnmarshalMessage(data []byte) (msg gpa.Message, err error) {
 		return nil, err
 	}
 	return msg, nil
+}
+
+func (*Impl) Output() gpa.Output {
+	panic("unimplemented")
+}
+
+// StatusString implements gpa.GPA
+func (*Impl) StatusString() string {
+	return "unimplemented"
 }

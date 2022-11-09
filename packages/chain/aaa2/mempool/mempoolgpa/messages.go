@@ -1,50 +1,9 @@
 package mempoolgpa
 
 import (
-	"time"
-
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 )
-
-type MempoolMessages struct {
-	gpa.OutMessages
-	SendNperIteration int
-	SendInterval      time.Duration
-	ShouldStopSending func() bool
-	Staggered         bool
-}
-
-func NewStaggeredMessages(
-	msgs gpa.OutMessages,
-	sendN int,
-	sendEvery time.Duration,
-	shouldStopSending func() bool,
-) *MempoolMessages {
-	return &MempoolMessages{
-		OutMessages:       msgs,
-		SendNperIteration: sendN,
-		SendInterval:      sendEvery,
-		ShouldStopSending: shouldStopSending,
-		Staggered:         true,
-	}
-}
-
-func NoMessages() *MempoolMessages {
-	return &MempoolMessages{
-		OutMessages: gpa.NoMessages(),
-		Staggered:   false,
-	}
-}
-
-func SingleMessage(msg gpa.Message) *MempoolMessages {
-	return &MempoolMessages{
-		OutMessages: gpa.NoMessages().Add(msg),
-		Staggered:   false,
-	}
-}
-
-// ----------------------------------------------------------------
 
 const (
 	msgTypeShareRequest byte = iota
@@ -55,7 +14,7 @@ const (
 type msgShareRequest struct {
 	gpa.BasicMessage
 	req             isc.Request
-	shouldPropagate bool // indecates whether the message should be shared (false when responding to a "missing request message")
+	shouldPropagate bool // indicates whether the message should be shared (false when responding to a "missing request message")
 }
 
 var _ gpa.Message = &msgShareRequest{}

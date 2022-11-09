@@ -37,7 +37,6 @@ type mempool struct {
 	net                    peering.NetworkProvider
 	netPeeringID           peering.PeeringID
 	peers                  map[gpa.NodeID]*cryptolib.PublicKey
-	netDisconnect          func()
 	incomingRequests       *events.Event
 	ctx                    context.Context
 	log                    *logger.Logger
@@ -73,7 +72,6 @@ func New(
 	pool.gpa = mempoolgpa.New(
 		pool.ReceiveRequests,
 		pool.GetRequest,
-		pool.hasBeenProcessed,
 		pool.log,
 	)
 	pool.netPeeringID = peering.PeeringIDFromBytes(
@@ -92,11 +90,15 @@ func New(
 		// process the incoming message and send whatever is needed to other peers
 		pool.sendNetworkMessages(pool.gpa.Message(msg))
 	})
-	pool.netDisconnect = func() {
+
+	go func() {
+		<-pool.ctx.Done()
 		net.Detach(attachID)
-	}
+	}()
 
 	go pool.addTimelockedRequestsToMempool()
+
+	go pool.gpaTick()
 
 	return pool
 }
@@ -106,7 +108,7 @@ func (m *mempool) SetPeers(committee []gpa.NodeID, accessNodes []gpa.NodeID) {
 	m.gpa.SetPeers(committee, accessNodes)
 }
 
-func (m *mempool) sendNetworkMessages(outMsgs *mempoolgpa.MempoolMessages) {
+func (m *mempool) sendNetworkMessages(outMsgs gpa.OutMessages) {
 	sendMsg := func(msg gpa.Message) {
 		msgData, err := msg.MarshalBinary()
 		if err != nil {
@@ -121,22 +123,7 @@ func (m *mempool) sendNetworkMessages(outMsgs *mempoolgpa.MempoolMessages) {
 		}
 		m.net.SendMsgByPubKey(m.peers[msg.Recipient()], peerMsg)
 	}
-	if !outMsgs.Staggered {
-		outMsgs.MustIterate(sendMsg)
-		return
-	}
-	sent := 0
-	outMsgs.MustIterate(func(msg gpa.Message) {
-		sendMsg(msg)
-		sent++
-		if sent == outMsgs.SendNperIteration {
-			time.Sleep(outMsgs.SendInterval)
-			sent = 0
-			if outMsgs.ShouldStopSending() {
-				return
-			}
-		}
-	})
+	outMsgs.MustIterate(sendMsg)
 }
 
 func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Closure {
@@ -180,11 +167,6 @@ func (m *mempool) isRequestReady(req isc.Request) bool {
 		return isc.RequestIsUnlockable(onLedgerReq, m.chainAddress, time.Now())
 	}
 	return true
-}
-
-func (m *mempool) Close() {
-	m.netDisconnect()
-	m.ctx.Done()
 }
 
 func (m *mempool) GetRequest(id isc.RequestID) isc.Request {
@@ -274,6 +256,20 @@ func (m *mempool) addTimelockedRequestsToMempool() {
 	}
 }
 
+const gpaTickInterval = 100 * time.Millisecond
+
+func (m *mempool) gpaTick() {
+	ticker := time.NewTicker(gpaTickInterval)
+	for {
+		select {
+		case t := <-ticker.C:
+			go m.sendNetworkMessages(m.gpa.Input(t))
+		case <-m.ctx.Done():
+			return
+		}
+	}
+}
+
 // adds a request to the pool after doing some basic checks, returns whether it was added successfully
 func (m *mempool) addToPoolNoLock(req isc.Request) bool {
 	if shouldBeRemoved(req, time.Now()) {
@@ -343,6 +339,9 @@ func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
 	if len(reqs) == 0 {
 		return
 	}
+	m.gpa.Input(mempoolgpa.RemovedFromMempool{
+		RequestIDs: reqs,
+	})
 	m.poolMutex.Lock()
 	defer m.poolMutex.Unlock()
 
@@ -356,7 +355,13 @@ func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
 
 // ConsensusProposalsAsync returns a list of requests to be sent as a batch proposal
 func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef {
-	// TODO ctx not used here, nor is aliasOutput
+	// TODO handle reorgs (if possible, TBD)
+
+	// !!!!
+	// TODO use aliasOutput to clean processed requests
+	// TODO handle parallel calls (cancel with ctx)
+	// TODO wait min time (wait until min number of requests)
+
 	retChan := make(chan []*isc.RequestRef, 1)
 
 	go func() {

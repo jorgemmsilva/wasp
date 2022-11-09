@@ -84,6 +84,7 @@ import (
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/tcrypto"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
@@ -134,20 +135,21 @@ type cmtLogInst struct {
 }
 
 type chainMgrImpl struct {
-	chainID           isc.ChainID                             // This instance is responsible for this chain.
-	cmtLogs           map[iotago.Ed25519Address]*cmtLogInst   // All the committee log instances for this chain.
-	cmtLogStore       cmtLog.Store                            // Persistent store for log indexes.
-	latestActiveCmt   *iotago.Ed25519Address                  // The latest active committee.
-	latestConfirmedAO *isc.AliasOutputWithID                  // The latest confirmed AO (follows Active AO).
-	activeAccessNodes []*cryptolib.PublicKey                  // All the nodes authorized for being access nodes (for the ActiveAO).
-	needConsensus     *NeedConsensus                          // Query for a consensus.
-	needPublishTX     map[iotago.TransactionID]*NeedPublishTX // Query to post TXes.
-	dkReg             tcrypto.DKShareRegistryProvider         // Source for DKShares.
-	output            *Output
-	asGPA             gpa.GPA
-	me                gpa.NodeID
-	nodeIDFromPubKey  func(pubKey *cryptolib.PublicKey) gpa.NodeID
-	log               *logger.Logger
+	chainID             isc.ChainID                             // This instance is responsible for this chain.
+	cmtLogs             map[iotago.Ed25519Address]*cmtLogInst   // All the committee log instances for this chain.
+	cmtLogStore         cmtLog.Store                            // Persistent store for log indexes.
+	latestActiveCmt     *iotago.Ed25519Address                  // The latest active committee.
+	latestConfirmedAO   *isc.AliasOutputWithID                  // The latest confirmed AO (follows Active AO).
+	activeAccessNodes   []*cryptolib.PublicKey                  // All the nodes authorized for being access nodes (for the ActiveAO).
+	activeAccessNodesCB func([]*cryptolib.PublicKey)            // Called, when a list of access nodes has changed.
+	needConsensus       *NeedConsensus                          // Query for a consensus.
+	needPublishTX       map[iotago.TransactionID]*NeedPublishTX // Query to post TXes.
+	dkReg               tcrypto.DKShareRegistryProvider         // Source for DKShares.
+	output              *Output
+	asGPA               gpa.GPA
+	me                  gpa.NodeID
+	nodeIDFromPubKey    func(pubKey *cryptolib.PublicKey) gpa.NodeID
+	log                 *logger.Logger
 }
 
 var (
@@ -161,19 +163,21 @@ func New(
 	cmtLogStore cmtLog.Store,
 	dkReg tcrypto.DKShareRegistryProvider,
 	nodeIDFromPubKey func(pubKey *cryptolib.PublicKey) gpa.NodeID,
+	activeAccessNodesCB func([]*cryptolib.PublicKey),
 	log *logger.Logger,
 ) (ChainMgr, error) {
 	cmi := &chainMgrImpl{
-		chainID:           chainID,
-		cmtLogs:           map[iotago.Ed25519Address]*cmtLogInst{},
-		cmtLogStore:       cmtLogStore,
-		activeAccessNodes: []*cryptolib.PublicKey{},
-		needConsensus:     nil,
-		needPublishTX:     map[iotago.TransactionID]*NeedPublishTX{},
-		dkReg:             dkReg,
-		me:                me,
-		nodeIDFromPubKey:  nodeIDFromPubKey,
-		log:               log,
+		chainID:             chainID,
+		cmtLogs:             map[iotago.Ed25519Address]*cmtLogInst{},
+		cmtLogStore:         cmtLogStore,
+		activeAccessNodes:   []*cryptolib.PublicKey{},
+		activeAccessNodesCB: activeAccessNodesCB,
+		needConsensus:       nil,
+		needPublishTX:       map[iotago.TransactionID]*NeedPublishTX{},
+		dkReg:               dkReg,
+		me:                  me,
+		nodeIDFromPubKey:    nodeIDFromPubKey,
+		log:                 log,
 	}
 	cmi.output = &Output{cmi: cmi}
 	cmi.asGPA = gpa.NewOwnHandler(me, cmi)
@@ -304,7 +308,12 @@ func (cmi *chainMgrImpl) handleInputConsensusOutputDone(input *inputConsensusOut
 	})
 	//
 	// >     Update AccessNodes.
-	cmi.activeAccessNodes = governance.NewStateAccess(input.nextVirtualState.KVStore()).GetAccessNodes()
+	newAccessNodes := governance.NewStateAccess(input.nextVirtualState.KVStore()).GetAccessNodes()
+	if !util.Same(newAccessNodes, cmi.activeAccessNodes) {
+		cmi.activeAccessNodesCB(newAccessNodes)
+		cmi.activeAccessNodes = newAccessNodes
+	}
+	//
 	return msgs
 }
 

@@ -84,6 +84,7 @@ import (
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/tcrypto"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
 var ErrNotInCommittee = errors.New("ErrNotInCommittee")
@@ -163,15 +164,16 @@ func New(
 	log *logger.Logger,
 ) (ChainMgr, error) {
 	cmi := &chainMgrImpl{
-		chainID:          chainID,
-		cmtLogs:          map[iotago.Ed25519Address]*cmtLogInst{},
-		cmtLogStore:      cmtLogStore,
-		needConsensus:    nil,
-		needPublishTX:    map[iotago.TransactionID]*NeedPublishTX{},
-		dkReg:            dkReg,
-		me:               me,
-		nodeIDFromPubKey: nodeIDFromPubKey,
-		log:              log,
+		chainID:           chainID,
+		cmtLogs:           map[iotago.Ed25519Address]*cmtLogInst{},
+		cmtLogStore:       cmtLogStore,
+		activeAccessNodes: []*cryptolib.PublicKey{},
+		needConsensus:     nil,
+		needPublishTX:     map[iotago.TransactionID]*NeedPublishTX{},
+		dkReg:             dkReg,
+		me:                me,
+		nodeIDFromPubKey:  nodeIDFromPubKey,
+		log:               log,
 	}
 	cmi.output = &Output{cmi: cmi}
 	cmi.asGPA = gpa.NewOwnHandler(me, cmi)
@@ -297,12 +299,13 @@ func (cmi *chainMgrImpl) handleInputConsensusOutputDone(input *inputConsensusOut
 	}
 	//
 	// >     Forward the message to the corresponding CmtLog; HandleCmtLogOutput.
-	return cmi.withCmtLog(input.committeeAddr, func(cl gpa.GPA) gpa.OutMessages {
+	msgs := cmi.withCmtLog(input.committeeAddr, func(cl gpa.GPA) gpa.OutMessages {
 		return cl.Input(cmtLog.NewInputConsensusOutputDone(input.logIndex, input.baseAliasOutputID, input.nextAliasOutput))
 	})
-
-	// TODO:
+	//
 	// >     Update AccessNodes.
+	cmi.activeAccessNodes = governance.NewStateAccess(input.nextVirtualState.KVStore()).GetAccessNodes()
+	return msgs
 }
 
 // > UPON Reception of Consensus Output/SKIP:

@@ -2,6 +2,7 @@ package mempool
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -134,6 +135,7 @@ func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Cl
 }
 
 func (m *mempool) hasBeenProcessed(reqID isc.RequestID) (hasBeenProcessed bool) {
+	// this will need to be refectored for the new immutable state implementation
 	var err error
 	err = optimism.RetryOnStateInvalidated(
 		func() error {
@@ -360,14 +362,56 @@ func (m *mempool) Empty() bool {
 	return len(m.pool) == 0
 }
 
+func (m *mempool) getProcessedReqsFromTo(from, to *isc.AliasOutputWithID) []isc.RequestID {
+	// this will need to be refectored for the new immutable state implementation
+	ret := []isc.RequestID{}
+
+	fromIdx := uint32(0)
+	if from != nil {
+		fromIdx = from.GetStateIndex()
+	}
+	toIdx := to.GetStateIndex()
+	// from+1 ~ to
+	blockIndexes := make([]uint32, toIdx-fromIdx)
+	for i := range blockIndexes {
+		blockIndexes[i] = fromIdx + uint32(i+1)
+	}
+
+	for _, idx := range blockIndexes {
+		stateReadErr := optimism.RetryOnStateInvalidated(
+			func() error {
+				reqIds, err := blocklog.GetRequestIDsForBlock(m.stateReader.KVStoreReader(), idx)
+				ret = append(ret, reqIds...)
+				return err
+			},
+		)
+		if stateReadErr != nil {
+			m.log.Warnf("error while checking GetRequestIDsForBlock,  err:%s", stateReadErr.Error())
+		}
+	}
+	return ret
+}
+
 const checkForRequestsInPoolInterval = 200 * time.Millisecond
 
 // ConsensusProposalsAsync returns a list of requests to be sent as a batch proposal
 func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef {
 	// TODO handle reorgs (if possible, TBD)
 
-	// !!!!
-	// TODO use aliasOutput to clean processed requests
+	if aliasOutput.GetStateIndex() == 0 {
+		m.lastSeenChainOutput = aliasOutput
+	} else {
+		// clean mempool from requests processed since lastSeenChainOutput until aliasOutput
+		lastSeenStateIndex := uint32(0)
+		if m.lastSeenChainOutput != nil {
+			lastSeenStateIndex = m.lastSeenChainOutput.GetStateIndex()
+		}
+		if aliasOutput.GetStateIndex() < lastSeenStateIndex {
+			panic(fmt.Sprintf("reorg happened, last seen: %s, received: %s", m.lastSeenChainOutput.String(), aliasOutput.String()))
+		}
+		processedReqs := m.getProcessedReqsFromTo(m.lastSeenChainOutput, aliasOutput)
+		m.RemoveRequests(processedReqs...)
+	}
 
 	retChan := make(chan []*isc.RequestRef, 1)
 	go func() {

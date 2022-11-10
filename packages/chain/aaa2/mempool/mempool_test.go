@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
+	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
@@ -253,6 +254,8 @@ func TestAddRemoveRequests(t *testing.T) {
 	require.EqualValues(t, 4, metrics.processedRequestCounter)
 }
 
+var mockAliasOutput = isc.NewAliasOutputWithID(&iotago.AliasOutput{}, nil)
+
 func TestTimeLock(t *testing.T) {
 	pool := newTestPool(t)
 	start := time.Now()
@@ -299,7 +302,7 @@ func TestTimeLock(t *testing.T) {
 	require.False(t, ret[5])
 	testStatsFun(3, 0, 3)
 
-	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), nil)
+	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), mockAliasOutput)
 	requestsReady := <-pool.ConsensusRequestsAsync(context.Background(), requestRefs)
 
 	require.Len(t, requestsReady, 3)
@@ -311,7 +314,7 @@ func TestTimeLock(t *testing.T) {
 	// pass some time so that 1 request is unlocked
 	time.Sleep(6 * time.Second)
 
-	requestRefs = <-pool.ConsensusProposalsAsync(context.Background(), nil)
+	requestRefs = <-pool.ConsensusProposalsAsync(context.Background(), mockAliasOutput)
 	requestsReady = <-pool.ConsensusRequestsAsync(context.Background(), requestRefs)
 
 	require.Len(t, requestsReady, 4)
@@ -364,7 +367,7 @@ func TestExpiration(t *testing.T) {
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 2, stats.TotalPool)
 
-	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), nil)
+	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), mockAliasOutput)
 	requestsReady := <-pool.ConsensusRequestsAsync(context.Background(), requestRefs)
 
 	require.Len(t, requestsReady, 2)
@@ -415,7 +418,7 @@ func TestConsensusRequestsAsync(t *testing.T) {
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 5, stats.TotalPool)
 
-	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), nil)
+	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), mockAliasOutput)
 	requestsReady := <-pool.ConsensusRequestsAsync(context.Background(), requestRefs)
 
 	require.Len(t, requestsReady, 5)

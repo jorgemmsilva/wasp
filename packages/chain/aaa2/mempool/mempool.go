@@ -29,6 +29,7 @@ const (
 type mempool struct {
 	chainAddress           iotago.Address
 	stateReader            state.OptimisticStateReader
+	lastSeenChainOutput    *isc.AliasOutputWithID
 	poolMutex              sync.RWMutex
 	timelockedRequestsChan chan isc.OnLedgerRequest
 	inPoolCounter          int
@@ -353,18 +354,31 @@ func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
 	}
 }
 
+func (m *mempool) Empty() bool {
+	m.poolMutex.RLock()
+	defer m.poolMutex.RUnlock()
+	return len(m.pool) == 0
+}
+
+const checkForRequestsInPoolInterval = 200 * time.Millisecond
+
 // ConsensusProposalsAsync returns a list of requests to be sent as a batch proposal
 func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef {
 	// TODO handle reorgs (if possible, TBD)
 
 	// !!!!
 	// TODO use aliasOutput to clean processed requests
-	// TODO handle parallel calls (cancel with ctx)
-	// TODO wait min time (wait until min number of requests)
 
 	retChan := make(chan []*isc.RequestRef, 1)
-
 	go func() {
+		// wait for some time or until the pool is not empty
+		for m.Empty() {
+			time.Sleep(checkForRequestsInPoolInterval)
+			if ctx.Err() != nil {
+				close(retChan)
+				return
+			}
+		}
 		m.poolMutex.RLock()
 		defer m.poolMutex.RUnlock()
 
@@ -384,7 +398,7 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 			}
 		}
 		retChan <- ret
-		go m.RemoveRequests(toRemove...)
+		m.RemoveRequests(toRemove...)
 	}()
 
 	return retChan

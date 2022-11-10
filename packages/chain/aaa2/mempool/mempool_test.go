@@ -123,7 +123,6 @@ func TestMempool(t *testing.T) {
 	require.EqualValues(t, 0, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 0, stats.TotalPool)
-	pool.Close()
 }
 
 // Test if single on ledger request is added to mempool

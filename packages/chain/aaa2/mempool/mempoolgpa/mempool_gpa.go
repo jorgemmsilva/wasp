@@ -49,6 +49,8 @@ func New(
 		receiveRequests: receiveRequests,
 		getRequest:      getRequest,
 		log:             log,
+		missingReqMsgs:  make(map[isc.RequestID]*scheduledMessages),
+		shareReqMsgs:    make(map[isc.RequestID]*scheduledMessages),
 	}
 }
 
@@ -89,7 +91,7 @@ func (m *Impl) handleInputTick(t time.Time) gpa.OutMessages {
 func (m *Impl) nextMissingRequestMsgs(t time.Time) []gpa.Message {
 	return nextScheduledMsgs(
 		&m.missingReqMsgsMutex,
-		&m.missingReqMsgs,
+		m.missingReqMsgs,
 		askMissingReqNNodes,
 		askMissingReqInterval,
 		t,
@@ -99,7 +101,7 @@ func (m *Impl) nextMissingRequestMsgs(t time.Time) []gpa.Message {
 func (m *Impl) nextShareRequestMsgs(t time.Time) []gpa.Message {
 	return nextScheduledMsgs(
 		&m.shareReqMsgsMutex,
-		&m.shareReqMsgs,
+		m.shareReqMsgs,
 		shareReqNNodes,
 		shareReqInterval,
 		t,
@@ -108,7 +110,7 @@ func (m *Impl) nextShareRequestMsgs(t time.Time) []gpa.Message {
 
 func nextScheduledMsgs(
 	mutex *sync.Mutex,
-	msgsMap *map[isc.RequestID]*scheduledMessages,
+	msgsMap map[isc.RequestID]*scheduledMessages,
 	nMessages int,
 	interval time.Duration,
 	t time.Time,
@@ -117,14 +119,14 @@ func nextScheduledMsgs(
 	defer mutex.Unlock()
 
 	ret := []gpa.Message{}
-	for reqid, msgs := range *msgsMap {
-		if !t.After(msgs.lastSent.Add(interval)) {
+	for reqid, msgs := range msgsMap {
+		if t.Before(msgs.lastSent.Add(interval)) {
 			// only add messages to be sent if the interval has passed
 			continue
 		}
 		if len(msgs.messages) >= nMessages {
 			ret = append(ret, msgs.messages...)
-			delete(*msgsMap, reqid)
+			delete(msgsMap, reqid)
 		} else {
 			msgs.lastSent = t
 			ret = append(ret, msgs.messages[nMessages:]...)
@@ -144,7 +146,7 @@ func (m *Impl) handleRemovedFromMempool(r RemovedFromMempool) gpa.OutMessages {
 }
 
 func (m *Impl) handleInputRequest(req isc.Request) gpa.OutMessages {
-	// empty node ID because this request is comming from webapi
+	// empty node ID because this request is coming from webapi
 	return m.newShareRequestMessages(req, gpa.NodeID(""))
 }
 
@@ -179,10 +181,10 @@ func (m *Impl) newShareRequestMessages(req isc.Request, receivedFrom gpa.NodeID)
 	// share to committee and access nodes
 	allNodes := m.committeeNodes
 	allNodes = append(allNodes, m.accessNodes...)
-	msgs := make([]gpa.Message, len(allNodes))
-	for i, nodeID := range allNodes {
+	msgs := []gpa.Message{}
+	for _, nodeID := range allNodes {
 		if nodeID != receivedFrom {
-			msgs[i] = newMsgShareRequest(req, true, nodeID)
+			msgs = append(msgs, newMsgShareRequest(req, true, nodeID))
 		}
 	}
 	if len(msgs) <= shareReqNNodes {
@@ -227,9 +229,7 @@ func (m *Impl) receiveMsgShareRequests(msg *msgShareRequest) gpa.OutMessages {
 		m.missingReqMsgsMutex.Lock()
 		defer m.missingReqMsgsMutex.Unlock()
 		reqid := msg.req.ID()
-		if _, ok := m.missingReqMsgs[reqid]; ok {
-			delete(m.missingReqMsgs, reqid) // request received, no need to send any more messages
-		}
+		delete(m.missingReqMsgs, reqid) // request received, no need to send any more messages
 		return nil
 	}
 	return m.newShareRequestMessages(msg.req, msg.Sender())
@@ -265,7 +265,8 @@ func (m *Impl) UnmarshalMessage(data []byte) (msg gpa.Message, err error) {
 }
 
 func (*Impl) Output() gpa.Output {
-	panic("unimplemented")
+	// not used, callbacks are called instead
+	return nil
 }
 
 // StatusString implements gpa.GPA

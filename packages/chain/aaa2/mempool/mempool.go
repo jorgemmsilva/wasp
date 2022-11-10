@@ -34,6 +34,7 @@ type mempool struct {
 	pool                   map[isc.RequestID]isc.Request
 	net                    peering.NetworkProvider
 	netPeeringID           peering.PeeringID
+	netMsgsChan            chan gpa.OutMessages
 	peers                  map[gpa.NodeID]*cryptolib.PublicKey
 	incomingRequests       *events.Event
 	hasBeenProcessed       HasBeenProcessedFunc
@@ -60,6 +61,7 @@ func New(
 		chainAddress:           chainID.AsAddress(),
 		pool:                   make(map[isc.RequestID]isc.Request),
 		net:                    net,
+		netMsgsChan:            make(chan gpa.OutMessages),
 		hasBeenProcessed:       hasBeenProcessed,
 		getProcessedRequests:   getProcessedRequests,
 		ctx:                    ctx,
@@ -90,7 +92,7 @@ func New(
 			return
 		}
 		// process the incoming message and send whatever is needed to other peers
-		pool.sendNetworkMessages(pool.gpa.Message(msg))
+		pool.enqueueNetworkMessages(pool.gpa.Message(msg))
 	})
 
 	go func() {
@@ -99,8 +101,8 @@ func New(
 	}()
 
 	go pool.addTimelockedRequestsToMempool()
-
 	go pool.gpaTick()
+	go pool.sendNetworkMessages()
 
 	return pool
 }
@@ -110,22 +112,34 @@ func (m *mempool) SetPeers(committee []gpa.NodeID, accessNodes []gpa.NodeID) {
 	m.gpa.SetPeers(committee, accessNodes)
 }
 
-func (m *mempool) sendNetworkMessages(outMsgs gpa.OutMessages) {
-	sendMsg := func(msg gpa.Message) {
-		msgData, err := msg.MarshalBinary()
-		if err != nil {
-			m.log.Warnf("Failed to send a message: %v", err)
+func (m *mempool) enqueueNetworkMessages(msgs gpa.OutMessages) {
+	m.netMsgsChan <- msgs
+}
+
+func (m *mempool) sendNetworkMessages() {
+	for {
+		select {
+		case msgs := <-m.netMsgsChan:
+			msgs.MustIterate(m.sendMsg)
+		case <-m.ctx.Done():
 			return
 		}
-		peerMsg := &peering.PeerMessageData{
-			PeeringID:   m.netPeeringID,
-			MsgReceiver: peering.PeerMessageReceiverChainCons,
-			MsgType:     msgTypeMempool,
-			MsgData:     msgData,
-		}
-		m.net.SendMsgByPubKey(m.peers[msg.Recipient()], peerMsg)
 	}
-	outMsgs.MustIterate(sendMsg)
+}
+
+func (m *mempool) sendMsg(msg gpa.Message) {
+	msgData, err := msg.MarshalBinary()
+	if err != nil {
+		m.log.Warnf("Failed to send a message: %v", err)
+		return
+	}
+	peerMsg := &peering.PeerMessageData{
+		PeeringID:   m.netPeeringID,
+		MsgReceiver: peering.PeerMessageReceiverChainCons,
+		MsgType:     msgTypeMempool,
+		MsgData:     msgData,
+	}
+	m.net.SendMsgByPubKey(m.peers[msg.Recipient()], peerMsg)
 }
 
 func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Closure {
@@ -250,7 +264,7 @@ func (m *mempool) gpaTick() {
 	for {
 		select {
 		case t := <-ticker.C:
-			go m.sendNetworkMessages(m.gpa.Input(t))
+			m.enqueueNetworkMessages(m.gpa.Input(t))
 		case <-m.ctx.Done():
 			return
 		}
@@ -289,7 +303,7 @@ func (m *mempool) ReceiveRequests(reqs ...isc.Request) []bool {
 		onledgerReq, ok := req.(isc.OnLedgerRequest)
 		if !ok {
 			// offledger
-			go m.sendNetworkMessages(m.gpa.Input(req))
+			m.enqueueNetworkMessages(m.gpa.Input(req))
 			ret[i] = m.addToPoolNoLock(req)
 			continue
 		}
@@ -440,7 +454,7 @@ func (m *mempool) ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc
 
 			for _, idx := range missingReqs {
 				missingRef := requestRefs[idx]
-				go m.sendNetworkMessages(
+				m.enqueueNetworkMessages(
 					m.gpa.Input(missingRef),
 				)
 			}

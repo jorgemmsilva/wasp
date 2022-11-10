@@ -45,7 +45,8 @@ func newTestPool(t *testing.T) Mempool {
 		&chainID,
 		gpa.NodeID("nodeID"),
 		peeringNetwork.NetworkProviders()[0],
-		stateReader,
+		CreateHasBeenProcessedFunc(stateReader.KVStoreReader()),
+		CreateGetProcessedReqsFunc(stateReader.KVStoreReader()),
 		log,
 		mempoolMetrics,
 	)
@@ -186,7 +187,8 @@ func TestProcessedRequest(t *testing.T) {
 	pool := newTestPool(t)
 	glb := coreutil.NewChainStateSync().SetSolidIndex(0)
 	stateReader, vs := createStateReader(t, glb)
-	pool.(*mempool).stateReader = stateReader
+	pool.(*mempool).getProcessedRequests = CreateGetProcessedReqsFunc(stateReader.KVStoreReader())
+	pool.(*mempool).hasBeenProcessed = CreateHasBeenProcessedFunc(stateReader.KVStoreReader())
 
 	wrt := vs.KVStore()
 	stats := pool.Info(now())
@@ -207,8 +209,9 @@ func TestProcessedRequest(t *testing.T) {
 	err = vs.Save()
 	require.NoError(t, err)
 
-	pool.ReceiveRequests(requests[0])
-	// require.False(t, pool.WaitRequestInPool(requests[0].ID(), 1*time.Second))
+	ret := pool.ReceiveRequests(requests[0])
+	require.Len(t, ret, 1)
+	require.False(t, ret[0])
 
 	stats = pool.Info(now())
 	require.EqualValues(t, 0, stats.InPoolCounter)
@@ -234,7 +237,7 @@ func TestAddRemoveRequests(t *testing.T) {
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 6, stats.TotalPool)
 
-	pool.RemoveRequests(
+	pool.(*mempool).removeRequests(
 		requests[3].ID(),
 		requests[0].ID(),
 		requests[1].ID(),
@@ -434,7 +437,7 @@ func TestConsensusRequestsAsync(t *testing.T) {
 	}
 
 	// remove a request from the mempool
-	pool.RemoveRequests(requests[3].ID())
+	pool.(*mempool).removeRequests(requests[3].ID())
 	retReqs, missing = pool.(*mempool).getRequestsFromRefs(requestRefs)
 	require.Len(t, missing, 1)
 	require.NotNil(t, missing[isc.RequestHash(requests[3])])
@@ -446,4 +449,41 @@ func TestConsensusRequestsAsync(t *testing.T) {
 		}
 		require.Contains(t, retReqs, req)
 	}
+}
+
+func TestRequestsAreRemovedWithNewAliasOutput(t *testing.T) {
+	pool := newTestPool(t)
+	requests := getRequestsOnLedger(t, 2)
+
+	pool.ReceiveRequests(
+		requests[0],
+		requests[1],
+	)
+
+	requestRefs := <-pool.ConsensusProposalsAsync(context.Background(), mockAliasOutput)
+	requestsReady := <-pool.ConsensusRequestsAsync(context.Background(), requestRefs)
+
+	require.Len(t, requestsReady, 2)
+	for _, req := range requests {
+		require.Contains(t, requestsReady, req)
+	}
+
+	// mock "state read" functions, so that request 0 has been proceeds, 1 not
+	pool.(*mempool).getProcessedRequests = func(from, to *isc.AliasOutputWithID) []isc.RequestID {
+		return []isc.RequestID{requests[0].ID()}
+	}
+	pool.(*mempool).hasBeenProcessed = func(reqID isc.RequestID) bool {
+		return reqID.Equals(requests[0].ID())
+	}
+
+	nextAliasOutput := isc.NewAliasOutputWithID(&iotago.AliasOutput{
+		StateIndex: mockAliasOutput.GetStateIndex() + 1,
+	}, nil)
+	requestRefs = <-pool.ConsensusProposalsAsync(context.Background(), nextAliasOutput)
+	requestsReady = <-pool.ConsensusRequestsAsync(context.Background(), requestRefs)
+
+	require.Len(t, requestsReady, 1)
+	require.Equal(t, requestsReady[0], requests[1])
+	// request0 has been removed from the pool
+	require.False(t, pool.HasRequest(requests[0].ID()))
 }

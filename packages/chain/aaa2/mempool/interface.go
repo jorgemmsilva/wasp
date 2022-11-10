@@ -10,7 +10,6 @@ import (
 type Mempool interface {
 	consGR.Mempool // TODO should this be unified with the Mempool interface
 	ReceiveRequests(reqs ...isc.Request) []bool
-	RemoveRequests(reqs ...isc.RequestID)
 	HasRequest(id isc.RequestID) bool
 	GetRequest(id isc.RequestID) isc.Request
 	Info(currentTime time.Time) MempoolInfo

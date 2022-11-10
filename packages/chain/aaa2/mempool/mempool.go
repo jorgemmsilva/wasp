@@ -16,11 +16,8 @@ import (
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/optimism"
 	metrics_pkg "github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/peering"
-	"github.com/iotaledger/wasp/packages/state"
-	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
 const (
@@ -29,7 +26,6 @@ const (
 
 type mempool struct {
 	chainAddress           iotago.Address
-	stateReader            state.OptimisticStateReader
 	lastSeenChainOutput    *isc.AliasOutputWithID
 	poolMutex              sync.RWMutex
 	timelockedRequestsChan chan isc.OnLedgerRequest
@@ -40,6 +36,8 @@ type mempool struct {
 	netPeeringID           peering.PeeringID
 	peers                  map[gpa.NodeID]*cryptolib.PublicKey
 	incomingRequests       *events.Event
+	hasBeenProcessed       HasBeenProcessedFunc
+	getProcessedRequests   GetProcessedRequestsFunc
 	ctx                    context.Context
 	log                    *logger.Logger
 	metrics                metrics_pkg.MempoolMetrics
@@ -53,7 +51,8 @@ func New(
 	chainID *isc.ChainID,
 	myNodeID gpa.NodeID,
 	net peering.NetworkProvider,
-	stateReader state.OptimisticStateReader,
+	hasBeenProcessed HasBeenProcessedFunc,
+	getProcessedRequests GetProcessedRequestsFunc,
 	log *logger.Logger,
 	mempoolMetrics metrics_pkg.MempoolMetrics,
 ) Mempool {
@@ -61,10 +60,11 @@ func New(
 		chainAddress:           chainID.AsAddress(),
 		pool:                   make(map[isc.RequestID]isc.Request),
 		net:                    net,
+		hasBeenProcessed:       hasBeenProcessed,
+		getProcessedRequests:   getProcessedRequests,
 		ctx:                    ctx,
 		log:                    log.Named("mempool"),
 		metrics:                mempoolMetrics,
-		stateReader:            stateReader,
 		timelockedRequestsChan: make(chan isc.OnLedgerRequest),
 		incomingRequests: events.NewEvent(func(handler interface{}, params ...interface{}) {
 			handler.(func(_ isc.Request))(params[0].(isc.Request))
@@ -132,22 +132,6 @@ func (m *mempool) attachToIncomingRequests(handler func(isc.Request)) *events.Cl
 	closure := events.NewClosure(handler)
 	m.incomingRequests.Hook(closure)
 	return closure
-}
-
-func (m *mempool) hasBeenProcessed(reqID isc.RequestID) (hasBeenProcessed bool) {
-	// this will need to be refectored for the new immutable state implementation
-	var err error
-	err = optimism.RetryOnStateInvalidated(
-		func() error {
-			hasBeenProcessed, err = blocklog.IsRequestProcessed(m.stateReader.KVStoreReader(), &reqID)
-			return err
-		},
-	)
-	if err != nil {
-		m.log.Warnf("error while checking hasBeenProcessed, reqID:%s, err:%s", reqID, err.Error())
-		return false
-	}
-	return hasBeenProcessed
 }
 
 func shouldBeRemoved(req isc.Request, currentTime time.Time) bool {
@@ -338,7 +322,7 @@ func (m *mempool) removeFromPoolNoLock(reqID isc.RequestID) {
 	m.metrics.CountBlocksPerChain()
 }
 
-func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
+func (m *mempool) removeRequests(reqs ...isc.RequestID) {
 	if len(reqs) == 0 {
 		return
 	}
@@ -362,36 +346,6 @@ func (m *mempool) Empty() bool {
 	return len(m.pool) == 0
 }
 
-func (m *mempool) getProcessedReqsFromTo(from, to *isc.AliasOutputWithID) []isc.RequestID {
-	// this will need to be refectored for the new immutable state implementation
-	ret := []isc.RequestID{}
-
-	fromIdx := uint32(0)
-	if from != nil {
-		fromIdx = from.GetStateIndex()
-	}
-	toIdx := to.GetStateIndex()
-	// from+1 ~ to
-	blockIndexes := make([]uint32, toIdx-fromIdx)
-	for i := range blockIndexes {
-		blockIndexes[i] = fromIdx + uint32(i+1)
-	}
-
-	for _, idx := range blockIndexes {
-		stateReadErr := optimism.RetryOnStateInvalidated(
-			func() error {
-				reqIds, err := blocklog.GetRequestIDsForBlock(m.stateReader.KVStoreReader(), idx)
-				ret = append(ret, reqIds...)
-				return err
-			},
-		)
-		if stateReadErr != nil {
-			m.log.Warnf("error while checking GetRequestIDsForBlock,  err:%s", stateReadErr.Error())
-		}
-	}
-	return ret
-}
-
 const checkForRequestsInPoolInterval = 200 * time.Millisecond
 
 // ConsensusProposalsAsync returns a list of requests to be sent as a batch proposal
@@ -409,8 +363,8 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 		if aliasOutput.GetStateIndex() < lastSeenStateIndex {
 			panic(fmt.Sprintf("reorg happened, last seen: %s, received: %s", m.lastSeenChainOutput.String(), aliasOutput.String()))
 		}
-		processedReqs := m.getProcessedReqsFromTo(m.lastSeenChainOutput, aliasOutput)
-		m.RemoveRequests(processedReqs...)
+		processedReqs := m.getProcessedRequests(m.lastSeenChainOutput, aliasOutput)
+		m.removeRequests(processedReqs...)
 	}
 
 	retChan := make(chan []*isc.RequestRef, 1)
@@ -442,7 +396,7 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 			}
 		}
 		retChan <- ret
-		m.RemoveRequests(toRemove...)
+		m.removeRequests(toRemove...)
 	}()
 
 	return retChan

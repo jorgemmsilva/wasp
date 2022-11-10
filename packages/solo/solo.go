@@ -108,7 +108,7 @@ type Chain struct {
 	// related to asynchronous backlog processing
 	runVMMutex sync.Mutex
 	// mempool of the chain is used in Solo to mimic a real node
-	mempool mempool.SoloMempool
+	mempool mempool.Mempool
 	// used for non-standard VMs
 	bypassStardustVM bool
 }
@@ -307,16 +307,17 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 		chainlog,
 	)
 
-	m := mempool.New(
+	ret.mempool = mempool.New(
 		context.Background(),
 		chainID,
 		gpa.NodeID("solo"),
 		peeringNetwork.NetworkProviders()[0],
-		ret.StateReader,
+		mempool.CreateHasBeenProcessedFunc(ret.StateReader.KVStoreReader()),
+		mempool.CreateGetProcessedReqsFunc(ret.StateReader.KVStoreReader()),
 		chainlog,
 		metrics.DefaultChainMetrics(),
 	)
-	ret.mempool = m.(mempool.SoloMempool)
+
 	require.NoError(env.T, err)
 
 	// creating origin transaction with the origin of the Alias chain
@@ -443,25 +444,18 @@ func (ch *Chain) collateBatch() []isc.Request {
 	// emulating variable sized blocks
 	maxBatch := MaxRequestsInBlock - rand.Intn(MaxRequestsInBlock/3)
 
-	now := ch.Env.GlobalTime()
-
 	// get the requests from the mempool
-	reqRefs := <-ch.mempool.ConsensusProposalsAsync(context.Background(), nil)
-	requests := <-ch.mempool.ConsensusRequestsAsync(context.Background(), reqRefs)
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancelCtx()
+	reqRefs := <-ch.mempool.ConsensusProposalsAsync(ctx, ch.GetAnchorOutput())
+	requests := <-ch.mempool.ConsensusRequestsAsync(ctx, reqRefs)
 	batchSize := len(requests)
 
 	if batchSize > maxBatch {
 		batchSize = maxBatch
 	}
 	ret := make([]isc.Request, 0)
-	for _, req := range requests[:batchSize] {
-		if !req.IsOffLedger() {
-			if !isc.RequestIsUnlockable(req.(isc.OnLedgerRequest), ch.ChainID.AsAddress(), now) {
-				continue
-			}
-		}
-		ret = append(ret, req)
-	}
+	ret = append(ret, requests[:batchSize]...)
 	return ret
 }
 
@@ -485,7 +479,6 @@ func (ch *Chain) Sync() {
 func (ch *Chain) collateAndRunBatch() bool {
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
-
 	batch := ch.collateBatch()
 	if len(batch) > 0 {
 		results := ch.runRequestsNolock(batch, "batchLoop")

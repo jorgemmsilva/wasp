@@ -121,7 +121,7 @@ func (m *MockMempoolMetrics) CountBlocksPerChain() {}
 // Test if mempool is created
 func TestMempool(t *testing.T) {
 	pool := newTestPool(t)
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 0, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 0, stats.TotalPool)
@@ -135,7 +135,7 @@ func TestAddRequest(t *testing.T) {
 	pool.ReceiveRequests(requests[0])
 	time.Sleep(10 * time.Millisecond)
 	// require.True(t, pool.WaitRequestInPool(requests[0].ID()))
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 1, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 1, stats.TotalPool)
@@ -152,7 +152,7 @@ func TestAddRequestTwice(t *testing.T) {
 	pool.ReceiveRequests(requests[0])
 	// require.True(t, pool.WaitRequestInPool(requests[0].ID(), 200*time.Millisecond))
 
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 1, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 1, stats.TotalPool)
@@ -160,7 +160,7 @@ func TestAddRequestTwice(t *testing.T) {
 	pool.ReceiveRequests(requests[0])
 	// require.True(t, pool.WaitRequestInPool(requests[0].ID(), 200*time.Millisecond))
 
-	stats = pool.Info(now())
+	stats = pool.Info()
 	require.EqualValues(t, 1, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 1, stats.TotalPool)
@@ -175,7 +175,7 @@ func TestAddOffLedgerRequest(t *testing.T) {
 	require.EqualValues(t, 0, metrics.offLedgerRequestCounter)
 	pool.ReceiveRequests(offLedgerRequest)
 	// require.True(t, pool.WaitRequestInPool(offLedgerRequest.ID(), 200*time.Millisecond))
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 1, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 1, stats.TotalPool)
@@ -191,7 +191,7 @@ func TestProcessedRequest(t *testing.T) {
 	pool.(*mempool).hasBeenProcessed = CreateHasBeenProcessedFunc(stateReader.KVStoreReader())
 
 	wrt := vs.KVStore()
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 0, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 0, stats.TotalPool)
@@ -213,7 +213,7 @@ func TestProcessedRequest(t *testing.T) {
 	require.Len(t, ret, 1)
 	require.False(t, ret[0])
 
-	stats = pool.Info(now())
+	stats = pool.Info()
 	require.EqualValues(t, 0, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 0, stats.TotalPool)
@@ -232,12 +232,12 @@ func TestAddRemoveRequests(t *testing.T) {
 		requests[4],
 		requests[5],
 	)
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 6, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 6, stats.TotalPool)
 
-	pool.(*mempool).removeRequests(
+	pool.RemoveRequests(
 		requests[3].ID(),
 		requests[0].ID(),
 		requests[1].ID(),
@@ -249,7 +249,7 @@ func TestAddRemoveRequests(t *testing.T) {
 	require.False(t, pool.HasRequest(requests[3].ID()))
 	require.True(t, pool.HasRequest(requests[4].ID()))
 	require.False(t, pool.HasRequest(requests[5].ID()))
-	stats = pool.Info(now())
+	stats = pool.Info()
 	require.EqualValues(t, 6, stats.InPoolCounter)
 	require.EqualValues(t, 4, stats.OutPoolCounter)
 	require.EqualValues(t, 2, stats.TotalPool)
@@ -283,7 +283,7 @@ func TestTimeLock(t *testing.T) {
 	})
 
 	testStatsFun := func(in, out, total int) { // Info does not change after requests are added to the mempool
-		stats := pool.Info(start)
+		stats := pool.Info()
 		require.EqualValues(t, in, stats.InPoolCounter)
 		require.EqualValues(t, out, stats.OutPoolCounter)
 		require.EqualValues(t, total, stats.TotalPool)
@@ -365,7 +365,7 @@ func TestExpiration(t *testing.T) {
 	require.False(t, ret[2])
 	require.True(t, ret[3])
 
-	stats := pool.Info(start)
+	stats := pool.Info()
 	require.EqualValues(t, 2, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 2, stats.TotalPool)
@@ -416,7 +416,7 @@ func TestConsensusRequestsAsync(t *testing.T) {
 	require.True(t, res[3])
 	require.True(t, res[4])
 
-	stats := pool.Info(now())
+	stats := pool.Info()
 	require.EqualValues(t, 5, stats.InPoolCounter)
 	require.EqualValues(t, 0, stats.OutPoolCounter)
 	require.EqualValues(t, 5, stats.TotalPool)
@@ -437,7 +437,7 @@ func TestConsensusRequestsAsync(t *testing.T) {
 	}
 
 	// remove a request from the mempool
-	pool.(*mempool).removeRequests(requests[3].ID())
+	pool.RemoveRequests(requests[3].ID())
 	retReqs, missing = pool.(*mempool).getRequestsFromRefs(requestRefs)
 	require.Len(t, missing, 1)
 	require.NotNil(t, missing[isc.RequestHash(requests[3])])

@@ -1,8 +1,6 @@
 package mempool
 
 import (
-	"time"
-
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -10,15 +8,10 @@ import (
 type Mempool interface {
 	consGR.Mempool // TODO should this be unified with the Mempool interface
 	ReceiveRequests(reqs ...isc.Request) []bool
+	RemoveRequests(reqs ...isc.RequestID)
 	HasRequest(id isc.RequestID) bool
 	GetRequest(id isc.RequestID) isc.Request
-	Info(currentTime time.Time) MempoolInfo
-}
-
-// for testing (only for use in solo)
-type SoloMempool interface {
-	Mempool
-	WaitPoolEmpty(timeout ...time.Duration) bool
+	Info() MempoolInfo
 }
 
 type MempoolInfo struct {

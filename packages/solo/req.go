@@ -556,8 +556,17 @@ func (ch *Chain) WaitUntilMempoolIsEmpty(timeout ...time.Duration) bool {
 	if len(timeout) > 0 {
 		realTimeout = timeout[0]
 	}
-	remainingTimeout := realTimeout - time.Since(time.Now())
-	return ch.mempool.WaitPoolEmpty(remainingTimeout)
+
+	deadline := time.Now().Add(realTimeout)
+	for {
+		if ch.mempool.Info().TotalPool == 0 {
+			return true
+		}
+		time.Sleep(10 * time.Millisecond)
+		if time.Now().After(deadline) {
+			return false
+		}
+	}
 }
 
 // WaitForRequestsThrough waits for the moment when counters for incoming requests and removed
@@ -570,5 +579,5 @@ func (ch *Chain) WaitForRequestsThrough(numReq int, maxWait ...time.Duration) bo
 
 // MempoolInfo returns stats about the chain mempool
 func (ch *Chain) MempoolInfo() mempool.MempoolInfo {
-	return ch.mempool.Info(ch.Env.GlobalTime())
+	return ch.mempool.Info()
 }

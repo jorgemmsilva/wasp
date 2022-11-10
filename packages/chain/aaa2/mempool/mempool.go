@@ -185,7 +185,7 @@ func (m *mempool) HasRequest(id isc.RequestID) bool {
 	return ok
 }
 
-func (m *mempool) Info(currentTime time.Time) MempoolInfo {
+func (m *mempool) Info() MempoolInfo {
 	m.poolMutex.RLock()
 	defer m.poolMutex.RUnlock()
 
@@ -336,7 +336,7 @@ func (m *mempool) removeFromPoolNoLock(reqID isc.RequestID) {
 	m.metrics.CountBlocksPerChain()
 }
 
-func (m *mempool) removeRequests(reqs ...isc.RequestID) {
+func (m *mempool) RemoveRequests(reqs ...isc.RequestID) {
 	if len(reqs) == 0 {
 		return
 	}
@@ -378,7 +378,7 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 			panic(fmt.Sprintf("reorg happened, last seen: %s, received: %s", m.lastSeenChainOutput.String(), aliasOutput.String()))
 		}
 		processedReqs := m.getProcessedRequests(m.lastSeenChainOutput, aliasOutput)
-		m.removeRequests(processedReqs...)
+		m.RemoveRequests(processedReqs...)
 	}
 
 	retChan := make(chan []*isc.RequestRef, 1)
@@ -410,7 +410,7 @@ func (m *mempool) ConsensusProposalsAsync(ctx context.Context, aliasOutput *isc.
 			}
 		}
 		retChan <- ret
-		m.removeRequests(toRemove...)
+		m.RemoveRequests(toRemove...)
 	}()
 
 	return retChan
@@ -482,28 +482,4 @@ func (m *mempool) ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc
 	}()
 
 	return retChan
-}
-
-// --------------------------------------------------------------
-
-// implementation of SoloMempool interface
-var _ SoloMempool = &mempool{}
-
-const waitMempoolEmptyTimeoutDefault = 5 * time.Second
-
-func (m *mempool) WaitPoolEmpty(timeout ...time.Duration) bool {
-	currentTime := time.Now()
-	deadline := currentTime.Add(waitMempoolEmptyTimeoutDefault)
-	if len(timeout) > 0 {
-		deadline = currentTime.Add(timeout[0])
-	}
-	for {
-		if len(m.pool) == 0 {
-			return true
-		}
-		time.Sleep(10 * time.Millisecond)
-		if time.Now().After(deadline) {
-			return false
-		}
-	}
 }

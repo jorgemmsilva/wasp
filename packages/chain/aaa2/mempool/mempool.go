@@ -218,11 +218,11 @@ func (m *mempool) addTimelockedRequestsToMempool() {
 			// try add To pool
 			func() {
 				m.poolMutex.Lock()
-				defer m.poolMutex.Unlock()
 				for id, req := range nextUnlockReqs {
 					m.addToPoolNoLock(req)
 					delete(timelockedRequests, id)
 				}
+				m.poolMutex.Unlock()
 			}()
 			// find the next set of requests to be unlockable
 			nextUnlock = time.Time{}

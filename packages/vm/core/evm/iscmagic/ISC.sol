@@ -123,8 +123,7 @@ struct ISCAgentID {
 
 // An ISC request ID
 struct ISCRequestID {
-    ISCTransactionID transactionID;
-    uint16 transactionOutputIndex;
+    bytes data;
 }
 
 // A single key-value pair

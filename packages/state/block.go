@@ -7,12 +7,13 @@ import (
 	"bytes"
 	"io"
 
+	"golang.org/x/crypto/blake2b"
+
 	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"golang.org/x/crypto/blake2b"
 )
 
 type block struct {
@@ -131,12 +132,12 @@ func (b *block) L1Commitment() *L1Commitment {
 	}
 }
 
-func (b *blockImpl) GetHash() (ret BlockHash) {
+func (b *block) GetHash() (ret BlockHash) {
 	r := blake2b.Sum256(b.essenceBytes())
 	copy(ret[:BlockHashSize], r[:BlockHashSize])
 	return
 }
 
-func (b *blockImpl) Equals(other Block) bool {
-	return b.GetHash().Equals(other.GetHash())
+func (b *block) Equals(other Block) bool {
+	return b.GetHash().Equals(other.Hash())
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
-	"github.com/iotaledger/wasp/packages/wal"
 	"github.com/iotaledger/wasp/packages/webapi/httperrors"
 	"github.com/iotaledger/wasp/packages/webapi/model"
 	"github.com/iotaledger/wasp/packages/webapi/routes"
@@ -29,7 +28,6 @@ type chainWebAPI struct {
 	chains     chains.Provider
 	network    peering.NetworkProvider
 	allMetrics *metrics.Metrics
-	w          *wal.WAL
 }
 
 func addChainEndpoints(adm echoswagger.ApiGroup, c *chainWebAPI) {
@@ -57,7 +55,7 @@ func (w *chainWebAPI) handleActivateChain(c echo.Context) error {
 	}
 
 	log.Debugw("calling Chains.Activate", "chainID", rec.ChainID.String())
-	if err := w.chains().Activate(rec, w.registry, w.allMetrics, w.w); err != nil {
+	if err := w.chains().Activate(rec, w.registry, w.allMetrics); err != nil {
 		return err
 	}
 

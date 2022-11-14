@@ -7,12 +7,13 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/iotaledger/hive.go/marshalutil"
+	"golang.org/x/crypto/blake2b"
+	"golang.org/x/xerrors"
+
+	"github.com/iotaledger/hive.go/core/marshalutil"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/util"
-	"golang.org/x/crypto/blake2b"
-	"golang.org/x/xerrors"
 )
 
 const BlockHashSize = 20

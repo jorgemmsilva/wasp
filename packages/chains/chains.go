@@ -85,7 +85,7 @@ func (c *Chains) Dismiss() {
 	c.allChains = make(map[isc.ChainID]chain.Chain)
 }
 
-func (c *Chains) ActivateAllFromRegistry(registryProvider registry.Provider, allMetrics *metrics.Metrics, w *wal.WAL) error {
+func (c *Chains) ActivateAllFromRegistry(registryProvider registry.Provider, allMetrics *metrics.Metrics) error {
 	chainRecords, err := registryProvider().GetChainRecords()
 	if err != nil {
 		return err

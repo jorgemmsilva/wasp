@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"math/big"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -11,6 +12,8 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/packages/vm/gas"
+	"github.com/iotaledger/wasp/tools/wasp-cli/config"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 	"github.com/iotaledger/wasp/tools/wasp-cli/util"
 	"github.com/iotaledger/wasp/tools/wasp-cli/wallet"
@@ -76,6 +79,26 @@ var balanceCmd = &cobra.Command{
 	},
 }
 
+func getTokensForRequestFee() *isc.Allowance {
+	client := config.WaspClient()
+	if client.BaseURL() == "" {
+		// no wasp api defined, assume default configuration
+		baseTokens := gas.MinGasPerRequest / gas.DefaultGasFeePolicy().GasPerToken // default value
+		return isc.NewAllowanceBaseTokens(baseTokens)
+	}
+	gasPolicy, err := client.GetGasFeePolicy(GetCurrentChainID())
+	log.Check(err)
+	amount := gas.MinGasPerRequest / gasPolicy.GasPerToken
+	if gasPolicy.GasFeeTokenID == nil || isc.IsBaseToken((*gasPolicy.GasFeeTokenID)[:]) {
+		return isc.NewAllowanceBaseTokens(amount)
+	}
+
+	return isc.NewAllowanceFungibleTokens(isc.NewFungibleTokens(0, iotago.NativeTokens{{
+		ID:     *gasPolicy.GasFeeTokenID,
+		Amount: new(big.Int).SetUint64(amount),
+	}}))
+}
+
 var depositCmd = &cobra.Command{
 	Use:   "deposit [<agentid>] <token-id>:<amount> [<token-id>:amount ...]",
 	Short: "Deposit L1 funds into the given (default: your) L2 account",
@@ -97,6 +120,14 @@ var depositCmd = &cobra.Command{
 			agentID, err := isc.NewAgentIDFromString(args[0])
 			log.Check(err)
 			tokens := util.ParseFungibleTokens(args[1:])
+
+			// calculate the correct allowance (funds to send - gas fee)
+			allowance := isc.NewAllowanceFungibleTokens(tokens.Clone())
+			ok := allowance.SpendFromBudget(getTokensForRequestFee())
+			if !ok {
+				panic("not enough tokens for allowance + fee")
+			}
+
 			util.WithSCTransaction(GetCurrentChainID(), func() (*iotago.Transaction, error) {
 				return SCClient(accounts.Contract.Hname()).PostRequest(
 					accounts.FuncTransferAllowanceTo.Name,
@@ -106,7 +137,7 @@ var depositCmd = &cobra.Command{
 							accounts.ParamForceOpenAccount: codec.EncodeBool(true),
 						},
 						Transfer:  tokens,
-						Allowance: isc.NewAllowanceFungibleTokens(tokens),
+						Allowance: allowance,
 					},
 				)
 			})

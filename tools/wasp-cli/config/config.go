@@ -160,9 +160,13 @@ func SetToken(token string) {
 
 func WaspClient(i ...int) *client.WaspClient {
 	// TODO: add authentication for /adm
-	log.Verbosef("using Wasp host %s\n", WaspAPI())
 	L1Client() // this will fill parameters.L1() with data from the L1 node
-	return client.NewWaspClient(WaspAPI(i...)).WithToken(GetToken())
+	apiAddress := WaspAPI(i...)
+	if apiAddress == "" {
+		return &client.WaspClient{}
+	}
+	log.Verbosef("using Wasp host %s\n", apiAddress)
+	return client.NewWaspClient(apiAddress).WithToken(GetToken())
 }
 
 func WaspAPI(i ...int) string {
@@ -170,11 +174,7 @@ func WaspAPI(i ...int) string {
 	if len(i) > 0 {
 		index = i[0]
 	}
-	r := viper.GetString("wasp." + HostKindAPI)
-	if r != "" {
-		return r
-	}
-	return committeeHost(HostKindAPI, index)
+	return viper.GetString(fmt.Sprintf("wasp.%d.%s", index, HostKindAPI))
 }
 
 func WaspNanomsg(i ...int) string {

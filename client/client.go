@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strings"
 
@@ -62,6 +63,11 @@ func processResponse(res *http.Response, decodeTo interface{}) error {
 }
 
 func (c *WaspClient) do(method, route string, reqObj, resObj interface{}) error {
+	if c.baseURL == "" {
+		log.Printf("wasp webapi not defined, request to %s not done", route)
+		return nil
+	}
+
 	// marshal request object
 	var data []byte
 	if reqObj != nil {

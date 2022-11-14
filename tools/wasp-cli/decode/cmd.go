@@ -64,7 +64,7 @@ var translateMetadataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		metadata, err := isc.RequestMetadataFromBytes(hexutil.MustDecode(args[0]))
 		log.Check(err)
-		jsonBytes, err := json.MarshalIndent(metadata, "", " ")
+		jsonBytes, err := json.MarshalIndent(metadata, "", "  ")
 		log.Check(err)
 		log.Printf("%s\n", jsonBytes)
 	},

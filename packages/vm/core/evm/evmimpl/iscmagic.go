@@ -248,7 +248,7 @@ func tryCall(ctx isc.Sandbox, caller vm.ContractRef, method *abi.Method, args []
 		return nil, true
 
 	case "getRequestID":
-		return []interface{}{ctx.Request().ID()}, true
+		return []interface{}{iscmagic.WrapISCRequestID(ctx.Request().ID())}, true
 
 	case "getSenderAccount":
 		return []interface{}{iscmagic.WrapISCAgentID(ctx.Request().SenderAccount())}, true

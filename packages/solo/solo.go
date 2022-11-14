@@ -4,6 +4,7 @@
 package solo
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -18,9 +19,10 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/trie.go/trie"
 	"github.com/iotaledger/wasp/packages/chain"
-	"github.com/iotaledger/wasp/packages/chain/mempool"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database/dbmanager"
+	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -30,6 +32,7 @@ import (
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/utxodb"
@@ -297,7 +300,24 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    chainlog,
 	}
-	ret.mempool = mempool.New(chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
+
+	var peeringNetwork *testutil.PeeringNetwork = testutil.NewPeeringNetwork(
+		[]string{"nodeID"}, []*cryptolib.KeyPair{cryptolib.NewKeyPair()}, 10000,
+		testutil.NewPeeringNetReliable(chainlog),
+		chainlog,
+	)
+
+	ret.mempool = mempool.New(
+		context.Background(),
+		chainID,
+		gpa.NodeID("solo"),
+		peeringNetwork.NetworkProviders()[0],
+		mempool.CreateHasBeenProcessedFunc(ret.StateReader.KVStoreReader()),
+		mempool.CreateGetProcessedReqsFunc(ret.StateReader.KVStoreReader()),
+		chainlog,
+		metrics.DefaultChainMetrics(),
+	)
+
 	require.NoError(env.T, err)
 
 	// creating origin transaction with the origin of the Alias chain
@@ -384,7 +404,6 @@ func (env *Solo) AddRequestsToChainMempoolWaitUntilInbufferEmpty(ch *Chain, reqs
 	defer ch.runVMMutex.Unlock()
 
 	ch.mempool.ReceiveRequests(reqs...)
-	ch.mempool.WaitInBufferEmpty(timeout...)
 }
 
 // EnqueueRequests adds requests contained in the transaction to mempools of respective target chains
@@ -425,21 +444,18 @@ func (ch *Chain) collateBatch() []isc.Request {
 	// emulating variable sized blocks
 	maxBatch := MaxRequestsInBlock - rand.Intn(MaxRequestsInBlock/3)
 
-	now := ch.Env.GlobalTime()
-	ready := ch.mempool.ReadyNow(now)
-	batchSize := len(ready)
+	// get the requests from the mempool
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancelCtx()
+	reqRefs := <-ch.mempool.ConsensusProposalsAsync(ctx, ch.GetAnchorOutput())
+	requests := <-ch.mempool.ConsensusRequestsAsync(ctx, reqRefs)
+	batchSize := len(requests)
+
 	if batchSize > maxBatch {
 		batchSize = maxBatch
 	}
 	ret := make([]isc.Request, 0)
-	for _, req := range ready[:batchSize] {
-		if !req.IsOffLedger() {
-			if !isc.RequestIsUnlockable(req.(isc.OnLedgerRequest), ch.ChainID.AsAddress(), now) {
-				continue
-			}
-		}
-		ret = append(ret, req)
-	}
+	ret = append(ret, requests[:batchSize]...)
 	return ret
 }
 
@@ -463,7 +479,6 @@ func (ch *Chain) Sync() {
 func (ch *Chain) collateAndRunBatch() bool {
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
-
 	batch := ch.collateBatch()
 	if len(batch) > 0 {
 		results := ch.runRequestsNolock(batch, "batchLoop")
@@ -480,7 +495,7 @@ func (ch *Chain) collateAndRunBatch() bool {
 // BacklogLen is a thread-safe function to return size of the current backlog
 func (ch *Chain) BacklogLen() int {
 	mstats := ch.MempoolInfo()
-	return mstats.InBufCounter - mstats.OutPoolCounter
+	return mstats.OutPoolCounter
 }
 
 func (ch *Chain) GetCandidateNodes() []*governance.AccessNodeInfo {

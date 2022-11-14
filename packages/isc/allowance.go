@@ -9,8 +9,8 @@ import (
 )
 
 type Allowance struct {
-	Assets *FungibleTokens `json:"Tokens"`
-	NFTs   []iotago.NFTID  `json:"NFTs"`
+	Assets *FungibleTokens `json:"tokens"`
+	NFTs   []iotago.NFTID  `json:"nfts"`
 }
 
 func NewEmptyAllowance() *Allowance {

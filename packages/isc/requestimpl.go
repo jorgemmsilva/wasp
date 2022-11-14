@@ -715,17 +715,17 @@ func ShortRequestIDsFromRequests(reqs []Request) []string {
 // region RequestMetadata //////////////////////////////////////////////////
 
 type RequestMetadata struct {
-	SenderContract Hname `json:"SenderContract"`
+	SenderContract Hname `json:"senderContract"`
 	// ID of the target smart contract
-	TargetContract Hname `json:"TargetContract"`
+	TargetContract Hname `json:"targetContract"`
 	// entry point code
-	EntryPoint Hname `json:"EntryPoint"`
+	EntryPoint Hname `json:"entryPoint"`
 	// request arguments
-	Params dict.Dict `json:"Params"`
+	Params dict.Dict `json:"params"`
 	// Allowance intended to the target contract to take. Nil means zero allowance
-	Allowance *Allowance `json:"Allowance"`
+	Allowance *Allowance `json:"allowance"`
 	// gas budget
-	GasBudget uint64 `json:"GasBudget"`
+	GasBudget uint64 `json:"gasBudget"`
 }
 
 func RequestMetadataFromFeatureSet(set iotago.FeatureSet) (*RequestMetadata, error) {

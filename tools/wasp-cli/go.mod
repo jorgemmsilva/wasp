@@ -6,12 +6,13 @@ replace github.com/iotaledger/wasp => ../../
 
 replace (
 	github.com/anthdm/hbbft => github.com/kape1395/hbbft v0.0.0-20220823095040-07b2628097ef
-	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v0.0.0-20221102180613-7d920af2031d
 	go.dedis.ch/kyber/v3 v3.0.14 => github.com/kape1395/kyber/v3 v3.0.14-0.20210622094514-fefb81148dc3
 )
 
 require (
 	github.com/ethereum/go-ethereum v1.10.25
+	github.com/iotaledger/hive.go/core v1.0.0-rc.1
 	github.com/iotaledger/iota.go/v3 v3.0.0-rc.1
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000
 	github.com/spf13/cobra v1.6.1
@@ -55,7 +56,6 @@ require (
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20220808142449-1dc0b8ac4d7d // indirect
-	github.com/iotaledger/hive.go/core v1.0.0-rc.1 // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1 // indirect
 	github.com/iotaledger/inx-app v1.0.0-rc.1.0.20221102091857-058227e94374 // indirect
 	github.com/iotaledger/inx/go v1.0.0-rc.1 // indirect

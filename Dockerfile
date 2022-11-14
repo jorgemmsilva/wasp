@@ -1,10 +1,10 @@
+# syntax=docker/dockerfile:1
 ARG GOLANG_IMAGE_TAG=1.18-bullseye
 
 # Build stage
 FROM golang:${GOLANG_IMAGE_TAG} AS build
 ARG BUILD_TAGS=rocksdb
 ARG BUILD_LD_FLAGS=""
-ARG BUILD_TARGET="."
 
 LABEL org.label-schema.description="Wasp"
 LABEL org.label-schema.name="iotaledger/wasp"
@@ -25,15 +25,25 @@ RUN mkdir /app/waspdb
 # Make sure that modules only get pulled when the module file has changed
 COPY go.mod go.sum ./
 
-# Download go modules
-RUN go mod download
-RUN go mod verify
+RUN --mount=type=cache,target=/root/.cache/go-build \
+  --mount=type=cache,target=/root/go/pkg/mod \
+  go mod download
 
 # Project build stage
 COPY . .
 
-# Build the binary
-RUN go build -o /app/wasp -a -tags="$BUILD_TAGS" -ldflags="${BUILD_LD_FLAGS}" ${BUILD_TARGET}
+RUN --mount=type=cache,target=/root/.cache/go-build \
+  --mount=type=cache,target=/root/go/pkg/mod \
+  go build -o /app/wasp -a -tags=${BUILD_TAGS} -ldflags="${BUILD_LD_FLAGS}" .
+
+WORKDIR /scratch/tools/wasp-cli
+
+RUN --mount=type=cache,target=/root/.cache/go-build \
+  --mount=type=cache,target=/root/go/pkg/mod \
+  go build -o /app/wasp-cli -a -tags=${BUILD_TAGS} -ldflags="${BUILD_LD_FLAGS}" .
+
+# Wasp build
+FROM gcr.io/distroless/cc
 
 ############################
 # Image

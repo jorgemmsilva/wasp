@@ -13,7 +13,6 @@ import (
 	"go.dedis.ch/kyber/v3/share"
 	"go.dedis.ch/kyber/v3/sign/bdn"
 	"go.dedis.ch/kyber/v3/sign/dss"
-	"go.dedis.ch/kyber/v3/sign/eddsa"
 	"go.dedis.ch/kyber/v3/sign/schnorr"
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
@@ -58,7 +57,8 @@ type dkShareImpl struct {
 	edPrivateShare  kyber.Scalar
 	//
 	// Shares for the randomness in the consensus et al.
-	blsSuite         Suite // Transient, only needed for un-marshaling.
+	blsSuite         Suite  // Transient, only needed for un-marshaling.
+	blsThreshold     uint16 // BLS Threshold has to be low (F+1)
 	blsSharedPublic  kyber.Point
 	blsPublicCommits []kyber.Point
 	blsPublicShares  []kyber.Point
@@ -80,6 +80,7 @@ func NewDKShare(
 	edPublicShares []kyber.Point,
 	edPrivateShare kyber.Scalar,
 	blsSuite Suite,
+	blsThreshold uint16,
 	blsSharedPublic kyber.Point,
 	blsPublicCommits []kyber.Point,
 	blsPublicShares []kyber.Point,
@@ -107,6 +108,7 @@ func NewDKShare(
 		edPublicShares:   edPublicShares,
 		edPrivateShare:   edPrivateShare,
 		blsSuite:         blsSuite,
+		blsThreshold:     blsThreshold,
 		blsSharedPublic:  blsSharedPublic,
 		blsPublicCommits: blsPublicCommits,
 		blsPublicShares:  blsPublicShares,
@@ -126,6 +128,7 @@ func NewDKSharePublic(
 	edSharedPublic kyber.Point,
 	edPublicShares []kyber.Point,
 	blsSuite Suite,
+	blsThreshold uint16,
 	blsSharedPublic kyber.Point,
 	blsPublicShares []kyber.Point,
 ) DKShare {
@@ -142,6 +145,7 @@ func NewDKSharePublic(
 		edPublicShares:   edPublicShares,
 		edPrivateShare:   nil, // Not meaningful in this case.
 		blsSuite:         blsSuite,
+		blsThreshold:     blsThreshold,
 		blsSharedPublic:  blsSharedPublic,
 		blsPublicCommits: nil, // Not meaningful in this case.
 		blsPublicShares:  blsPublicShares,
@@ -231,6 +235,9 @@ func (s *dkShareImpl) Write(w io.Writer) error {
 	}
 	//
 	// BLS part of the key shares.
+	if err := util.WriteUint16(w, s.blsThreshold); err != nil {
+		return err
+	}
 	if err := util.WriteMarshaled(w, s.blsSharedPublic); err != nil {
 		return err
 	}
@@ -360,6 +367,9 @@ func (s *dkShareImpl) readDSSAttrs(r io.Reader) error {
 // Read function was split just to make the linter happy.
 func (s *dkShareImpl) readBLSAttrs(r io.Reader) error {
 	var arrLen uint16
+	if err := util.ReadUint16(r, &s.blsThreshold); err != nil {
+		return err
+	}
 	s.blsSharedPublic = s.blsSuite.G2().Point()
 	if err := util.ReadMarshaled(r, s.blsSharedPublic); err != nil {
 		return err
@@ -527,21 +537,25 @@ func (s *dkShareImpl) DSSSecretShare() SecretShare {
 
 func (s *dkShareImpl) makeSigner(data []byte, nonce SecretShare) (*dss.DSS, error) {
 	priKeyDKS := s.DSSSecretShare()
-	nodePrivKey := eddsa.EdDSA{}
-	if err := nodePrivKey.UnmarshalBinary(s.nodePrivKey.AsBytes()); err != nil {
+	nodeKyberKeyPair, err := s.nodePrivKey.AsKyberKeyPair()
+	if err != nil {
 		return nil, xerrors.Errorf("cannot convert node priv key to kyber scalar: %w", err)
 	}
 	participants := make([]kyber.Point, len(s.nodePubKeys))
 	for i := range s.nodePubKeys {
-		participants[i] = s.edSuite.Point()
-		if err := participants[i].UnmarshalBinary(s.nodePubKeys[i].AsBytes()); err != nil {
+		participants[i], err = s.nodePubKeys[i].AsKyberPoint()
+		if err != nil {
 			return nil, xerrors.Errorf("cannot convert node public key to kyber point: %w", err)
 		}
 	}
-	return dss.NewDSS(s.edSuite, nodePrivKey.Secret, participants, priKeyDKS, nonce, data, int(s.t))
+	return dss.NewDSS(s.edSuite, nodeKyberKeyPair.Private, participants, priKeyDKS, nonce, data, int(s.t))
 }
 
 ///////////////////////// BLS based signatures.
+
+func (s *dkShareImpl) BLSThreshold() uint16 {
+	return s.blsThreshold
+}
 
 func (s *dkShareImpl) BLSSharedPublic() kyber.Point {
 	return s.blsSharedPublic
@@ -577,7 +591,7 @@ func (s *dkShareImpl) BLSRecoverMasterSignature(sigShares [][]byte, data []byte)
 	var recoveredSignatureBin []byte
 	if s.n > 1 {
 		pubPoly := share.NewPubPoly(s.blsSuite, nil, s.blsPublicCommits)
-		recoveredSignatureBin, err = tbls.Recover(s.blsSuite, pubPoly, data, sigShares, int(s.t), int(s.n))
+		recoveredSignatureBin, err = tbls.Recover(s.blsSuite, pubPoly, data, sigShares, int(s.blsThreshold), int(s.n))
 		if err != nil {
 			return nil, err
 		}
@@ -607,6 +621,16 @@ func (s *dkShareImpl) BLSSign(data []byte) ([]byte, error) {
 // BLSVerify checks a signature made with BLSSign. It ignores the threshold sig aspects.
 func (s *dkShareImpl) BLSVerify(signer kyber.Point, data, signature []byte) error {
 	return bdn.Verify(s.blsSuite, signer, data, signature)
+}
+
+// Needed for signatures outside of this object.
+func (s *dkShareImpl) BLSCommits() *share.PubPoly {
+	return share.NewPubPoly(s.blsSuite, nil, s.blsPublicCommits)
+}
+
+// Needed for signatures outside of this object.
+func (s *dkShareImpl) BLSPriShare() *share.PriShare {
+	return &share.PriShare{I: int(*s.index), V: s.blsPrivateShare}
 }
 
 ///////////////////////// Test support functions.

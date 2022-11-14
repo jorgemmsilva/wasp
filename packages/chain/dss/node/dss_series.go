@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"go.dedis.ch/kyber/v3"
-	"go.dedis.ch/kyber/v3/sign/eddsa"
 	"golang.org/x/xerrors"
 
 	"github.com/iotaledger/wasp/packages/chain/dss"
@@ -71,7 +70,7 @@ func newSeries(node *dssNodeImpl, key string, dkShare tcrypto.DKShare) *dssSerie
 
 func (s *dssSeriesImpl) tick(now time.Time) {
 	for i := range s.dssInsts {
-		s.sendMessages(s.dssInsts[i].asGPA.Message(s.dssInsts[i].asGPA.MakeTickMsg(now)), i)
+		s.sendMessages(s.dssInsts[i].asGPA.Input(s.dssInsts[i].asGPA.MakeTickInput(now)), i)
 		s.tryReportOutput(s.dssInsts[i])
 	}
 }
@@ -106,7 +105,7 @@ func (s *dssSeriesImpl) start(index int, partCB func([]int), sigCB func([]byte))
 	// Start the protocol.
 	if !s.dssInsts[index].hadInput {
 		s.dssInsts[index].hadInput = true
-		s.sendMessages(s.dssInsts[index].asGPA.Input(nil), index)
+		s.sendMessages(s.dssInsts[index].asGPA.Input(dss.NewInputStart()), index)
 		s.tryReportOutput(s.dssInsts[index])
 	}
 	return nil
@@ -123,14 +122,14 @@ func (s *dssSeriesImpl) newDSSImpl() (dss.DSS, gpa.AckHandler, error) {
 	me := pubKeyAsNodeID(myPK)
 	//
 	// CryptoLib -> Kyber.
-	kyberEdDSSA := eddsa.EdDSA{}
-	if err := kyberEdDSSA.UnmarshalBinary(mySK.AsBytes()); err != nil {
+	kyberMySK, err := mySK.AsKyberKeyPair()
+	if err != nil {
 		return nil, nil, err
 	}
 	kyberNodePKs := make(map[gpa.NodeID]kyber.Point, len(nodePKs))
 	for i, nid := range nodeIDs {
-		kyberNodePKs[nid] = s.node.suite.Point()
-		if err := kyberNodePKs[nid].UnmarshalBinary(nodePKs[i].AsBytes()); err != nil {
+		kyberNodePKs[nid], err = nodePKs[i].AsKyberPoint()
+		if err != nil {
 			return nil, nil, err
 		}
 	}
@@ -145,7 +144,7 @@ func (s *dssSeriesImpl) newDSSImpl() (dss.DSS, gpa.AckHandler, error) {
 		kyberNodePKs,                  // nodePKs
 		f,                             // f
 		me,                            // me
-		kyberEdDSSA.Secret,            // mySK
+		kyberMySK.Private,             // mySK
 		s.dkShare.DSSSecretShare(),    // longTermSecretShare
 		s.node.log,
 	)
@@ -231,7 +230,7 @@ func (s *dssSeriesImpl) decidedIndexProposals(index int, decidedIndexProposals [
 				mappedIndexProposals[s.peerNIDs[i]] = decidedIndexProposals[i]
 			}
 		}
-		s.sendMessages(dssInst.asGPA.NestedMessage(dssInst.inst.NewMsgDecided(mappedIndexProposals, messageToSign)), index)
+		s.sendMessages(dssInst.asGPA.Input(dss.NewInputDecided(mappedIndexProposals, messageToSign)), index)
 		s.tryReportOutput(dssInst)
 		return nil
 	}

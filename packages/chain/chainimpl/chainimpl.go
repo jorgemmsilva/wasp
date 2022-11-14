@@ -28,6 +28,7 @@ import (
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/util/pipe"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
@@ -55,7 +56,7 @@ type chainObj struct {
 	nodeConn                           chain.NodeConnection
 	db                                 kvstore.KVStore
 	netProvider                        peering.NetworkProvider
-	dksProvider                        registry.DKShareRegistryProvider
+	dksProvider                        tcrypto.DKShareRegistryProvider
 	eventRequestProcessed              *events.Event
 	eventChainTransition               *events.Event
 	eventChainTransitionClosure        *events.Closure
@@ -90,7 +91,7 @@ func NewChain(
 	nc chain.NodeConnection,
 	db kvstore.KVStore,
 	netProvider peering.NetworkProvider,
-	dksProvider registry.DKShareRegistryProvider,
+	dksProvider tcrypto.DKShareRegistryProvider,
 	nidProvider registry.NodeIdentityProvider,
 	processorConfig *processors.Config,
 	offledgerBroadcastUpToNPeers int,
@@ -258,7 +259,7 @@ func (c *chainObj) processChainTransition(msg *chain.ChainTransitionEventData) {
 		for i := c.mempoolLastCleanedIndex + 1; i <= c.lastSeenVirtualState.BlockIndex(); i++ {
 			c.log.Debugf("processChainTransition state %d: cleaning state %d", stateIndex, i)
 			var err error
-			reqids, err = blocklog.GetRequestIDsForBlock(c.stateReader, i)
+			reqids, err = blocklog.GetRequestIDsForBlock(c.stateReader.KVStoreReader(), i)
 			if reqids == nil {
 				// The error means a database error. The optimistic state read failure can't occur here
 				// because the state transition message is only sent only after state is committed and before consensus

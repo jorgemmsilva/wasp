@@ -22,7 +22,7 @@ import (
 
 // ConsensusJournal instances are per ChainID ⨉ CommitteeAddress.
 // This ID represents that.
-type ID [iotago.Ed25519AddressBytesLength]byte
+type ID [iotago.Ed25519AddressBytesLength]byte // TODO: Remove it.
 
 func MakeID(chainID isc.ChainID, committeeAddress iotago.Address) (*ID, error) {
 	var id ID
@@ -38,24 +38,41 @@ func MakeID(chainID isc.ChainID, committeeAddress iotago.Address) (*ID, error) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// LogIndex starts from 1. 0 is used as a nil value.
 type LogIndex uint32
 
-func (li *LogIndex) AsUint32() uint32 {
-	return uint32(*li)
+func (li LogIndex) AsUint32() uint32 {
+	return uint32(li)
 }
 
 // For the ACS runner mostly. Can be removed after moving stuff to GPA.
-func (li *LogIndex) AsUint64Key(id ID) uint64 {
+func (li LogIndex) AsUint64Key(id ID) uint64 {
 	liByes := make([]byte, 4)
 	binary.BigEndian.PutUint32(liByes, li.AsUint32())
 	return util.MustUint64From8Bytes(hashing.HashData(id[:], liByes).Bytes()[:8])
 }
 
 // For the Nonce Instance mostly. Can be removed after moving stuff to GPA.
-func (li *LogIndex) AsStringKey(id ID) string {
-	liByes := make([]byte, 4)
-	binary.BigEndian.PutUint32(liByes, li.AsUint32())
-	return hashing.HashData(id[:], liByes).String()
+func (li LogIndex) AsStringKey(id ID) string {
+	return hashing.HashData(id[:], li.Bytes()).String()
+}
+
+func (li LogIndex) Bytes() []byte {
+	liBytes := make([]byte, 4)
+	binary.BigEndian.PutUint32(liBytes, li.AsUint32())
+	return liBytes
+}
+
+func (li LogIndex) IsNil() bool {
+	return li == 0
+}
+
+func (li LogIndex) Next() LogIndex {
+	return LogIndex(li.AsUint32() + 1)
+}
+
+func NilLogIndex() LogIndex {
+	return LogIndex(0)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -216,10 +233,10 @@ func (j *consensusJournalImpl) GetBaseAliasOutputID() *iotago.OutputID {
 }
 
 // Implements the LocalView interface.
-func (j *consensusJournalImpl) AliasOutputReceived(confirmed *isc.AliasOutputWithID) {
-	j.localView.AliasOutputReceived(confirmed)
+func (j *consensusJournalImpl) AliasOutputConfirmed(confirmed *isc.AliasOutputWithID) {
+	j.localView.AliasOutputConfirmed(confirmed)
 	if err := j.registry.SaveConsensusJournalLocalView(j.id, j.localView); err != nil {
-		panic(xerrors.Errorf("cannot persist local view after AliasOutputReceived: %w", err))
+		panic(xerrors.Errorf("cannot persist local view after AliasOutputConfirmed: %w", err))
 	}
 }
 
@@ -232,7 +249,7 @@ func (j *consensusJournalImpl) AliasOutputRejected(rejected *isc.AliasOutputWith
 }
 
 // Implements the LocalView interface.
-func (j *consensusJournalImpl) AliasOutputPublished(consumed, published *isc.AliasOutputWithID) {
+func (j *consensusJournalImpl) AliasOutputPublished(consumed iotago.OutputID, published *isc.AliasOutputWithID) {
 	j.localView.AliasOutputPublished(consumed, published)
 	if err := j.registry.SaveConsensusJournalLocalView(j.id, j.localView); err != nil {
 		panic(xerrors.Errorf("cannot persist local view after AliasOutputPublished: %w", err))

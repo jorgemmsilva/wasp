@@ -5,6 +5,9 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"go.dedis.ch/kyber/v3/sign/eddsa"
+	"go.dedis.ch/kyber/v3/util/key"
+	"golang.org/x/xerrors"
 
 	iotago "github.com/iotaledger/iota.go/v3"
 )
@@ -45,6 +48,14 @@ func (pkT *PrivateKey) String() string {
 
 func (pkT *PrivateKey) AsStdKey() ed25519.PrivateKey {
 	return pkT.key
+}
+
+func (pkT *PrivateKey) AsKyberKeyPair() (*key.Pair, error) {
+	keyPair := eddsa.EdDSA{}
+	if err := keyPair.UnmarshalBinary(pkT.AsBytes()); err != nil {
+		return nil, xerrors.Errorf("cannot convert node priv key to kyber: %w", err)
+	}
+	return &key.Pair{Public: keyPair.Public, Private: keyPair.Secret}, nil
 }
 
 func (pkT *PrivateKey) Public() *PublicKey {

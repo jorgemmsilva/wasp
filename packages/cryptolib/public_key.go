@@ -4,6 +4,8 @@ import (
 	"crypto/ed25519"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/xerrors"
 
 	iotago "github.com/iotaledger/iota.go/v3"
@@ -65,6 +67,15 @@ func (pkT *PublicKey) AsKey() PublicKeyKey {
 func (pkT *PublicKey) AsEd25519Address() *iotago.Ed25519Address {
 	ret := iotago.Ed25519AddressFromPubKey(pkT.key)
 	return &ret
+}
+
+func (pkT *PublicKey) AsKyberPoint() (kyber.Point, error) {
+	group := new(edwards25519.Curve)
+	point := group.Point()
+	if err := point.UnmarshalBinary(pkT.AsBytes()); err != nil {
+		return nil, err
+	}
+	return point, nil
 }
 
 func (pkT *PublicKey) Equals(other *PublicKey) bool {

@@ -7,6 +7,7 @@ import (
 	"math/rand"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/iotaledger/hive.go/marshalutil"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/util"
@@ -45,6 +46,10 @@ func (bh BlockHash) String() string {
 	return hexutil.Encode(bh[:])
 }
 
+func (bh BlockHash) Equals(bh2 BlockHash) bool {
+	return bh == bh2
+}
+
 func L1CommitmentFromBytes(data []byte) (L1Commitment, error) {
 	if len(data) != l1CommitmentSize {
 		return L1Commitment{}, xerrors.New("L1CommitmentFromBytes: wrong data length")
@@ -54,6 +59,22 @@ func L1CommitmentFromBytes(data []byte) (L1Commitment, error) {
 		return L1Commitment{}, err
 	}
 	return ret, nil
+}
+
+func L1CommitmentFromMarshalUtil(mu *marshalutil.MarshalUtil) (*L1Commitment, error) {
+	byteCount, err := mu.ReadUint16()
+	if err != nil {
+		return nil, err
+	}
+	data, err := mu.ReadBytes(int(byteCount))
+	if err != nil {
+		return nil, err
+	}
+	l1c, err := L1CommitmentFromBytes(data)
+	if err != nil {
+		return nil, err
+	}
+	return &l1c, nil
 }
 
 func L1CommitmentFromAliasOutput(output *iotago.AliasOutput) (*L1Commitment, error) {

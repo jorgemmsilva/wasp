@@ -29,6 +29,8 @@ require (
 	github.com/prometheus/client_golang v1.13.0
 	github.com/samber/lo v1.33.0
 	github.com/second-state/WasmEdge-go v0.11.0
+	pgregory.net/rapid v0.5.3
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
 	github.com/wasmerio/wasmer-go v1.0.4

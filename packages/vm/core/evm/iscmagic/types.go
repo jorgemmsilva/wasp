@@ -124,7 +124,28 @@ func (a ISCAgentID) MustUnwrap() isc.AgentID {
 	return ret
 }
 
-// NFTID matches the type definition in ISCTypes.sol
+// ISCRequestID matches the struct definition in ISC.sol
+type ISCRequestID struct {
+	Data []byte
+}
+
+func WrapISCRequestID(rid isc.RequestID) ISCRequestID {
+	return ISCRequestID{Data: rid.Bytes()}
+}
+
+func (rid ISCRequestID) Unwrap() (isc.RequestID, error) {
+	return isc.RequestIDFromBytes(rid.Data)
+}
+
+func (rid ISCRequestID) MustUnwrap() isc.RequestID {
+	ret, err := rid.Unwrap()
+	if err != nil {
+		panic(err)
+	}
+	return ret
+}
+
+// NFTID matches the type definition in ISC.sol
 type NFTID [iotago.NFTIDLength]byte
 
 func init() {

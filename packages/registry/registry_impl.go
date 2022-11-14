@@ -33,10 +33,10 @@ type Impl struct {
 }
 
 var (
-	_ NodeIdentityProvider        = &Impl{}
-	_ DKShareRegistryProvider     = &Impl{}
-	_ ChainRecordRegistryProvider = &Impl{}
-	_ journal.Registry            = &Impl{}
+	_ NodeIdentityProvider            = &Impl{}
+	_ tcrypto.DKShareRegistryProvider = &Impl{}
+	_ ChainRecordRegistryProvider     = &Impl{}
+	_ journal.Registry                = &Impl{}
 )
 
 type Config struct {
@@ -158,7 +158,7 @@ func (r *Impl) SaveChainRecord(rec *ChainRecord) error {
 
 // region DKShareRegistryProvider ////////////////////////////////////////////////////
 
-// SaveDKShare implements dkg.DKShareRegistryProvider.
+// SaveDKShare implements tcrypto.DKShareRegistryProvider.
 func (r *Impl) SaveDKShare(dkShare tcrypto.DKShare) error {
 	var err error
 	var exists bool
@@ -175,12 +175,12 @@ func (r *Impl) SaveDKShare(dkShare tcrypto.DKShare) error {
 	return r.store.Set(dbKey, dkShare.Bytes())
 }
 
-// LoadDKShare implements dkg.DKShareRegistryProvider.
+// LoadDKShare implements tcrypto.DKShareRegistryProvider.
 func (r *Impl) LoadDKShare(sharedAddress iotago.Address) (tcrypto.DKShare, error) {
 	data, err := r.store.Get(dbKeyForDKShare(sharedAddress))
 	if err != nil {
 		if errors.Is(err, kvstore.ErrKeyNotFound) {
-			return nil, ErrDKShareNotFound
+			return nil, tcrypto.ErrDKShareNotFound
 		}
 		return nil, err
 	}

@@ -10,13 +10,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.dedis.ch/kyber/v3"
+	"go.dedis.ch/kyber/v3/share"
+	"go.dedis.ch/kyber/v3/suites"
 
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/dkg"
 	"github.com/iotaledger/wasp/packages/peering"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
@@ -47,13 +49,13 @@ func SetupDkg(
 	peerIdentities []*cryptolib.KeyPair,
 	suite tcrypto.Suite,
 	log *logger.Logger,
-) (iotago.Address, []registry.DKShareRegistryProvider) {
+) (iotago.Address, []tcrypto.DKShareRegistryProvider) {
 	timeout := 300 * time.Second
 	networkProviders, networkCloser := SetupNet(peerNetIDs, peerIdentities, testutil.NewPeeringNetReliable(log), log)
 	//
 	// Initialize the DKG subsystem in each node.
 	dkgNodes := make([]*dkg.Node, len(peerNetIDs))
-	registries := make([]registry.DKShareRegistryProvider, len(peerNetIDs))
+	registries := make([]tcrypto.DKShareRegistryProvider, len(peerNetIDs))
 	for i := range peerNetIDs {
 		registries[i] = testutil.NewDkgRegistryProvider(peerIdentities[i].GetPrivateKey())
 		dkgNode, err := dkg.NewNode(
@@ -79,11 +81,83 @@ func SetupDkg(
 	return dkShare.GetAddress(), registries
 }
 
-func SetupDkgPregenerated(
+func SetupDkgTrivial(
+	t *testing.T,
+	n, f int,
+	peerIdentities []*cryptolib.KeyPair,
+	dkShareRegistries []tcrypto.DKShareRegistryProvider, // Will be used if not nil.
+) (iotago.Address, []tcrypto.DKShareRegistryProvider) {
+	nodePubKeys := PublicKeys(peerIdentities)
+	dssSuite := tcrypto.DefaultEd25519Suite()
+	blsSuite := tcrypto.DefaultBLSSuite()
+	dssThreshold := n - f
+	blsThreshold := f + 1
+	dssPubKey, dssPubPoly, dssPriShares := MakeSharedSecret(dssSuite, n, dssThreshold)
+	blsPubKey, blsPubPoly, blsPriShares := MakeSharedSecret(blsSuite, n, blsThreshold)
+	_, dssCommits := dssPubPoly.Info()
+	_, blsCommits := blsPubPoly.Info()
+	//
+	// Make public shares (do they differ from the commits?)
+	dssPublicShares := make([]kyber.Point, n)
+	for i := range dssPublicShares {
+		dssPublicShares[i] = dssSuite.Point().Mul(dssPriShares[i].V, nil)
+	}
+	blsPublicShares := make([]kyber.Point, n)
+	for i := range blsPublicShares {
+		blsPublicShares[i] = blsSuite.Point().Mul(blsPriShares[i].V, nil)
+	}
+	//
+	// Create the DKShare objects.
+	if dkShareRegistries == nil {
+		dkShareRegistries = make([]tcrypto.DKShareRegistryProvider, len(peerIdentities))
+	}
+	require.Equal(t, n, len(dkShareRegistries))
+	var address iotago.Address
+	for i, identity := range peerIdentities {
+		nodeDKS, err := tcrypto.NewDKShare(
+			uint16(i),                // index
+			uint16(n),                // n
+			uint16(dssThreshold),     // t
+			identity.GetPrivateKey(), // nodePrivKey
+			nodePubKeys,              // nodePubKeys
+			dssSuite,                 // edSuite
+			dssPubKey,                // edSharedPublic
+			dssCommits,               // edPublicCommits
+			dssPublicShares,          // edPublicShares
+			dssPriShares[i].V,        // edPrivateShare
+			blsSuite,                 // blsSuite
+			uint16(blsThreshold),     // blsThreshold
+			blsPubKey,                // blsSharedPublic
+			blsCommits,               // blsPublicCommits
+			blsPublicShares,          // blsPublicShares
+			blsPriShares[i].V,        // blsPrivateShare
+		)
+		require.NoError(t, err)
+		if address == nil {
+			address = nodeDKS.GetAddress()
+		}
+		if dkShareRegistries[i] == nil {
+			dkShareRegistries[i] = testutil.NewDkgRegistryProvider(identity.GetPrivateKey())
+		}
+		require.NoError(t, dkShareRegistries[i].SaveDKShare(nodeDKS))
+	}
+	return address, dkShareRegistries
+}
+
+func MakeSharedSecret(suite suites.Suite, n, t int) (kyber.Point, *share.PubPoly, []*share.PriShare) {
+	priPoly := share.NewPriPoly(suite, t, nil, suite.RandomStream())
+	priShares := priPoly.Shares(n)
+	pubPoly := priPoly.Commit(suite.Point().Base())
+	_, commits := pubPoly.Info()
+	pubKey := commits[0]
+	return pubKey, pubPoly, priShares
+}
+
+func SetupDkgPregenerated( // TODO: Remove.
 	t *testing.T,
 	threshold uint16,
 	identities []*cryptolib.KeyPair,
-) (iotago.Address, []registry.DKShareRegistryProvider) {
+) (iotago.Address, []tcrypto.DKShareRegistryProvider) {
 	var err error
 	serializedDks := pregeneratedDksRead(uint16(len(identities)), threshold)
 	nodePubKeys := make([]*cryptolib.PublicKey, len(identities))
@@ -91,7 +165,7 @@ func SetupDkgPregenerated(
 		nodePubKeys[i] = identities[i].GetPublicKey()
 	}
 	dks := make([]tcrypto.DKShare, len(serializedDks))
-	registries := make([]registry.DKShareRegistryProvider, len(identities))
+	registries := make([]tcrypto.DKShareRegistryProvider, len(identities))
 	for i := range dks {
 		dks[i], err = tcrypto.DKShareFromBytes(serializedDks[i], tcrypto.DefaultEd25519Suite(), tcrypto.DefaultBLSSuite(), identities[i].GetPrivateKey())
 		require.Nil(t, err)

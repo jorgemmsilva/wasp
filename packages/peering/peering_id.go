@@ -31,6 +31,12 @@ func RandomPeeringID(seed ...[]byte) PeeringID {
 	return pid
 }
 
+func PeeringIDFromBytes(src []byte) PeeringID {
+	pid := PeeringID{}
+	copy(pid[:], src)
+	return pid
+}
+
 func (pid *PeeringID) String() string {
 	return hexutil.Encode(pid[:])
 }

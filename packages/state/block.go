@@ -12,6 +12,7 @@ import (
 	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"golang.org/x/crypto/blake2b"
 )
 
 type block struct {
@@ -128,4 +129,14 @@ func (b *block) L1Commitment() *L1Commitment {
 		StateCommitment: b.TrieRoot(),
 		BlockHash:       b.Hash(),
 	}
+}
+
+func (b *blockImpl) GetHash() (ret BlockHash) {
+	r := blake2b.Sum256(b.essenceBytes())
+	copy(ret[:BlockHashSize], r[:BlockHashSize])
+	return
+}
+
+func (b *blockImpl) Equals(other Block) bool {
+	return b.GetHash().Equals(other.GetHash())
 }

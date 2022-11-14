@@ -8,7 +8,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 )
 
@@ -18,7 +17,7 @@ type DkgRegistryProvider struct {
 	nodePrivKey *cryptolib.PrivateKey
 }
 
-var _ registry.DKShareRegistryProvider = &DkgRegistryProvider{}
+var _ tcrypto.DKShareRegistryProvider = &DkgRegistryProvider{}
 
 // NewDkgRegistryProvider creates new mocked DKG registry provider.
 func NewDkgRegistryProvider(nodePrivKey *cryptolib.PrivateKey) *DkgRegistryProvider {

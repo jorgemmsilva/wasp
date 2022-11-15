@@ -18,7 +18,6 @@ import (
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
-	"github.com/iotaledger/wasp/packages/wal"
 	"github.com/iotaledger/wasp/packages/webapi/httperrors"
 	"github.com/iotaledger/wasp/packages/webapi/model"
 	"github.com/iotaledger/wasp/packages/webapi/routes"
@@ -29,7 +28,6 @@ type chainWebAPI struct {
 	chains     chains.Provider
 	network    peering.NetworkProvider
 	allMetrics *metrics.Metrics
-	w          *wal.WAL
 }
 
 func addChainEndpoints(adm echoswagger.ApiGroup, c *chainWebAPI) {
@@ -57,7 +55,7 @@ func (w *chainWebAPI) handleActivateChain(c echo.Context) error {
 	}
 
 	log.Debugw("calling Chains.Activate", "chainID", rec.ChainID.String())
-	if err := w.chains().Activate(rec, w.registry, w.allMetrics, w.w); err != nil {
+	if err := w.chains().Activate(rec, w.registry, w.allMetrics); err != nil {
 		return err
 	}
 
@@ -103,10 +101,7 @@ func (w *chainWebAPI) handleGetChainInfo(c echo.Context) error {
 	}
 
 	chainNodes := chain.GetChainNodes()
-	peeringStatus := make(map[cryptolib.PublicKeyKey]peering.PeerStatusProvider)
-	for _, n := range w.network.PeerStatus() {
-		peeringStatus[n.PubKey().AsKey()] = n
-	}
+	peeringStatus := peeringStatusIncludeSelf(w.network)
 	candidateNodes := make(map[cryptolib.PublicKeyKey]*governance.AccessNodeInfo)
 	for _, n := range chain.GetCandidateNodes() {
 		pubKey, err := cryptolib.NewPublicKeyFromBytes(n.NodePubKey)
@@ -144,6 +139,15 @@ func (w *chainWebAPI) handleGetChainInfo(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, res)
+}
+
+func peeringStatusIncludeSelf(networkProvider peering.NetworkProvider) map[cryptolib.PublicKeyKey]peering.PeerStatusProvider {
+	peeringStatus := make(map[cryptolib.PublicKeyKey]peering.PeerStatusProvider)
+	for _, n := range networkProvider.PeerStatus() {
+		peeringStatus[n.PubKey().AsKey()] = n
+	}
+	peeringStatus[networkProvider.Self().PubKey().AsKey()] = networkProvider.Self().Status()
+	return peeringStatus
 }
 
 func makeCmtNodes(

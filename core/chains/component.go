@@ -15,7 +15,6 @@ import (
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/vm/processors"
-	"github.com/iotaledger/wasp/packages/wal"
 )
 
 func init() {
@@ -39,7 +38,6 @@ var (
 type dependencies struct {
 	dig.In
 
-	WAL             *wal.WAL
 	Chains          *chains.Chains
 	Metrics         *metrics.Metrics `optional:"true"`
 	DefaultRegistry registry.Registry
@@ -107,7 +105,6 @@ func run() error {
 				return deps.DefaultRegistry
 			},
 			deps.Metrics,
-			deps.WAL,
 		); err != nil {
 			CoreComponent.LogErrorf("failed to read chain activation records from registry: %v", err)
 			return

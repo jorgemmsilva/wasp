@@ -1,6 +1,8 @@
 package panicutil
 
 import (
+	"fmt"
+	"os"
 	"runtime/debug"
 
 	"github.com/pkg/errors"
@@ -72,6 +74,9 @@ func CatchPanic(f func()) (err error) {
 			if err, ok = r.(error); !ok {
 				err = xerrors.Errorf("%v", r)
 			}
+			if os.Getenv("DEBUG") != "" {
+				fmt.Println(string(debug.Stack()))
+			}
 		}()
 		f()
 	}()
@@ -84,6 +89,9 @@ func CatchAllExcept(f func(), exceptErrors ...error) (err error) {
 			r := recover()
 			if r == nil {
 				return
+			}
+			if os.Getenv("DEBUG") != "" {
+				fmt.Println(string(debug.Stack()))
 			}
 			if recoveredError, ok := r.(error); ok {
 				for _, e := range exceptErrors {

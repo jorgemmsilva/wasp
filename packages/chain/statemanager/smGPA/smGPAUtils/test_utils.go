@@ -4,14 +4,11 @@
 package smGPAUtils
 
 import (
+	"crypto/rand"
 	"fmt"
-	"math/rand"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
-	iotago "github.com/iotaledger/iota.go/v3"
+	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/trie.go/trie"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -20,7 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/state"
+	"github.com/stretchr/testify/require"
 )
 
 func MakeNodeID(index int) gpa.NodeID {

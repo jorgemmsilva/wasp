@@ -78,7 +78,6 @@ type chainObj struct {
 	missingRequestPeerMsgPipe          pipe.Pipe
 	timerTickMsgPipe                   pipe.Pipe
 	consensusJournalRegistry           journal.Registry
-	wal                                chain.WAL
 }
 
 type committeeStruct struct {
@@ -100,7 +99,6 @@ func NewChain(
 	pullMissingRequestsFromCommittee bool,
 	chainMetrics metrics.ChainMetrics,
 	consensusJournalRegistry journal.Registry,
-	wal chain.WAL,
 	rawBlocksEnabled bool,
 	rawBlocksDir string,
 ) chain.Chain {

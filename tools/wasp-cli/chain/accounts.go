@@ -80,12 +80,14 @@ var balanceCmd = &cobra.Command{
 }
 
 func getTokensForRequestFee() *isc.Allowance {
-	client := config.WaspClient()
-	if client.BaseURL() == "" {
+	apiAddress := config.WaspAPI()
+	if apiAddress == "" {
 		// no wasp api defined, assume default configuration
+		log.Printf("wasp webapi not defined, using default values to calculate the fees")
 		baseTokens := gas.MinGasPerRequest / gas.DefaultGasFeePolicy().GasPerToken // default value
 		return isc.NewAllowanceBaseTokens(baseTokens)
 	}
+	client := config.WaspClient(apiAddress)
 	gasPolicy, err := client.GetGasFeePolicy(GetCurrentChainID())
 	log.Check(err)
 	amount := gas.MinGasPerRequest / gasPolicy.GasPerToken

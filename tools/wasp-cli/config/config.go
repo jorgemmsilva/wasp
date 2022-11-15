@@ -158,15 +158,19 @@ func SetToken(token string) {
 	Set("authentication.token", token)
 }
 
-func WaspClient(i ...int) *client.WaspClient {
+func WaspClient(apiAddress string) *client.WaspClient {
 	// TODO: add authentication for /adm
 	L1Client() // this will fill parameters.L1() with data from the L1 node
-	apiAddress := WaspAPI(i...)
-	if apiAddress == "" {
-		return &client.WaspClient{}
-	}
 	log.Verbosef("using Wasp host %s\n", apiAddress)
 	return client.NewWaspClient(apiAddress).WithToken(GetToken())
+}
+
+func MustWaspAPI(i ...int) string {
+	apiAddress := WaspAPI(i...)
+	if apiAddress == "" {
+		panic("wasp webapi not defined")
+	}
+	return apiAddress
 }
 
 func WaspAPI(i ...int) string {

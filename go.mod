@@ -19,7 +19,7 @@ require (
 	github.com/iotaledger/inx-app v1.0.0-rc.1.0.20221102091857-058227e94374
 	github.com/iotaledger/inx/go v1.0.0-rc.1
 	github.com/iotaledger/iota.go/v3 v3.0.0-rc.1
-	github.com/iotaledger/trie.go v0.0.0-20220913055112-2b1eae4ebed9
+	github.com/iotaledger/trie.go v0.0.0-20221020134250-2142ee617d11
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/libp2p/go-libp2p v0.23.2
 	github.com/mr-tron/base58 v1.2.0
@@ -27,9 +27,9 @@ require (
 	github.com/pangpanglabs/echoswagger/v2 v2.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.13.0
+	github.com/prometheus/tsdb v0.10.0
+	github.com/samber/lo v1.33.0
 	github.com/second-state/WasmEdge-go v0.11.0
-	pgregory.net/rapid v0.5.3
-	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.8.1
 	github.com/wasmerio/wasmer-go v1.0.4
@@ -39,21 +39,20 @@ require (
 	go.uber.org/dig v1.15.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/crypto v0.1.0
+	golang.org/x/exp v0.0.0-20221026153819-32f3d567a233
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2
-	gonum.org/v1/plot v0.12.0
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.7
+	pgregory.net/rapid v0.5.3
 )
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
-	git.sr.ht/~sbinet/gg v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/NebulousLabs/errors v0.0.0-20181203160057-9f787ce8f69e // indirect
 	github.com/NebulousLabs/fastrand v0.0.0-20181203155948-6fb6489aac4e // indirect
 	github.com/NebulousLabs/merkletree v0.0.0-20181203152040-08d5d54b07f5 // indirect
 	github.com/VictoriaMetrics/fastcache v1.12.0 // indirect
-	github.com/ajstarks/svgo v0.0.0-20211024235047-1546f124cd8b // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -79,15 +78,13 @@ require (
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/getsentry/sentry-go v0.14.0 // indirect
-	github.com/go-fonts/liberation v0.2.0 // indirect
-	github.com/go-latex/latex v0.0.0-20210823091927-c0d11ff05a81 // indirect
+	github.com/go-kit/kit v0.9.0 // indirect
+	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
-	github.com/go-pdf/fpdf v0.6.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/go-task/slim-sprig v0.0.0-20210107165309-348f09dbbbc0 // indirect
 	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -103,7 +100,6 @@ require (
 	github.com/holiman/uint256 v1.2.1 // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20220808142449-1dc0b8ac4d7d // indirect
 	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/ipfs/go-cid v0.3.2 // indirect
@@ -168,7 +164,6 @@ require (
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
-	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
@@ -189,8 +184,6 @@ require (
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.dedis.ch/protobuf v1.0.11 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/exp v0.0.0-20221026153819-32f3d567a233 // indirect
-	golang.org/x/image v0.1.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect

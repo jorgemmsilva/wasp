@@ -78,7 +78,6 @@ type chainObj struct {
 	missingRequestPeerMsgPipe          pipe.Pipe
 	timerTickMsgPipe                   pipe.Pipe
 	consensusJournalRegistry           journal.Registry
-	wal                                chain.WAL
 }
 
 type committeeStruct struct {
@@ -100,7 +99,6 @@ func NewChain(
 	pullMissingRequestsFromCommittee bool,
 	chainMetrics metrics.ChainMetrics,
 	consensusJournalRegistry journal.Registry,
-	wal chain.WAL,
 	rawBlocksEnabled bool,
 	rawBlocksDir string,
 ) chain.Chain {
@@ -261,7 +259,7 @@ func (c *chainObj) processChainTransition(msg *chain.ChainTransitionEventData) {
 		for i := c.mempoolLastCleanedIndex + 1; i <= c.lastSeenVirtualState.BlockIndex(); i++ {
 			c.log.Debugf("processChainTransition state %d: cleaning state %d", stateIndex, i)
 			var err error
-			reqids, err = blocklog.GetRequestIDsForBlock(c.stateReader, i)
+			reqids, err = blocklog.GetRequestIDsForBlock(c.stateReader.KVStoreReader(), i)
 			if reqids == nil {
 				// The error means a database error. The optimistic state read failure can't occur here
 				// because the state transition message is only sent only after state is committed and before consensus

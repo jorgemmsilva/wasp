@@ -23,17 +23,20 @@ import (
 
 	"golang.org/x/xerrors"
 
+	"github.com/iotaledger/hive.go/core/kvstore"
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/chain/aaa2/chainMgr"
 	"github.com/iotaledger/wasp/packages/chain/aaa2/cmtLog"
 	"github.com/iotaledger/wasp/packages/chain/aaa2/cons"
 	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/chain/statemanager"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -119,12 +122,12 @@ type chainNodeImpl struct {
 	consOutputPipe       pipe.Pipe
 	consRecoverPipe      pipe.Pipe
 	publishingTXes       map[iotago.TransactionID]context.CancelFunc // TX'es now being published.
-	procCache            *processors.Cache                           // TODO: ...
+	procCache            *processors.Cache                           // Cache for the SC processors.
 	activeCommitteeNodes []*cryptolib.PublicKey                      // The nodes acting as a committee for the latest consensus.
 	activeAccessNodes    []*cryptolib.PublicKey                      // All the nodes authorized for being access nodes (for the ActiveAO).
 	netRecvPipe          pipe.Pipe
 	netPeeringID         peering.PeeringID
-	netPeerPubs          map[gpa.NodeID]*cryptolib.PublicKey // TODO: Maintain this.
+	netPeerPubs          map[gpa.NodeID]*cryptolib.PublicKey
 	net                  peering.NetworkProvider
 	log                  *logger.Logger
 }
@@ -160,8 +163,10 @@ var _ ChainNode = &chainNodeImpl{}
 func New(
 	ctx context.Context,
 	chainID *isc.ChainID,
+	chainKVStore kvstore.KVStore,
 	nodeConn ChainNodeConn,
 	nodeIdentity *cryptolib.KeyPair,
+	processorConfig *processors.Config,
 	dkRegistry tcrypto.DKShareRegistryProvider,
 	cmtLogStore cmtLog.Store,
 	blockWAL smGPAUtils.BlockWAL,
@@ -170,11 +175,9 @@ func New(
 ) (ChainNode, error) {
 	netPeeringID := peering.PeeringIDFromBytes(append(chainID.Bytes(), []byte("ChainMgr")...))
 	cni := &chainNodeImpl{
-		me:                   pubKeyAsNodeID(nodeIdentity.GetPublicKey()),
 		nodeIdentity:         nodeIdentity,
 		chainID:              chainID,
 		nodeConn:             nodeConn,
-		mempool:              nil, // TODO: ...
 		recvAliasOutputPipe:  pipe.NewDefaultInfinitePipe(),
 		recvTxPublishedPipe:  pipe.NewDefaultInfinitePipe(),
 		recvMilestonePipe:    pipe.NewDefaultInfinitePipe(),
@@ -182,6 +185,7 @@ func New(
 		consOutputPipe:       pipe.NewDefaultInfinitePipe(),
 		consRecoverPipe:      pipe.NewDefaultInfinitePipe(),
 		publishingTXes:       map[iotago.TransactionID]context.CancelFunc{},
+		procCache:            processors.MustNew(processorConfig),
 		activeCommitteeNodes: []*cryptolib.PublicKey{},
 		activeAccessNodes:    []*cryptolib.PublicKey{},
 		netRecvPipe:          pipe.NewDefaultInfinitePipe(),
@@ -190,8 +194,11 @@ func New(
 		net:                  net,
 		log:                  log,
 	}
+	cni.me = cni.pubKeyAsNodeID(nodeIdentity.GetPublicKey())
+	//
 	// Create sub-components.
-	chainMgr, err := chainMgr.New(cni.me, *cni.chainID, cmtLogStore, dkRegistry, pubKeyAsNodeID, cni.handleAccessNodesCB, cni.log)
+	chainMetrics := metrics.DefaultChainMetrics()
+	chainMgr, err := chainMgr.New(cni.me, *cni.chainID, cmtLogStore, dkRegistry, cni.pubKeyAsNodeID, cni.handleAccessNodesCB, cni.log)
 	if err != nil {
 		return nil, xerrors.Errorf("cannot create chainMgr: %w", err)
 	}
@@ -202,14 +209,21 @@ func New(
 		[]*cryptolib.PublicKey{nodeIdentity.GetPublicKey()},
 		net,
 		blockWAL,
-		nil, // TODO: store,
+		chainKVStore,
 		log,
 	)
 	if err != nil {
 		return nil, xerrors.Errorf("cannot create stateMgr: %w", err)
 	}
+	mempool := mempool.New(
+		ctx, chainID, nodeIdentity, net,
+		func(reqID isc.RequestID) bool { return false },                      // TODO: Implement.
+		func(from, to *isc.AliasOutputWithID) []isc.RequestID { return nil }, // TODO: Implement.
+		log, chainMetrics,
+	)
 	cni.chainMgr = chainMgr
 	cni.stateMgr = stateMgr
+	cni.mempool = mempool
 	//
 	// Connect to the peering network.
 	netRecvPipeInCh := cni.netRecvPipe.In()
@@ -351,7 +365,7 @@ func (cni *chainNodeImpl) handleNetMessage(ctx context.Context, recv *peering.Pe
 		cni.log.Warnf("cannot parse message: %v", err)
 		return
 	}
-	msg.SetSender(pubKeyAsNodeID(recv.SenderPubKey))
+	msg.SetSender(cni.pubKeyAsNodeID(recv.SenderPubKey))
 	outMsgs := cni.chainMgr.AsGPA().Message(msg)
 	cni.sendMessages(outMsgs)
 	cni.handleChainMgrOutput(ctx, cni.chainMgr.AsGPA().Output())
@@ -534,6 +548,10 @@ func (cni *chainNodeImpl) sendMessages(outMsgs gpa.OutMessages) {
 	})
 }
 
-func pubKeyAsNodeID(pubKey *cryptolib.PublicKey) gpa.NodeID {
-	return gpa.NodeID(pubKey.String())
+func (cni *chainNodeImpl) pubKeyAsNodeID(pubKey *cryptolib.PublicKey) gpa.NodeID {
+	nodeID := gpa.NodeID(pubKey.String())
+	if _, ok := cni.netPeerPubs[nodeID]; !ok {
+		cni.netPeerPubs[nodeID] = pubKey
+	}
+	return nodeID
 }

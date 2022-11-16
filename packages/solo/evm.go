@@ -38,8 +38,12 @@ func (b *jsonRPCSoloBackend) EVMEstimateGas(callMsg ethereum.CallMsg) (uint64, e
 	return b.Chain.EstimateGasEthereum(callMsg)
 }
 
-func (b *jsonRPCSoloBackend) ISCCallView(scName, funName string, args dict.Dict) (dict.Dict, error) {
+func (b *jsonRPCSoloBackend) ISCCallView(iscBlockIndex uint32, scName, funName string, args dict.Dict) (dict.Dict, error) {
 	return b.Chain.CallView(scName, funName, args)
+}
+
+func (b *jsonRPCSoloBackend) ISCLatestBlockIndex() uint32 {
+	return b.Chain.LatestBlockIndex()
 }
 
 func (b *jsonRPCSoloBackend) BaseToken() *parameters.BaseToken {

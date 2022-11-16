@@ -7,19 +7,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/require"
-
-	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/core/logger"
+	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/trie.go/trie"
-	"github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
-	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
-	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smInputs"
-	"github.com/iotaledger/wasp/packages/chain/statemanager/smUtils"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
+	"github.com/stretchr/testify/require"
 )
 
 // Single node network. 8 blocks are sent to state manager. The result is checked
@@ -64,7 +59,7 @@ func TestManyNodes(t *testing.T) {
 	tc := gpa.NewTestContext(sms)
 	sendBlocksToNode(t, tc, nodeIDs[0], blocks...)
 
-	//Nodes are checked sequentially
+	// Nodes are checked sequentially
 	var result bool
 	now := time.Now()
 	for i := 1; i < len(nodeIDs); i++ {
@@ -79,7 +74,7 @@ func TestManyNodes(t *testing.T) {
 		tc.WithInputs(map[gpa.NodeID]gpa.Input{nodeIDs[i]: cdsInput}).RunAll()
 		require.NoError(t, requireReceiveVState(t, cdsRespChan, 8, &commitment, 5*time.Second))
 	}
-	//Nodes are checked in parallel
+	// Nodes are checked in parallel
 	cspInputs := make(map[gpa.NodeID]gpa.Input)
 	cspRespChans := make(map[gpa.NodeID]<-chan interface{})
 	for i := 1; i < len(nodeIDs); i++ {

@@ -4,6 +4,7 @@
 package solo
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -16,11 +17,12 @@ import (
 	"github.com/iotaledger/hive.go/core/events"
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/trie.go/trie"
+	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/chain"
-	"github.com/iotaledger/wasp/packages/chain/mempool"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database/dbmanager"
+	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -30,6 +32,7 @@ import (
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/utxodb"
@@ -90,12 +93,8 @@ type Chain struct {
 	// ValidatorFeeTarget is the agent ID to which all fees are accrued. By default, it is equal to OriginatorAgentID
 	ValidatorFeeTarget isc.AgentID
 
-	// State ia an interface to access virtual state of the chain: a buffered collection of key/value pairs
-	State state.VirtualStateAccess
-	// GlobalSync represents global atomic flag for the optimistic state reader. In Solo it has no function
-	GlobalSync coreutil.ChainStateSync
-	// StateReader is the read only access to the state
-	StateReader state.OptimisticStateReader
+	// Store is where the chain data (blocks, state) is stored
+	Store state.Store
 	// Log is the named logger of the chain
 	log *logger.Logger
 	// instance of VM
@@ -269,15 +268,9 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(parameters.L1().Protocol.Bech32HRP))
 
 	chainlog := env.logger.Named(name)
-	store := env.dbmanager.GetOrCreateKVStore(chainID)
-	vs, err := state.CreateOriginState(store, chainID)
-	env.logger.Infof("     chain '%s'. origin state commitment: %s", chainID.String(), trie.RootCommitment(vs.TrieNodeStore()))
+	store := state.InitChainStore(env.dbmanager.GetOrCreateKVStore(chainID))
 
-	require.NoError(env.T, err)
-	require.EqualValues(env.T, 0, vs.BlockIndex())
-	require.True(env.T, vs.Timestamp().IsZero())
-
-	glbSync := coreutil.NewChainStateSync().SetSolidIndex(0)
+	env.logger.Infof("     chain '%s'. origin state commitment: %s", chainID.String(), store.LatestBlock().TrieRoot())
 
 	ret := &Chain{
 		Env:                    env,
@@ -289,15 +282,30 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 		OriginatorAddress:      originatorAddr,
 		OriginatorAgentID:      originatorAgentID,
 		ValidatorFeeTarget:     originatorAgentID,
-		State:                  vs,
-		GlobalSync:             glbSync,
-		StateReader:            vs.OptimisticStateReader(glbSync),
+		Store:                  store,
 		bypassStardustVM:       bypassStardustVM,
 		vmRunner:               vmRunner,
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    chainlog,
 	}
-	ret.mempool = mempool.New(chainID.AsAddress(), ret.StateReader, chainlog, metrics.DefaultChainMetrics())
+
+	var peeringNetwork *testutil.PeeringNetwork = testutil.NewPeeringNetwork(
+		[]string{"nodeID"}, []*cryptolib.KeyPair{cryptolib.NewKeyPair()}, 10000,
+		testutil.NewPeeringNetReliable(chainlog),
+		chainlog,
+	)
+
+	ret.mempool = mempool.New(
+		context.Background(),
+		chainID,
+		gpa.NodeID("solo"),
+		peeringNetwork.NetworkProviders()[0],
+		mempool.CreateHasBeenProcessedFunc(ret.StateReader.KVStoreReader()),
+		mempool.CreateGetProcessedReqsFunc(ret.StateReader.KVStoreReader()),
+		chainlog,
+		metrics.DefaultChainMetrics(),
+	)
+
 	require.NoError(env.T, err)
 
 	// creating origin transaction with the origin of the Alias chain
@@ -384,7 +392,6 @@ func (env *Solo) AddRequestsToChainMempoolWaitUntilInbufferEmpty(ch *Chain, reqs
 	defer ch.runVMMutex.Unlock()
 
 	ch.mempool.ReceiveRequests(reqs...)
-	ch.mempool.WaitInBufferEmpty(timeout...)
 }
 
 // EnqueueRequests adds requests contained in the transaction to mempools of respective target chains
@@ -425,21 +432,18 @@ func (ch *Chain) collateBatch() []isc.Request {
 	// emulating variable sized blocks
 	maxBatch := MaxRequestsInBlock - rand.Intn(MaxRequestsInBlock/3)
 
-	now := ch.Env.GlobalTime()
-	ready := ch.mempool.ReadyNow(now)
-	batchSize := len(ready)
+	// get the requests from the mempool
+	ctx, cancelCtx := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancelCtx()
+	reqRefs := <-ch.mempool.ConsensusProposalsAsync(ctx, ch.GetAnchorOutput())
+	requests := <-ch.mempool.ConsensusRequestsAsync(ctx, reqRefs)
+	batchSize := len(requests)
+
 	if batchSize > maxBatch {
 		batchSize = maxBatch
 	}
 	ret := make([]isc.Request, 0)
-	for _, req := range ready[:batchSize] {
-		if !req.IsOffLedger() {
-			if !isc.RequestIsUnlockable(req.(isc.OnLedgerRequest), ch.ChainID.AsAddress(), now) {
-				continue
-			}
-		}
-		ret = append(ret, req)
-	}
+	ret = append(ret, requests[:batchSize]...)
 	return ret
 }
 
@@ -463,7 +467,6 @@ func (ch *Chain) Sync() {
 func (ch *Chain) collateAndRunBatch() bool {
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
-
 	batch := ch.collateBatch()
 	if len(batch) > 0 {
 		results := ch.runRequestsNolock(batch, "batchLoop")
@@ -480,38 +483,31 @@ func (ch *Chain) collateAndRunBatch() bool {
 // BacklogLen is a thread-safe function to return size of the current backlog
 func (ch *Chain) BacklogLen() int {
 	mstats := ch.MempoolInfo()
-	return mstats.InBufCounter - mstats.OutPoolCounter
+	return mstats.OutPoolCounter
 }
 
 func (ch *Chain) GetCandidateNodes() []*governance.AccessNodeInfo {
-	// not used, just to implement ChainCore interface
-	return nil
+	panic("unimplemented")
 }
 
 func (ch *Chain) GetChainNodes() []peering.PeerStatusProvider {
-	// not used, just to implement ChainCore interface
-	return nil
+	panic("unimplemented")
 }
 
 func (ch *Chain) GetCommitteeInfo() *chain.CommitteeInfo {
-	// not used, just to implement ChainCore interface
-	return nil
+	panic("unimplemented")
 }
 
-func (ch *Chain) GlobalStateSync() coreutil.ChainStateSync {
-	return ch.GlobalSync
-}
-
-func (ch *Chain) StateCandidateToStateManager(state.VirtualStateAccess, *iotago.UTXOInput) {
-	// not used, just to implement ChainCore interface
+func (ch *Chain) StateCandidateToStateManager(common.VCommitment, *iotago.UTXOInput) {
+	panic("unimplemented")
 }
 
 func (ch *Chain) TriggerChainTransition(*chain.ChainTransitionEventData) {
-	// not used, just to implement ChainCore interface
+	panic("unimplemented")
 }
 
-func (ch *Chain) GetStateReader() state.OptimisticStateReader {
-	return ch.StateReader
+func (ch *Chain) GetStateReader(blockIndex uint32) state.State {
+	return ch.Store.StateByIndex(blockIndex)
 }
 
 func (ch *Chain) ID() *isc.ChainID {
@@ -526,16 +522,12 @@ func (ch *Chain) Processors() *processors.Cache {
 	return ch.proc
 }
 
-func (ch *Chain) VirtualStateAccess() state.VirtualStateAccess {
-	return ch.State.Copy()
-}
-
 func (ch *Chain) EnqueueDismissChain(_ string) {
-	// not used, just to implement ChainCore interface
+	panic("unimplemented")
 }
 
 func (ch *Chain) EnqueueAliasOutput(_ *isc.AliasOutputWithID) {
-	// not used, just to implement ChainCore interface
+	panic("unimplemented")
 }
 
 // ---------------------------------------------

@@ -60,4 +60,5 @@ func AddEndpoints(
 	})
 	addDKSharesEndpoints(adm, dkShareRegistryProvider, nodeProvider)
 	addPeeringEndpoints(adm, network, tnm)
+	addAccessNodesEndpoints(adm, registryProvider, tnm)
 }

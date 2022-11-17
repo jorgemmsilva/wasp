@@ -172,6 +172,8 @@ func handlePeeringTrustedGet(c echo.Context) error {
 }
 
 func handlePeeringTrustedDelete(c echo.Context) error {
+	// TODO remove any access nodes that were using this peer
+
 	var err error
 	tnm := c.Get("tnm").(peering.TrustedNetworkManager)
 	pubKeyStr := c.Param("pubKey")

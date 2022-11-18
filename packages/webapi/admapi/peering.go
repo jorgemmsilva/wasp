@@ -13,7 +13,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/webapi/httperrors"
@@ -192,8 +191,10 @@ func (p *peeringService) handlePeeringTrustedDelete(c echo.Context) error {
 		return httperrors.ServerError("Peer trust removed, but errored when trying to get chain list from registry")
 	}
 	for _, rec := range chainRecs {
-		if lo.Contains(rec.AccessNodes, gpa.NodeID(tp.NetID)) {
-			rec.RemoveAccessNode(tp.NetID)
+		if lo.ContainsBy(rec.AccessNodes, func(p cryptolib.PublicKey) bool {
+			return p.Equals(tp.PubKey)
+		}) {
+			rec.RemoveAccessNode(tp.PubKey)
 			err = p.registry().SaveChainRecord(rec)
 			if err != nil {
 				return httperrors.ServerError(fmt.Sprintf("Peer trust removed, but errored whentrying to save chain record %s", rec.ChainID))

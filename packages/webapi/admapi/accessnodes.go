@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
@@ -14,6 +15,8 @@ import (
 	"github.com/pangpanglabs/echoswagger/v2"
 	"github.com/samber/lo"
 )
+
+const pubKeyParam = "PublicKey"
 
 func addAccessNodesEndpoints(
 	adm echoswagger.ApiGroup,
@@ -26,11 +29,12 @@ func addAccessNodesEndpoints(
 	}
 	adm.POST(routes.AdmAddAccessNode(":chainID"), a.handleAddAccessNode).
 		AddParamPath("", "chainID", "ChainID (string)").
-		AddParamPath("", "nodeID", "NodeID (string)").
+		AddParamPath("", pubKeyParam, "PublicKey (hex string)").
 		SetSummary("Add an access node to a chain")
 
 	adm.POST(routes.AdmRemoveAccessNode(":chainID"), a.handleRemoveAccessNode).
 		AddParamPath("", "chainID", "ChainID (string)").
+		AddParamPath("", pubKeyParam, "PublicKey (hex string)").
 		SetSummary("Remove an access node from a chain")
 }
 
@@ -51,23 +55,31 @@ func (a *accessNodesService) chainRecordFromParams(c echo.Context) (*registry.Ch
 	return chainRec, nil
 }
 
+func paramsPubKey(c echo.Context) (*cryptolib.PublicKey, error) {
+	return cryptolib.NewPublicKeyFromHexString(c.Param(pubKeyParam))
+}
+
 func (a *accessNodesService) handleAddAccessNode(c echo.Context) error {
 	chainRec, err := a.chainRecordFromParams(c)
 	if err != nil {
 		return err
 	}
-	nodeID := c.Param("nodeID")
+	pubKey, err := paramsPubKey(c)
+	if err != nil {
+		return httperrors.BadRequest("invalid pub key")
+	}
+
 	peers, err := a.networkMgr.TrustedPeers()
 	if err != nil {
 		return httperrors.ServerError("error getting trusted peers")
 	}
 	_, ok := lo.Find(peers, func(p *peering.TrustedPeer) bool {
-		return p.NetID == nodeID
+		return p.PubKey.Equals(pubKey)
 	})
 	if !ok {
-		return httperrors.NotFound(fmt.Sprintf("couldn't find peer with netID %s", nodeID))
+		return httperrors.NotFound(fmt.Sprintf("couldn't find peer with public key %s", pubKey))
 	}
-	err = chainRec.AddAccessNode(nodeID)
+	err = chainRec.AddAccessNode(pubKey)
 	if err != nil {
 		return httperrors.ServerError(fmt.Sprintf("error adding access node. %s", err.Error()))
 	}
@@ -83,8 +95,11 @@ func (a *accessNodesService) handleRemoveAccessNode(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	nodeID := c.Param("nodeID")
-	chainRec.RemoveAccessNode(nodeID)
+	pubKey, err := paramsPubKey(c)
+	if err != nil {
+		return httperrors.BadRequest("invalid pub key")
+	}
+	chainRec.RemoveAccessNode(pubKey)
 	err = a.registry().SaveChainRecord(chainRec)
 	if err != nil {
 		return httperrors.ServerError("error saving chain record.")

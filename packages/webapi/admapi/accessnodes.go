@@ -84,10 +84,7 @@ func (a *accessNodesService) handleRemoveAccessNode(c echo.Context) error {
 		return err
 	}
 	nodeID := c.Param("nodeID")
-	err = chainRec.RemoveAccessNode(nodeID)
-	if err != nil {
-		return httperrors.ServerError(fmt.Sprintf("error removing access node. %s", err.Error()))
-	}
+	chainRec.RemoveAccessNode(nodeID)
 	err = a.registry().SaveChainRecord(chainRec)
 	if err != nil {
 		return httperrors.ServerError("error saving chain record.")

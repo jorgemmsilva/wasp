@@ -4,6 +4,7 @@
 package evm
 
 import (
+	"math/big"
 	"sync"
 	"time"
 
@@ -98,6 +99,11 @@ func (b *jsonRPCWaspBackend) evictWhenExpired(txHash common.Hash) {
 
 func (b *jsonRPCWaspBackend) EVMEstimateGas(callMsg ethereum.CallMsg) (uint64, error) {
 	return chainutil.EstimateGas(b.chain, callMsg)
+}
+
+func (b *jsonRPCWaspBackend) EVMGasPrice() *big.Int {
+	// TODO fetch gasfeepolicy here
+	return nil
 }
 
 func (b *jsonRPCWaspBackend) ISCCallView(scName, funName string, args dict.Dict) (dict.Dict, error) {

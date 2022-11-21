@@ -9,6 +9,9 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/trie.go/trie"
+	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
+	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smInputs"
+	"github.com/iotaledger/wasp/packages/chain/statemanager/smUtils"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
@@ -201,7 +204,7 @@ func requireReceiveVState(t *testing.T, respChan <-chan (*consGR.StateMgrDecided
 	case smds := <-respChan:
 		require.Equal(t, smds.VirtualStateAccess.BlockIndex(), index)
 		require.True(t, smds.StateBaseline.IsValid())
-		require.True(t, state.EqualCommitments(trie.RootCommitment(smds.VirtualStateAccess.TrieNodeStore()), l1c.StateCommitment))
+		require.True(t, state.EqualCommitments(trie.RootCommitment(smds.VirtualStateAccess.TrieNodeStore()), l1c.TrieRoot))
 		return nil
 	case <-time.After(timeout):
 		return fmt.Errorf("Waiting to receive state timeouted")

@@ -25,7 +25,7 @@ func newApprovalInfo(output *isc.AliasOutputWithID) (*approvalInfo, error) {
 	}
 	return &approvalInfo{
 		outputID:            output.ID(),
-		nextStateCommitment: l1Commitment.StateCommitment,
+		nextStateCommitment: l1Commitment.TrieRoot,
 		blockHash:           l1Commitment.BlockHash,
 	}, nil
 }

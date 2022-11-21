@@ -34,5 +34,5 @@ wal/
 ./snap-cli
 *.trie
 *.snapshot
-gascalibration
-snapshot
+./gascalibration
+./snapshot

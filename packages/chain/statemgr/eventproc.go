@@ -88,7 +88,7 @@ func (sm *stateManager) handleAliasOutput(output *isc.AliasOutputWithID) {
 		sm.log.Errorf("EventAliasOutput ignored: failed to parse state commitment: %v", err)
 		return
 	}
-	sm.log.Debugf("EventAliasOutput received: state commitment is %s", stateL1Commitment.StateCommitment)
+	sm.log.Debugf("EventAliasOutput received: state commitment is %s", stateL1Commitment.TrieRoot)
 	if sm.aliasOutputReceived(output) {
 		sm.takeAction()
 	}

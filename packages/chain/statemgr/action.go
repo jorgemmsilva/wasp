@@ -59,7 +59,7 @@ func (sm *stateManager) isSynced() bool {
 		sm.log.Errorf("isSynced: cannot obtain state commitment from state output: %v", err)
 		return false
 	}
-	return state.EqualCommitments(state.RootCommitment(sm.solidState.TrieNodeStore()), l1Commitment.StateCommitment)
+	return state.EqualCommitments(state.RootCommitment(sm.solidState.TrieNodeStore()), l1Commitment.TrieRoot)
 }
 
 func (sm *stateManager) pullStateIfNeeded() {
@@ -151,7 +151,7 @@ func (sm *stateManager) storeSyncingData() {
 		sm.log.Debugf("storeSyncingData failed: error calculating stateOutput state commitment: %v", err)
 		return
 	}
-	outputStateCommitment := outputStateL1Commitment.StateCommitment
+	outputStateCommitment := outputStateL1Commitment.TrieRoot
 	solidStateCommitment := state.RootCommitment(sm.solidState.TrieNodeStore())
 	sm.log.Debugf("storeSyncingData: storing values: Synced %v, SyncedBlockIndex %v, SyncedStateCommitment %s, SyncedStateTimestamp %v, StateOutputBlockIndex %v, StateOutputID %v, StateOutputCommitment %s, StateOutputTimestamp %v",
 		sm.isSynced(), sm.solidState.BlockIndex(), solidStateCommitment, sm.solidState.Timestamp(), sm.stateOutput.GetStateIndex(), isc.OID(sm.stateOutput.ID()), outputStateCommitment, sm.stateOutputTimestamp)

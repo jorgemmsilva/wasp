@@ -147,7 +147,7 @@ func (sm *stateManager) commitCandidates(candidates []*candidateBlock) {
 		block := candidate.getBlock()
 		blocks[i] = block
 		calculatedStateCommitment := state.RootCommitment(calculatedState.TrieNodeStore())
-		candidatePrevStateCommitment := block.PreviousL1Commitment().StateCommitment
+		candidatePrevStateCommitment := block.PreviousL1Commitment().TrieRoot
 		if !state.EqualCommitments(candidatePrevStateCommitment, calculatedStateCommitment) {
 			sm.log.Errorf("commitCandidates: candidate index %v previous state commitment does not match calculated state commitment: %s != %s",
 				block.BlockIndex(), candidatePrevStateCommitment, calculatedStateCommitment)

@@ -117,37 +117,37 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 	require.NoError(ch.Env.T, err)
 
 	anchor, _, err := transaction.GetAnchorFromTransaction(tx)
+	require.NoError(ch.Env.T, err)
 
 	if task.RotationAddress == nil {
 		// normal state transition
 		ch.settleStateTransition(tx, task.GetProcessedRequestIDs(), task.StateDraft)
 	} else {
-		require.NoError(ch.Env.T, err)
-
 		ch.Log().Infof("ROTATED STATE CONTROLLER to %s", anchor.StateController)
 	}
 
 	rootC := ch.GetRootCommitment()
 	l1C := ch.GetL1Commitment()
-	require.True(ch.Env.T, state.EqualCommitments(rootC, l1C.StateCommitment))
+	require.True(ch.Env.T, state.EqualCommitments(rootC, l1C.TrieRoot))
 
 	return task.Results
 }
 
 func (ch *Chain) settleStateTransition(stateTx *iotago.Transaction, reqids []isc.RequestID, stateDraft state.StateDraft) {
 	block := ch.Store.Commit(stateDraft)
-	ch.Store.SetLatest(block.TrieRoot())
+	err := ch.Store.SetLatest(block.TrieRoot())
+	if err != nil {
+		panic(err)
+	}
 
 	anchor, stateOutput, err := transaction.GetAnchorFromTransaction(stateTx)
 	require.NoError(ch.Env.T, err)
-
-	ch.Store.SetApprovingOutputID(block.TrieRoot(), anchor.OutputID.UTXOInput())
 
 	chain.PublishStateTransition(ch.ChainID, isc.NewAliasOutputWithID(stateOutput, anchor.OutputID.UTXOInput()), len(reqids))
 	chain.PublishRequestsSettled(ch.ChainID, anchor.StateIndex, reqids)
 
 	ch.Log().Infof("state transition --> #%d. Requests in the block: %d. Outputs: %d",
-		ch.Store.LatestBlockIndex(), len(reqids), len(stateTx.Essence.Outputs))
+		stateDraft.BlockIndex, len(reqids), len(stateTx.Essence.Outputs))
 	ch.Log().Debugf("Batch processed: %s", batchShortStr(reqids))
 
 	ch.mempool.RemoveRequests(reqids...)

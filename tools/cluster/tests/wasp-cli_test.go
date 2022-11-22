@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/vmtypes"
 )
@@ -90,11 +90,13 @@ func TestWaspCLI1Chain(t *testing.T) {
 
 func checkBalance(t *testing.T, out []string, expected int) {
 	amount := 0
-	r := regexp.MustCompile(`(?i).*base( tokens:)?\s+(\d+).*`).FindStringSubmatch(strings.Join(out, ""))
+	// regex example: base tokens 1000000
+	//				  -----  ------token  amount-----  ------base   1364700
+	r := regexp.MustCompile(`.*(?i:base)\s*(?i:tokens)?:*\s*(\d+).*`).FindStringSubmatch(strings.Join(out, ""))
 	if r == nil {
 		panic("couldn't check balance")
 	}
-	amount, err := strconv.Atoi(r[2])
+	amount, err := strconv.Atoi(r[1])
 	require.NoError(t, err)
 	require.GreaterOrEqual(t, amount, expected)
 }
@@ -256,7 +258,7 @@ func TestWaspCLIBlockLog(t *testing.T) {
 	for _, line := range out {
 		if strings.Contains(line, "foo") {
 			found = true
-			require.Contains(t, line, hexutil.Encode([]byte("bar")))
+			require.Contains(t, line, iotago.EncodeHex([]byte("bar")))
 			break
 		}
 	}

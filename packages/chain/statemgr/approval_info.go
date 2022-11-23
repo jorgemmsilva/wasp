@@ -7,14 +7,13 @@ import (
 	"fmt"
 
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
 )
 
 type approvalInfo struct {
 	outputID            *iotago.UTXOInput
-	nextStateCommitment common.VCommitment
+	nextStateCommitment trie.VCommitment
 	blockHash           state.BlockHash
 }
 
@@ -30,7 +29,7 @@ func newApprovalInfo(output *isc.AliasOutputWithID) (*approvalInfo, error) {
 	}, nil
 }
 
-func (aiT *approvalInfo) getNextStateCommitment() common.VCommitment {
+func (aiT *approvalInfo) getNextStateCommitment() trie.VCommitment {
 	return aiT.nextStateCommitment
 }
 

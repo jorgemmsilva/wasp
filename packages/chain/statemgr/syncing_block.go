@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/iotaledger/hive.go/core/logger"
-	"github.com/iotaledger/trie.go/common"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
 )
@@ -64,7 +63,7 @@ func (syncT *syncingBlock) getApprovedBlockCandidateHash() state.BlockHash {
 	return syncT.approvalInfo.getBlockHash()
 }
 
-func (syncT *syncingBlock) getNextStateCommitment() common.VCommitment {
+func (syncT *syncingBlock) getNextStateCommitment() trie.VCommitment {
 	if syncT.approvalInfo == nil {
 		return nil
 	}

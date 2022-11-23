@@ -53,7 +53,7 @@ func (b *jsonRPCWaspBackend) RequestIDByTransactionHash(txHash common.Hash) (isc
 
 func (b *jsonRPCWaspBackend) EVMGasRatio() (util.Ratio32, error) {
 	// TODO: Cache the gas ratio?
-	ret, err := b.ISCCallView(evm.Contract.Name, evm.FuncGetGasRatio.Name, nil)
+	ret, err := b.ISCCallView(b.ISCLatestBlockIndex(), evm.Contract.Name, evm.FuncGetGasRatio.Name, nil)
 	if err != nil {
 		return util.Ratio32{}, err
 	}
@@ -100,8 +100,12 @@ func (b *jsonRPCWaspBackend) EVMEstimateGas(callMsg ethereum.CallMsg) (uint64, e
 	return chainutil.EstimateGas(b.chain, callMsg)
 }
 
-func (b *jsonRPCWaspBackend) ISCCallView(scName, funName string, args dict.Dict) (dict.Dict, error) {
-	return chainutil.CallView(b.chain, isc.Hn(scName), isc.Hn(funName), args)
+func (b *jsonRPCWaspBackend) ISCCallView(iscBlockIndex uint32, scName, funName string, args dict.Dict) (dict.Dict, error) {
+	return chainutil.CallViewAtBlockIndex(b.chain, iscBlockIndex, isc.Hn(scName), isc.Hn(funName), args)
+}
+
+func (b *jsonRPCWaspBackend) ISCLatestBlockIndex() uint32 {
+	return b.chain.LatestBlockIndex()
 }
 
 func (b *jsonRPCWaspBackend) BaseToken() *parameters.BaseToken {

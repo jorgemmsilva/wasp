@@ -9,6 +9,16 @@ import (
 
 	"golang.org/x/crypto/blake2b"
 
+	// <<<<<<< HEAD
+	// =======
+	// 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
+	// 	"github.com/iotaledger/hive.go/serializer/v2"
+	// 	iotago "github.com/iotaledger/iota.go/v3"
+	// 	"github.com/iotaledger/wasp/packages/isc"
+	// 	"github.com/iotaledger/wasp/packages/kv"
+	// >>>>>>> gpa-mp
+	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -58,6 +68,13 @@ func BlockFromBytes(blockBytes []byte) (*block, error) {
 
 func (b *block) Mutations() *buffered.Mutations {
 	return b.mutations
+}
+
+func (b *block) MutationsReader() kv.KVStoreReader {
+	return buffered.NewBufferedKVStoreForMutations(
+		kv.NewHiveKVStoreReader(mapdb.NewMapDB()),
+		b.mutations,
+	)
 }
 
 func (b *block) TrieRoot() trie.VCommitment {

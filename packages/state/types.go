@@ -78,6 +78,7 @@ type Store interface {
 // Blocks are immutable.
 type Block interface {
 	Mutations() *buffered.Mutations
+	MutationsReader() kv.KVStoreReader
 	TrieRoot() trie.VCommitment
 	PreviousL1Commitment() *L1Commitment
 	// L1Commitment contains the TrieRoot + block Hash

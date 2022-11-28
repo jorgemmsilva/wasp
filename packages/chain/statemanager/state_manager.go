@@ -1,3 +1,6 @@
+// TODO: no BlockIndex in state.Block()
+// TODO: Equals for state.Block()
+
 package statemanager
 
 import (

@@ -24,6 +24,13 @@ func NewBufferedKVStoreAccess(r kv.KVStoreReader) *BufferedKVStoreAccess {
 	}
 }
 
+func NewBufferedKVStoreAccessForMutations(r kv.KVStoreReader, m *Mutations) *BufferedKVStoreAccess {
+	return &BufferedKVStoreAccess{
+		r:    r,
+		muts: m,
+	}
+}
+
 func (b *BufferedKVStoreAccess) Copy() *BufferedKVStoreAccess {
 	return &BufferedKVStoreAccess{
 		r:    b.r,

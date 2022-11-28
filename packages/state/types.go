@@ -58,6 +58,7 @@ type Block interface {
 	SetApprovingOutputID(*iotago.UTXOInput)
 	Timestamp() time.Time
 	PreviousL1Commitment() *L1Commitment
+	MutationsReader() kv.KVStoreReader
 	GetHash() BlockHash
 	Bytes() []byte
 	Equals(Block) bool

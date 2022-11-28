@@ -9,9 +9,11 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/xerrors"
 
+	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/util"
 )
@@ -59,6 +61,13 @@ func (b *blockImpl) String() string {
 	ret += fmt.Sprintf("timestamp: %v\n", b.Timestamp())
 	ret += fmt.Sprintf("state update: %s\n", (*b.stateUpdate).String())
 	return ret
+}
+
+func (b *blockImpl) MutationsReader() kv.KVStoreReader {
+	return buffered.NewBufferedKVStoreAccessForMutations(
+		kv.NewHiveKVStoreReader(mapdb.NewMapDB()),
+		b.stateUpdate.mutations,
+	)
 }
 
 func (b *blockImpl) ApprovingOutputID() *iotago.UTXOInput {

@@ -1,8 +1,3 @@
-// TODO: state.State neturi L1Commitment tik TrieRoot
-// TODO: state.Store Commit vis dar negrąžina klaidos
-// TODO: state.StateDraft PreviousL1Commitment ir BaseL1Commitment?
-// TODO: ar gali ConsensusProducedBlock atiduoti L1Commitment naujo bloko pasitikrinimui?
-
 package statemanager
 
 import (
@@ -11,6 +6,7 @@ import (
 
 	"github.com/iotaledger/hive.go/core/logger"
 	//consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
+	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smInputs"
@@ -26,6 +22,7 @@ import (
 
 type StateMgr interface {
 	ConsGrStateMgr //TODO: TEMPORARY CHANGE, revert to ---> consGR.StateMgr
+	mempool.StateMgr
 	// Invoked by the chain when new confirmed alias output is received.
 	// This event should be used to mark blocks as confirmed.
 	ReceiveConfirmedAliasOutput(aliasOutput *isc.AliasOutputWithID)
@@ -109,6 +106,10 @@ func New(
 // -------------------------------------
 // Implementations of node.ChainStateMgr
 // -------------------------------------
+
+func (smT *stateManager) MempoolStateRequest(ctx context.Context, prevAO, nextAO *isc.AliasOutputWithID) (vs state.VirtualStateAccess, added, removed []state.Block) {
+	panic("to be implemented")
+}
 
 func (smT *stateManager) ReceiveConfirmedAliasOutput(aliasOutput *isc.AliasOutputWithID) {
 	smT.addInput(smInputs.NewChainReceiveConfirmedAliasOutput(aliasOutput))
@@ -222,8 +223,11 @@ func (smT *stateManager) handleTimerTick(now time.Time) {
 	smT.handleInput(smInputs.NewStateManagerTimerTick(now))
 }
 
-func (smT *stateManager) sendMessages(msgs gpa.OutMessages) {
-	msgs.MustIterate(func(msg gpa.Message) {
+func (smT *stateManager) sendMessages(outMsgs gpa.OutMessages) {
+	if outMsgs == nil {
+		return
+	}
+	outMsgs.MustIterate(func(msg gpa.Message) {
 		msgData, err := msg.MarshalBinary()
 		if err != nil {
 			smT.log.Warnf("Failed to marshal message for sending: %v", err)

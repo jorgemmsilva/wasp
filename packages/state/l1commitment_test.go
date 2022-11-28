@@ -12,6 +12,6 @@ func TestL1Commitment(t *testing.T) {
 	data := sc.Bytes()
 	scBack, err := L1CommitmentFromBytes(data)
 	require.NoError(t, err)
-	require.True(t, EqualCommitments(sc.GetTrieRoot(), scBack.GetTrieRoot()))
+	require.True(t, sc.GetTrieRoot().Equals(scBack.GetTrieRoot()))
 	require.True(t, sc.GetBlockHash().Equals(scBack.GetBlockHash()))
 }

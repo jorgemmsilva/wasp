@@ -12,9 +12,6 @@ import (
 	"golang.org/x/xerrors"
 
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/trie.go/common"
-	"github.com/iotaledger/trie.go/models/trie_blake2b"
-	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -22,6 +19,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/errors"
@@ -473,7 +471,7 @@ func (ch *Chain) CallViewByHnameAtBlockIndex(blockIndex uint32, hContract, hFunc
 }
 
 // GetMerkleProofRaw returns Merkle proof of the key in the state
-func (ch *Chain) GetMerkleProofRaw(key []byte) *trie_blake2b.MerkleProof {
+func (ch *Chain) GetMerkleProofRaw(key []byte) *trie.MerkleProof {
 	ch.Log().Debugf("GetMerkleProof")
 
 	ch.runVMMutex.Lock()
@@ -486,7 +484,7 @@ func (ch *Chain) GetMerkleProofRaw(key []byte) *trie_blake2b.MerkleProof {
 }
 
 // GetBlockProof returns Merkle proof of the key in the state
-func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie_blake2b.MerkleProof, error) {
+func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie.MerkleProof, error) {
 	ch.Log().Debugf("GetBlockProof")
 
 	ch.runVMMutex.Lock()
@@ -506,7 +504,7 @@ func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie_bl
 }
 
 // GetMerkleProof return the merkle proof of the key in the smart contract. Assumes Merkle model is used
-func (ch *Chain) GetMerkleProof(scHname isc.Hname, key []byte) *trie_blake2b.MerkleProof {
+func (ch *Chain) GetMerkleProof(scHname isc.Hname, key []byte) *trie.MerkleProof {
 	return ch.GetMerkleProofRaw(kv.Concat(scHname, key))
 }
 
@@ -519,7 +517,7 @@ func (ch *Chain) GetL1Commitment() *state.L1Commitment {
 }
 
 // GetRootCommitment returns the root commitment of the latest state index
-func (ch *Chain) GetRootCommitment() common.VCommitment {
+func (ch *Chain) GetRootCommitment() trie.VCommitment {
 	block, err := ch.Store.LatestBlock()
 	require.NoError(ch.Env.T, err)
 	return block.TrieRoot()
@@ -532,7 +530,7 @@ func (ch *Chain) GetContractStateCommitment(hn isc.Hname) ([]byte, error) {
 }
 
 // WaitUntil waits until the condition specified by the given predicate yields true
-func (ch *Chain) WaitUntil(p func(mempool.MempoolInfo) bool, maxWait ...time.Duration) bool {
+func (ch *Chain) WaitUntil(p func(MempoolInfo) bool, maxWait ...time.Duration) bool {
 	maxw := 10 * time.Second
 	var deadline time.Time
 	if len(maxWait) > 0 {
@@ -575,12 +573,12 @@ func (ch *Chain) WaitUntilMempoolIsEmpty(timeout ...time.Duration) bool {
 // WaitForRequestsThrough waits for the moment when counters for incoming requests and removed
 // requests in the mempool of the chain both become equal to the specified number
 func (ch *Chain) WaitForRequestsThrough(numReq int, maxWait ...time.Duration) bool {
-	return ch.WaitUntil(func(mstats mempool.MempoolInfo) bool {
+	return ch.WaitUntil(func(mstats MempoolInfo) bool {
 		return mstats.OutPoolCounter == numReq
 	}, maxWait...)
 }
 
 // MempoolInfo returns stats about the chain mempool
-func (ch *Chain) MempoolInfo() mempool.MempoolInfo {
+func (ch *Chain) MempoolInfo() MempoolInfo {
 	return ch.mempool.Info()
 }

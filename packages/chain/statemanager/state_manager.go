@@ -107,7 +107,7 @@ func New(
 // Implementations of node.ChainStateMgr
 // -------------------------------------
 
-func (smT *stateManager) MempoolStateRequest(ctx context.Context, prevAO, nextAO *isc.AliasOutputWithID) (vs state.VirtualStateAccess, added, removed []state.Block) {
+func (smT *stateManager) MempoolStateRequest(ctx context.Context, prevAO, nextAO *isc.AliasOutputWithID) (vs state.State, added, removed []state.Block) {
 	panic("to be implemented")
 }
 

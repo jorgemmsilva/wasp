@@ -1,65 +1,84 @@
 package smGPA
 
 import (
+	"fmt"
+
+	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smInputs"
 	"github.com/iotaledger/wasp/packages/state"
 )
 
 type stateBlockRequest struct {
-	lastBlockHash  state.BlockHash
-	lastBlockIndex uint32 // TODO: temporary field. Remove it after DB refactoring.
-	priority       uint32
-	done           bool
-	blocks         []state.Block
-	isValidFun     isValidFun
-	respondFun     respondFun
+	lastL1Commitment *state.L1Commitment
+	done             bool
+	blocks           []state.Block
+	isValidFun       isValidFun
+	respondFun       respondFun
+	log              *logger.Logger
+	rType            string
+	id               blockRequestID
 }
 
 type isValidFun func() bool
 
-type respondFun func([]state.Block, state.VirtualStateAccess) // TODO: blocks parameter should probably be removed after DB refactoring
+type respondFun func(obtainStateFun)
 
 var _ blockRequest = &stateBlockRequest{}
 
-func newStateBlockRequestTemplate() *stateBlockRequest {
+func newStateBlockRequestTemplate(rType string, log *logger.Logger, id blockRequestID) *stateBlockRequest {
 	return &stateBlockRequest{
 		done:   false,
 		blocks: make([]state.Block, 0),
+		log:    log.Named(fmt.Sprintf("r%s-%v", rType, id)),
+		rType:  rType,
+		id:     id,
 	}
 }
 
-func newStateBlockRequestFromConsensus(input *smInputs.ConsensusDecidedState) *stateBlockRequest {
-	result := newStateBlockRequestTemplate()
-	result.lastBlockHash = input.GetStateCommitment().BlockHash
-	result.lastBlockIndex = input.GetBlockIndex()
-	result.priority = topPriority
+func newStateBlockRequestFromConsensusStateProposal(input *smInputs.ConsensusStateProposal, log *logger.Logger, id blockRequestID) *stateBlockRequest {
+	result := newStateBlockRequestTemplate("scsp", log, id)
+	result.lastL1Commitment = input.GetL1Commitment()
 	result.isValidFun = func() bool {
 		return input.IsValid()
 	}
-	result.respondFun = func(_ []state.Block, vState state.VirtualStateAccess) {
-		input.Respond(vState)
+	result.respondFun = func(obtainStateFun obtainStateFun) {
+		input.Respond()
 	}
+	result.log.Debugf("State block request from consensus state proposal id %v for block %s is created", result.id, result.lastL1Commitment)
 	return result
 }
 
-func newStateBlockRequestLocal(bi uint32, bh state.BlockHash, priority uint32, respondFun respondFun) *stateBlockRequest {
-	result := newStateBlockRequestTemplate()
-	result.lastBlockHash = bh
-	result.lastBlockIndex = bi
-	result.priority = priority
+func newStateBlockRequestFromConsensusDecidedState(input *smInputs.ConsensusDecidedState, log *logger.Logger, id blockRequestID) *stateBlockRequest {
+	result := newStateBlockRequestTemplate("scds", log, id)
+	result.lastL1Commitment = input.GetL1Commitment()
+	result.isValidFun = func() bool {
+		return input.IsValid()
+	}
+	result.respondFun = func(obtainStateFun obtainStateFun) {
+		state, err := obtainStateFun()
+		if err != nil {
+			result.log.Errorf("Error obtaining state: %v", err)
+			return
+		}
+		input.Respond(state)
+	}
+	result.log.Debugf("State block request from consensus decided state id %v for block %s is created", result.id, result.lastL1Commitment)
+	return result
+}
+
+func newStateBlockRequestLocal(commitment *state.L1Commitment, respondFun respondFun, log *logger.Logger, id blockRequestID) *stateBlockRequest {
+	result := newStateBlockRequestTemplate("sl", log, id)
+	result.lastL1Commitment = commitment
 	result.isValidFun = func() bool {
 		return true
 	}
 	result.respondFun = respondFun
+	result.log.Debugf("Local state block request id %v for block %s is created", result.id, result.lastL1Commitment)
 	return result
 }
 
-func (sbrT *stateBlockRequest) getLastBlockHash() state.BlockHash {
-	return sbrT.lastBlockHash
-}
-
-func (sbrT *stateBlockRequest) getLastBlockIndex() uint32 { // TODO: temporary function. Remove it after DB refactoring.
-	return sbrT.lastBlockIndex
+func (sbrT *stateBlockRequest) getLastL1Commitment() *state.L1Commitment {
+	return sbrT.lastL1Commitment
 }
 
 func (sbrT *stateBlockRequest) isValid() bool {
@@ -69,38 +88,30 @@ func (sbrT *stateBlockRequest) isValid() bool {
 	return sbrT.isValidFun()
 }
 
-func (sbrT *stateBlockRequest) getPriority() uint32 {
-	return sbrT.priority
-}
-
 func (sbrT *stateBlockRequest) blockAvailable(block state.Block) {
+	sbrT.log.Debugf("State block request received block %s, appending it to chain", block.L1Commitment())
 	sbrT.blocks = append(sbrT.blocks, block)
 }
 
-func (sbrT *stateBlockRequest) markCompleted(createBaseStateFun createStateFun) {
+func (sbrT *stateBlockRequest) getBlockChain() []state.Block {
+	return sbrT.blocks
+}
+
+func (sbrT *stateBlockRequest) markCompleted(obtainStateFun obtainStateFun) {
 	if sbrT.isValid() {
+		sbrT.log.Debugf("State block request is valid, marking it completed and responding")
 		sbrT.done = true
-		baseState, err := createBaseStateFun()
-		if err != nil {
-			// Something failed in creating the base state. Just forget the request.
-			return
-		}
-		if baseState == nil {
-			// No need to respond. Just do nothing.
-			return
-		}
-		vState := baseState
-		for i := len(sbrT.blocks) - 1; i >= 0; i-- {
-			calculatedStateCommitment := state.RootCommitment(vState.TrieNodeStore())
-			if !state.EqualCommitments(calculatedStateCommitment, sbrT.blocks[i].PreviousL1Commitment().TrieRoot) {
-				return
-			}
-			err := vState.ApplyBlock(sbrT.blocks[i])
-			if err != nil {
-				return
-			}
-			vState.Commit() // TODO: is it needed
-		}
-		sbrT.respondFun(sbrT.blocks, vState)
+		sbrT.respondFun(obtainStateFun)
+		sbrT.log.Debugf("Responded")
+	} else {
+		sbrT.log.Debugf("State block request is not valid, ignoring mark completed call")
 	}
+}
+
+func (sbrT *stateBlockRequest) getType() string {
+	return sbrT.rType
+}
+
+func (sbrT *stateBlockRequest) getID() blockRequestID {
+	return sbrT.id
 }

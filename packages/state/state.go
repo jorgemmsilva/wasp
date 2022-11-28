@@ -30,6 +30,10 @@ func newState(db *storeDB, root trie.VCommitment) (*state, error) {
 	}, nil
 }
 
+func (s *state) L1Commitment() *L1Commitment {
+	return nil // TODO
+}
+
 func (s *state) TrieRoot() trie.VCommitment {
 	return s.trieReader.Root()
 }
@@ -85,5 +89,5 @@ func loadPrevL1CommitmentFromState(chainState kv.KVStoreReader) *L1Commitment {
 	mustNoErr(err)
 	l1c, err := L1CommitmentFromBytes(data)
 	mustNoErr(err)
-	return &l1c
+	return l1c
 }

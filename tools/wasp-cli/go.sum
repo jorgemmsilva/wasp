@@ -348,8 +348,6 @@ github.com/iotaledger/iota.go v1.0.0 h1:tqm1FxJ/zOdzbrAaQ5BQpVF8dUy2eeGlSeWlNG8G
 github.com/iotaledger/iota.go v1.0.0/go.mod h1:RiKYwDyY7aCD1L0YRzHSjOsJ5mUR9yvQpvhZncNcGQI=
 github.com/iotaledger/iota.go/v3 v3.0.0-rc.1 h1:2WCARL7b+7kecVqAsoBXuSt7R5nTDUDXtRPf4GP9AVo=
 github.com/iotaledger/iota.go/v3 v3.0.0-rc.1/go.mod h1:R3m6d5AFI0I++HOaYQR7QU8hY//vUSwbOyqQ7Bco2O4=
-github.com/iotaledger/trie.go v0.0.0-20221020134250-2142ee617d11 h1:6ZeCx+0IbU33DUVELoawVYckSPVdl7tofJdz2o4FD+M=
-github.com/iotaledger/trie.go v0.0.0-20221020134250-2142ee617d11/go.mod h1:PiH9j3MVFwSwF/5Ttcwgz1PatJYggmmGb4H3UZGueJo=
 github.com/iris-contrib/blackfriday v2.0.0+incompatible/go.mod h1:UzZ2bDEoaSGPbkg6SAB4att1aAwTmVIx/5gCVqeyUdI=
 github.com/iris-contrib/go.uuid v2.0.0+incompatible/go.mod h1:iz2lgM/1UnEf1kP0L/+fafWORmlnuysV2EMP8MW+qe0=
 github.com/iris-contrib/i18n v0.0.0-20171121225848-987a633949d0/go.mod h1:pMCz62A0xJL6I+umB2YTlFRwWXaDFA0jy+5HzGiJjqI=

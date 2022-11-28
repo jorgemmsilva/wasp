@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/iotaledger/hive.go/core/kvstore"
 	"github.com/iotaledger/hive.go/core/logger"
-	consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
+	//consGR "github.com/iotaledger/wasp/packages/chain/aaa2/cons/gr"
 	"github.com/iotaledger/wasp/packages/chain/aaa2/mempool"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
@@ -22,7 +21,7 @@ import (
 )
 
 type StateMgr interface {
-	consGR.StateMgr
+	ConsGrStateMgr //TODO: TEMPORARY CHANGE, revert to ---> consGR.StateMgr
 	mempool.StateMgr
 	// Invoked by the chain when new confirmed alias output is received.
 	// This event should be used to mark blocks as confirmed.
@@ -61,7 +60,7 @@ func New(
 	peerPubKeys []*cryptolib.PublicKey,
 	net peering.NetworkProvider,
 	wal smGPAUtils.BlockWAL,
-	store kvstore.KVStore,
+	store state.Store,
 	log *logger.Logger,
 ) (StateMgr, error) {
 	smLog := log.Named("sm")
@@ -133,14 +132,14 @@ func (smT *stateManager) ConsensusStateProposal(ctx context.Context, aliasOutput
 }
 
 // ConsensusDecidedState asks State manager to return a virtual state vith stateCommitment as its state commitment
-func (smT *stateManager) ConsensusDecidedState(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan *consGR.StateMgrDecidedState {
+func (smT *stateManager) ConsensusDecidedState(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan state.State {
 	input, resultCh := smInputs.NewConsensusDecidedState(ctx, aliasOutput)
 	smT.addInput(input)
 	return resultCh
 }
 
-func (smT *stateManager) ConsensusProducedBlock(ctx context.Context, block state.Block) <-chan error {
-	input, resultCh := smInputs.NewChainBlockProduced(ctx, block)
+func (smT *stateManager) ConsensusProducedBlock(ctx context.Context, stateDraft state.StateDraft) <-chan error {
+	input, resultCh := smInputs.NewConsensusBlockProduced(ctx, stateDraft)
 	smT.addInput(input)
 	return resultCh
 }

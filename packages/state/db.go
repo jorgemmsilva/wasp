@@ -90,7 +90,7 @@ func (db *storeDB) hasBlock(root trie.VCommitment) bool {
 
 func (db *storeDB) addBlock(block Block) {
 	prev := block.PreviousL1Commitment()
-	if prev != nil && !db.mustHas(keyBlockByTrieRoot(prev.TrieRoot)) {
+	if prev != nil && !db.mustHas(keyBlockByTrieRoot(prev.GetTrieRoot())) {
 		panic("cannot add block to store: previous block not found")
 	}
 	db.saveBlock(block)

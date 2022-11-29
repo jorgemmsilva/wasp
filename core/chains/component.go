@@ -76,17 +76,17 @@ func provide(c *dig.Container) error {
 		Chains *chains.Chains
 	}
 
-	if err := c.Provide(func(deps chainsDeps) chainsResult {
+	if err := c.Provide(func(chDeps chainsDeps) chainsResult {
 		return chainsResult{
 			Chains: chains.New(
 				CoreComponent.Logger(),
-				deps.NodeConnection,
-				deps.ProcessorsConfig,
+				chDeps.NodeConnection,
+				chDeps.ProcessorsConfig,
 				ParamsChains.BroadcastUpToNPeers,
 				ParamsChains.BroadcastInterval,
 				ParamsChains.PullMissingRequestsFromCommittee,
-				deps.DefaultNetworkProvider,
-				deps.DatabaseManager.GetOrCreateKVStore,
+				chDeps.DefaultNetworkProvider,
+				chDeps.DatabaseManager.GetOrCreateKVStore,
 				ParamsRawBlocks.Enabled,
 				ParamsRawBlocks.Directory,
 			),
@@ -100,23 +100,12 @@ func provide(c *dig.Container) error {
 
 func run() error {
 	err := CoreComponent.Daemon().BackgroundWorker(CoreComponent.Name, func(ctx context.Context) {
-		if err := deps.Chains.ActivateAllFromRegistry(
-			func() registry.Registry {
-				return deps.DefaultRegistry
-			},
-			deps.Metrics,
-		); err != nil {
-			CoreComponent.LogErrorf("failed to read chain activation records from registry: %v", err)
+		if err := deps.Chains.Run(ctx, deps.DefaultRegistry, deps.Metrics); err != nil {
+			CoreComponent.LogErrorf("failed to start chains: %v", err)
 			return
 		}
 
 		<-ctx.Done()
-
-		CoreComponent.LogInfo("dismissing chains...")
-		go func() {
-			deps.Chains.Dismiss()
-			CoreComponent.LogInfo("dismissing chains... Done")
-		}()
 	}, parameters.PriorityChains)
 	if err != nil {
 		CoreComponent.LogError(err)

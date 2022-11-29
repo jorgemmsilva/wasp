@@ -24,7 +24,7 @@ import (
 )
 
 type StateMgr interface {
-	ConsGrStateMgr  //TODO: TEMPORARY CHANGE, revert to ---> consGR.StateMgr
+	ConsGrStateMgr //TODO: TEMPORARY CHANGE, revert to ---> consGR.StateMgr
 	MempoolStateMgr //TODO: TEMPORARY CHANGE, revert to ---> mempool.StateMgr
 	// Invoked by the chain when new confirmed alias output is received.
 	// This event should be used to mark blocks as confirmed.

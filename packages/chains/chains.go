@@ -4,6 +4,7 @@
 package chains
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -11,13 +12,13 @@ import (
 
 	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/wasp/packages/chain"
-	"github.com/iotaledger/wasp/packages/chain/chainimpl"
 	"github.com/iotaledger/wasp/packages/database/dbmanager"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/metrics/nodeconnmetrics"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
+	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 )
 
@@ -32,6 +33,8 @@ func (chains Provider) ChainProvider() func(chainID *isc.ChainID) chain.Chain {
 type ChainProvider func(chainID *isc.ChainID) chain.Chain
 
 type Chains struct {
+	ctx                              context.Context
+	ctxCancel                        context.CancelFunc
 	log                              *logger.Logger
 	nodeConnection                   chain.NodeConnection
 	processorConfig                  *processors.Config
@@ -42,12 +45,20 @@ type Chains struct {
 	getOrCreateKVStore               dbmanager.ChainKVStoreProvider
 	rawBlocksEnabled                 bool
 	rawBlocksDir                     string
+	registry                         registry.Registry
+	allMetrics                       *metrics.Metrics
 
 	mutex     sync.RWMutex
-	allChains map[isc.ChainID]chain.Chain
+	allChains map[isc.ChainID]*activeChain
+}
+
+type activeChain struct {
+	chain      chain.Chain
+	cancelFunc context.CancelFunc
 }
 
 func New(
+	ctx context.Context,
 	log *logger.Logger,
 	nodeConnection chain.NodeConnection,
 	processorConfig *processors.Config,
@@ -58,10 +69,15 @@ func New(
 	getOrCreateKVStore dbmanager.ChainKVStoreProvider,
 	rawBlocksEnabled bool,
 	rawBlocksDir string,
+	registryProvider registry.Provider,
+	allMetrics *metrics.Metrics,
 ) *Chains {
+	subCtx, subCancel := context.WithCancel(ctx)
 	ret := &Chains{
+		ctx:                              subCtx,
+		ctxCancel:                        subCancel,
 		log:                              log,
-		allChains:                        make(map[isc.ChainID]chain.Chain),
+		allChains:                        map[isc.ChainID]*activeChain{},
 		nodeConnection:                   nodeConnection,
 		processorConfig:                  processorConfig,
 		offledgerBroadcastUpToNPeers:     offledgerBroadcastUpToNPeers,
@@ -71,24 +87,29 @@ func New(
 		getOrCreateKVStore:               getOrCreateKVStore,
 		rawBlocksEnabled:                 rawBlocksEnabled,
 		rawBlocksDir:                     rawBlocksDir,
+		registry:                         registryProvider(),
+		allMetrics:                       allMetrics,
 	}
 	return ret
 }
 
+// This object can be disposed either by calling this function or by canceling the context passed to the constructor.
 func (c *Chains) Dismiss() {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
-	for _, ch := range c.allChains {
-		ch.Dismiss("shutdown")
+	for chainID, ch := range c.allChains {
+		ch.cancelFunc()
+		delete(c.allChains, chainID)
 	}
-	c.allChains = make(map[isc.ChainID]chain.Chain)
+	c.ctxCancel()
 }
 
-func (c *Chains) ActivateAllFromRegistry(registryProvider registry.Provider, allMetrics *metrics.Metrics) error {
-	chainRecords, err := registryProvider().GetChainRecords()
+// TODO: Why do we take these parameters here, and not in the constructor?
+func (c *Chains) ActivateAllFromRegistry() error {
+	chainRecords, err := c.registry.GetChainRecords()
 	if err != nil {
-		return err
+		return xerrors.Errorf("cannot read chain records: %w", err)
 	}
 
 	astr := make([]string, len(chainRecords))
@@ -97,89 +118,98 @@ func (c *Chains) ActivateAllFromRegistry(registryProvider registry.Provider, all
 	}
 	c.log.Debugf("loaded %d chain record(s) from registry: %+v", len(chainRecords), astr)
 
-	for _, chr := range chainRecords {
-		if chr.Active {
-			if err := c.Activate(chr, registryProvider, allMetrics); err != nil {
-				c.log.Errorf("cannot activate chain %s: %v", chr.ChainID, err)
+	for _, chainRecord := range chainRecords {
+		if _, ok := c.allChains[chainRecord.ChainID]; !ok && chainRecord.Active {
+			if err := c.Activate(&chainRecord.ChainID); err != nil {
+				c.log.Errorf("cannot activate chain %s: %v", chainRecord.ChainID, err)
 			}
 		}
 	}
 	return nil
 }
 
-// Activate activates chain on the Wasp node:
-// - creates chain object
-// - insert it into the runtime registry
-// - subscribes for related transactions in the L1 node
-func (c *Chains) Activate(chr *registry.ChainRecord, registryProvider registry.Provider, allMetrics *metrics.Metrics) error {
+// Activate activates chain on the Wasp node.
+func (c *Chains) Activate(chainID *isc.ChainID) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-
-	if !chr.Active {
-		return xerrors.Errorf("cannot activate chain for deactivated chain record")
-	}
-	ret, ok := c.allChains[chr.ChainID]
-	if ok && !ret.IsDismissed() {
-		c.log.Debugf("chain is already active: %s", chr.ChainID.String())
+	//
+	// Check, maybe it is already running.
+	if _, ok := c.allChains[*chainID]; ok {
+		c.log.Debugf("Chain %v is already activated", chainID.String())
 		return nil
 	}
-	// create new chain object
-	defaultRegistry := registryProvider()
-	chainKVStore := c.getOrCreateKVStore(&chr.ChainID)
-	chainMetrics := allMetrics.NewChainMetrics(&chr.ChainID)
-	newChain := chainimpl.NewChain(
-		&chr.ChainID,
-		c.log,
-		c.nodeConnection,
-		chainKVStore,
-		c.networkProvider,
-		defaultRegistry,
-		defaultRegistry,
-		c.processorConfig,
-		c.offledgerBroadcastUpToNPeers,
-		c.offledgerBroadcastInterval,
-		c.pullMissingRequestsFromCommittee,
-		chainMetrics,
-		defaultRegistry,
-		c.rawBlocksEnabled,
-		c.rawBlocksDir,
-	)
-	if newChain == nil {
-		return xerrors.New("Chains.Activate: failed to create chain object")
+	//
+	// Activate the chain in the persistent store, if it is not activated yet.
+	chainRecord, err := c.registry.GetChainRecordByChainID(chainID)
+	if err != nil {
+		return xerrors.Errorf("cannot get chain record for %v: %w", chainID, err)
 	}
-	c.allChains[chr.ChainID] = newChain
-	c.log.Infof("activated chain: %s", chr.ChainID.String())
+	if !chainRecord.Active {
+		if _, err := c.registry.ActivateChainRecord(chainID); err != nil {
+			return xerrors.Errorf("cannot activate chain: %w", err)
+		}
+	}
+	//
+	// Load or initialize new chain store.
+	chainKVStore := c.getOrCreateKVStore(chainID)
+	chainStore := state.NewStore(chainKVStore)
+	chainState, err := chainStore.LatestState()
+	chainIDInState, errChainID := chainState.Has(state.KeyChainID)
+	if err != nil || errChainID != nil || !chainIDInState {
+		chainStore = state.InitChainStore(chainKVStore)
+	}
+	// TODO: chainMetrics := c.allMetrics.NewChainMetrics(&chr.ChainID)
+	chainCtx, chainCancel := context.WithCancel(c.ctx)
+	newChain, err := chain.New(
+		chainCtx,
+		chainID,
+		chainStore,
+		nil, // TODO: c.nodeConnection,
+		c.registry.GetNodeIdentity(),
+		c.processorConfig,
+		c.networkProvider,
+		c.log,
+	)
+	if err != nil {
+		chainCancel()
+		return xerrors.Errorf("Chains.Activate: failed to create chain object: %w", err)
+	}
+	c.allChains[*chainID] = &activeChain{
+		chain:      newChain,
+		cancelFunc: chainCancel,
+	}
+	c.log.Infof("activated chain: %s", chainID.String())
 	return nil
 }
 
-// Deactivate deactivates chain in the node
-func (c *Chains) Deactivate(chr *registry.ChainRecord) error {
+// Deactivate chain in the node.
+func (c *Chains) Deactivate(chainID *isc.ChainID) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
-	ch, ok := c.allChains[chr.ChainID]
-	if !ok || ch.IsDismissed() {
-		c.log.Debugf("chain is not active: %s", chr.ChainID.String())
+	if _, err := c.registry.DeactivateChainRecord(chainID); err != nil {
+		return xerrors.Errorf("cannot deactivate chain %v: %w", chainID, err)
+	}
+
+	ch, ok := c.allChains[*chainID]
+	if !ok {
+		c.log.Debugf("chain is not active: %s", chainID.String())
 		return nil
 	}
-	ch.Dismiss("deactivate")
-	c.nodeConnection.UnregisterChain(&chr.ChainID)
-	c.log.Debugf("chain has been deactivated: %s", chr.ChainID.String())
+	ch.cancelFunc()
+	delete(c.allChains, *chainID)
+	c.log.Debugf("chain has been deactivated: %s", chainID.String())
 	return nil
 }
 
 // Get returns active chain object or nil if it doesn't exist
 // lazy unsubscribing
-func (c *Chains) Get(chainID *isc.ChainID, includeDeactivated ...bool) chain.Chain {
+func (c *Chains) Get(chainID *isc.ChainID) chain.Chain {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 
 	ret, ok := c.allChains[*chainID]
-
-	if len(includeDeactivated) > 0 && includeDeactivated[0] {
-		return ret
-	}
-	if ok && ret.IsDismissed() {
+	if !ok {
 		return nil
 	}
 	return ret

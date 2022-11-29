@@ -212,7 +212,7 @@ func (c *Chains) Get(chainID *isc.ChainID) chain.Chain {
 	if !ok {
 		return nil
 	}
-	return ret
+	return ret.chain
 }
 
 func (c *Chains) GetNodeConnectionMetrics() nodeconnmetrics.NodeConnectionMetrics {

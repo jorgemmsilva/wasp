@@ -260,3 +260,9 @@ func (j *consensusJournalImpl) AliasOutputPublished(consumed iotago.OutputID, pu
 func (j *consensusJournalImpl) AsBytes() ([]byte, error) {
 	return j.localView.AsBytes()
 }
+
+// AliasOutputConfirmed implements LocalView
+func (*consensusJournalImpl) AliasOutputConfirmed(confirmed *isc.AliasOutputWithID) {
+	// TODO implement?
+	panic("unimplemented")
+}

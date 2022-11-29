@@ -5,99 +5,74 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iotaledger/hive.go/core/events"
-	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/chain"
-	"github.com/iotaledger/wasp/packages/chain/messages"
 	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/metrics/nodeconnmetrics"
+	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/state"
 	util "github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
-	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/util/expiringcache"
-	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
+	"github.com/iotaledger/wasp/packages/vm/processors"
 	"github.com/iotaledger/wasp/packages/webapi/model"
 	"github.com/iotaledger/wasp/packages/webapi/routes"
 	"github.com/iotaledger/wasp/packages/webapi/testutil"
+	"go.uber.org/zap"
 )
 
 type mockedChain struct {
+	// TODO mock chaincore is deprecated, what should be used in its place?
 	*testchain.MockedChainCore
 }
 
+// chain.Chain implementation
+func (*mockedChain) GetCandidateNodes() []*governance.AccessNodeInfo {
+	panic("unimplemented")
+}
+
+func (*mockedChain) GetChainNodes() []peering.PeerStatusProvider {
+	panic("unimplemented")
+}
+
+func (*mockedChain) GetCommitteeInfo() *chain.CommitteeInfo {
+	panic("unimplemented")
+}
+
+func (*mockedChain) GetStateReader() state.Store {
+	panic("unimplemented")
+}
+
+func (*mockedChain) ID() *isc.ChainID {
+	panic("unimplemented")
+}
+
+func (*mockedChain) Log() *zap.SugaredLogger {
+	panic("unimplemented")
+}
+
+func (*mockedChain) Processors() *processors.Cache {
+	panic("unimplemented")
+}
+
+func (*mockedChain) ReceiveOffLedgerRequest(request isc.OffLedgerRequest, sender *cryptolib.PublicKey) {
+	panic("unimplemented")
+}
+
 var _ chain.Chain = &mockedChain{}
-
-// chain.ChainRequests implementation
-
-func (m *mockedChain) ResolveError(e *isc.UnresolvedVMError) (*isc.VMError, error) {
-	panic("implement me")
-}
-
-func (m *mockedChain) GetRequestReceipt(reqID isc.RequestID) (*blocklog.RequestReceipt, error) {
-	panic("implement me")
-}
-
-func (m *mockedChain) AttachToRequestProcessed(func(isc.RequestID)) (attachID *events.Closure) {
-	panic("implement me")
-}
-
-func (m *mockedChain) DetachFromRequestProcessed(attachID *events.Closure) {
-	panic("implement me")
-}
-
-// chain.ChainEntry implementation
-
-func (m *mockedChain) ReceiveTransaction(_ *iotago.Transaction) {
-	panic("implement me")
-}
-
-func (m *mockedChain) ReceiveState(_ *iotago.AliasOutput, _ time.Time) {
-	panic("implement me")
-}
-
-func (m *mockedChain) Dismiss(_ string) {
-	panic("implement me")
-}
-
-func (m *mockedChain) IsDismissed() bool {
-	panic("implement me")
-}
-
-// chain.ChainMetrics implementation
-
-func (m *mockedChain) GetNodeConnectionMetrics() nodeconnmetrics.NodeConnectionMessagesMetrics {
-	panic("implement me")
-}
-
-func (m *mockedChain) GetConsensusWorkflowStatus() chain.ConsensusWorkflowStatus {
-	panic("implement me")
-}
-
-func (m *mockedChain) GetConsensusPipeMetrics() chain.ConsensusPipeMetrics {
-	panic("implement me")
-}
-
-// chain.ChainRunner implementation
-
-func (*mockedChain) GetStore() state.Store {
-	panic("unimplemented")
-}
-
-func (*mockedChain) GetTimeData() time.Time {
-	panic("unimplemented")
-}
 
 // private methods
 
 func createMockedGetChain(t *testing.T) chains.ChainProvider {
 	return func(chainID *isc.ChainID) chain.Chain {
-		chainCore := testchain.NewMockedChainCore(t, chainID, testlogger.NewLogger(t))
-		chainCore.OnOffLedgerRequest(func(msg *messages.OffLedgerRequestMsgIn) {
-			t.Logf("Offledger request %v received", msg)
-		})
-		return &mockedChain{chainCore}
+		panic("TODO revisit")
+		return nil
+		// chainCore := testchain.NewMockedChainCore(t, chainID, testlogger.NewLogger(t))
+		// chainCore.OnOffLedgerRequest(func(msg *messages.OffLedgerRequestMsgIn) {
+		// t.Logf("Offledger request %v received", msg)
+		// })
+		// return &mockedChain{chainCore}
 	}
 }
 

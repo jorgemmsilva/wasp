@@ -128,6 +128,7 @@ func TestAccessNodes(t *testing.T) {
 	//
 	// Initially the state is empty.
 	res, err = chain.CallView(
+		chain.LatestBlockIndex(),
 		governance.Contract.Name,
 		governance.ViewGetChainNodes.Name,
 		governance.GetChainNodesRequest{}.AsDict(),
@@ -154,6 +155,7 @@ func TestAccessNodes(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err = chain.CallView(
+		chain.LatestBlockIndex(),
 		governance.Contract.Name,
 		governance.ViewGetChainNodes.Name,
 		governance.GetChainNodesRequest{}.AsDict(),
@@ -177,6 +179,7 @@ func TestAccessNodes(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err = chain.CallView(
+		chain.LatestBlockIndex(),
 		governance.Contract.Name,
 		governance.ViewGetChainNodes.Name,
 		governance.GetChainNodesRequest{}.AsDict(),
@@ -202,6 +205,7 @@ func TestAccessNodes(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err = chain.CallView(
+		chain.LatestBlockIndex(),
 		governance.Contract.Name,
 		governance.ViewGetChainNodes.Name,
 		governance.GetChainNodesRequest{}.AsDict(),

@@ -9,7 +9,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/xerrors"
 
-	"github.com/iotaledger/hive.go/marshalutil"
+	"github.com/iotaledger/hive.go/core/marshalutil"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/util"
@@ -132,7 +132,7 @@ func (s *L1Commitment) Read(r io.Reader) error {
 }
 
 func (s *L1Commitment) String() string {
-	return fmt.Sprintf("L1Commitment(%s, %s)", s.StateCommitment.String(), iotago.EncodeHex(s.BlockHash[:]))
+	return fmt.Sprintf("trie root: %s, block hash: %s", s.GetTrieRoot(), s.GetBlockHash())
 }
 
 func L1CommitmentFromAnchorOutput(o *iotago.AliasOutput) (*L1Commitment, error) {

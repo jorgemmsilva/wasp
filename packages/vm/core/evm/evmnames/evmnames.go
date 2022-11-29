@@ -28,8 +28,6 @@ const (
 
 	FuncRegisterERC20NativeToken = "registerERC20NativeToken"
 
-	FuncRegisterERC20NativeToken = "registerERC20NativeToken"
-
 	// block context
 	FuncOpenBlockContext  = "openBlockContext"
 	FuncCloseBlockContext = "closeBlockContext"

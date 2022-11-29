@@ -182,7 +182,7 @@ func (s *SoloSandbox) fnCall(args []byte) []byte {
 	}
 
 	_ = wasmhost.Connect(ctx.wasmHostOld)
-	res, err := ctx.Chain.CallView(ctx.scName, funcName, params)
+	res, err := ctx.Chain.CallView(ctx.Chain.LatestBlockIndex(), ctx.scName, funcName, params)
 	_ = wasmhost.Connect(ctx.wc)
 	ctx.Err = err
 	if ctx.Err != nil {

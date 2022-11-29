@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pangpanglabs/echoswagger/v2"
-	"github.com/prometheus/tsdb/wal"
 	"go.uber.org/dig"
 
 	"github.com/iotaledger/hive.go/core/app"
@@ -77,7 +76,6 @@ func provide(c *dig.Container) error {
 		dig.In
 
 		ShutdownHandler                  *shutdown.ShutdownHandler
-		WAL                              *wal.WAL
 		APICacheTTL                      time.Duration `name:"apiCacheTTL"`
 		PublisherPort                    int           `name:"publisherPort"`
 		Chains                           *chains.Chains
@@ -138,7 +136,6 @@ func provide(c *dig.Container) error {
 				deps.ShutdownHandler.SelfShutdown("wasp was shutdown via API", false)
 			},
 			deps.Metrics,
-			deps.WAL,
 			ParamsWebAPI.Auth,
 			ParamsWebAPI.NodeOwnerAddresses,
 			deps.APICacheTTL,

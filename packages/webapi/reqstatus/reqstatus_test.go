@@ -9,7 +9,6 @@ import (
 	"github.com/iotaledger/hive.go/core/events"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/chain"
-	"github.com/iotaledger/wasp/packages/chain/messages"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -51,10 +50,6 @@ func (m *mockChain) GetRequestReceipt(id isc.RequestID) (*blocklog.RequestReceip
 	}, nil
 }
 
-func (m *mockChain) GetRequestProcessingStatus(id isc.RequestID) chain.RequestProcessingStatus {
-	return chain.RequestProcessingStatusCompleted
-}
-
 func (m *mockChain) ResolveError(e *isc.UnresolvedVMError) (*isc.VMError, error) {
 	return nil, nil
 }
@@ -64,10 +59,6 @@ func (m *mockChain) AttachToRequestProcessed(func(isc.RequestID)) (attachID *eve
 }
 
 func (m *mockChain) DetachFromRequestProcessed(attachID *events.Closure) {
-	panic("not implemented")
-}
-
-func (m *mockChain) EnqueueOffLedgerRequestMsg(msg *messages.OffLedgerRequestMsgIn) {
 	panic("not implemented")
 }
 

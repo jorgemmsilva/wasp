@@ -427,8 +427,10 @@ func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptoli
 }
 
 func (ch *Chain) ResolveVMError(e *isc.UnresolvedVMError) *isc.VMError {
+	i, err := ch.Store.LatestBlockIndex()
+	require.NoError(ch.Env.T, err)
 	resolved, err := errors.Resolve(e, func(contractName string, funcName string, params dict.Dict) (dict.Dict, error) {
-		return ch.CallView(contractName, funcName, params)
+		return ch.CallView(i, contractName, funcName, params)
 	})
 	require.NoError(ch.Env.T, err)
 	return resolved
@@ -438,10 +440,8 @@ func (ch *Chain) ResolveVMError(e *isc.UnresolvedVMError) *isc.VMError {
 // The call params should be either a dict.Dict, or pairs of ('paramName',
 // 'paramValue') where 'paramName' is a string and 'paramValue' must be of type
 // accepted by the 'codec' package
-func (ch *Chain) CallView(scName, funName string, params ...interface{}) (dict.Dict, error) {
-	i, err := ch.Store.LatestBlockIndex()
-	require.NoError(ch.Env.T, err)
-	return ch.CallViewAtBlockIndex(i, scName, funName, params...)
+func (ch *Chain) CallView(iscBlockIndex uint32, scName, funName string, params ...interface{}) (dict.Dict, error) {
+	return ch.CallViewAtBlockIndex(iscBlockIndex, scName, funName, params...)
 }
 
 func (ch *Chain) CallViewAtBlockIndex(blockIndex uint32, scName, funName string, params ...interface{}) (dict.Dict, error) {
@@ -513,7 +513,7 @@ func (ch *Chain) GetL1Commitment() *state.L1Commitment {
 	anchorOutput := ch.GetAnchorOutput()
 	ret, err := state.L1CommitmentFromAnchorOutput(anchorOutput.GetAliasOutput())
 	require.NoError(ch.Env.T, err)
-	return &ret
+	return ret
 }
 
 // GetRootCommitment returns the root commitment of the latest state index

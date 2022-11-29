@@ -104,6 +104,11 @@ type Chain struct {
 	bypassStardustVM bool
 }
 
+// ReceiveOffLedgerRequest implements chain.Chain
+func (*Chain) ReceiveOffLedgerRequest(request isc.OffLedgerRequest, sender *cryptolib.PublicKey) {
+	panic("unimplemented")
+}
+
 var _ chain.ChainCore = &Chain{}
 
 type InitOptions struct {
@@ -269,12 +274,9 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 
 	chainlog := env.logger.Named(name)
 
-	store := state.InitChainStore(env.dbmanager.GetOrCreateKVStore(chainID))
-	// store, err := env.dbmanager.GetOrCreateChainStateKVStore(*chainID)
-	// require.NoError(env.T, err)
-
-	// vs, err := state.CreateOriginState(store, chainID)
-	// env.logger.Infof("     chain '%s'. origin state commitment: %s", chainID.String(), trie.RootCommitment(vs.TrieNodeStore()))
+	kvStore, err := env.dbmanager.GetOrCreateChainStateKVStore(*chainID)
+	require.NoError(env.T, err)
+	store := state.InitChainStore(kvStore)
 
 	{
 		block, err := store.LatestBlock()
@@ -486,18 +488,8 @@ func (ch *Chain) GetCommitteeInfo() *chain.CommitteeInfo {
 	panic("unimplemented")
 }
 
-// func (ch *Chain) StateCandidateToStateManager(trie.VCommitment, *iotago.UTXOInput) {
-// 	panic("unimplemented")
-// }
-
-// func (ch *Chain) TriggerChainTransition(*chain.ChainTransitionEventData) {
-// 	panic("unimplemented")
-// }
-
-func (ch *Chain) GetStateReader(blockIndex uint32) state.State {
-	state, err := ch.Store.StateByIndex(blockIndex)
-	require.NoError(ch.Env.T, err)
-	return state
+func (ch *Chain) GetStateReader() state.Store {
+	return ch.Store
 }
 
 func (ch *Chain) ID() *isc.ChainID {

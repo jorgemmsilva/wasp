@@ -139,7 +139,7 @@ func incrementSCCounter(t *testing.T, ch *solo.Chain) isc.RequestID {
 }
 
 func getEventsForRequest(t *testing.T, chain *solo.Chain, reqID isc.RequestID) []string {
-	res, err := chain.CallView(blocklog.Contract.Name, blocklog.ViewGetEventsForRequest.Name,
+	res, err := chain.CallView(chain.LatestBlockIndex(), blocklog.Contract.Name, blocklog.ViewGetEventsForRequest.Name,
 		blocklog.ParamRequestID, reqID,
 	)
 	require.NoError(t, err)
@@ -152,11 +152,11 @@ func getEventsForBlock(t *testing.T, chain *solo.Chain, blockNumber ...int32) []
 	var res dict.Dict
 	var err error
 	if len(blockNumber) > 0 {
-		res, err = chain.CallView(blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name,
+		res, err = chain.CallView(chain.LatestBlockIndex(), blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name,
 			blocklog.ParamBlockIndex, blockNumber[0],
 		)
 	} else {
-		res, err = chain.CallView(blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name)
+		res, err = chain.CallView(chain.LatestBlockIndex(), blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name)
 	}
 	require.NoError(t, err)
 	events, err := EventsViewResultToStringArray(res)
@@ -165,7 +165,7 @@ func getEventsForBlock(t *testing.T, chain *solo.Chain, blockNumber ...int32) []
 }
 
 func getEventsForSC(t *testing.T, chain *solo.Chain, fromBlock, toBlock int32) []string {
-	res, err := chain.CallView(blocklog.Contract.Name, blocklog.ViewGetEventsForContract.Name,
+	res, err := chain.CallView(chain.LatestBlockIndex(), blocklog.Contract.Name, blocklog.ViewGetEventsForContract.Name,
 		blocklog.ParamContractHname, inccounter.Contract.Hname(),
 		blocklog.ParamFromBlock, fromBlock,
 		blocklog.ParamToBlock, toBlock,

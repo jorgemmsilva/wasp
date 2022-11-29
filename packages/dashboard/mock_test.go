@@ -101,7 +101,7 @@ func (w *waspServicesMock) CallView(chainID *isc.ChainID, scName, fname string, 
 	if !ok {
 		return nil, xerrors.Errorf("chain not found")
 	}
-	return ch.CallView(scName, fname, args)
+	return ch.CallView(ch.GetLatestBlockInfo().BlockIndex, scName, fname, args)
 }
 
 func (w *waspServicesMock) GetChainCommitteeInfo(chainID *isc.ChainID) (*chain.CommitteeInfo, error) {

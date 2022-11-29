@@ -35,8 +35,6 @@ var (
 
 	FuncRegisterERC20NativeToken = coreutil.Func(evmnames.FuncRegisterERC20NativeToken)
 
-	FuncRegisterERC20NativeToken = coreutil.Func(evmnames.FuncRegisterERC20NativeToken)
-
 	// block context
 	FuncOpenBlockContext  = coreutil.Func(evmnames.FuncOpenBlockContext)
 	FuncCloseBlockContext = coreutil.Func(evmnames.FuncCloseBlockContext)

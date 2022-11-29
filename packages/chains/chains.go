@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/xerrors"
+
 	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chain/consensus/journal"
@@ -20,7 +22,6 @@ import (
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/processors"
-	"golang.org/x/xerrors"
 )
 
 type Provider func() *Chains
@@ -70,7 +71,7 @@ func New(
 	offledgerBroadcastInterval time.Duration,
 	pullMissingRequestsFromCommittee bool,
 	networkProvider peering.NetworkProvider,
-	chainStateStoreProvider database.ChainStateKVStoreProvider,
+	getOrCreateChainKVStore database.ChainStateKVStoreProvider,
 	rawBlocksEnabled bool,
 	rawBlocksDir string,
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
@@ -87,7 +88,7 @@ func New(
 		offledgerBroadcastInterval:       offledgerBroadcastInterval,
 		pullMissingRequestsFromCommittee: pullMissingRequestsFromCommittee,
 		networkProvider:                  networkProvider,
-		getOrCreateKVStore:               chainStateStoreProvider,
+		getOrCreateKVStore:               getOrCreateChainKVStore,
 		rawBlocksEnabled:                 rawBlocksEnabled,
 		rawBlocksDir:                     rawBlocksDir,
 		chainRecordRegistryProvider:      chainRecordRegistryProvider,

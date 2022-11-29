@@ -88,10 +88,14 @@ func provide(c *dig.Container) error {
 				ParamsChains.BroadcastUpToNPeers,
 				ParamsChains.BroadcastInterval,
 				ParamsChains.PullMissingRequestsFromCommittee,
-				chDeps.DefaultNetworkProvider,
-				chDeps.DatabaseManager.GetOrCreateKVStore,
+				chDeps.NetworkProvider,
+				chDeps.DatabaseManager.GetOrCreateChainStateKVStore,
 				ParamsRawBlocks.Enabled,
 				ParamsRawBlocks.Directory,
+				deps.ChainRecordRegistryProvider,
+				deps.DKShareRegistryProvider,
+				deps.NodeIdentityProvider,
+				deps.Metrics,
 			),
 		}
 	}); err != nil {
@@ -103,25 +107,9 @@ func provide(c *dig.Container) error {
 
 func run() error {
 	err := CoreComponent.Daemon().BackgroundWorker(CoreComponent.Name, func(ctx context.Context) {
-		if err := deps.Chains.ActivateAllFromRegistry(
-			deps.ChainRecordRegistryProvider,
-			deps.DKShareRegistryProvider,
-			deps.NodeIdentityProvider,
-			deps.ConsensusJournalRegistryProvider,
-			deps.Metrics,
-			deps.WAL,
-		); err != nil {
-			CoreComponent.LogPanicf("failed to read chain activation records from registry: %v", err)
-			return
-		}
-
+		deps.Chains.Run(ctx)
 		<-ctx.Done()
-
-		CoreComponent.LogInfo("dismissing chains...")
-		go func() {
-			deps.Chains.Dismiss()
-			CoreComponent.LogInfo("dismissing chains... Done")
-		}()
+		CoreComponent.LogInfo("closing chains plugin...")
 	}, daemon.PriorityChains)
 	if err != nil {
 		CoreComponent.LogError(err)

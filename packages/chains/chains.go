@@ -34,7 +34,6 @@ type ChainProvider func(chainID *isc.ChainID) chain.Chain
 
 type Chains struct {
 	ctx                              context.Context
-	ctxCancel                        context.CancelFunc
 	log                              *logger.Logger
 	nodeConnection                   chain.NodeConnection
 	processorConfig                  *processors.Config
@@ -46,7 +45,7 @@ type Chains struct {
 	rawBlocksEnabled                 bool
 	rawBlocksDir                     string
 	registry                         registry.Registry
-	allMetrics                       *metrics.Metrics
+	metrics                          *metrics.Metrics
 
 	mutex     sync.RWMutex
 	allChains map[isc.ChainID]*activeChain
@@ -58,7 +57,6 @@ type activeChain struct {
 }
 
 func New(
-	ctx context.Context,
 	log *logger.Logger,
 	nodeConnection chain.NodeConnection,
 	processorConfig *processors.Config,
@@ -69,13 +67,8 @@ func New(
 	getOrCreateKVStore dbmanager.ChainKVStoreProvider,
 	rawBlocksEnabled bool,
 	rawBlocksDir string,
-	registryProvider registry.Provider,
-	allMetrics *metrics.Metrics,
 ) *Chains {
-	subCtx, subCancel := context.WithCancel(ctx)
 	ret := &Chains{
-		ctx:                              subCtx,
-		ctxCancel:                        subCancel,
 		log:                              log,
 		allChains:                        map[isc.ChainID]*activeChain{},
 		nodeConnection:                   nodeConnection,
@@ -87,26 +80,30 @@ func New(
 		getOrCreateKVStore:               getOrCreateKVStore,
 		rawBlocksEnabled:                 rawBlocksEnabled,
 		rawBlocksDir:                     rawBlocksDir,
-		registry:                         registryProvider(),
-		allMetrics:                       allMetrics,
 	}
 	return ret
 }
 
-// This object can be disposed either by calling this function or by canceling the context passed to the constructor.
-func (c *Chains) Dismiss() {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	for chainID, ch := range c.allChains {
-		ch.cancelFunc()
-		delete(c.allChains, chainID)
+func (c *Chains) Run(
+	ctx context.Context,
+	allRegistries registry.Registry, // TODO: Move this to the constructor?
+	allMetrics *metrics.Metrics, // TODO: Move this to the constructor?
+) error {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if c.ctx == nil {
+		c.log.Warnf("Chains already running.")
+		return nil
 	}
-	c.ctxCancel()
+	c.ctx = ctx
+	c.registry = allRegistries
+	c.metrics = allMetrics
+
+	return c.activateAllFromRegistry() //nolint:contextcheck
 }
 
 // TODO: Why do we take these parameters here, and not in the constructor?
-func (c *Chains) ActivateAllFromRegistry() error {
+func (c *Chains) activateAllFromRegistry() error {
 	chainRecords, err := c.registry.GetChainRecords()
 	if err != nil {
 		return xerrors.Errorf("cannot read chain records: %w", err)
@@ -132,6 +129,9 @@ func (c *Chains) ActivateAllFromRegistry() error {
 func (c *Chains) Activate(chainID *isc.ChainID) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+	if c.ctx == nil {
+		return xerrors.Errorf("run chains first")
+	}
 	//
 	// Check, maybe it is already running.
 	if _, ok := c.allChains[*chainID]; ok {

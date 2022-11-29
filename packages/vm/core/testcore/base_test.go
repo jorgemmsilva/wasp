@@ -263,7 +263,7 @@ func TestNoTargetView(t *testing.T) {
 		chain := env.NewChain()
 		chain.AssertControlAddresses()
 
-		_, err := chain.CallView(chain.LatestBlockIndex(), "dummyContract", "dummyEP")
+		_, err := chain.CallView("dummyContract", "dummyEP")
 		require.Error(t, err)
 	})
 	t.Run("no EP view", func(t *testing.T) {
@@ -271,7 +271,7 @@ func TestNoTargetView(t *testing.T) {
 		chain := env.NewChain()
 		chain.AssertControlAddresses()
 
-		_, err := chain.CallView(chain.LatestBlockIndex(), root.Contract.Name, "dummyEP")
+		_, err := chain.CallView(root.Contract.Name, "dummyEP")
 		require.Error(t, err)
 	})
 }
@@ -301,7 +301,7 @@ func TestEstimateGas(t *testing.T) {
 	}
 
 	getResult := func() int64 {
-		res, err := ch.CallView(ch.LatestBlockIndex(), sbtestsc.Contract.Name, sbtestsc.FuncViewCalcFibonacciResult.Name)
+		res, err := ch.CallView(sbtestsc.Contract.Name, sbtestsc.FuncViewCalcFibonacciResult.Name)
 		require.NoError(t, err)
 		n, err := codec.DecodeInt64(res.MustGet(sbtestsc.ParamN), 0)
 		require.NoError(t, err)

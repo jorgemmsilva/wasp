@@ -34,7 +34,7 @@ func TestSendBack(t *testing.T) {
 	require.NoError(t, err)
 
 	// check counter increments
-	ret, err := ch.CallView(ch.LatestBlockIndex(), inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
+	ret, err := ch.CallView(inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
 	require.NoError(t, err)
 	counter, err := codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
 	require.NoError(t, err)
@@ -87,7 +87,7 @@ func TestSendBack(t *testing.T) {
 	require.Len(t, results, 0)
 
 	// check counter is still the same (1)
-	ret, err = ch.CallView(ch.LatestBlockIndex(), inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
+	ret, err = ch.CallView(inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
 	require.NoError(t, err)
 	counter, err = codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
 	require.NoError(t, err)

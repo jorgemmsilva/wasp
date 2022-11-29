@@ -45,7 +45,7 @@ func (b *jsonRPCSoloBackend) EVMGasPrice() *big.Int {
 }
 
 func (b *jsonRPCSoloBackend) ISCCallView(iscBlockIndex uint32, scName, funName string, args dict.Dict) (dict.Dict, error) {
-	return b.Chain.CallView(iscBlockIndex, scName, funName, args)
+	return b.Chain.CallViewAtBlockIndex(iscBlockIndex, scName, funName, args)
 }
 
 func (b *jsonRPCSoloBackend) ISCLatestBlockIndex() uint32 {
@@ -57,9 +57,7 @@ func (b *jsonRPCSoloBackend) BaseToken() *parameters.BaseToken {
 }
 
 func (ch *Chain) EVM() *jsonrpc.EVMChain {
-	i, err := ch.Store.LatestBlockIndex()
-	require.NoError(ch.Env.T, err)
-	ret, err := ch.CallView(i, evm.Contract.Name, evm.FuncGetChainID.Name)
+	ret, err := ch.CallView(evm.Contract.Name, evm.FuncGetChainID.Name)
 	require.NoError(ch.Env.T, err)
 	return jsonrpc.NewEVMChain(
 		newJSONRPCSoloBackend(ch, parameters.L1().BaseToken),
@@ -69,9 +67,7 @@ func (ch *Chain) EVM() *jsonrpc.EVMChain {
 
 func (ch *Chain) EVMGasRatio() util.Ratio32 {
 	// TODO: Cache the gas ratio?
-	i, err := ch.Store.LatestBlockIndex()
-	require.NoError(ch.Env.T, err)
-	ret, err := ch.CallView(i, governance.Contract.Name, governance.ViewGetEVMGasRatio.Name)
+	ret, err := ch.CallView(governance.Contract.Name, governance.ViewGetEVMGasRatio.Name)
 	require.NoError(ch.Env.T, err)
 	return codec.MustDecodeRatio32(ret.MustGet(governance.ParamEVMGasRatio))
 }

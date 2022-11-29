@@ -1081,7 +1081,7 @@ func TestNFTAccount(t *testing.T) {
 }
 
 func checkChainNFTData(t *testing.T, ch *solo.Chain, nft *isc.NFT, owner isc.AgentID) {
-	ret, err := ch.CallView(ch.LatestBlockIndex(), accounts.Contract.Name, accounts.ViewNFTData.Name, dict.Dict{
+	ret, err := ch.CallView(accounts.Contract.Name, accounts.ViewNFTData.Name, dict.Dict{
 		accounts.ParamNFTID: nft.ID[:],
 	})
 	require.NoError(t, err)
@@ -1147,7 +1147,7 @@ func TestTransferNFTAllowance(t *testing.T) {
 
 	require.False(t, ch.HasL2NFT(finalOwnerAgentID, &nft.ID))
 	require.True(t, env.HasL1NFT(finalOwnerAddress, &nft.ID))
-	_, err = ch.CallView(ch.LatestBlockIndex(), accounts.Contract.Name, accounts.ViewNFTData.Name, dict.Dict{
+	_, err = ch.CallView(accounts.Contract.Name, accounts.ViewNFTData.Name, dict.Dict{
 		accounts.ParamNFTID: nft.ID[:],
 	})
 	require.Error(t, err)

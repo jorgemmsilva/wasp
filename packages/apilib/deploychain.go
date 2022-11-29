@@ -154,7 +154,7 @@ func CreateChainOrigin(
 	}
 
 	// ------------- post origin transaction and wait for confirmation
-	err = layer1Client.PostTx(originTx)
+	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("CreateChainOrigin: %w", err)
 	}
@@ -179,7 +179,7 @@ func CreateChainOrigin(
 	}
 
 	// ---------- post root init request transaction and wait for confirmation
-	err = layer1Client.PostTx(reqTx)
+	_, err = layer1Client.PostTxAndWaitUntilConfirmation(reqTx)
 	if err != nil {
 		return nil, nil, xerrors.Errorf("CreateChainOrigin: %w", err)
 	}
@@ -192,9 +192,7 @@ func CreateChainOrigin(
 func ActivateChainOnAccessNodes(apiHosts []string, chainID *isc.ChainID) error {
 	nodes := multiclient.New(apiHosts)
 	// ------------ put chain records to hosts
-	err := nodes.PutChainRecord(&registry.ChainRecord{
-		ChainID: *chainID,
-	})
+	err := nodes.PutChainRecord(registry.NewChainRecord(*chainID, false))
 	if err != nil {
 		return xerrors.Errorf("ActivateChainOnAccessNodes: %w", err)
 	}

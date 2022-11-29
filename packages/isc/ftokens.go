@@ -18,8 +18,8 @@ import (
 
 // FungibleTokens is used as assets in the UTXO and as tokens in transfer
 type FungibleTokens struct {
-	BaseTokens uint64
-	Tokens     iotago.NativeTokens
+	BaseTokens uint64              `json:"base"`
+	Tokens     iotago.NativeTokens `json:"nativeTokens"`
 }
 
 var BaseTokenID = []byte{}
@@ -113,10 +113,12 @@ func MustNativeTokenIDFromBytes(data []byte) iotago.NativeTokenID {
 	return ret
 }
 
+// returns nil if nil pointer receiver is cloned
 func (a *FungibleTokens) Clone() *FungibleTokens {
 	if a == nil {
 		return nil
 	}
+
 	return &FungibleTokens{
 		BaseTokens: a.BaseTokens,
 		Tokens:     a.Tokens.Clone(),

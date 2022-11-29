@@ -4,7 +4,6 @@ import (
 	"crypto/ed25519"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"go.dedis.ch/kyber/v3/sign/eddsa"
 	"go.dedis.ch/kyber/v3/util/key"
 	"golang.org/x/xerrors"
@@ -38,12 +37,18 @@ func (pkT *PrivateKey) isValid() bool {
 	return len(pkT.key) > 0
 }
 
+func (pkT *PrivateKey) Clone() *PrivateKey {
+	key := make([]byte, len(pkT.key))
+	copy(key, pkT.key)
+	return &PrivateKey{key: key}
+}
+
 func (pkT *PrivateKey) AsBytes() []byte {
 	return pkT.key
 }
 
 func (pkT *PrivateKey) String() string {
-	return hexutil.Encode(pkT.key)
+	return iotago.EncodeHex(pkT.key)
 }
 
 func (pkT *PrivateKey) AsStdKey() ed25519.PrivateKey {

@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iotaledger/wasp/packages/authentication/shared"
-
 	"github.com/labstack/echo/v4"
 
+	"github.com/iotaledger/wasp/packages/authentication/shared"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/users"
 )
@@ -28,7 +27,7 @@ type BasicAuthConfiguration struct {
 }
 
 type IPWhiteListAuthConfiguration struct {
-	Whitelist []string `default:"0.0.0.0" usage:"a list of ips that are allowed to access the service"`
+	Whitelist []string `default:"127.0.0.1" usage:"a list of ips that are allowed to access the service"`
 }
 
 type AuthConfiguration struct {
@@ -62,14 +61,20 @@ func AddNoneAuth(webAPI WebAPI) {
 	webAPI.Use(noneFunc)
 }
 
-func AddAuthentication(webAPI WebAPI, userManager *users.UserManager, registryProvider registry.Provider, authConfig AuthConfiguration, claimValidator ClaimValidator) {
+func AddAuthentication(
+	webAPI WebAPI,
+	userManager *users.UserManager,
+	nodeIdentityProvider registry.NodeIdentityProvider,
+	authConfig AuthConfiguration,
+	claimValidator ClaimValidator,
+) {
 	addAuthContext(webAPI, authConfig)
 
 	switch authConfig.Scheme {
 	case AuthBasic:
 		AddBasicAuth(webAPI, userManager)
 	case AuthJWT:
-		nodeIdentity := registryProvider().GetNodeIdentity()
+		nodeIdentity := nodeIdentityProvider.NodeIdentity()
 
 		privateKey := nodeIdentity.GetPrivateKey().AsBytes()
 

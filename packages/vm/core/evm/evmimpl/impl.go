@@ -14,42 +14,45 @@ import (
 
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
+	"github.com/iotaledger/wasp/packages/evm/solidity"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/emulator"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 var Processor = evm.Contract.Processor(initialize,
-	evm.FuncSetGasRatio.WithHandler(setGasRatio),
-	evm.FuncGetGasRatio.WithHandler(getGasRatio),
-	evm.FuncSendTransaction.WithHandler(applyTransaction),
-	evm.FuncGetBalance.WithHandler(getBalance),
-	evm.FuncCallContract.WithHandler(callContract),
-	evm.FuncEstimateGas.WithHandler(estimateGas),
-	evm.FuncGetNonce.WithHandler(getNonce),
-	evm.FuncGetReceipt.WithHandler(getReceipt),
-	evm.FuncGetCode.WithHandler(getCode),
-	evm.FuncGetBlockNumber.WithHandler(getBlockNumber),
-	evm.FuncGetBlockByNumber.WithHandler(getBlockByNumber),
-	evm.FuncGetBlockByHash.WithHandler(getBlockByHash),
-	evm.FuncGetTransactionByHash.WithHandler(getTransactionByHash),
-	evm.FuncGetTransactionByBlockHashAndIndex.WithHandler(getTransactionByBlockHashAndIndex),
-	evm.FuncGetTransactionByBlockNumberAndIndex.WithHandler(getTransactionByBlockNumberAndIndex),
-	evm.FuncGetTransactionCountByBlockHash.WithHandler(getTransactionCountByBlockHash),
-	evm.FuncGetTransactionCountByBlockNumber.WithHandler(getTransactionCountByBlockNumber),
-	evm.FuncGetStorage.WithHandler(getStorage),
-	evm.FuncGetLogs.WithHandler(getLogs),
-	evm.FuncGetChainID.WithHandler(getChainID),
-	evm.FuncOpenBlockContext.WithHandler(openBlockContext),
-	evm.FuncCloseBlockContext.WithHandler(closeBlockContext),
-	evm.FuncRegisterERC20NativeToken.WithHandler(registerERC20NativeToken),
+	evm.FuncOpenBlockContext.WithHandler(restricted(openBlockContext)),
+	evm.FuncCloseBlockContext.WithHandler(restricted(closeBlockContext)),
+	evm.FuncSendTransaction.WithHandler(restricted(applyTransaction)),
+	evm.FuncEstimateGas.WithHandler(restricted(estimateGas)),
+	evm.FuncRegisterERC20NativeToken.WithHandler(restricted(registerERC20NativeToken)),
+
+	// views
+	evm.FuncGetBalance.WithHandler(restrictedView(getBalance)),
+	evm.FuncCallContract.WithHandler(restrictedView(callContract)),
+	evm.FuncGetNonce.WithHandler(restrictedView(getNonce)),
+	evm.FuncGetReceipt.WithHandler(restrictedView(getReceipt)),
+	evm.FuncGetCode.WithHandler(restrictedView(getCode)),
+	evm.FuncGetBlockNumber.WithHandler(restrictedView(getBlockNumber)),
+	evm.FuncGetBlockByNumber.WithHandler(restrictedView(getBlockByNumber)),
+	evm.FuncGetBlockByHash.WithHandler(restrictedView(getBlockByHash)),
+	evm.FuncGetTransactionByHash.WithHandler(restrictedView(getTransactionByHash)),
+	evm.FuncGetTransactionByBlockHashAndIndex.WithHandler(restrictedView(getTransactionByBlockHashAndIndex)),
+	evm.FuncGetTransactionByBlockNumberAndIndex.WithHandler(restrictedView(getTransactionByBlockNumberAndIndex)),
+	evm.FuncGetTransactionCountByBlockHash.WithHandler(restrictedView(getTransactionCountByBlockHash)),
+	evm.FuncGetTransactionCountByBlockNumber.WithHandler(restrictedView(getTransactionCountByBlockNumber)),
+	evm.FuncGetStorage.WithHandler(restrictedView(getStorage)),
+	evm.FuncGetLogs.WithHandler(restrictedView(getLogs)),
+	evm.FuncGetChainID.WithHandler(restrictedView(getChainID)),
 )
 
 func initialize(ctx isc.Sandbox) dict.Dict {
@@ -69,13 +72,21 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 	// add the standard ISC contract at arbitrary address 0x1074...
 	deployMagicContractOnGenesis(genesisAlloc)
 
-	// add the standard ERC20 provider at address 0x1075
+	// add the standard ERC20 contract
 	genesisAlloc[iscmagic.ERC20BaseTokensAddress] = core.GenesisAccount{
 		Code:    iscmagic.ERC20BaseTokensRuntimeBytecode,
 		Storage: map[common.Hash]common.Hash{},
 		Balance: &big.Int{},
 	}
 	addToPrivileged(ctx, iscmagic.ERC20BaseTokensAddress)
+
+	// add the standard ERC721 contract
+	genesisAlloc[iscmagic.ERC721NFTsAddress] = core.GenesisAccount{
+		Code:    iscmagic.ERC721NFTsRuntimeBytecode,
+		Storage: map[common.Hash]common.Hash{},
+		Balance: &big.Int{},
+	}
+	addToPrivileged(ctx, iscmagic.ERC721NFTsAddress)
 
 	chainID := evmtypes.MustDecodeChainID(ctx.Params().MustGet(evm.FieldChainID), evm.DefaultChainID)
 	emulator.Init(
@@ -89,9 +100,6 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 		getSubBalanceFunc(ctx),
 		getAddBalanceFunc(ctx),
 	)
-
-	gasRatio := codec.MustDecodeRatio32(ctx.Params().MustGet(evm.FieldGasRatio), evmtypes.DefaultGasRatio)
-	ctx.State().Set(keyGasRatio, gasRatio.Bytes())
 
 	// storing hname as a terminal value of the contract's state nil key.
 	// This way we will be able to retrieve commitment to the contract's state
@@ -126,7 +134,7 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 	var gasErr error
 	if result != nil {
 		// convert burnt EVM gas to ISC gas
-		gasRatio := codec.MustDecodeRatio32(ctx.State().MustGet(keyGasRatio), evmtypes.DefaultGasRatio)
+		gasRatio := getGasRatio(ctx)
 		ctx.Privileged().GasBurnEnable(true)
 		gasErr = panicutil.CatchPanic(
 			func() {
@@ -167,27 +175,15 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 	}
 
 	// deploy the contract to the EVM state
-	encodeUint8 := func(n uint8) (ret common.Hash) {
-		ret[len(ret)-1] = n
-		return
-	}
-	slot := encodeUint8
-	encodeShortString := func(s string) (ret common.Hash) {
-		ctx.Requiref(len(s) <= 31, "string is too long: %q", s)
-		ret[len(ret)-1] = uint8(len(s) * 2)
-		copy(ret[:], s)
-		return
-	}
 	addr := iscmagic.ERC20NativeTokensAddress(foundrySN)
 	emu := createEmulator(ctx)
 	evmState := emu.StateDB()
 	evmState.CreateAccount(addr)
 	evmState.SetCode(addr, iscmagic.ERC20NativeTokensRuntimeBytecode)
 	// see ERC20NativeTokens_storage.json
-	// and https://docs.soliditylang.org/en/v0.8.16/internals/layout_in_storage.html
-	evmState.SetState(addr, slot(0), encodeShortString(name))
-	evmState.SetState(addr, slot(1), encodeShortString(tickerSymbol))
-	evmState.SetState(addr, slot(2), encodeUint8(decimals))
+	evmState.SetState(addr, solidity.StorageSlot(0), solidity.StorageEncodeShortString(name))
+	evmState.SetState(addr, solidity.StorageSlot(1), solidity.StorageEncodeShortString(tickerSymbol))
+	evmState.SetState(addr, solidity.StorageSlot(2), solidity.StorageEncodeUint8(decimals))
 
 	addToPrivileged(ctx, addr)
 
@@ -195,7 +191,6 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 }
 
 func getBalance(ctx isc.SandboxView) dict.Dict {
-	// TODO: balance might change between two eth blocks
 	addr := common.BytesToAddress(ctx.Params().MustGet(evm.FieldAddress))
 	emu := createEmulatorR(ctx)
 	return result(emu.StateDB().GetBalance(addr).Bytes())
@@ -316,7 +311,7 @@ func estimateGas(ctx isc.Sandbox) dict.Dict {
 	ctx.RequireNoError(err)
 	ctx.RequireNoError(tryGetRevertError(res))
 
-	gasRatio := codec.MustDecodeRatio32(ctx.State().MustGet(keyGasRatio), evmtypes.DefaultGasRatio)
+	gasRatio := getGasRatio(ctx)
 	{
 		// burn the used EVM gas as it would be done for a normal request call
 		ctx.Privileged().GasBurnEnable(true)
@@ -332,4 +327,9 @@ func estimateGas(ctx isc.Sandbox) dict.Dict {
 	finalEvmGasUsed := evmtypes.ISCGasBurnedToEVM(ctx.Gas().Burned(), &gasRatio)
 
 	return result(codec.EncodeUint64(finalEvmGasUsed))
+}
+
+func getGasRatio(ctx isc.SandboxBase) util.Ratio32 {
+	gasRatioViewRes := ctx.CallView(governance.Contract.Hname(), governance.ViewGetEVMGasRatio.Hname(), nil)
+	return codec.MustDecodeRatio32(gasRatioViewRes.MustGet(governance.ParamEVMGasRatio), evmtypes.DefaultGasRatio)
 }

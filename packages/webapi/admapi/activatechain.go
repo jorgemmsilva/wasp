@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pangpanglabs/echoswagger/v2"
 
+	"github.com/iotaledger/wasp/packages/chain/consensus/journal"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -24,10 +25,13 @@ import (
 )
 
 type chainWebAPI struct {
-	registry   registry.Provider
-	chains     chains.Provider
-	network    peering.NetworkProvider
-	allMetrics *metrics.Metrics
+	chainRecordRegistryProvider      registry.ChainRecordRegistryProvider
+	dkShareRegistryProvider          registry.DKShareRegistryProvider
+	nodeIdentityProvider             registry.NodeIdentityProvider
+	consensusJournalRegistryProvider journal.Provider
+	chains                           chains.Provider
+	network                          peering.NetworkProvider
+	allMetrics                       *metrics.Metrics
 }
 
 func addChainEndpoints(adm echoswagger.ApiGroup, c *chainWebAPI) {
@@ -49,9 +53,13 @@ func (w *chainWebAPI) handleActivateChain(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	rec, err := w.chainRecordRegistryProvider.ActivateChainRecord(*chainID)
+	if err != nil {
+		return err
+	}
 
-	log.Debugw("calling Chains.Activate", "chainID", chainID.String())
-	if err := w.chains().Activate(chainID); err != nil {
+	log.Debugw("calling Chains.Activate", "chainID", rec.ChainID().String())
+	if err := w.chains().Activate(rec, w.dkShareRegistryProvider, w.nodeIdentityProvider, w.consensusJournalRegistryProvider, w.allMetrics, w.w); err != nil {
 		return err
 	}
 
@@ -60,6 +68,10 @@ func (w *chainWebAPI) handleActivateChain(c echo.Context) error {
 
 func (w *chainWebAPI) handleDeactivateChain(c echo.Context) error {
 	chainID, err := isc.ChainIDFromString(c.Param("chainID"))
+	if err != nil {
+		return err
+	}
+	bd, err := w.chainRecordRegistryProvider.DeactivateChainRecord(*chainID)
 	if err != nil {
 		return err
 	}
@@ -78,7 +90,7 @@ func (w *chainWebAPI) handleGetChainInfo(c echo.Context) error {
 		return httperrors.BadRequest(fmt.Sprintf("Invalid chain id: %s", c.Param("chainID")))
 	}
 
-	chainRecord, err := w.registry().GetChainRecordByChainID(chainID)
+	chainRecord, err := w.chainRecordRegistryProvider.ChainRecord(*chainID)
 	if err != nil {
 		return err
 	}
@@ -87,7 +99,7 @@ func (w *chainWebAPI) handleGetChainInfo(c echo.Context) error {
 	}
 	chain := w.chains().Get(chainID)
 	committeeInfo := chain.GetCommitteeInfo()
-	dkShare, err := w.registry().LoadDKShare(committeeInfo.Address)
+	dkShare, err := w.dkShareRegistryProvider.LoadDKShare(committeeInfo.Address)
 	if err != nil {
 		return err
 	}

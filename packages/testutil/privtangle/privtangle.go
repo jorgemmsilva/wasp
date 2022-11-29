@@ -31,10 +31,10 @@ import (
 
 // ===== Wasp dependencies ===== // DO NOT DELETE THIS LINE! It is needed for `make deps-versions` command
 // requires hornet, and inx plugins binaries to be in PATH
-// https://github.com/iotaledger/hornet (5b35e2a)
-// https://github.com/iotaledger/inx-indexer (7cdb3ed)
-// https://github.com/iotaledger/inx-coordinator (f84d8dd)
-// https://github.com/iotaledger/inx-faucet (c847f1c) (requires `git submodule update --init --recursive` before building )
+// https://github.com/iotaledger/hornet (b3b0153)
+// https://github.com/iotaledger/inx-indexer (3b84047)
+// https://github.com/iotaledger/inx-coordinator (5c0f794)
+// https://github.com/iotaledger/inx-faucet (0cb51d2) (requires `git submodule update --init --recursive` before building )
 // ============================= // DO NOT DELETE THIS LINE! It is needed for `make deps-versions` command
 
 type LogFunc func(format string, args ...interface{})
@@ -86,19 +86,20 @@ func Start(ctx context.Context, baseDir string, basePort, nodeCount int, logfunc
 	}
 	pt.logf("Starting... all nodes started.")
 
-	pt.waitAllReady()
+	pt.waitAllReady(20 * time.Second)
 	pt.logf("Starting... all nodes are up and running, starting coordinator.")
 	pt.startCoordinator(0)
-	pt.waitAllHealthy()
+
+	pt.waitAllHealthy(20 * time.Second)
 	pt.logf("Starting... coordinator started, all nodes are healthy.")
 
-	pt.waitAllReturnTips()
+	pt.waitAllReturnTips(20 * time.Second)
 	pt.logf("Starting... Done, all nodes alive and returning tips.")
 
 	for i := range pt.NodeKeyPairs {
 		pt.startIndexer(i)
 	}
-	pt.waitInxPluginsIndexer()
+	pt.waitInxPluginsIndexer(20 * time.Second)
 
 	pt.startFaucet(0) // faucet needs to be started after the indexer, otherwise it will take 1 milestone for the faucet get the correct balance
 	pt.waitInxPluginsFaucet()
@@ -205,7 +206,8 @@ func (pt *PrivTangle) startCoordinator(i int) *exec.Cmd {
 	args := []string{
 		"--cooBootstrap",
 		"--cooStartIndex=0",
-		"--coordinator.interval=1s",
+		"--coordinator.interval=100ms",
+		"--coordinator.debugFakeMilestoneTimestamps=true",
 		fmt.Sprintf("--inx.address=0.0.0.0:%d", pt.NodePortINX(i)),
 	}
 	return pt.startINXPlugin(i, "inx-coordinator", args, env)
@@ -275,8 +277,15 @@ func (pt *PrivTangle) nodeClient(i int) *nodeclient.Client {
 	return nodeclient.New(fmt.Sprintf("http://localhost:%d", pt.NodePortRestAPI(i)))
 }
 
-func (pt *PrivTangle) waitAllReturnTips() {
+func (pt *PrivTangle) waitAllReturnTips(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(pt.ctx, timeout)
+	defer cancel()
+
 	for {
+		if ctx.Err() != nil {
+			panic("nodes not ready to return tips")
+		}
+
 		allOK := true
 		for i := range pt.NodeCommands {
 			_, err := pt.nodeClient(i).Tips(pt.ctx)
@@ -287,16 +296,25 @@ func (pt *PrivTangle) waitAllReturnTips() {
 				allOK = false
 			}
 		}
+
 		if allOK {
-			break
+			return
 		}
+
 		pt.logf("Waiting for all nodes to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (pt *PrivTangle) waitAllReady() {
+func (pt *PrivTangle) waitAllReady(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(pt.ctx, timeout)
+	defer cancel()
+
 	for {
+		if ctx.Err() != nil {
+			panic("nodes not ready")
+		}
+
 		allOK := true
 		for i := range pt.NodeCommands {
 			_, err := pt.nodeClient(i).Info(pt.ctx)
@@ -307,16 +325,25 @@ func (pt *PrivTangle) waitAllReady() {
 				allOK = false
 			}
 		}
+
 		if allOK {
-			break
+			return
 		}
+
 		pt.logf("Waiting for all nodes to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (pt *PrivTangle) waitAllHealthy() {
+func (pt *PrivTangle) waitAllHealthy(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(pt.ctx, timeout)
+	defer cancel()
+
 	for {
+		if ctx.Err() != nil {
+			panic("nodes not healthy")
+		}
+
 		allOK := true
 		for i := range pt.NodeCommands {
 			ok, err := pt.nodeClient(i).Health(pt.ctx)
@@ -327,16 +354,25 @@ func (pt *PrivTangle) waitAllHealthy() {
 				allOK = false
 			}
 		}
+
 		if allOK {
-			break
+			return
 		}
+
 		pt.logf("Waiting for all nodes to start.")
 		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-func (pt *PrivTangle) waitInxPluginsIndexer() {
+func (pt *PrivTangle) waitInxPluginsIndexer(timeout time.Duration) {
+	ctx, cancel := context.WithTimeout(pt.ctx, timeout)
+	defer cancel()
+
 	for {
+		if ctx.Err() != nil {
+			panic("indexer not ready")
+		}
+
 		allOK := true
 		for i := range pt.NodeCommands {
 			_, err := pt.nodeClient(i).Indexer(pt.ctx)
@@ -346,9 +382,11 @@ func (pt *PrivTangle) waitInxPluginsIndexer() {
 				continue
 			}
 		}
+
 		if allOK {
 			return
 		}
+
 		pt.logf("Waiting for all nodes INX Indexer plugins to start.")
 		time.Sleep(100 * time.Millisecond)
 	}

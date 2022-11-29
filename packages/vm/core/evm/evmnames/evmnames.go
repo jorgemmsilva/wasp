@@ -26,9 +26,7 @@ const (
 	FuncGetLogs                             = "getLogs"
 	FuncGetChainID                          = "getChainID"
 
-	// evm SC management
-	FuncSetGasRatio = "setGasRatio"
-	FuncGetGasRatio = "getGasRatio"
+	FuncRegisterERC20NativeToken = "registerERC20NativeToken"
 
 	FuncRegisterERC20NativeToken = "registerERC20NativeToken"
 

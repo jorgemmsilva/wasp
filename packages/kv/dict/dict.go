@@ -2,14 +2,13 @@ package dict
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
+	"github.com/iotaledger/hive.go/core/generics/lo"
 	"github.com/iotaledger/hive.go/core/marshalutil"
+	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv"
 )
@@ -56,7 +55,7 @@ func New() Dict {
 func (d Dict) Clone() Dict {
 	clone := make(Dict)
 	d.ForEach(func(key kv.Key, value []byte) bool {
-		clone.Set(key, value)
+		clone.Set(key, lo.CopySlice(value))
 		return true
 	})
 	return clone
@@ -80,10 +79,9 @@ func (d Dict) String() string {
 			val = val[:80]
 		}
 		ret += fmt.Sprintf(
-			"           0x%s: 0x%s (hex: %s) ('%s': '%s')\n",
-			slice(hexutil.Encode([]byte(key))),
-			slice(hexutil.Encode(val)),
-			slice(hexutil.Encode(val)),
+			"           %s: %s ('%s': '%s')\n",
+			slice(iotago.EncodeHex([]byte(key))),
+			slice(iotago.EncodeHex(val)),
 			printable([]byte(key)),
 			printable(val),
 		)
@@ -299,16 +297,16 @@ type JSONDict struct {
 
 // Item is a JSON-compatible representation of a single key-value pair
 type Item struct {
-	Key   string `swagger:"desc(Key (base64-encoded))"`
-	Value string `swagger:"desc(Value (base64-encoded))"`
+	Key   string `swagger:"desc(key (hex-encoded))"`
+	Value string `swagger:"desc(value (hex-encoded))"`
 }
 
 // JSONDict returns a JSON-compatible representation of the Dict
 func (d Dict) JSONDict() JSONDict {
 	j := JSONDict{Items: make([]Item, len(d))}
 	for i, k := range d.KeysSorted() {
-		j.Items[i].Key = base64.StdEncoding.EncodeToString([]byte(k))
-		j.Items[i].Value = base64.StdEncoding.EncodeToString(d[k])
+		j.Items[i].Key = iotago.EncodeHex([]byte(k))
+		j.Items[i].Value = iotago.EncodeHex(d[k])
 	}
 	return j
 }
@@ -324,11 +322,11 @@ func (d *Dict) UnmarshalJSON(b []byte) error {
 	}
 	*d = make(Dict)
 	for _, item := range j.Items {
-		k, err := base64.StdEncoding.DecodeString(item.Key)
+		k, err := iotago.DecodeHex(item.Key)
 		if err != nil {
 			return err
 		}
-		v, err := base64.StdEncoding.DecodeString(item.Value)
+		v, err := iotago.DecodeHex(item.Value)
 		if err != nil {
 			return err
 		}

@@ -4,6 +4,8 @@
 package jsonrpc
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -16,5 +18,6 @@ type ChainBackend interface {
 	EVMEstimateGas(callMsg ethereum.CallMsg) (uint64, error)
 	ISCCallView(iscBlockIndex uint32, scName string, funName string, args dict.Dict) (dict.Dict, error)
 	ISCLatestBlockIndex() uint32
+	EVMGasPrice() *big.Int
 	BaseToken() *parameters.BaseToken
 }

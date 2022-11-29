@@ -4,6 +4,7 @@
 package tcrypto
 
 import (
+	"encoding/json"
 	"errors"
 
 	"go.dedis.ch/kyber/v3"
@@ -12,8 +13,10 @@ import (
 	"go.dedis.ch/kyber/v3/sign/tbls"
 
 	"github.com/iotaledger/hive.go/core/crypto/bls"
+	"github.com/iotaledger/hive.go/core/generics/onchangemap"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 type SecretShare interface {
@@ -24,6 +27,10 @@ type SecretShare interface {
 // DKShare stands for the information stored on
 // a node as a result of the DKG procedure.
 type DKShare interface {
+	json.Marshaler
+	json.Unmarshaler
+	ID() *util.ComparableAddress
+	Clone() onchangemap.Item[string, *util.ComparableAddress]
 	Bytes() []byte
 	GetAddress() iotago.Address
 	GetIndex() *uint16

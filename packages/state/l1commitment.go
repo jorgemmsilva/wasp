@@ -6,11 +6,10 @@ import (
 	"io"
 	"math/rand"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/xerrors"
 
-	"github.com/iotaledger/hive.go/core/marshalutil"
+	"github.com/iotaledger/hive.go/marshalutil"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/util"
@@ -46,7 +45,7 @@ func newL1Commitment(c trie.Hash, blockHash BlockHash) *L1Commitment {
 }
 
 func (bh BlockHash) String() string {
-	return hexutil.Encode(bh[:])
+	return iotago.EncodeHex(bh[:])
 }
 
 func (bh BlockHash) Equals(e2 util.Equatable) bool {
@@ -133,7 +132,7 @@ func (s *L1Commitment) Read(r io.Reader) error {
 }
 
 func (s *L1Commitment) String() string {
-	return fmt.Sprintf("trie root: %s, block hash: %s", s.GetTrieRoot(), s.GetBlockHash())
+	return fmt.Sprintf("L1Commitment(%s, %s)", s.StateCommitment.String(), iotago.EncodeHex(s.BlockHash[:]))
 }
 
 func L1CommitmentFromAnchorOutput(o *iotago.AliasOutput) (*L1Commitment, error) {

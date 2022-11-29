@@ -17,6 +17,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
+	"github.com/iotaledger/hive.go/core/generics/lo"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
@@ -30,6 +31,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -459,33 +461,7 @@ func TestSendAsNFT(t *testing.T) {
 
 	iscTest := env.deployISCTestContract(ethKey)
 
-	// mint an NFT and send to ethAddr
-	nft := func() *isc.NFT {
-		issuerWallet, issuerAddress := env.solo.NewKeyPairWithFunds()
-		metadata := []byte("foobar")
-		nft, _, err := env.solo.MintNFTL1(issuerWallet, issuerAddress, metadata)
-		require.NoError(t, err)
-
-		_, err = env.soloChain.PostRequestSync(
-			solo.NewCallParams(
-				accounts.Contract.Name, accounts.FuncTransferAllowanceTo.Name,
-				dict.Dict{
-					accounts.ParamAgentID:          codec.EncodeAgentID(ethAgentID),
-					accounts.ParamForceOpenAccount: codec.EncodeBool(true),
-				},
-			).
-				WithNFT(nft).
-				WithAllowance(isc.NewAllowance(0, nil, []iotago.NFTID{nft.ID})).
-				AddBaseTokens(1*isc.Million). // for storage deposit
-				WithMaxAffordableGasBudget(),
-			issuerWallet,
-		)
-		require.NoError(t, err)
-
-		require.Equal(t, []iotago.NFTID{nft.ID}, env.soloChain.L2NFTs(ethAgentID))
-
-		return nft
-	}()
+	nft := env.mintNFTAndSendToL2(ethAgentID)
 
 	const storageDeposit uint64 = 10_000
 
@@ -515,9 +491,74 @@ func TestSendAsNFT(t *testing.T) {
 		[]iotago.NFTID{nft.ID},
 		lo.Map(
 			lo.Values(env.solo.L1NFTs(receiver)),
-			func(v *iotago.NFTOutput, i int) iotago.NFTID { return v.NFTID },
+			func(v *iotago.NFTOutput) iotago.NFTID { return v.NFTID },
 		),
 	)
+}
+
+func TestERC721(t *testing.T) {
+	env := initEVM(t)
+	ethKey, ethAddr := env.soloChain.NewEthereumAccountWithL2Funds()
+	ethAgentID := isc.NewEthereumAddressAgentID(ethAddr)
+
+	erc721 := env.ERC721NFTs(ethKey)
+
+	{
+		var n *big.Int
+		erc721.callView("balanceOf", []any{ethAddr}, &n)
+		require.EqualValues(t, 0, n.Uint64())
+	}
+
+	nft := env.mintNFTAndSendToL2(ethAgentID)
+
+	{
+		var n *big.Int
+		erc721.callView("balanceOf", []any{ethAddr}, &n)
+		require.EqualValues(t, 1, n.Uint64())
+	}
+
+	{
+		var a common.Address
+		erc721.callView("ownerOf", []any{iscmagic.WrapNFTID(nft.ID).TokenID()}, &a)
+		require.EqualValues(t, ethAddr, a)
+	}
+
+	receiverKey, receiverAddr := env.soloChain.NewEthereumAccountWithL2Funds()
+
+	{
+		_, err := erc721.callFn([]ethCallOptions{{
+			sender:   receiverKey,
+			gasLimit: 100_000, // skip estimate gas (which will fail)
+		}}, "transferFrom", ethAddr, receiverAddr, iscmagic.WrapNFTID(nft.ID).TokenID())
+		require.Error(t, err)
+	}
+
+	_, err := erc721.callFn(nil, "approve", receiverAddr, iscmagic.WrapNFTID(nft.ID).TokenID())
+	require.NoError(t, err)
+
+	{
+		var a common.Address
+		erc721.callView("getApproved", []any{iscmagic.WrapNFTID(nft.ID).TokenID()}, &a)
+		require.EqualValues(t, receiverAddr, a)
+	}
+
+	_, err = erc721.callFn([]ethCallOptions{{
+		sender: receiverKey,
+	}}, "transferFrom", ethAddr, receiverAddr, iscmagic.WrapNFTID(nft.ID).TokenID())
+	require.NoError(t, err)
+
+	{
+		var a common.Address
+		erc721.callView("getApproved", []any{iscmagic.WrapNFTID(nft.ID).TokenID()}, &a)
+		var zero common.Address
+		require.EqualValues(t, zero, a)
+	}
+
+	{
+		var a common.Address
+		erc721.callView("ownerOf", []any{iscmagic.WrapNFTID(nft.ID).TokenID()}, &a)
+		require.EqualValues(t, receiverAddr, a)
+	}
 }
 
 func TestISCCall(t *testing.T) {
@@ -647,27 +688,27 @@ func TestERC20BaseTokens(t *testing.T) {
 
 	{
 		var name string
-		erc20.callView("name", nil, &name)
+		require.NoError(t, erc20.callView("name", nil, &name))
 		require.Equal(t, parameters.L1().BaseToken.Name, name)
 	}
 	{
 		var sym string
-		erc20.callView("symbol", nil, &sym)
+		require.NoError(t, erc20.callView("symbol", nil, &sym))
 		require.Equal(t, parameters.L1().BaseToken.TickerSymbol, sym)
 	}
 	{
 		var dec uint8
-		erc20.callView("decimals", nil, &dec)
+		require.NoError(t, erc20.callView("decimals", nil, &dec))
 		require.EqualValues(t, parameters.L1().BaseToken.Decimals, dec)
 	}
 	{
 		var supply *big.Int
-		erc20.callView("totalSupply", nil, &supply)
+		require.NoError(t, erc20.callView("totalSupply", nil, &supply))
 		require.Equal(t, parameters.L1().Protocol.TokenSupply, supply.Uint64())
 	}
 	{
 		var balance *big.Int
-		erc20.callView("balanceOf", []interface{}{ethAddr}, &balance)
+		require.NoError(t, erc20.callView("balanceOf", []interface{}{ethAddr}, &balance))
 		require.EqualValues(t,
 			env.soloChain.L2BaseTokens(isc.NewEthereumAddressAgentID(ethAddr)),
 			balance.Uint64(),
@@ -706,7 +747,7 @@ func TestERC20BaseTokens(t *testing.T) {
 
 		{
 			var allowance *big.Int
-			erc20.callView("allowance", []interface{}{ethAddr, ethAddr2}, &allowance)
+			require.NoError(t, erc20.callView("allowance", []interface{}{ethAddr, ethAddr2}, &allowance))
 			require.EqualValues(t,
 				1*isc.Million,
 				allowance.Uint64(),
@@ -727,7 +768,185 @@ func TestERC20BaseTokens(t *testing.T) {
 			)
 			{
 				var allowance *big.Int
-				erc20.callView("allowance", []interface{}{ethAddr, ethAddr2}, &allowance)
+				require.NoError(t, erc20.callView("allowance", []interface{}{ethAddr, ethAddr2}, &allowance))
+				require.EqualValues(t,
+					1*isc.Million-amount,
+					allowance.Uint64(),
+				)
+			}
+		}
+	}
+}
+
+func TestERC20NativeTokens(t *testing.T) {
+	env := initEVM(t)
+
+	const (
+		tokenName         = "ERC20 Native Token Test"
+		tokenTickerSymbol = "ERC20NT"
+		tokenDecimals     = 8
+	)
+
+	foundryOwner, foundryOwnerAddr := env.solo.NewKeyPairWithFunds()
+	err := env.soloChain.DepositBaseTokensToL2(env.solo.L1BaseTokens(foundryOwnerAddr)/2, foundryOwner)
+	require.NoError(t, err)
+
+	supply := big.NewInt(int64(10 * isc.Million))
+	foundrySN, tokenID := func() (uint32, *iotago.FoundryID) {
+		res, err := env.soloChain.PostRequestSync(
+			solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
+				accounts.ParamTokenScheme, codec.EncodeTokenScheme(&iotago.SimpleTokenScheme{
+					MaximumSupply: supply,
+					MintedTokens:  util.Big0,
+					MeltedTokens:  util.Big0,
+				}),
+			).
+				WithMaxAffordableGasBudget().
+				WithAllowance(isc.NewAllowanceBaseTokens(1*isc.Million)), // for storage deposit
+			foundryOwner,
+		)
+		require.NoError(t, err)
+		foundrySN := kvdecoder.New(res).MustGetUint32(accounts.ParamFoundrySN)
+		tokenID, err := env.soloChain.GetNativeTokenIDByFoundrySN(foundrySN)
+		require.NoError(t, err)
+
+		err = env.soloChain.MintTokens(foundrySN, supply, foundryOwner)
+		require.NoError(t, err)
+
+		_, err = env.soloChain.PostRequestSync(solo.NewCallParams(evm.Contract.Name, evm.FuncRegisterERC20NativeToken.Name,
+			evm.FieldFoundrySN, codec.EncodeUint32(foundrySN),
+			evm.FieldTokenName, codec.EncodeString(tokenName),
+			evm.FieldTokenTickerSymbol, codec.EncodeString(tokenTickerSymbol),
+			evm.FieldTokenDecimals, codec.EncodeUint8(tokenDecimals),
+		).WithMaxAffordableGasBudget(), foundryOwner)
+		require.NoError(t, err)
+
+		return foundrySN, &tokenID
+	}()
+	l2Balance := func(agentID isc.AgentID) uint64 {
+		return env.soloChain.L2NativeTokens(agentID, tokenID).Uint64()
+	}
+
+	ethKey, ethAddr := env.soloChain.NewEthereumAccountWithL2Funds()
+	ethAgentID := isc.NewEthereumAddressAgentID(ethAddr)
+
+	_, err = env.soloChain.PostRequestSync(
+		solo.NewCallParams(
+			accounts.Contract.Name, accounts.FuncTransferAllowanceTo.Name,
+			dict.Dict{
+				accounts.ParamAgentID:          codec.EncodeAgentID(ethAgentID),
+				accounts.ParamForceOpenAccount: codec.EncodeBool(true),
+			},
+		).
+			WithAllowance(isc.NewAllowanceFungibleTokens(isc.NewFungibleTokens(0, iotago.NativeTokens{
+				&iotago.NativeToken{
+					ID:     *tokenID,
+					Amount: supply,
+				},
+			}))).
+			WithMaxAffordableGasBudget(),
+		foundryOwner,
+	)
+	require.NoError(t, err)
+
+	erc20 := env.ERC20NativeTokens(ethKey, foundrySN)
+
+	{
+		var sn uint32
+		require.NoError(t, erc20.callView("foundrySerialNumber", nil, &sn))
+		require.Equal(t, foundrySN, sn)
+	}
+	{
+		var id struct{ iscmagic.NativeTokenID }
+		require.NoError(t, erc20.callView("nativeTokenID", nil, &id))
+		require.EqualValues(t, tokenID[:], id.NativeTokenID.Data)
+	}
+	{
+		var name string
+		require.NoError(t, erc20.callView("name", nil, &name))
+		require.Equal(t, tokenName, name)
+	}
+	{
+		var sym string
+		require.NoError(t, erc20.callView("symbol", nil, &sym))
+		require.Equal(t, tokenTickerSymbol, sym)
+	}
+	{
+		var dec uint8
+		require.NoError(t, erc20.callView("decimals", nil, &dec))
+		require.EqualValues(t, tokenDecimals, dec)
+	}
+	{
+		var sup *big.Int
+		require.NoError(t, erc20.callView("totalSupply", nil, &sup))
+		require.Equal(t, supply.Uint64(), sup.Uint64())
+	}
+	{
+		var balance *big.Int
+		require.NoError(t, erc20.callView("balanceOf", []interface{}{ethAddr}, &balance))
+		require.EqualValues(t,
+			l2Balance(ethAgentID),
+			balance.Uint64(),
+		)
+	}
+	{
+		initialBalance := l2Balance(ethAgentID)
+		_, ethAddr2 := solo.NewEthereumAccount()
+		eth2AgentID := isc.NewEthereumAddressAgentID(ethAddr2)
+		_, err := erc20.callFn(nil, "transfer", ethAddr2, big.NewInt(int64(1*isc.Million)))
+		require.NoError(t, err)
+		require.EqualValues(t,
+			l2Balance(ethAgentID),
+			initialBalance-1*isc.Million,
+		)
+		require.EqualValues(t,
+			1*isc.Million,
+			l2Balance(eth2AgentID),
+		)
+	}
+	{
+		initialBalance := l2Balance(ethAgentID)
+		ethKey2, ethAddr2 := env.soloChain.NewEthereumAccountWithL2Funds()
+		eth2AgentID := isc.NewEthereumAddressAgentID(ethAddr2)
+		initialBalance2 := l2Balance(eth2AgentID)
+		{
+			_, err := erc20.callFn(nil, "approve", ethAddr2, big.NewInt(int64(1*isc.Million)))
+			require.NoError(t, err)
+			require.Greater(t,
+				l2Balance(ethAgentID),
+				initialBalance-1*isc.Million,
+			)
+			require.EqualValues(t,
+				initialBalance2,
+				l2Balance(eth2AgentID),
+			)
+		}
+
+		{
+			var allowance *big.Int
+			require.NoError(t, erc20.callView("allowance", []interface{}{ethAddr, ethAddr2}, &allowance))
+			require.EqualValues(t,
+				1*isc.Million,
+				allowance.Uint64(),
+			)
+		}
+		{
+			const amount = 100_000
+			_, ethAddr3 := solo.NewEthereumAccount()
+			eth3AgentID := isc.NewEthereumAddressAgentID(ethAddr3)
+			_, err := erc20.callFn([]ethCallOptions{{sender: ethKey2}}, "transferFrom", ethAddr, ethAddr3, big.NewInt(int64(amount)))
+			require.NoError(t, err)
+			require.Less(t,
+				initialBalance-1*isc.Million,
+				l2Balance(ethAgentID),
+			)
+			require.EqualValues(t,
+				amount,
+				l2Balance(eth3AgentID),
+			)
+			{
+				var allowance *big.Int
+				require.NoError(t, erc20.callView("allowance", []interface{}{ethAddr, ethAddr2}, &allowance))
 				require.EqualValues(t,
 					1*isc.Million-amount,
 					allowance.Uint64(),
@@ -1252,6 +1471,7 @@ func TestSolidityTransferCustomBaseTokens(t *testing.T) {
 		GasFeeTokenDecimals: customTokenDecimals,
 		GasPerToken:         100,
 		ValidatorFeeShare:   0,
+		EVMGasRatio:         gas.DefaultGasFeePolicy().EVMGasRatio,
 	}
 	// set the custom token as the gas fee token
 	env.soloChain.PostRequestSync(
@@ -1299,4 +1519,27 @@ func TestSolidityTransferCustomBaseTokens(t *testing.T) {
 		uint64(tokensToMoveToEvmAccount)-result.iscReceipt.GasFeeCharged-actualTokensMovedInEVMRequest,
 		env.soloChain.L2Assets(ethAgentID).Tokens[0].Amount.Uint64(),
 	)
+}
+
+func TestSandboxStackOverflow(t *testing.T) {
+	env := initEVM(t)
+	ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
+
+	iscTest := env.deployISCTestContract(ethKey)
+
+	// tx contract call
+	ret, err := iscTest.callFn([]ethCallOptions{{
+		gasLimit: 100_000, // skip estimate gas (which will fail)
+	}}, "testStackOverflow")
+
+	require.Error(t, err)
+	require.NotNil(t, ret.evmReceipt) // evm receipt is produced
+
+	require.Error(t, err)
+	testmisc.RequireErrorToBe(t, err, vm.ErrIllegalCall)
+
+	// view call
+	err = iscTest.callView("testStackOverflow", nil, nil)
+	require.Error(t, err)
+	testmisc.RequireErrorToBe(t, err, vm.ErrIllegalCall)
 }

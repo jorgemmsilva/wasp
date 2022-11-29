@@ -57,14 +57,6 @@ Some parameters of the `evm` contract can be specified by passing them to the
 
 - `evmw` (optional [`GasRatio`](#gasratio) - default: `1:1`): The ISC to EVM gas ratio.
 
-### `setGasRatio`
-
-Changes the ISC : EVM gas ratio.
-
-#### Parameters
-
-- `w` ([`GasRatio`](#gasratio)): The ISC : EVM gas ratio.
-
 ### `registerERC20NativeToken`
 
 Registers an ERC20 contract to act as a proxy for the native tokens, at address
@@ -79,18 +71,6 @@ Only the foundry owner can call this endpoint.
 - `n` (`string`): The token name
 - `t` (`string`): The ticker symbol
 - `d` (`uint8`): The token decimals
-
----
-
-## Views
-
-### `getGasRatio`
-
-Returns the ISC : EVM gas ratio.
-
-#### Returns
-
-- `r` ([`GasRatio`](#gasratio)): The ISC : EVM gas ratio.
 
 ---
 
@@ -111,12 +91,3 @@ Returns the ISC : EVM gas ratio.
     - Account balance (must be 0)(`[]byte` prefixed with `uint32` size).
     - Account nonce  (`uint64`).
     - Account private key (may be used for tests)(`uint64`).
-
-### `GasRatio`
-
-ISC : EVM gas ratio is expressed as an `a : b` ratio, where `<ISC gas> = <EVM gas> * <a> / <b>`.
-
-`GasRatio` is encoded as the concatenation of the two `uint32` values `a` & `b`.
-
-
-

@@ -56,11 +56,11 @@ func (e *EVMChain) BlockNumber() (*big.Int, error) {
 }
 
 func (e *EVMChain) GasRatio() (util.Ratio32, error) {
-	ret, err := e.backend.ISCCallView(e.backend.ISCLatestBlockIndex(), evm.Contract.Name, evm.FuncGetGasRatio.Name, nil)
+	ret, err := e.backend.ISCCallView(governance.Contract.Name, governance.ViewGetEVMGasRatio.Name, nil)
 	if err != nil {
 		return util.Ratio32{}, err
 	}
-	return codec.DecodeRatio32(ret.MustGet(evm.FieldResult))
+	return codec.DecodeRatio32(ret.MustGet(governance.ParamEVMGasRatio))
 }
 
 func (e *EVMChain) GasFeePolicy() (*gas.GasFeePolicy, error) {
@@ -327,6 +327,10 @@ func (e *EVMChain) CallContract(args ethereum.CallMsg, blockNumberOrHash rpc.Blo
 
 func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg) (uint64, error) {
 	return e.backend.EVMEstimateGas(callMsg)
+}
+
+func (e *EVMChain) GasPrice() *big.Int {
+	return e.backend.EVMGasPrice()
 }
 
 func (e *EVMChain) StorageAt(address common.Address, key common.Hash, blockNumberOrHash rpc.BlockNumberOrHash) ([]byte, error) {

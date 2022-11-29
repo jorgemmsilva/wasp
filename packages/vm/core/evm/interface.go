@@ -33,9 +33,7 @@ var (
 	FuncGetLogs                             = coreutil.ViewFunc(evmnames.FuncGetLogs)
 	FuncGetChainID                          = coreutil.ViewFunc(evmnames.FuncGetChainID)
 
-	// evm SC management
-	FuncSetGasRatio = coreutil.Func(evmnames.FuncSetGasRatio)
-	FuncGetGasRatio = coreutil.ViewFunc(evmnames.FuncGetGasRatio)
+	FuncRegisterERC20NativeToken = coreutil.Func(evmnames.FuncRegisterERC20NativeToken)
 
 	FuncRegisterERC20NativeToken = coreutil.Func(evmnames.FuncRegisterERC20NativeToken)
 
@@ -57,7 +55,6 @@ const (
 	FieldResult           = evmnames.FieldResult
 	FieldBlockNumber      = evmnames.FieldBlockNumber
 	FieldBlockHash        = evmnames.FieldBlockHash
-	FieldGasRatio         = evmnames.FieldGasRatio
 	FieldBlockGasLimit    = evmnames.FieldBlockGasLimit
 	FieldFilterQuery      = evmnames.FieldFilterQuery
 	FieldBlockKeepAmount  = evmnames.FieldBlockKeepAmount // int32

@@ -36,3 +36,5 @@ wal/
 *.snapshot
 ./gascalibration
 ./snapshot
+snapshot
+tests_output.log

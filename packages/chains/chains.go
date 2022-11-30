@@ -24,7 +24,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/processors"
 )
 
-type Provider func() *Chains
+type Provider func() *Chains // TODO: Use DI instead of that.
 
 func (chains Provider) ChainProvider() func(chainID *isc.ChainID) chain.Chain {
 	return func(chainID *isc.ChainID) chain.Chain {
@@ -67,12 +67,12 @@ func New(
 	log *logger.Logger,
 	nodeConnection chain.NodeConnection,
 	processorConfig *processors.Config,
-	offledgerBroadcastUpToNPeers int,
-	offledgerBroadcastInterval time.Duration,
-	pullMissingRequestsFromCommittee bool,
+	offledgerBroadcastUpToNPeers int, // TODO: Unused for now.
+	offledgerBroadcastInterval time.Duration, // TODO: Unused for now.
+	pullMissingRequestsFromCommittee bool, // TODO: Unused for now.
 	networkProvider peering.NetworkProvider,
 	getOrCreateChainKVStore database.ChainStateKVStoreProvider,
-	rawBlocksEnabled bool,
+	rawBlocksEnabled bool, // TODO: Unused for now.
 	rawBlocksDir string,
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
 	dkShareRegistryProvider registry.DKShareRegistryProvider,
@@ -112,7 +112,6 @@ func (c *Chains) Run(
 	return c.activateAllFromRegistry() //nolint:contextcheck
 }
 
-// TODO: Why do we take these parameters here, and not in the constructor?
 func (c *Chains) activateAllFromRegistry() error {
 	chainRecords, err := c.chainRecordRegistryProvider.ChainRecords()
 	if err != nil {

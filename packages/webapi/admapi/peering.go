@@ -21,12 +21,12 @@ import (
 )
 
 type peeringService struct {
-	registry   registry.Provider
+	registry   registry.ChainRecordRegistryProvider
 	network    peering.NetworkProvider
 	networkMgr peering.TrustedNetworkManager
 }
 
-func addPeeringEndpoints(adm echoswagger.ApiGroup, reg registry.Provider, network peering.NetworkProvider, tnm peering.TrustedNetworkManager) {
+func addPeeringEndpoints(adm echoswagger.ApiGroup, reg registry.ChainRecordRegistryProvider, network peering.NetworkProvider, tnm peering.TrustedNetworkManager) {
 	listExample := []*model.PeeringTrustedNode{
 		{PubKey: "8mcS4hUaiiedX3jRud41Zuu1ZcRUZZ8zY9SuJJgXHuiQ", NetID: "some-host:9081"},
 		{PubKey: "8mcS4hUaiiedX3jRud41Zuu1ZcRUZZ8zY9SuJJgXHuiR", NetID: "some-host:9082"},
@@ -186,19 +186,21 @@ func (p *peeringService) handlePeeringTrustedDelete(c echo.Context) error {
 		return c.NoContent(http.StatusOK)
 	}
 	// remove any access nodes for the distrusted peer
-	chainRecs, err := p.registry().GetChainRecords()
+	chainRecs, err := p.registry.ChainRecords()
 	if err != nil {
 		return httperrors.ServerError("Peer trust removed, but errored when trying to get chain list from registry")
 	}
-	for _, rec := range chainRecs {
-		if lo.ContainsBy(rec.AccessNodes, func(p cryptolib.PublicKey) bool {
-			return p.Equals(tp.PubKey)
-		}) {
-			rec.RemoveAccessNode(tp.PubKey)
-			err = p.registry().SaveChainRecord(rec)
-			if err != nil {
-				return httperrors.ServerError(fmt.Sprintf("Peer trust removed, but errored whentrying to save chain record %s", rec.ChainID))
-			}
+	chainRecsToModify := lo.Filter(chainRecs, func(r *registry.ChainRecord, _ int) bool {
+		return lo.ContainsBy(r.AccessNodes, func(p cryptolib.PublicKey) bool {
+			return p.Equals(pubKey)
+		})
+	})
+	for _, r := range chainRecsToModify {
+		_, err = p.registry.UpdateChainRecord(*r.ID(), func(rec *registry.ChainRecord) bool {
+			return rec.RemoveAccessNode(pubKey)
+		})
+		if err != nil {
+			return httperrors.ServerError(fmt.Sprintf("Peer trust removed, but errored whentrying to save chain record %s", r.ChainID()))
 		}
 	}
 	return c.JSON(http.StatusOK, model.NewPeeringTrustedNode(tp))

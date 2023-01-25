@@ -30,10 +30,10 @@ import (
 
 type clusterTestEnv struct {
 	jsonrpctest.Env
-	ChainEnv
+	chainEnv
 }
 
-func newClusterTestEnv(t *testing.T, env *ChainEnv, nodeIndex int) *clusterTestEnv {
+func newClusterTestEnv(t *testing.T, env *chainEnv, nodeIndex int) *clusterTestEnv {
 	evmtest.InitGoEthLogger(t)
 
 	jsonRPCEndpoint := "http://" + env.Clu.Config.APIHost(nodeIndex) + routes.EVMJSONRPC(env.Chain.ChainID.String())
@@ -72,7 +72,7 @@ func newClusterTestEnv(t *testing.T, env *ChainEnv, nodeIndex int) *clusterTestE
 			ChainID:         evm.DefaultChainID,
 			WaitTxConfirmed: waitTxConfirmed,
 		},
-		ChainEnv: *env,
+		chainEnv: *env,
 	}
 	e.Env.NewAccountWithL2Funds = e.newEthereumAccountWithL2Funds
 	return e
@@ -117,7 +117,7 @@ func (e *clusterTestEnv) newEthereumAccountWithL2Funds(baseTokens ...uint64) (*e
 }
 
 // executed in cluster_test.go
-func testEVMJsonRPCCluster(t *testing.T, env *ChainEnv) {
+func testEVMJsonRPCCluster(t *testing.T, env *chainEnv) {
 	e := newClusterTestEnv(t, env, 0)
 	e.TestRPCGetLogs()
 	e.TestRPCInvalidNonce()

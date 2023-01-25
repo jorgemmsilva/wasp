@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/client/chainclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/tools/cluster/templates"
@@ -30,7 +29,7 @@ func TestMissingRequests(t *testing.T) {
 	chainID := chain.ChainID
 
 	chEnv := newChainEnv(t, clu, chain)
-	chEnv.deployNativeIncCounterSC()
+	chEnv.deployWasmInccounter(0)
 
 	waitUntil(t, chEnv.contractIsDeployed(), clu.Config.AllNodes(), 30*time.Second)
 
@@ -45,7 +44,7 @@ func TestMissingRequests(t *testing.T) {
 	require.NoError(t, err)
 
 	// send off-ledger request to all nodes except #3
-	req := isc.NewOffLedgerRequest(chainID, nativeIncCounterSCHname, inccounter.FuncIncCounter.Hname(), dict.Dict{}, 0).Sign(userWallet)
+	req := isc.NewOffLedgerRequest(chainID, incHname, incrementFuncHn, dict.Dict{}, 0).Sign(userWallet)
 
 	err = clu.WaspClient(0).PostOffLedgerRequest(chainID, req)
 	require.NoError(t, err)

@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -16,8 +15,8 @@ import (
 )
 
 // buils a normal tx to post a request to inccounter, optionally adds SDRC
-func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptolib.KeyPair, addSDRC bool) *iotago.Transaction {
-	outputs, err := env.Clu.L1Client().OutputMap(addr)
+func buildTX(t *testing.T, e *chainEnv, addr iotago.Address, keyPair *cryptolib.KeyPair, addSDRC bool) *iotago.Transaction {
+	outputs, err := e.Clu.L1Client().OutputMap(addr)
 	require.NoError(t, err)
 
 	outputIDs := make(iotago.OutputIDs, len(outputs))
@@ -33,11 +32,11 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 		UnspentOutputs:   outputs,
 		UnspentOutputIDs: outputIDs,
 		Request: &isc.RequestParameters{
-			TargetAddress:  env.Chain.ChainAddress(),
+			TargetAddress:  e.Chain.ChainAddress(),
 			FungibleTokens: &isc.FungibleTokens{BaseTokens: 1 * isc.Million},
 			Metadata: &isc.SendMetadata{
-				TargetContract: nativeIncCounterSCHname,
-				EntryPoint:     inccounter.FuncIncCounter.Hname(),
+				TargetContract: incHname,
+				EntryPoint:     incrementFuncHn,
 				GasBudget:      math.MaxUint64,
 			},
 		},
@@ -70,40 +69,40 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 }
 
 // executed in cluster_test.go
-func testSDRUC(t *testing.T, env *ChainEnv) {
-	env.deployNativeIncCounterSC(0)
-	keyPair, addr, err := env.Clu.NewKeyPairWithFunds()
+func testSDRUC(t *testing.T, e *chainEnv) {
+	e.deployWasmInccounter(0)
+	keyPair, addr, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	initialBlockIdx, err := env.Chain.BlockIndex()
+	initialBlockIdx, err := e.Chain.BlockIndex()
 	require.NoError(t, err)
 
 	// // send a request with Storage Deposit Return Unlock
-	txSDRC := buildTX(t, env, addr, keyPair, true)
-	_, err = env.Clu.L1Client().PostTxAndWaitUntilConfirmation(txSDRC)
+	txSDRC := buildTX(t, e, addr, keyPair, true)
+	_, err = e.Clu.L1Client().PostTxAndWaitUntilConfirmation(txSDRC)
 	require.NoError(t, err)
 
 	// wait some time and assert that the chain has not processed the request
 	time.Sleep(10 * time.Second) // don't like the sleep here, but not sure there is a better way to do this
 
 	// make sure the request is not picked up and the chain does not process it
-	currentBlockIndex, err := env.Chain.BlockIndex()
+	currentBlockIndex, err := e.Chain.BlockIndex()
 	require.NoError(t, err)
 	require.EqualValues(t, initialBlockIdx, currentBlockIndex)
 
-	require.EqualValues(t, 0, env.getNativeContractCounter(nativeIncCounterSCHname))
+	e.expectCounter(0)
 
 	// send an equivalent request without StorageDepositReturnUnlockCondition
-	txNormal := buildTX(t, env, addr, keyPair, false)
-	_, err = env.Clu.L1Client().PostTxAndWaitUntilConfirmation(txNormal)
+	txNormal := buildTX(t, e, addr, keyPair, false)
+	_, err = e.Clu.L1Client().PostTxAndWaitUntilConfirmation(txNormal)
 	require.NoError(t, err)
 
-	_, err = env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, txNormal, 1*time.Minute)
+	_, err = e.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, txNormal, 1*time.Minute)
 	require.NoError(t, err)
 
-	require.EqualValues(t, 1, env.getNativeContractCounter(nativeIncCounterSCHname))
+	e.expectCounter(1)
 
-	currentBlockIndex2, err := env.Chain.BlockIndex()
+	currentBlockIndex2, err := e.Chain.BlockIndex()
 	require.NoError(t, err)
 	require.EqualValues(t, initialBlockIdx+1, currentBlockIndex2)
 }

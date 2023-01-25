@@ -6,7 +6,9 @@ package chain_test
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -16,11 +18,12 @@ import (
 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/smGPA/smGPAUtils"
+	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics/nodeconnmetrics"
 	"github.com/iotaledger/wasp/packages/peering"
@@ -41,6 +44,7 @@ type tc struct {
 	reliable bool
 }
 
+//nolint:tparallel // wasm VM will crash if these are run in parallel...
 func TestBasic(t *testing.T) {
 	t.Parallel()
 	tests := []tc{
@@ -67,7 +71,8 @@ func TestBasic(t *testing.T) {
 
 //nolint:gocyclo
 func testBasic(t *testing.T, n, f int, reliable bool) {
-	t.Parallel()
+	// t.Parallel()
+
 	rand.Seed(time.Now().UnixNano())
 	te := newEnv(t, n, f, reliable)
 	defer te.close()
@@ -106,7 +111,7 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 			)
 		}
 	}
-	awaitRequestsProcessed(te, initRequests, "initRequests")
+	awaitRequestsProcessed(te, "initRequests", initRequests...)
 	awaitPredicate(te, "len(published) > 0", func() bool {
 		for _, tnc := range te.nodeConns {
 			if len(tnc.published) == 0 {
@@ -120,7 +125,8 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	scClient := cryptolib.NewKeyPair()
 	_, err := te.utxoDB.GetFundsFromFaucet(scClient.Address(), 150_000_000)
 	require.NoError(t, err)
-	deployReqs := append(te.tcl.MakeTxDeployIncCounterContract(), te.tcl.MakeTxAccountsDeposit(scClient)...)
+	// Deposit funds
+	depositReq := te.tcl.MakeTxAccountsDeposit(scClient)
 	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(te.nodeConns[0].published[0])
 	require.NoError(t, err)
 	deployBaseAO := isc.NewAliasOutputWithID(deployBaseAONoID, deployBaseAnchor.OutputID)
@@ -128,14 +134,14 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 		tnc.recvAliasOutput(
 			isc.NewOutputInfo(deployBaseAO.OutputID(), deployBaseAO.GetAliasOutput(), iotago.TransactionID{}),
 		)
-		for _, req := range deployReqs {
+		for _, req := range depositReq {
 			onLedgerRequest := req.(isc.OnLedgerRequest)
 			tnc.recvRequestCB(
 				isc.NewOutputInfo(onLedgerRequest.ID().OutputID(), onLedgerRequest.Output(), iotago.TransactionID{}),
 			)
 		}
 	}
-	awaitRequestsProcessed(te, deployReqs, "deployReqs")
+	awaitRequestsProcessed(te, "deployReqs", depositReq...)
 	awaitPredicate(te, "len(tnc.published) > 1", func() bool {
 		for _, tnc := range te.nodeConns {
 			if len(tnc.published) <= 1 {
@@ -144,6 +150,34 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 		}
 		return true
 	})
+
+	inccounterHn := isc.Hn("inccounter")
+	incrementFuncHn := isc.Hn("increment")
+	getCounterViewHn := isc.Hn("getCounter")
+
+	// Deploy Inccounter wasm contract via off-ledger request
+
+	// blob upload
+	wasmPath := "../../tools/cluster/tests/wasm/inccounter_bg.wasm"
+	wasmBin, err := os.ReadFile(wasmPath)
+	require.NoError(t, err)
+	blobUploadReqUnsigned, progHash := te.tcl.BlobUploadRequest(wasmBin, 0)
+	blobUploadReq := blobUploadReqUnsigned.WithGasBudget(math.MaxUint64).Sign(te.tcl.Originator)
+	te.nodes[0].ReceiveOffLedgerRequest(
+		blobUploadReq,
+		scClient.GetPublicKey(),
+	)
+	awaitRequestsProcessed(te, "upload", blobUploadReq)
+
+	// wasm contract deployment
+	contractDeployReq := te.tcl.ContractDeployRequest("inccounter", progHash, 1).
+		WithGasBudget(math.MaxUint64).Sign(te.tcl.Originator)
+	te.nodes[0].ReceiveOffLedgerRequest(
+		contractDeployReq,
+		scClient.GetPublicKey(),
+	)
+	awaitRequestsProcessed(te, "deploy", contractDeployReq)
+
 	//
 	// Invoke off-ledger requests on the contract, wait for the counter to reach the expected value.
 	// We only send the requests to the first node. Mempool has to disseminate them.
@@ -152,8 +186,8 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	for i := 0; i < incCount; i++ {
 		scRequest := isc.NewOffLedgerRequest(
 			te.chainID,
-			inccounter.Contract.Hname(),
-			inccounter.FuncIncCounter.Hname(),
+			inccounterHn,
+			incrementFuncHn,
 			dict.New(), uint64(i),
 		).WithGasBudget(20000).Sign(scClient)
 		te.nodes[0].ReceiveOffLedgerRequest(scRequest, scClient.GetPublicKey())
@@ -163,7 +197,11 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 		for {
 			latestState, err := node.LatestState(chain.ActiveOrCommittedState)
 			require.NoError(t, err)
-			cnt := inccounter.NewStateAccess(latestState).GetCounter()
+			res, err := chainutil.CallView(latestState, node, inccounterHn, getCounterViewHn, nil)
+			require.NoError(t, err)
+			cnt, err := codec.DecodeInt64(res.MustGet("counter"), 0)
+			require.NoError(t, err)
+
 			te.log.Debugf("Counter[node=%v]=%v", i, cnt)
 			if cnt >= int64(incCount) {
 				// TODO: Double-check with the published TX.
@@ -185,9 +223,9 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 			for ii := 0; ii < incCount; ii++ {
 				scRequest := isc.NewOffLedgerRequest(
 					te.chainID,
-					inccounter.Contract.Hname(),
-					inccounter.FuncIncCounter.Hname(),
-					dict.New(), uint64(ii),
+					inccounterHn,
+					incrementFuncHn,
+					dict.New(), uint64(ii+2),
 				).WithGasBudget(20000).Sign(scClient)
 				te.nodes[0].ReceiveOffLedgerRequest(scRequest, scClient.GetPublicKey())
 			}
@@ -212,16 +250,21 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	}
 	//
 	// Check if all requests were processed.
-	awaitRequestsProcessed(te, incRequests, "incRequests")
+	awaitRequestsProcessed(te, "incRequests", incRequests...)
 }
 
-func awaitRequestsProcessed(te *testEnv, requests []isc.Request, desc string) {
+func awaitRequestsProcessed(te *testEnv, desc string, requests ...isc.Request) {
 	reqRefs := isc.RequestRefsFromRequests(requests)
 	for i, node := range te.nodes {
 		for reqNum, reqRef := range reqRefs {
 			te.log.Debugf("Going to AwaitRequestProcessed %v at node=%v, req[%v]=%v...", desc, i, reqNum, reqRef.ID.String())
 			<-node.AwaitRequestProcessed(te.ctx, reqRef.ID, false)
-			<-node.AwaitRequestProcessed(te.ctx, reqRef.ID, true)
+			rec := <-node.AwaitRequestProcessed(te.ctx, reqRef.ID, true)
+			if rec.Error != nil {
+				resolvedErr, err := chainutil.ResolveError(node, rec.Error)
+				require.NoError(te.t, err)
+				te.t.Fatal(resolvedErr)
+			}
 			te.log.Debugf("Going to AwaitRequestProcessed %v at node=%v, req[%v]=%v...Done", desc, i, reqNum, reqRef.ID.String())
 		}
 	}
@@ -320,6 +363,7 @@ func (tnc *testNodeConn) waitAttached() {
 // testEnv
 
 type testEnv struct {
+	t                *testing.T
 	ctx              context.Context
 	ctxCancel        context.CancelFunc
 	log              *logger.Logger
@@ -340,7 +384,7 @@ type testEnv struct {
 }
 
 func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
-	te := &testEnv{}
+	te := &testEnv{t: t}
 	te.ctx, te.ctxCancel = context.WithCancel(context.Background())
 	te.log = testlogger.NewLogger(t).Named(fmt.Sprintf("%04d", rand.Intn(10000))) // For test instance ID.
 	//
@@ -380,6 +424,8 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	// Initialize the nodes.
 	te.nodeConns = make([]*testNodeConn, len(te.peerIdentities))
 	te.nodes = make([]chain.Chain, len(te.peerIdentities))
+	cfg, err := coreprocessors.NewConfigWithCoreContracts().WithWasmVM(te.log)
+	require.NoError(t, err)
 	for i := range te.peerIdentities {
 		te.nodeConns[i] = newTestNodeConn(t)
 		te.nodes[i], err = chain.New(
@@ -388,7 +434,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 			state.InitChainStore(mapdb.NewMapDB()),
 			te.nodeConns[i],
 			te.peerIdentities[i],
-			coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor),
+			cfg,
 			dkShareProviders[i],
 			testutil.NewConsensusStateRegistry(),
 			smGPAUtils.NewMockedTestBlockWAL(),

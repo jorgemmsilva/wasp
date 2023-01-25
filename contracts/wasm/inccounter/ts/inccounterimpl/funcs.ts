@@ -47,7 +47,9 @@ export function funcIncrement(ctx: wasmlib.ScFuncContext, f: sc.IncrementContext
     }
 
     let counter = f.state.counter();
-    counter.setValue(counter.value() + incValue);
+	let newCounterValue = counter.value() + incValue;
+    counter.setValue(newCounterValue);
+    ctx.event("incCounter: counter = " + newCounterValue.toString()) 
 }
 
 export function funcIncrementWithDelay(ctx: wasmlib.ScFuncContext, f: sc.IncrementWithDelayContext): void {

@@ -3,10 +3,12 @@ package processors
 import (
 	"fmt"
 
+	"github.com/iotaledger/hive.go/core/logger"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/vm/vmtypes"
+	"github.com/iotaledger/wasp/packages/wasmvm/wasmhost"
 )
 
 type VMConstructor func(binaryCode []byte) (isc.VMProcessor, error)
@@ -87,4 +89,11 @@ func (p *Config) GetNativeProcessor(programHash hashing.HashValue) (isc.VMProces
 func (p *Config) GetCoreProcessor(programHash hashing.HashValue) (isc.VMProcessor, bool) {
 	proc, ok := p.coreContracts[programHash]
 	return proc, ok
+}
+
+func (p *Config) WithWasmVM(log *logger.Logger) (*Config, error) {
+	err := p.RegisterVMType(vmtypes.WasmTime, func(binary []byte) (isc.VMProcessor, error) {
+		return wasmhost.GetProcessor(binary, log)
+	})
+	return p, err
 }

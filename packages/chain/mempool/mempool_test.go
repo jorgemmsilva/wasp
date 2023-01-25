@@ -17,7 +17,6 @@ import (
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/iota.go/v3/tpkg"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chain/mempool"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -127,7 +126,7 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	// Make a block consuming those 2 requests.
 	store := te.stores[0]
 	vmTask := &vm.VMTask{
-		Processors:             processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
+		Processors:             processors.MustNew(coreprocessors.NewConfigWithCoreContracts()),
 		AnchorOutput:           te.originAO.GetAliasOutput(),
 		AnchorOutputID:         te.originAO.OutputID(),
 		Store:                  store,

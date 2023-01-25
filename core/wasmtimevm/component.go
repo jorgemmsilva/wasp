@@ -9,10 +9,8 @@ import (
 	"go.uber.org/dig"
 
 	"github.com/iotaledger/hive.go/core/app"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 	"github.com/iotaledger/wasp/packages/vm/vmtypes"
-	"github.com/iotaledger/wasp/packages/wasmvm/wasmhost"
 )
 
 func init() {
@@ -38,11 +36,9 @@ type dependencies struct {
 
 func configure() error {
 	// register VM type(s)
-	err := deps.ProcessorsConfig.RegisterVMType(vmtypes.WasmTime, func(binary []byte) (isc.VMProcessor, error) {
-		// TODO (via config?) pass non-default timeout for WasmTime processor like this:
-		// WasmTimeout = 3 * time.Second
-		return wasmhost.GetProcessor(binary, CoreComponent.Logger())
-	})
+	// TODO (via config?) pass non-default timeout for WasmTime processor like this:
+	// WasmTimeout = 3 * time.Second
+	_, err := deps.ProcessorsConfig.WithWasmVM(CoreComponent.Logger())
 	if err != nil {
 		CoreComponent.LogPanic(err)
 	}

@@ -4,16 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 )
 
 // ensures a nodes resumes normal operation after rebooting
 func TestReboot(t *testing.T) {
-	e := setupNativeInccounterTest(t, 3, []int{0, 1, 2})
-	client := e.createNewClient()
+	e := setupInccounterTest(t, 3, []int{0, 1, 2})
+	client := e.newInccounterClientWithFunds()
 
-	_, err := client.PostRequest(inccounter.FuncIncCounter.Name)
+	_, err := client.PostRequest(incrementFuncName)
 	require.NoError(t, err)
 	e.counterEquals(1)
 
@@ -22,7 +20,7 @@ func TestReboot(t *testing.T) {
 	require.NoError(t, err)
 
 	// after rebooting, the chain should resume processing requests without issues
-	_, err = client.PostRequest(inccounter.FuncIncCounter.Name)
+	_, err = client.PostRequest(incrementFuncName)
 	require.NoError(t, err)
 	e.counterEquals(2)
 }

@@ -24,7 +24,6 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
@@ -85,15 +84,12 @@ type ethCallOptions struct {
 	gasLimit uint64
 }
 
-func initEVM(t testing.TB, nativeContracts ...*coreutil.ContractProcessor) *soloChainEnv {
+func initEVM(t testing.TB) *soloChainEnv {
 	env := solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
 		PrintStackTrace:          true,
 	})
-	for _, c := range nativeContracts {
-		env = env.WithNativeContract(c)
-	}
 	return initEVMWithSolo(t, env)
 }
 

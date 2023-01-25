@@ -7,7 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -15,28 +14,33 @@ import (
 	"github.com/iotaledger/wasp/packages/transaction"
 )
 
-func TestSendBack(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true}).
-		WithNativeContract(inccounter.Processor)
-	ch := env.NewChain()
+const (
+	incCounterName     = "inccounter"
+	incrementFn        = "increment"
+	getCounterViewName = "getCounter"
+	varCounter         = "counter"
+)
 
-	err := ch.DepositBaseTokensToL2(10*isc.Million, nil)
+func TestSendBack(t *testing.T) {
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
+	ch := env.NewChain()
+	err := ch.DeployWasmContract(nil, incCounterName, "../../../../contracts/wasm/inccounter/pkg/inccounter_bg.wasm")
 	require.NoError(t, err)
 
-	err = ch.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash, inccounter.VarCounter, 0)
+	err = ch.DepositBaseTokensToL2(10*isc.Million, nil)
 	require.NoError(t, err)
 
 	// send a normal request
 	wallet, addr := env.NewKeyPairWithFunds()
 
-	req := solo.NewCallParams(inccounter.Contract.Name, inccounter.FuncIncCounter.Name).WithMaxAffordableGasBudget()
+	req := solo.NewCallParams(incCounterName, incrementFn).WithMaxAffordableGasBudget()
 	_, _, err = ch.PostRequestSyncTx(req, wallet)
 	require.NoError(t, err)
 
 	// check counter increments
-	ret, err := ch.CallView(inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
+	ret, err := ch.CallView(incCounterName, getCounterViewName)
 	require.NoError(t, err)
-	counter, err := codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
+	counter, err := codec.DecodeInt64(ret.MustGet(varCounter))
 	require.NoError(t, err)
 	require.EqualValues(t, 1, counter)
 
@@ -51,8 +55,8 @@ func TestSendBack(t *testing.T) {
 			TargetAddress:  ch.ChainID.AsAddress(),
 			FungibleTokens: &isc.FungibleTokens{BaseTokens: 1 * isc.Million},
 			Metadata: &isc.SendMetadata{
-				TargetContract: inccounter.Contract.Hname(),
-				EntryPoint:     inccounter.FuncIncCounter.Hname(),
+				TargetContract: isc.Hn(incCounterName),
+				EntryPoint:     isc.Hn(incrementFn),
 				GasBudget:      math.MaxUint64,
 			},
 		},
@@ -87,9 +91,9 @@ func TestSendBack(t *testing.T) {
 	require.Len(t, results, 0)
 
 	// check counter is still the same (1)
-	ret, err = ch.CallView(inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
+	ret, err = ch.CallView(incCounterName, getCounterViewName)
 	require.NoError(t, err)
-	counter, err = codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
+	counter, err = codec.DecodeInt64(ret.MustGet(varCounter))
 	require.NoError(t, err)
 	require.EqualValues(t, 1, counter)
 }

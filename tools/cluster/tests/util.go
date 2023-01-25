@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
@@ -20,7 +19,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
 
-func (e *ChainEnv) checkCoreContracts() {
+func (e *chainEnv) checkCoreContracts() {
 	for i := range e.Chain.AllPeers {
 		b, err := e.Chain.GetStateVariable(root.Contract.Hname(), root.StateVarStateInitialized, i)
 		require.NoError(e.t, err)
@@ -59,7 +58,7 @@ func (e *ChainEnv) checkCoreContracts() {
 	}
 }
 
-func (e *ChainEnv) checkRootsOutside() {
+func (e *chainEnv) checkRootsOutside() {
 	for _, rec := range corecontracts.All {
 		recBack, err := e.findContract(rec.Name)
 		require.NoError(e.t, err)
@@ -70,7 +69,7 @@ func (e *ChainEnv) checkRootsOutside() {
 	}
 }
 
-func (e *ChainEnv) getBalanceOnChain(agentID isc.AgentID, assetID []byte, nodeIndex ...int) uint64 {
+func (e *chainEnv) getBalanceOnChain(agentID isc.AgentID, assetID []byte, nodeIndex ...int) uint64 {
 	idx := 0
 	if len(nodeIndex) > 0 {
 		idx = nodeIndex[0]
@@ -98,12 +97,12 @@ func (e *ChainEnv) getBalanceOnChain(agentID isc.AgentID, assetID []byte, nodeIn
 	return nativeTokensSet[nativeTokenID].Amount.Uint64()
 }
 
-func (e *ChainEnv) checkBalanceOnChain(agentID isc.AgentID, assetID []byte, expected uint64) {
+func (e *chainEnv) checkBalanceOnChain(agentID isc.AgentID, assetID []byte, expected uint64) {
 	actual := e.getBalanceOnChain(agentID, assetID)
 	require.EqualValues(e.t, expected, actual)
 }
 
-func (e *ChainEnv) getAccountsOnChain() []isc.AgentID {
+func (e *chainEnv) getAccountsOnChain() []isc.AgentID {
 	r, err := e.Chain.Cluster.WaspClient(0).CallView(
 		e.Chain.ChainID, accounts.Contract.Hname(), accounts.ViewAccounts.Name, nil,
 	)
@@ -121,7 +120,7 @@ func (e *ChainEnv) getAccountsOnChain() []isc.AgentID {
 	return ret
 }
 
-func (e *ChainEnv) getBalancesOnChain() map[string]*isc.FungibleTokens {
+func (e *chainEnv) getBalancesOnChain() map[string]*isc.FungibleTokens {
 	ret := make(map[string]*isc.FungibleTokens)
 	acc := e.getAccountsOnChain()
 	for _, agentID := range acc {
@@ -138,7 +137,7 @@ func (e *ChainEnv) getBalancesOnChain() map[string]*isc.FungibleTokens {
 	return ret
 }
 
-func (e *ChainEnv) getTotalBalance() *isc.FungibleTokens {
+func (e *chainEnv) getTotalBalance() *isc.FungibleTokens {
 	r, err := e.Chain.Cluster.WaspClient(0).CallView(
 		e.Chain.ChainID, accounts.Contract.Hname(), accounts.ViewTotalAssets.Name, nil,
 	)
@@ -148,7 +147,7 @@ func (e *ChainEnv) getTotalBalance() *isc.FungibleTokens {
 	return ret
 }
 
-func (e *ChainEnv) printAccounts(title string) {
+func (e *chainEnv) printAccounts(title string) {
 	allBalances := e.getBalancesOnChain()
 	s := fmt.Sprintf("------------------------------------- %s\n", title)
 	for k, bals := range allBalances {
@@ -160,7 +159,7 @@ func (e *ChainEnv) printAccounts(title string) {
 	fmt.Println(s)
 }
 
-func (e *ChainEnv) checkLedger() {
+func (e *chainEnv) checkLedger() {
 	balances := e.getBalancesOnChain()
 	sum := isc.NewEmptyFungibleTokens()
 	for _, bal := range balances {
@@ -169,7 +168,7 @@ func (e *ChainEnv) checkLedger() {
 	require.True(e.t, sum.Equals(e.getTotalBalance()))
 }
 
-func (e *ChainEnv) getChainInfo() (isc.ChainID, isc.AgentID) {
+func (e *chainEnv) getChainInfo() (isc.ChainID, isc.AgentID) {
 	ret, err := e.Chain.Cluster.WaspClient(0).CallView(
 		e.Chain.ChainID, governance.Contract.Hname(), governance.ViewGetChainInfo.Name, nil,
 	)
@@ -183,7 +182,7 @@ func (e *ChainEnv) getChainInfo() (isc.ChainID, isc.AgentID) {
 	return chainID, ownerID
 }
 
-func (e *ChainEnv) findContract(name string, nodeIndex ...int) (*root.ContractRecord, error) {
+func (e *chainEnv) findContract(name string, nodeIndex ...int) (*root.ContractRecord, error) {
 	i := 0
 	if len(nodeIndex) > 0 {
 		i = nodeIndex[0]
@@ -222,35 +221,19 @@ func waitTrue(timeout time.Duration, fun func() bool) bool {
 	}
 }
 
-func (e *ChainEnv) counterEquals(expected int64) conditionFn {
-	return func(t *testing.T, nodeIndex int) bool {
-		ret, err := e.Chain.Cluster.WaspClient(nodeIndex).CallView(
-			e.Chain.ChainID, nativeIncCounterSCHname, inccounter.ViewGetCounter.Name, nil,
-		)
-		if err != nil {
-			e.t.Logf("chainEnv::counterEquals: failed to call GetCounter: %v", err)
-			return false
-		}
-		counter, err := codec.DecodeInt64(ret.MustGet(inccounter.VarCounter), 0)
-		require.NoError(t, err)
-		t.Logf("chainEnv::counterEquals: node %d: counter: %d, waiting for: %d", nodeIndex, counter, expected)
-		return counter == expected
-	}
-}
-
-func (e *ChainEnv) accountExists(agentID isc.AgentID) conditionFn {
+func (e *chainEnv) accountExists(agentID isc.AgentID) conditionFn {
 	return func(t *testing.T, nodeIndex int) bool {
 		return e.getBalanceOnChain(agentID, isc.BaseTokenID, nodeIndex) > 0
 	}
 }
 
-func (e *ChainEnv) contractIsDeployed() conditionFn {
+func (e *chainEnv) contractIsDeployed() conditionFn {
 	return func(t *testing.T, nodeIndex int) bool {
-		ret, err := e.findContract(nativeIncCounterSCName, nodeIndex)
+		ret, err := e.findContract(incName, nodeIndex)
 		if err != nil {
 			return false
 		}
-		return ret.Name == nativeIncCounterSCName
+		return ret.Name == incName
 	}
 }
 
@@ -278,7 +261,7 @@ func waitUntil(t *testing.T, fn conditionFn, nodeIndexes []int, timeout time.Dur
 
 // endregion ///////////////////////////////////////////////////////////////
 
-func setupNativeInccounterTest(t *testing.T, clusterSize int, committee []int) *ChainEnv {
+func setupInccounterTest(t *testing.T, clusterSize int, committee []int) *chainEnv {
 	quorum := uint16((2*len(committee))/3 + 1)
 
 	clu := newCluster(t, waspClusterOpts{nNodes: clusterSize})
@@ -292,11 +275,11 @@ func setupNativeInccounterTest(t *testing.T, clusterSize int, committee []int) *
 	require.NoError(t, err)
 	t.Logf("deployed chainID: %s", chain.ChainID)
 
-	e := &ChainEnv{
+	e := &chainEnv{
 		t:     t,
 		Clu:   clu,
 		Chain: chain,
 	}
-	e.deployNativeIncCounterSC(0)
+	e.deployWasmInccounter(0)
 	return e
 }

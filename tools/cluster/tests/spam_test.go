@@ -11,8 +11,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/client/chainclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/testutil"
@@ -22,7 +20,7 @@ import (
 )
 
 // executed in cluster_test.go
-func testSpamOnledger(t *testing.T, env *ChainEnv) {
+func testSpamOnledger(t *testing.T, e *chainEnv) {
 	testutil.RunHeavy(t)
 	// in the privtangle setup, with 1s milestones, this test takes ~50m to process 10k requests
 	const numRequests = 10_000
@@ -33,7 +31,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 	errCh := make(chan error, numRequests)
 	txCh := make(chan iotago.Transaction, numRequests)
 	for i := 0; i < numAccounts; i++ {
-		keyPair, _, err := env.Clu.NewKeyPairWithFunds()
+		keyPair, _, err := e.Clu.NewKeyPairWithFunds()
 		createWalletRetries := 0
 		if err != nil {
 			if createWalletRetries >= 5 {
@@ -46,10 +44,10 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 			continue
 		}
 		go func() {
-			chainClient := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), keyPair)
+			chainClient := e.Chain.SCClient(incHname, keyPair)
 			retries := 0
 			for i := 0; i < numRequestsPerAccount; i++ {
-				tx, err := chainClient.PostRequest(inccounter.FuncIncCounter.Name)
+				tx, err := chainClient.PostRequest(incrementFuncName)
 				if err != nil {
 					if retries >= 5 {
 						errCh <- fmt.Errorf("failed to issue tx, an error 5 times, %w", err)
@@ -79,13 +77,13 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 
 	for i := 0; i < numRequests; i++ {
 		tx := <-txCh
-		_, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, &tx, 30*time.Second)
+		_, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, &tx, 30*time.Second)
 		require.NoError(t, err)
 	}
 
-	waitUntil(t, env.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
+	waitUntil(t, e.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
 
-	res, err := env.Chain.Cluster.WaspClient(0).CallView(env.Chain.ChainID, blocklog.Contract.Hname(), blocklog.ViewGetEventsForBlock.Name, dict.Dict{})
+	res, err := e.Chain.Cluster.WaspClient(0).CallView(e.Chain.ChainID, blocklog.Contract.Hname(), blocklog.ViewGetEventsForBlock.Name, dict.Dict{})
 	require.NoError(t, err)
 	events, err := testcore.EventsViewResultToStringArray(res)
 	require.NoError(t, err)
@@ -93,7 +91,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 }
 
 // executed in cluster_test.go
-func testSpamOffLedger(t *testing.T, env *ChainEnv) {
+func testSpamOffLedger(t *testing.T, e *chainEnv) {
 	testutil.RunHeavy(t)
 
 	// we need to cap the limit of parallel requests, otherwise some reqs will fail due to local tcp limits: `dial tcp 127.0.0.1:9090: socket: too many open files`
@@ -101,12 +99,12 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 	const numRequests = 100_000
 
 	// deposit funds for offledger requests
-	keyPair, _, err := env.Clu.NewKeyPairWithFunds()
+	keyPair, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	env.DepositFunds(utxodb.FundsFromFaucetAmount, keyPair)
+	e.DepositFunds(utxodb.FundsFromFaucetAmount, keyPair)
 
-	myClient := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), keyPair)
+	myClient := e.Chain.SCClient(incHname, keyPair)
 
 	durationsMutex := sync.Mutex{}
 	processingDurationsSum := uint64(0)
@@ -122,14 +120,14 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 			nonce := uint64(i + 1)
 			go func() {
 				// send the request
-				req, er := myClient.PostOffLedgerRequest(inccounter.FuncIncCounter.Name, chainclient.PostRequestParams{Nonce: nonce})
+				req, er := myClient.PostOffLedgerRequest(incrementFuncName, chainclient.PostRequestParams{Nonce: nonce})
 				if er != nil {
 					reqErrorChan <- er
 					return
 				}
 				reqSentTime := time.Now()
 				// wait for the request to be processed
-				_, err = env.Chain.CommitteeMultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, req.ID(), 5*time.Minute)
+				_, err = e.Chain.CommitteeMultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, req.ID(), 5*time.Minute)
 				if err != nil {
 					reqErrorChan <- err
 					return
@@ -163,9 +161,9 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 		}
 	}
 
-	waitUntil(t, env.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
+	waitUntil(t, e.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
 
-	res, err := env.Chain.Cluster.WaspClient(0).CallView(env.Chain.ChainID, blocklog.Contract.Hname(), blocklog.ViewGetEventsForBlock.Name, dict.Dict{})
+	res, err := e.Chain.Cluster.WaspClient(0).CallView(e.Chain.ChainID, blocklog.Contract.Hname(), blocklog.ViewGetEventsForBlock.Name, dict.Dict{})
 	require.NoError(t, err)
 	events, err := testcore.EventsViewResultToStringArray(res)
 	require.NoError(t, err)
@@ -175,17 +173,17 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 }
 
 // executed in cluster_test.go
-func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
+func testSpamCallViewWasm(t *testing.T, e *chainEnv) {
 	testutil.RunHeavy(t)
 
-	wallet, _, err := env.Clu.NewKeyPairWithFunds()
+	wallet, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
-	client := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), wallet)
+	client := e.Chain.SCClient(incHname, wallet)
 	{
 		// increment counter once
-		tx, err := client.PostRequest(inccounter.FuncIncCounter.Name)
+		tx, err := client.PostRequest(incrementFuncName)
 		require.NoError(t, err)
-		_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, 30*time.Second)
+		_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 30*time.Second)
 		require.NoError(t, err)
 	}
 
@@ -200,7 +198,7 @@ func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
 				return
 			}
 
-			v, err := codec.DecodeInt64(r.MustGet(inccounter.VarCounter))
+			v, err := codec.DecodeInt64(r.MustGet(varCounter))
 			if err == nil && v != 1 {
 				err = errors.New("v != 1")
 			}

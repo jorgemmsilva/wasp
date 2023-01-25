@@ -19,7 +19,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/iota.go/v3/tpkg"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
@@ -354,8 +353,7 @@ func TestISCTriggerEvent(t *testing.T) {
 	res, err := iscTest.triggerEvent("Hi from EVM!")
 	require.NoError(t, err)
 	require.Equal(t, types.ReceiptStatusSuccessful, res.evmReceipt.Status)
-	ev, err := env.soloChain.GetEventsForBlock(env.soloChain.GetLatestBlockInfo().BlockIndex)
-	require.NoError(t, err)
+	ev := env.soloChain.GetEventsForBlock(env.soloChain.GetLatestBlockInfo().BlockIndex)
 	require.Len(t, ev, 1)
 	require.Contains(t, ev[0], "Hi from EVM!")
 }
@@ -370,8 +368,7 @@ func TestISCTriggerEventThenFail(t *testing.T) {
 		gasLimit: 100_000, // skip estimate gas (which will fail)
 	})
 	require.Error(t, err)
-	ev, err := env.soloChain.GetEventsForBlock(env.soloChain.GetLatestBlockInfo().BlockIndex)
-	require.NoError(t, err)
+	ev := env.soloChain.GetEventsForBlock(env.soloChain.GetLatestBlockInfo().BlockIndex)
 	require.Len(t, ev, 0)
 }
 
@@ -721,11 +718,20 @@ func TestERC721NFTCollection(t *testing.T) {
 	}
 }
 
+const (
+	wasmInccounterName     = "inccounter"
+	wasmGetCounterViewName = "getCounter"
+	wasmIncrementFn        = "increment"
+	wasmVarCounter         = "counter"
+)
+
 func TestISCCall(t *testing.T) {
-	env := initEVM(t, inccounter.Processor)
-	ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
-	err := env.soloChain.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash)
+	env := initEVM(t)
+
+	err := env.soloChain.DeployWasmContract(nil, wasmInccounterName, "../../../../../contracts/wasm/inccounter/pkg/inccounter_bg.wasm")
 	require.NoError(t, err)
+
+	ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
 	iscTest := env.deployISCTestContract(ethKey)
 
 	res, err := iscTest.callFn(nil, "callInccounter")
@@ -733,11 +739,11 @@ func TestISCCall(t *testing.T) {
 	require.Equal(env.solo.T, types.ReceiptStatusSuccessful, res.evmReceipt.Status)
 
 	r, err := env.soloChain.CallView(
-		inccounter.Contract.Name,
-		inccounter.ViewGetCounter.Name,
+		wasmInccounterName,
+		wasmGetCounterViewName,
 	)
 	require.NoError(env.solo.T, err)
-	require.EqualValues(t, 42, codec.MustDecodeInt64(r.MustGet(inccounter.VarCounter)))
+	require.EqualValues(t, 1, codec.MustDecodeInt64(r.MustGet(wasmVarCounter)))
 }
 
 func TestFibonacciContract(t *testing.T) {
@@ -797,17 +803,19 @@ func TestISCPanic(t *testing.T) {
 }
 
 func TestISCSendWithArgs(t *testing.T) {
-	env := initEVM(t, inccounter.Processor)
-	err := env.soloChain.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash)
+	env := initEVM(t)
+
+	err := env.soloChain.DeployWasmContract(nil, wasmInccounterName, "../../../../../contracts/wasm/inccounter/pkg/inccounter_bg.wasm")
 	require.NoError(t, err)
 
 	checkCounter := func(c int) {
-		ret, err := env.soloChain.CallView(inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
-		require.NoError(t, err)
-		counter := codec.MustDecodeUint64(ret.MustGet(inccounter.VarCounter))
-		require.EqualValues(t, c, counter)
+		r, err := env.soloChain.CallView(
+			wasmInccounterName,
+			wasmGetCounterViewName,
+		)
+		require.NoError(env.solo.T, err)
+		require.EqualValues(t, c, codec.MustDecodeInt64(r.MustGet(wasmVarCounter)))
 	}
-	checkCounter(0)
 
 	ethKey, ethAddr := env.soloChain.NewEthereumAccountWithL2Funds()
 	senderInitialBalance := env.soloChain.L2BaseTokens(isc.NewEthereumAddressAgentID(ethAddr))
@@ -823,8 +831,8 @@ func TestISCSendWithArgs(t *testing.T) {
 		iscmagic.WrapISCFungibleTokens(*isc.NewFungibleBaseTokens(sendBaseTokens)),
 		false, // auto adjust SD
 		iscmagic.WrapISCSendMetadata(isc.SendMetadata{
-			TargetContract: inccounter.Contract.Hname(),
-			EntryPoint:     inccounter.FuncIncCounter.Hname(),
+			TargetContract: isc.Hn(wasmInccounterName),
+			EntryPoint:     isc.Hn(wasmIncrementFn),
 			Params:         dict.Dict{},
 			Allowance:      isc.NewEmptyAllowance(),
 			GasBudget:      math.MaxUint64,
@@ -1129,8 +1137,8 @@ func TestEVMWithdrawAll(t *testing.T) {
 	// try withdrawing all base tokens
 	metadata := iscmagic.WrapISCSendMetadata(
 		isc.SendMetadata{
-			TargetContract: inccounter.Contract.Hname(),
-			EntryPoint:     inccounter.FuncIncCounter.Hname(),
+			TargetContract: isc.Hn(wasmInccounterName),
+			EntryPoint:     isc.Hn(wasmIncrementFn),
 			Params:         dict.Dict{},
 			Allowance:      isc.NewEmptyAllowance(),
 			GasBudget:      math.MaxUint64,
@@ -1524,8 +1532,7 @@ func TestStaticCall(t *testing.T) {
 	}}, "testStaticCall")
 	require.NoError(t, err)
 	require.Equal(t, types.ReceiptStatusSuccessful, res.evmReceipt.Status)
-	ev, err := env.soloChain.GetEventsForBlock(env.soloChain.GetLatestBlockInfo().BlockIndex)
-	require.NoError(t, err)
+	ev := env.soloChain.GetEventsForBlock(env.soloChain.GetLatestBlockInfo().BlockIndex)
 	require.Len(t, ev, 1)
 	require.Contains(t, ev[0], "non-static")
 }

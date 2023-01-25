@@ -8,7 +8,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/client/chainclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -17,36 +16,36 @@ import (
 )
 
 // executed in cluster_test.go
-func testMaintenance(t *testing.T, env *ChainEnv) {
-	env.deployNativeIncCounterSC(0)
-	ownerWallet, ownerAddr, err := env.Clu.NewKeyPairWithFunds()
+func testMaintenance(t *testing.T, e *chainEnv) {
+	e.deployWasmInccounter(0)
+	ownerWallet, ownerAddr, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 	ownerAgentID := isc.NewAgentID(ownerAddr)
-	env.DepositFunds(10*isc.Million, ownerWallet)
-	ownerSCClient := env.Chain.SCClient(governance.Contract.Hname(), ownerWallet)
-	ownerIncCounterSCClient := env.Chain.SCClient(nativeIncCounterSCHname, ownerWallet)
+	e.DepositFunds(10*isc.Million, ownerWallet)
+	ownerSCClient := e.Chain.SCClient(governance.Contract.Hname(), ownerWallet)
+	ownerIncCounterSCClient := e.Chain.SCClient(incHname, ownerWallet)
 
-	userWallet, _, err := env.Clu.NewKeyPairWithFunds()
+	userWallet, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
-	env.DepositFunds(10*isc.Million, userWallet)
-	userSCClient := env.Chain.SCClient(governance.Contract.Hname(), userWallet)
-	userIncCounterSCClient := env.Chain.SCClient(nativeIncCounterSCHname, userWallet)
+	e.DepositFunds(10*isc.Million, userWallet)
+	userSCClient := e.Chain.SCClient(governance.Contract.Hname(), userWallet)
+	userIncCounterSCClient := e.Chain.SCClient(incHname, userWallet)
 
 	// set owner of the chain
 	{
-		originatorSCClient := env.Chain.SCClient(governance.Contract.Hname(), env.Chain.OriginatorKeyPair)
+		originatorSCClient := e.Chain.SCClient(governance.Contract.Hname(), e.Chain.OriginatorKeyPair)
 		tx, err := originatorSCClient.PostRequest(governance.FuncDelegateChainOwnership.Name, chainclient.PostRequestParams{
 			Args: dict.Dict{
 				governance.ParamChainOwner: codec.Encode(ownerAgentID),
 			},
 		})
 		require.NoError(t, err)
-		_, err = env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 10*time.Second)
 		require.NoError(t, err)
 
 		req, err := ownerSCClient.PostOffLedgerRequest(governance.FuncClaimChainOwnership.Name)
 		require.NoError(t, err)
-		_, err = env.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, req.ID(), 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 	}
 
@@ -62,7 +61,7 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 	{
 		req, err := userSCClient.PostOffLedgerRequest(governance.FuncStartMaintenance.Name)
 		require.NoError(t, err)
-		rec, err := env.Clu.MultiClient().WaitUntilRequestProcessed(env.Chain.ChainID, req.ID(), 10*time.Second)
+		rec, err := e.Clu.MultiClient().WaitUntilRequestProcessed(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 		require.Error(t, rec.Error)
 	}
@@ -71,7 +70,7 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 	{
 		req, err := ownerSCClient.PostOffLedgerRequest(governance.FuncStartMaintenance.Name)
 		require.NoError(t, err)
-		_, err = env.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, req.ID(), 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 	}
 
@@ -84,27 +83,27 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 	}
 
 	// get the current block number
-	blockIndex, err := env.Chain.BlockIndex()
+	blockIndex, err := e.Chain.BlockIndex()
 	require.NoError(t, err)
 
 	// calls to non-maintenance endpoints are not processed
-	notProccessedReq1, err := userIncCounterSCClient.PostOffLedgerRequest(inccounter.FuncIncCounter.Name)
+	notProccessedReq1, err := userIncCounterSCClient.PostOffLedgerRequest(incrementFuncName)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Second) // not ideal, but I don't think there is a good way to wait for something that will NOT be processed
-	rec, err := env.Chain.GetRequestReceipt(notProccessedReq1.ID())
+	rec, err := e.Chain.GetRequestReceipt(notProccessedReq1.ID())
 	require.Regexp(t, `.*"Code":404.*`, err.Error())
 	require.Nil(t, rec)
 
 	// calls to non-maintenance endpoints are not processed, even when done by the chain owner
-	notProccessedReq2, err := ownerIncCounterSCClient.PostOffLedgerRequest(inccounter.FuncIncCounter.Name)
+	notProccessedReq2, err := ownerIncCounterSCClient.PostOffLedgerRequest(incrementFuncName)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Second) // not ideal, but I don't think there is a good way to wait for something that will NOT be processed
-	rec, err = env.Chain.GetRequestReceipt(notProccessedReq2.ID())
+	rec, err = e.Chain.GetRequestReceipt(notProccessedReq2.ID())
 	require.Regexp(t, `.*"Code":404.*`, err.Error())
 	require.Nil(t, rec)
 
 	// assert that block number is still the same
-	blockIndex2, err := env.Chain.BlockIndex()
+	blockIndex2, err := e.Chain.BlockIndex()
 	require.NoError(t, err)
 	require.EqualValues(t, blockIndex, blockIndex2)
 
@@ -121,7 +120,7 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 			},
 		})
 		require.NoError(t, err)
-		_, err = env.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, req.ID(), 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 	}
 
@@ -133,7 +132,7 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 			},
 		})
 		require.NoError(t, err)
-		receipt, err := env.Clu.MultiClient().WaitUntilRequestProcessed(env.Chain.ChainID, req.ID(), 10*time.Second)
+		receipt, err := e.Clu.MultiClient().WaitUntilRequestProcessed(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 		require.Error(t, receipt.Error)
 	}
@@ -142,7 +141,7 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 	{
 		req, err := userSCClient.PostOffLedgerRequest(governance.FuncStopMaintenance.Name)
 		require.NoError(t, err)
-		rec, err := env.Clu.MultiClient().WaitUntilRequestProcessed(env.Chain.ChainID, req.ID(), 10*time.Second)
+		rec, err := e.Clu.MultiClient().WaitUntilRequestProcessed(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 		require.Error(t, rec.Error)
 	}
@@ -151,16 +150,16 @@ func testMaintenance(t *testing.T, env *ChainEnv) {
 	{
 		req, err := ownerSCClient.PostOffLedgerRequest(governance.FuncStopMaintenance.Name)
 		require.NoError(t, err)
-		_, err = env.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, req.ID(), 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, req.ID(), 10*time.Second)
 		require.NoError(t, err)
 	}
 
 	// normal requests are now processed successfully (pending requests issued during maintenance should be processed now)
 	{
-		_, err = env.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, notProccessedReq1.ID(), 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, notProccessedReq1.ID(), 10*time.Second)
 		require.NoError(t, err)
-		_, err = env.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(env.Chain.ChainID, notProccessedReq2.ID(), 10*time.Second)
+		_, err = e.Clu.MultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, notProccessedReq2.ID(), 10*time.Second)
 		require.NoError(t, err)
-		require.EqualValues(t, 2, env.getNativeContractCounter(nativeIncCounterSCHname))
+		e.expectCounter(2)
 	}
 }

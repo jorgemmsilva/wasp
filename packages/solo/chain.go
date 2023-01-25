@@ -239,8 +239,8 @@ func (ch *Chain) DeployContract(user *cryptolib.KeyPair, name string, programHas
 
 // DeployWasmContract is syntactic sugar for uploading Wasm binary from file and
 // deploying the smart contract in one call
-func (ch *Chain) DeployWasmContract(keyPair *cryptolib.KeyPair, name, fname string, params ...interface{}) error {
-	hprog, err := ch.UploadWasmFromFile(keyPair, fname)
+func (ch *Chain) DeployWasmContract(keyPair *cryptolib.KeyPair, name, path string, params ...interface{}) error {
+	hprog, err := ch.UploadWasmFromFile(keyPair, path)
 	if err != nil {
 		return err
 	}
@@ -300,40 +300,33 @@ func eventsFromViewResult(t TestContext, viewResult dict.Dict) []string {
 }
 
 // GetEventsForContract calls the view in the  'blocklog' core smart contract to retrieve events for a given smart contract.
-func (ch *Chain) GetEventsForContract(name string) ([]string, error) {
+func (ch *Chain) GetEventsForContract(name string) []string {
 	viewResult, err := ch.CallView(
 		blocklog.Contract.Name, blocklog.ViewGetEventsForContract.Name,
 		blocklog.ParamContractHname, isc.Hn(name),
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	return eventsFromViewResult(ch.Env.T, viewResult), nil
+	require.NoError(ch.Env.T, err)
+	return eventsFromViewResult(ch.Env.T, viewResult)
 }
 
 // GetEventsForRequest calls the view in the  'blocklog' core smart contract to retrieve events for a given request.
-func (ch *Chain) GetEventsForRequest(reqID isc.RequestID) ([]string, error) {
+func (ch *Chain) GetEventsForRequest(reqID isc.RequestID) []string {
 	viewResult, err := ch.CallView(
 		blocklog.Contract.Name, blocklog.ViewGetEventsForRequest.Name,
 		blocklog.ParamRequestID, reqID,
 	)
-	if err != nil {
-		return nil, err
-	}
-	return eventsFromViewResult(ch.Env.T, viewResult), nil
+	require.NoError(ch.Env.T, err)
+	return eventsFromViewResult(ch.Env.T, viewResult)
 }
 
 // GetEventsForBlock calls the view in the 'blocklog' core smart contract to retrieve events for a given block.
-func (ch *Chain) GetEventsForBlock(blockIndex uint32) ([]string, error) {
+func (ch *Chain) GetEventsForBlock(blockIndex uint32) []string {
 	viewResult, err := ch.CallView(
 		blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name,
 		blocklog.ParamBlockIndex, blockIndex,
 	)
-	if err != nil {
-		return nil, err
-	}
-	return eventsFromViewResult(ch.Env.T, viewResult), nil
+	require.NoError(ch.Env.T, err)
+	return eventsFromViewResult(ch.Env.T, viewResult)
 }
 
 // CommonAccount return the agentID of the common account (controlled by the owner)

@@ -82,7 +82,7 @@ contract ISCTest {
         bytes memory int64Encoded42 = hex"2A00000000000000";
         params.items[0] = ISCDictItem("counter", int64Encoded42);
         ISCAllowance memory allowance;
-        ISC.sandbox.call(ISC.util.hn("inccounter"), ISC.util.hn("incCounter"), params, allowance);
+        ISC.sandbox.call(ISC.util.hn("inccounter"), ISC.util.hn("increment"), params, allowance);
     }
 
     function makeISCPanic() public {

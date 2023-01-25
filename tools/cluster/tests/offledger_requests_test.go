@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/client/chainclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -29,7 +28,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 	require.NoError(t, err)
 
 	e := newChainEnv(t, clu, chain)
-	e.deployNativeIncCounterSC()
+	e.deployWasmInccounter(0)
 
 	waitUntil(t, e.contractIsDeployed(), clu.Config.AllNodes(), 30*time.Second)
 
@@ -38,8 +37,8 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 
 	// send off-ledger request via Web API (to the access node)
 	_, err = chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 	)
 	require.NoError(t, err)
 
@@ -47,23 +46,23 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 
 	// check off-ledger request was successfully processed (check by asking another access node)
 	ret, err := clu.WaspClient(6).CallView(
-		e.Chain.ChainID, nativeIncCounterSCHname, inccounter.ViewGetCounter.Name, nil,
+		e.Chain.ChainID, incHname, getCounterViewName, nil,
 	)
 	require.NoError(t, err)
-	resultint64, _ := codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
+	resultint64, _ := codec.DecodeInt64(ret.MustGet(varCounter))
 	require.EqualValues(t, 43, resultint64)
 }
 
 // executed in cluster_test.go
-func testOffledgerRequest(t *testing.T, e *ChainEnv) {
-	e.deployNativeIncCounterSC()
+func testOffledgerRequest(t *testing.T, e *chainEnv) {
+	e.deployWasmInccounter(0)
 
 	chClient := newWalletWithFunds(e, 0, 0, 1, 2, 3)
 
 	// send off-ledger request via Web API
 	offledgerReq, err := chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 	)
 	require.NoError(t, err)
 	_, err = e.Chain.CommitteeMultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, offledgerReq.ID(), 30*time.Second)
@@ -71,16 +70,16 @@ func testOffledgerRequest(t *testing.T, e *ChainEnv) {
 
 	// check off-ledger request was successfully processed
 	ret, err := e.Chain.Cluster.WaspClient(0).CallView(
-		e.Chain.ChainID, nativeIncCounterSCHname, inccounter.ViewGetCounter.Name, nil,
+		e.Chain.ChainID, incHname, getCounterViewName, nil,
 	)
 	require.NoError(t, err)
-	resultint64, err := codec.DecodeInt64(ret.MustGet(inccounter.VarCounter))
+	resultint64, err := codec.DecodeInt64(ret.MustGet(varCounter))
 	require.NoError(t, err)
 	require.EqualValues(t, 43, resultint64)
 }
 
 // executed in cluster_test.go
-func testOffledgerRequest900KB(t *testing.T, e *ChainEnv) {
+func testOffledgerRequest900KB(t *testing.T, e *chainEnv) {
 	chClient := newWalletWithFunds(e, 0, 0, 0, 1, 2, 3)
 
 	// send big blob off-ledger request via Web API
@@ -117,15 +116,15 @@ func testOffledgerRequest900KB(t *testing.T, e *ChainEnv) {
 }
 
 // executed in cluster_test.go
-func testOffledgerNonce(t *testing.T, e *ChainEnv) {
-	e.deployNativeIncCounterSC()
+func testOffledgerNonce(t *testing.T, e *chainEnv) {
+	e.deployWasmInccounter(0)
 
 	chClient := newWalletWithFunds(e, 0, 0, 1, 2, 3)
 
 	// send off-ledger request with a high nonce
 	offledgerReq, err := chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 		chainclient.PostRequestParams{
 			Nonce: 1_000_000,
 		},
@@ -136,8 +135,8 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 
 	// send off-ledger request with a high nonce -1
 	offledgerReq, err = chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 		chainclient.PostRequestParams{
 			Nonce: 999_999,
 		},
@@ -148,8 +147,8 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 
 	// send off-ledger request with a much lower nonce
 	_, err = chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 		chainclient.PostRequestParams{
 			Nonce: 1,
 		},
@@ -158,8 +157,8 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 
 	// try replaying the initial request
 	_, err = chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 		chainclient.PostRequestParams{
 			Nonce: 1_000_000,
 		},
@@ -168,8 +167,8 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 
 	// send a request with a higher nonce
 	offledgerReq, err = chClient.PostOffLedgerRequest(
-		nativeIncCounterSCHname,
-		inccounter.FuncIncCounter.Hname(),
+		incHname,
+		incrementFuncHn,
 		chainclient.PostRequestParams{
 			Nonce: 1_000_001,
 		},
@@ -179,7 +178,7 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 	require.NoError(t, err)
 }
 
-func newWalletWithFunds(e *ChainEnv, waspnode int, waitOnNodes ...int) *chainclient.Client {
+func newWalletWithFunds(e *chainEnv, waspnode int, waitOnNodes ...int) *chainclient.Client {
 	baseTokes := 1000 * isc.Million
 	userWallet, userAddress, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(e.t, err)

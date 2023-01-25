@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/client/chainclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/util"
@@ -40,14 +39,14 @@ func TestAccessNodesOnLedger(t *testing.T) {
 
 func testAccessNodesOnLedger(t *testing.T, numRequests, numValidatorNodes, clusterSize int) {
 	cmt := util.MakeRange(0, numValidatorNodes)
-	e := setupNativeInccounterTest(t, clusterSize, cmt)
+	e := setupInccounterTest(t, clusterSize, cmt)
 
 	for i := 0; i < numRequests; i++ {
-		client := e.createNewClient()
+		client := e.newInccounterClientWithFunds()
 
 		var err error
 		for i := 0; i < 5; i++ {
-			_, err = client.PostRequest(inccounter.FuncIncCounter.Name)
+			_, err = client.PostRequest(incrementFuncName)
 			if err == nil {
 				break
 			}
@@ -90,7 +89,7 @@ func testAccessNodesOffLedger(t *testing.T, numRequests, numValidatorNodes, clus
 	}
 	cmt := util.MakeRange(0, numValidatorNodes-1)
 
-	e := setupNativeInccounterTest(t, clusterSize, cmt)
+	e := setupInccounterTest(t, clusterSize, cmt)
 
 	keyPair, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
@@ -104,10 +103,10 @@ func testAccessNodesOffLedger(t *testing.T, numRequests, numValidatorNodes, clus
 	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 30*time.Second)
 	require.NoError(t, err)
 
-	myClient := e.Chain.SCClient(isc.Hn(nativeIncCounterSCName), keyPair)
+	myClient := e.Chain.SCClient(incHname, keyPair)
 
 	for i := 0; i < numRequests; i++ {
-		_, err = myClient.PostOffLedgerRequest(inccounter.FuncIncCounter.Name, chainclient.PostRequestParams{Nonce: uint64(i + 1)})
+		_, err = myClient.PostOffLedgerRequest(incrementFuncName, chainclient.PostRequestParams{Nonce: uint64(i + 1)})
 		require.NoError(t, err)
 	}
 
@@ -123,12 +122,12 @@ func TestAccessNodesMany(t *testing.T) {
 	const requestsCountProgression = 2
 	const iterationCount = 8
 
-	e := setupNativeInccounterTest(t, clusterSize, util.MakeRange(0, numValidatorNodes-1))
+	e := setupInccounterTest(t, clusterSize, util.MakeRange(0, numValidatorNodes-1))
 
 	keyPair, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	myClient := e.Chain.SCClient(nativeIncCounterSCHname, keyPair)
+	myClient := e.Chain.SCClient(incHname, keyPair)
 
 	requestsCount := requestsCountInitial
 	requestsCumulative := 0
@@ -136,7 +135,7 @@ func TestAccessNodesMany(t *testing.T) {
 	for i := 0; i < iterationCount; i++ {
 		logMsg := fmt.Sprintf("iteration %v of %v requests", i, requestsCount)
 		t.Logf("Running %s", logMsg)
-		_, err := myClient.PostNRequests(inccounter.FuncIncCounter.Name, requestsCount)
+		_, err := myClient.PostNRequests(incrementFuncName, requestsCount)
 		require.NoError(t, err)
 		posted += requestsCount
 		requestsCumulative += requestsCount

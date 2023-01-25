@@ -15,7 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 )
 
-func (e *ChainEnv) getBlobInfo(hash hashing.HashValue) map[string]uint32 {
+func (e *chainEnv) getBlobInfo(hash hashing.HashValue) map[string]uint32 {
 	ret, err := e.Chain.Cluster.WaspClient(0).CallView(
 		e.Chain.ChainID, blob.Contract.Hname(), blob.ViewGetBlobInfo.Name,
 		dict.Dict{
@@ -27,7 +27,7 @@ func (e *ChainEnv) getBlobInfo(hash hashing.HashValue) map[string]uint32 {
 	return decoded
 }
 
-func (e *ChainEnv) getBlobFieldValue(blobHash hashing.HashValue, field string) []byte {
+func (e *chainEnv) getBlobFieldValue(blobHash hashing.HashValue, field string) []byte {
 	v, err := e.Chain.Cluster.WaspClient(0).CallView(
 		e.Chain.ChainID, blob.Contract.Hname(), blob.ViewGetBlobField.Name,
 		dict.Dict{
@@ -44,7 +44,7 @@ func (e *ChainEnv) getBlobFieldValue(blobHash hashing.HashValue, field string) [
 }
 
 // executed in cluster_test.go
-func testBlobStoreSmallBlob(t *testing.T, e *ChainEnv) {
+func testBlobStoreSmallBlob(t *testing.T, e *chainEnv) {
 	ret := e.getBlobInfo(hashing.NilHash)
 	require.Len(t, ret, 0)
 
@@ -81,7 +81,7 @@ func testBlobStoreSmallBlob(t *testing.T, e *ChainEnv) {
 }
 
 // executed in cluster_test.go
-func testBlobStoreManyBlobsNoEncoding(t *testing.T, e *ChainEnv) {
+func testBlobStoreManyBlobsNoEncoding(t *testing.T, e *chainEnv) {
 	var err error
 	fileNames := []string{"blob_test.go", "deploy_test.go", "inccounter_test.go", "account_test.go"}
 	blobs := make([][]byte, len(fileNames))

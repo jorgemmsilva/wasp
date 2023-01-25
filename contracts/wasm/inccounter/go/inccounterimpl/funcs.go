@@ -5,6 +5,7 @@
 package inccounterimpl
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/iotaledger/wasp/contracts/wasm/inccounter/go/inccounter"
@@ -47,7 +48,7 @@ func funcEndlessLoop(_ wasmlib.ScFuncContext, _ *EndlessLoopContext) {
 	}
 }
 
-func funcIncrement(_ wasmlib.ScFuncContext, f *IncrementContext) {
+func funcIncrement(ctx wasmlib.ScFuncContext, f *IncrementContext) {
 	incValue := int64(1)
 	param := f.Params.Counter()
 	if param.Exists() {
@@ -55,7 +56,9 @@ func funcIncrement(_ wasmlib.ScFuncContext, f *IncrementContext) {
 	}
 
 	counter := f.State.Counter()
-	counter.SetValue(counter.Value() + incValue)
+	newCounterValue := counter.Value() + incValue
+	counter.SetValue(newCounterValue)
+	ctx.Event(fmt.Sprintf("incCounter: counter = %d", newCounterValue))
 }
 
 func funcIncrementWithDelay(ctx wasmlib.ScFuncContext, f *IncrementWithDelayContext) {

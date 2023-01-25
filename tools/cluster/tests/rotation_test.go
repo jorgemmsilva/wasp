@@ -9,7 +9,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/client/chainclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -22,26 +21,26 @@ import (
 )
 
 func TestBasicRotation(t *testing.T) {
-	env := setupNativeInccounterTest(t, 6, []int{0, 1, 2, 3})
+	e := setupInccounterTest(t, 6, []int{0, 1, 2, 3})
 
-	newCmtAddr, err := env.Clu.RunDKG([]int{2, 3, 4, 5}, 3)
+	newCmtAddr, err := e.Clu.RunDKG([]int{2, 3, 4, 5}, 3)
 	require.NoError(t, err)
 
-	kp, _, err := env.Clu.NewKeyPairWithFunds()
+	kp, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	myClient := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), kp)
+	myClient := e.Chain.SCClient(incHname, kp)
 
 	// check the chain works
-	tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Name)
+	tx, err := myClient.PostRequest(incrementFuncName)
 	isc.MustLogRequestsInTransaction(tx, t.Logf, "Posted request - FuncIncCounter (before rotation)")
 	require.NoError(t, err)
-	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, 20*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 20*time.Second)
 	require.NoError(t, err)
 
 	// change the committee to the new one
 
-	govClient := env.Chain.SCClient(governance.Contract.Hname(), env.Chain.OriginatorKeyPair)
+	govClient := e.Chain.SCClient(governance.Contract.Hname(), e.Chain.OriginatorKeyPair)
 
 	tx, err = govClient.PostRequest(
 		governance.FuncAddAllowedStateControllerAddress.Name,
@@ -53,7 +52,7 @@ func TestBasicRotation(t *testing.T) {
 	)
 	isc.MustLogRequestsInTransaction(tx, t.Logf, "Posted request - FuncAddAllowedStateControllerAddress")
 	require.NoError(t, err)
-	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, 20*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 20*time.Second)
 	require.NoError(t, err)
 
 	tx, err = govClient.PostRequest(
@@ -66,21 +65,21 @@ func TestBasicRotation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	isc.MustLogRequestsInTransaction(tx, t.Logf, "Posted request - CoreEPRotateStateController")
-	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, 20*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 20*time.Second)
 	require.NoError(t, err)
 
-	stateController, err := env.callGetStateController(0)
+	stateController, err := e.callGetStateController(0)
 	require.NoError(t, err)
 	require.True(t, stateController.Equal(newCmtAddr), "StateController, expected=%v, received=%v", newCmtAddr, stateController)
 
 	// check the chain still works
-	tx, err = myClient.PostRequest(inccounter.FuncIncCounter.Name)
+	tx, err = myClient.PostRequest(incrementFuncName)
 	isc.MustLogRequestsInTransaction(tx, t.Logf, "Posted request - FuncIncCounter")
 	require.NoError(t, err)
-	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, 20*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 20*time.Second)
 	require.NoError(t, err)
 
-	require.EqualValues(t, 2, env.getNativeContractCounter(nativeIncCounterSCHname))
+	e.expectCounter(2)
 }
 
 // cluster of 10 access nodes and two overlapping committees
@@ -96,20 +95,20 @@ func TestRotation(t *testing.T) {
 	require.NoError(t, err)
 	t.Logf("chainID: %s", chain.ChainID)
 
-	chEnv := newChainEnv(t, clu, chain)
-	chEnv.deployNativeIncCounterSC(0)
+	e := newChainEnv(t, clu, chain)
+	e.deployWasmInccounter(0)
 
-	require.NoError(t, chEnv.waitStateControllers(rotation1.Address, 5*time.Second))
+	require.NoError(t, e.waitStateControllers(rotation1.Address, 5*time.Second))
 
 	keyPair, _, err := clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	myClient := chain.SCClient(nativeIncCounterSCHname, keyPair)
+	myClient := chain.SCClient(incHname, keyPair)
 
-	_, err = myClient.PostNRequests(inccounter.FuncIncCounter.Name, numRequests)
+	_, err = myClient.PostNRequests(incrementFuncName, numRequests)
 	require.NoError(t, err)
 
-	waitUntil(t, chEnv.counterEquals(int64(numRequests)), chEnv.Clu.Config.AllNodes(), 5*time.Second)
+	waitUntil(t, e.counterEquals(int64(numRequests)), e.Clu.Config.AllNodes(), 5*time.Second)
 
 	govClient := chain.SCClient(governance.Contract.Hname(), chain.OriginatorKeyPair)
 
@@ -117,23 +116,23 @@ func TestRotation(t *testing.T) {
 	params := chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation2.Address).WithBaseTokens(1 * isc.Million)
 	tx, err := govClient.PostRequest(governance.FuncAddAllowedStateControllerAddress.Name, *params)
 	require.NoError(t, err)
-	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, 15*time.Second)
+	_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 15*time.Second)
 	require.NoError(t, err)
-	require.NoError(t, chEnv.checkAllowedStateControllerAddressInAllNodes(rotation2.Address))
-	require.NoError(t, chEnv.waitStateControllers(rotation1.Address, 15*time.Second))
+	require.NoError(t, e.checkAllowedStateControllerAddressInAllNodes(rotation2.Address))
+	require.NoError(t, e.waitStateControllers(rotation1.Address, 15*time.Second))
 
 	t.Logf("Rotating to committee %v with quorum %v and address %s", rotation2.Committee, rotation2.Quorum, rotation2.Address)
 	params = chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation2.Address).WithBaseTokens(1 * isc.Million)
 	tx, err = govClient.PostRequest(governance.FuncRotateStateController.Name, *params)
 	require.NoError(t, err)
-	require.NoError(t, chEnv.waitStateControllers(rotation2.Address, 15*time.Second))
-	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, 15*time.Second)
+	require.NoError(t, e.waitStateControllers(rotation2.Address, 15*time.Second))
+	_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 15*time.Second)
 	require.NoError(t, err)
 
-	_, err = myClient.PostNRequests(inccounter.FuncIncCounter.Name, numRequests)
+	_, err = myClient.PostNRequests(incrementFuncName, numRequests)
 	require.NoError(t, err)
 
-	waitUntil(t, chEnv.counterEquals(int64(2*numRequests)), clu.Config.AllNodes(), 15*time.Second)
+	waitUntil(t, e.counterEquals(int64(2*numRequests)), clu.Config.AllNodes(), 15*time.Second)
 }
 
 // cluster of 10 access nodes; chain is initialized by one node committee and then
@@ -159,11 +158,11 @@ func TestRotationFromSingle(t *testing.T) {
 	require.NoError(t, err)
 	t.Logf("chainID: %s", chain.ChainID)
 
-	chEnv := newChainEnv(t, clu, chain)
-	chEnv.deployNativeIncCounterSC(0)
+	e := newChainEnv(t, clu, chain)
+	e.deployWasmInccounter(0)
 
 	require.NoError(t, err)
-	require.NoError(t, chEnv.waitStateControllers(rotation1.Address, 5*time.Second))
+	require.NoError(t, e.waitStateControllers(rotation1.Address, 5*time.Second))
 	incCounterResultChan := make(chan error)
 
 	go func() {
@@ -172,10 +171,10 @@ func TestRotationFromSingle(t *testing.T) {
 			incCounterResultChan <- fmt.Errorf("failed to create a key pair: %w", err)
 			return
 		}
-		myClient := chain.SCClient(nativeIncCounterSCHname, keyPair)
+		myClient := chain.SCClient(incHname, keyPair)
 		for i := 0; i < numRequests; i++ {
 			t.Logf("Posting inccounter request number %v", i)
-			_, err = myClient.PostRequest(inccounter.FuncIncCounter.Name)
+			_, err = myClient.PostRequest(incrementFuncName)
 			if err != nil {
 				incCounterResultChan <- fmt.Errorf("failed to post inccounter request number %v: %w", i, err)
 				return
@@ -192,18 +191,18 @@ func TestRotationFromSingle(t *testing.T) {
 	params := chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation2.Address).WithBaseTokens(1 * isc.Million)
 	tx, err := govClient.PostRequest(governance.FuncAddAllowedStateControllerAddress.Name, *params)
 	require.NoError(t, err)
-	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, 30*time.Second)
+	_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 30*time.Second)
 	require.NoError(t, err)
-	require.NoError(t, chEnv.checkAllowedStateControllerAddressInAllNodes(rotation2.Address))
-	require.NoError(t, chEnv.waitStateControllers(rotation1.Address, 15*time.Second))
+	require.NoError(t, e.checkAllowedStateControllerAddressInAllNodes(rotation2.Address))
+	require.NoError(t, e.waitStateControllers(rotation1.Address, 15*time.Second))
 
 	time.Sleep(500 * time.Millisecond)
 	t.Logf("Rotating to committee %v with quorum %v and address %s", rotation2.Committee, rotation2.Quorum, rotation2.Address)
 	params = chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation2.Address).WithBaseTokens(1 * isc.Million)
 	tx, err = govClient.PostRequest(governance.FuncRotateStateController.Name, *params)
 	require.NoError(t, err)
-	require.NoError(t, chEnv.waitStateControllers(rotation2.Address, 30*time.Second))
-	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, 30*time.Second)
+	require.NoError(t, e.waitStateControllers(rotation2.Address, 30*time.Second))
+	_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 30*time.Second)
 	require.NoError(t, err)
 
 	select {
@@ -213,7 +212,7 @@ func TestRotationFromSingle(t *testing.T) {
 		t.Fatal("Timeout waiting incCounterResult")
 	}
 
-	waitUntil(t, chEnv.counterEquals(int64(numRequests)), chEnv.Clu.Config.AllNodes(), 30*time.Second)
+	waitUntil(t, e.counterEquals(int64(numRequests)), e.Clu.Config.AllNodes(), 30*time.Second)
 }
 
 type testRotationSingleRotation struct {
@@ -255,7 +254,7 @@ func TestRotationMany(t *testing.T) {
 	require.NoError(t, err)
 	t.Logf("chainID: %s", chain.ChainID)
 
-	chEnv := newChainEnv(t, clu, chain)
+	e := newChainEnv(t, clu, chain)
 
 	govClient := chain.SCClient(governance.Contract.Hname(), chain.OriginatorKeyPair)
 
@@ -264,36 +263,36 @@ func TestRotationMany(t *testing.T) {
 		par := chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation.Address).WithBaseTokens(1 * isc.Million)
 		tx, err := govClient.PostRequest(governance.FuncAddAllowedStateControllerAddress.Name, *par)
 		require.NoError(t, err)
-		_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, waitTimeout)
+		_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, waitTimeout)
 		require.NoError(t, err)
-		require.NoError(t, chEnv.checkAllowedStateControllerAddressInAllNodes(rotation.Address))
+		require.NoError(t, e.checkAllowedStateControllerAddressInAllNodes(rotation.Address))
 	}
 
-	chEnv.deployNativeIncCounterSC(0)
+	e.deployWasmInccounter(0)
 
-	keyPair, _, err := chEnv.Clu.NewKeyPairWithFunds()
+	keyPair, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	myClient := chain.SCClient(nativeIncCounterSCHname, keyPair)
+	myClient := chain.SCClient(incHname, keyPair)
 
 	for i, rotation := range rotations {
 		t.Logf("Rotating to %v-th committee %v with quorum %v and address %s", i, rotation.Committee, rotation.Quorum, rotation.Address)
 
-		_, err = myClient.PostNRequests(inccounter.FuncIncCounter.Name, numRequests)
+		_, err = myClient.PostNRequests(incrementFuncName, numRequests)
 		require.NoError(t, err)
 
-		waitUntil(t, chEnv.counterEquals(int64(numRequests*(i+1))), chEnv.Clu.Config.AllNodes(), 30*time.Second)
+		waitUntil(t, e.counterEquals(int64(numRequests*(i+1))), e.Clu.Config.AllNodes(), 30*time.Second)
 
 		par := chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation.Address).WithBaseTokens(1 * isc.Million)
 		tx, err := govClient.PostRequest(governance.FuncRotateStateController.Name, *par)
 		require.NoError(t, err)
-		require.NoError(t, chEnv.waitStateControllers(rotation.Address, waitTimeout))
-		_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, waitTimeout)
+		require.NoError(t, e.waitStateControllers(rotation.Address, waitTimeout))
+		_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, waitTimeout)
 		require.NoError(t, err)
 	}
 }
 
-func (e *ChainEnv) waitStateControllers(addr iotago.Address, timeout time.Duration) error {
+func (e *chainEnv) waitStateControllers(addr iotago.Address, timeout time.Duration) error {
 	for _, nodeIndex := range e.Clu.AllNodes() {
 		if err := e.waitStateController(nodeIndex, addr, timeout); err != nil {
 			return err
@@ -302,7 +301,7 @@ func (e *ChainEnv) waitStateControllers(addr iotago.Address, timeout time.Durati
 	return nil
 }
 
-func (e *ChainEnv) waitStateController(nodeIndex int, addr iotago.Address, timeout time.Duration) error {
+func (e *chainEnv) waitStateController(nodeIndex int, addr iotago.Address, timeout time.Duration) error {
 	var err error
 	result := waitTrue(timeout, func() bool {
 		var a iotago.Address
@@ -322,7 +321,7 @@ func (e *ChainEnv) waitStateController(nodeIndex int, addr iotago.Address, timeo
 	return nil
 }
 
-func (e *ChainEnv) callGetStateController(nodeIndex int) (iotago.Address, error) {
+func (e *chainEnv) callGetStateController(nodeIndex int) (iotago.Address, error) {
 	ret, err := e.Chain.Cluster.WaspClient(nodeIndex).CallView(
 		e.Chain.ChainID,
 		blocklog.Contract.Hname(),
@@ -337,7 +336,7 @@ func (e *ChainEnv) callGetStateController(nodeIndex int) (iotago.Address, error)
 	return addr, nil
 }
 
-func (e *ChainEnv) checkAllowedStateControllerAddressInAllNodes(addr iotago.Address) error {
+func (e *chainEnv) checkAllowedStateControllerAddressInAllNodes(addr iotago.Address) error {
 	for _, i := range e.Chain.AllPeers {
 		if !isAllowedStateControllerAddress(e.t, e.Chain, i, addr) {
 			return fmt.Errorf("state controller address %s is not allowed in node %d", addr, i)

@@ -9,14 +9,16 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/utxodb"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
+	"github.com/iotaledger/wasp/packages/vm/vmtypes"
 )
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,7 +28,7 @@ type TestChainLedger struct {
 	t           *testing.T
 	utxoDB      *utxodb.UtxoDB
 	governor    *cryptolib.KeyPair
-	originator  *cryptolib.KeyPair
+	Originator  *cryptolib.KeyPair
 	chainID     isc.ChainID
 	fetchedReqs map[iotago.Address]map[iotago.OutputID]bool
 }
@@ -36,7 +38,7 @@ func NewTestChainLedger(t *testing.T, utxoDB *utxodb.UtxoDB, governor, originato
 		t:           t,
 		utxoDB:      utxoDB,
 		governor:    governor,
-		originator:  originator,
+		Originator:  originator,
 		fetchedReqs: map[iotago.Address]map[iotago.OutputID]bool{},
 	}
 }
@@ -47,9 +49,9 @@ func (tcl *TestChainLedger) ChainID() isc.ChainID {
 }
 
 func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*isc.AliasOutputWithID, isc.ChainID) {
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.originator.Address())
+	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.Originator.Address())
 	originTX, chainID, err := transaction.NewChainOriginTransaction(
-		tcl.originator,
+		tcl.Originator,
 		committeeAddress,
 		tcl.governor.Address(),
 		1_000_000,
@@ -68,12 +70,42 @@ func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (
 }
 
 func (tcl *TestChainLedger) MakeTxChainInit() []isc.Request {
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.originator.Address())
-	initTX, err := transaction.NewRootInitRequestTransaction(tcl.originator, tcl.chainID, "my test chain", outs, outIDs)
+	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.Originator.Address())
+	initTX, err := transaction.NewRootInitRequestTransaction(tcl.Originator, tcl.chainID, "my test chain", outs, outIDs)
 	require.NoError(tcl.t, err)
 	require.NotNil(tcl.t, initTX)
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(initTX))
 	return tcl.findChainRequests(initTX)
+}
+
+func (tcl *TestChainLedger) BlobUploadRequest(progBinary []byte, nonce uint64) (isc.UnsignedOffLedgerRequest, hashing.HashValue) {
+	args := codec.MakeDict(map[string]interface{}{
+		blob.VarFieldVMType:             vmtypes.WasmTime,
+		blob.VarFieldProgramBinary:      progBinary,
+		blob.VarFieldProgramDescription: "",
+	})
+	blobHash := blob.MustGetBlobHash(args)
+	return isc.NewOffLedgerRequest(
+		tcl.chainID,
+		blob.Contract.Hname(),
+		blob.FuncStoreBlob.Hname(),
+		args,
+		nonce,
+	), blobHash
+}
+
+func (tcl *TestChainLedger) ContractDeployRequest(name string, progHash hashing.HashValue, nonce uint64) isc.UnsignedOffLedgerRequest {
+	return isc.NewOffLedgerRequest(
+		tcl.chainID,
+		root.Contract.Hname(),
+		root.FuncDeployContract.Hname(),
+		codec.MakeDict(map[string]interface{}{
+			root.ParamName:        name,
+			root.ParamProgramHash: progHash,
+			root.ParamDescription: "",
+		}),
+		nonce,
+	)
 }
 
 func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []isc.Request {
@@ -92,38 +124,6 @@ func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []
 					TargetContract: accounts.Contract.Hname(),
 					EntryPoint:     accounts.FuncDeposit.Hname(),
 					GasBudget:      10_000,
-				},
-			},
-		},
-	)
-	require.NoError(tcl.t, err)
-	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))
-	return tcl.findChainRequests(tx)
-}
-
-func (tcl *TestChainLedger) MakeTxDeployIncCounterContract() []isc.Request {
-	sender := tcl.originator
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(sender.Address())
-	tx, err := transaction.NewRequestTransaction(
-		transaction.NewRequestTransactionParams{
-			SenderKeyPair:    sender,
-			SenderAddress:    sender.Address(),
-			UnspentOutputs:   outs,
-			UnspentOutputIDs: outIDs,
-			Request: &isc.RequestParameters{
-				TargetAddress:                 tcl.chainID.AsAddress(),
-				FungibleTokens:                isc.NewFungibleBaseTokens(2_000_000),
-				AdjustToMinimumStorageDeposit: false,
-				Metadata: &isc.SendMetadata{
-					TargetContract: root.Contract.Hname(),
-					EntryPoint:     root.FuncDeployContract.Hname(),
-					Params: codec.MakeDict(map[string]interface{}{
-						root.ParamProgramHash: inccounter.Contract.ProgramHash,
-						root.ParamDescription: "inccounter",
-						root.ParamName:        inccounter.Contract.Name,
-						inccounter.VarCounter: 0,
-					}),
-					GasBudget: 10_000,
 				},
 			},
 		},

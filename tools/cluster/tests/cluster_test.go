@@ -37,7 +37,6 @@ func TestClusterMultiNodeCommittee(t *testing.T) {
 
 	t.Run("deploy basic", func(t *testing.T) { run(t, testDeployChain) })
 	t.Run("deploy contract", func(t *testing.T) { run(t, testDeployContractOnly) })
-	t.Run("deploy contract and spawn", func(t *testing.T) { run(t, testDeployContractAndSpawn) })
 
 	t.Run("accountsBasic", func(t *testing.T) { run(t, testBasicAccounts) })
 	t.Run("2acccounts", func(t *testing.T) { run(t, testBasic2Accounts) })
@@ -73,13 +72,13 @@ func TestClusterMultiNodeCommittee(t *testing.T) {
 	t.Run("inccounter timelock", func(t *testing.T) { run(t, testIncCounterTimelock) })
 }
 
-func createTestWrapper(tt *testing.T, clusterSize int, committee []int) func(t *testing.T, f func(*testing.T, *ChainEnv)) {
+func createTestWrapper(tt *testing.T, clusterSize int, committee []int) func(t *testing.T, f func(*testing.T, *chainEnv)) {
 	dkgQuorum := uint16((2*len(committee))/3 + 1)
 	clu := newCluster(tt, waspClusterOpts{nNodes: clusterSize})
 	dkgAddr, err := clu.RunDKG(committee, dkgQuorum)
 	require.NoError(tt, err)
 
-	return func(t *testing.T, f func(*testing.T, *ChainEnv)) {
+	return func(t *testing.T, f func(*testing.T, *chainEnv)) {
 		// create a fresh new chain for the test
 		allNodes := clu.Config.AllNodes()
 		chain, err := clu.DeployChain("testChain", allNodes, allNodes, dkgQuorum, dkgAddr)

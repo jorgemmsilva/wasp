@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/util"
 )
@@ -19,20 +18,16 @@ import (
 const OSWindows string = "windows"
 
 type SabotageEnv struct {
-	chainEnv      *ChainEnv
+	chainEnv      *chainEnv
 	NumValidators int
 	SabotageList  []int
 }
 
 func initializeStabilityTest(t *testing.T, numValidators, clusterSize int) *SabotageEnv {
-	progHash := inccounter.Contract.ProgramHash
 	env := SetupWithChain(t, waspClusterOpts{nNodes: clusterSize})
 	_, _, err := env.Clu.InitDKG(numValidators)
-
 	require.NoError(t, err)
-
-	_, _ = env.Chain.DeployContract(nativeIncCounterSCName, progHash.String(), "testing with inccounter", nil)
-	waitUntil(t, env.contractIsDeployed(), env.Clu.Config.AllNodes(), 50*time.Second, "contract is deployed")
+	env.deployWasmInccounter(0)
 
 	return &SabotageEnv{
 		chainEnv:      env,
@@ -42,9 +37,9 @@ func initializeStabilityTest(t *testing.T, numValidators, clusterSize int) *Sabo
 }
 
 func (e *SabotageEnv) sendRequests(numRequests int, messageDelay time.Duration) {
-	client := e.chainEnv.createNewClient()
+	client := e.chainEnv.newInccounterClientWithFunds()
 	for i := 0; i < numRequests; i++ {
-		_, err := client.PostRequest(inccounter.FuncIncCounter.Name)
+		_, err := client.PostRequest(incrementFuncName)
 		require.NoError(e.chainEnv.t, err)
 
 		time.Sleep(messageDelay)
@@ -163,7 +158,7 @@ func runTestFailsIncCounterIncreaseAsQuorumNotMet(t *testing.T, clusterSize, num
 	wg.Wait()
 	// quorum is not met, incCounter should not equal numRequests
 	time.Sleep(time.Second * 25)
-	counter := env.chainEnv.getNativeContractCounter(nativeIncCounterSCHname)
+	counter := env.chainEnv.GetCounterValue()
 	require.NotEqual(t, numRequests, int(counter))
 }
 

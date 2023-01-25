@@ -6,7 +6,9 @@ package cons_test
 import (
 	"context"
 	"fmt"
+	"math"
 	"math/rand"
+	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -18,12 +20,14 @@ import (
 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/core/logger"
 	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain/cons"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv"
+	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/kv/subrealm"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -143,7 +147,7 @@ func testBasic(t *testing.T, n, f int) {
 	// Construct the nodes.
 	consInstID := []byte{1, 2, 3} // ID of the consensus.
 	chainStates := map[gpa.NodeID]state.Store{}
-	procConfig := coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)
+	procConfig := coreprocessors.NewConfigWithCoreContracts()
 	procCache := processors.MustNew(procConfig)
 	nodeIDs := gpa.NodeIDsFromPublicKeys(testpeers.PublicKeys(peerIdentities))
 	nodes := map[gpa.NodeID]gpa.GPA{}
@@ -272,7 +276,7 @@ func TestChained(t *testing.T) {
 			{n: 3, f: 0, b: 10}, // Low N
 			{n: 4, f: 1, b: 10}, // Smallest possible resilient config.
 			{n: 10, f: 3, b: 5}, // Maybe a typical config.
-			{n: 12, f: 3, b: 3}, // Check a non-optimal N/F combinations.
+			{n: 12, f: 3, b: 4}, // Check a non-optimal N/F combinations.
 		}
 	} else {
 		tests = []test{ // Block counts chosen to keep test time similar in all cases.
@@ -282,7 +286,7 @@ func TestChained(t *testing.T) {
 			{n: 4, f: 1, b: 250}, // Smallest possible resilient config.
 			{n: 10, f: 3, b: 50}, // Maybe a typical config.
 			{n: 12, f: 3, b: 35}, // Check a non-optimal N/F combinations.
-			{n: 31, f: 10, b: 2}, // A large cluster.
+			{n: 31, f: 10, b: 4}, // A large cluster.
 		}
 	}
 	for _, test := range tests {
@@ -319,22 +323,37 @@ func testChained(t *testing.T, n, f, b int) {
 	originAO, chainID := tcl.MakeTxChainOrigin(committeeAddress)
 	allRequests := map[int][]isc.Request{}
 	allRequests[0] = tcl.MakeTxChainInit()
+
+	inccounterHn := isc.Hn("inccounter")
+	incrementFuncHn := isc.Hn("increment")
+	const varCounter = "counter"
+
 	if b > 1 {
 		_, err = utxoDB.GetFundsFromFaucet(scClient.Address(), 150_000_000)
 		require.NoError(t, err)
-		allRequests[1] = append(tcl.MakeTxAccountsDeposit(scClient), tcl.MakeTxDeployIncCounterContract()...)
+
+		wasmPath := "../../../tools/cluster/tests/wasm/inccounter_bg.wasm"
+		wasmBin, err := os.ReadFile(wasmPath)
+		require.NoError(t, err)
+		blobUploadReqUnsigned, progHash := tcl.BlobUploadRequest(wasmBin, 0)
+		blobUploadReq := blobUploadReqUnsigned.WithGasBudget(math.MaxUint64).Sign(tcl.Originator)
+		contractDeployReq := tcl.ContractDeployRequest("inccounter", progHash, 1).
+			WithGasBudget(math.MaxUint64).Sign(tcl.Originator)
+
+		allRequests[1] = append(tcl.MakeTxAccountsDeposit(scClient), blobUploadReq)
+		allRequests[2] = []isc.Request{contractDeployReq}
 	}
 	incTotal := 0
-	for i := 2; i < b; i++ {
+	for i := 3; i < b; i++ {
 		reqs := []isc.Request{}
 		reqPerBlock := 3
 		for ii := 0; ii < reqPerBlock; ii++ {
 			scRequest := isc.NewOffLedgerRequest(
 				chainID,
-				inccounter.Contract.Hname(),
-				inccounter.FuncIncCounter.Hname(),
+				inccounterHn,
+				incrementFuncHn,
 				dict.New(), uint64(i*reqPerBlock+ii),
-			).WithGasBudget(20000).Sign(scClient)
+			).WithGasBudget(200000).Sign(scClient)
 			reqs = append(reqs, scRequest)
 			incTotal++
 		}
@@ -342,7 +361,8 @@ func testChained(t *testing.T, n, f, b int) {
 	}
 	//
 	// Construct the nodes for each instance.
-	procConfig := coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)
+	procConfig, err := coreprocessors.NewConfigWithCoreContracts().WithWasmVM(log)
+	require.NoError(t, err)
 	procCache := processors.MustNew(procConfig)
 	doneCHs := map[gpa.NodeID]chan *testInstInput{}
 	for _, nid := range nodeIDs {
@@ -397,7 +417,9 @@ func testChained(t *testing.T, n, f, b int) {
 	}
 	t.Log("Done, last block was output and all instances terminated.")
 	for _, doneVal := range doneVals {
-		require.Equal(t, int64(incTotal), inccounter.NewStateAccess(doneVal.baseState).GetCounter())
+		counterSCState := subrealm.NewReadOnly(doneVal.baseState, kv.Key(inccounterHn.Bytes()))
+		counter := codec.MustDecodeInt64(counterSCState.MustGet(varCounter))
+		require.Equal(t, int64(incTotal), counter)
 	}
 }
 

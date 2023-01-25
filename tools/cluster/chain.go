@@ -9,7 +9,6 @@ import (
 	"github.com/iotaledger/wasp/client/chainclient"
 	"github.com/iotaledger/wasp/client/multiclient"
 	"github.com/iotaledger/wasp/client/scclient"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -234,15 +233,6 @@ func (ch *Chain) ContractRegistry(nodeIndex ...int) (map[isc.Hname]*root.Contrac
 		return nil, err
 	}
 	return root.DecodeContractRegistry(collections.NewMapReadOnly(ret, root.StateVarContractRegistry))
-}
-
-func (ch *Chain) GetCounterValue(inccounterSCHname isc.Hname, nodeIndex ...int) (int64, error) {
-	cl := ch.SCClient(inccounterSCHname, nil, nodeIndex...)
-	ret, err := cl.CallView(inccounter.ViewGetCounter.Name, nil)
-	if err != nil {
-		return 0, err
-	}
-	return codec.DecodeInt64(ret.MustGet(inccounter.VarCounter), 0)
 }
 
 func (ch *Chain) GetStateVariable(contractHname isc.Hname, key string, nodeIndex ...int) ([]byte, error) {

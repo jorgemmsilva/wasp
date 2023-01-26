@@ -13,6 +13,8 @@ services:
   wasp:
     image: iotaledger/wasp:latest 
     # build:
+    #   args: 
+    #     BUILD_LD_FLAGS: "-X=github.com/iotaledger/wasp/core/app.Version=\"test\""
     #   context: ../../
     #   dockerfile: Dockerfile
     command:

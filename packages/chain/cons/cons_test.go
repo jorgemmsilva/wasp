@@ -43,7 +43,6 @@ import (
 // Here we run a single consensus instance, step by step with
 // regards to the requests to external components (mempool, stateMgr, VM).
 func TestBasic(t *testing.T) {
-	t.Parallel()
 	type test struct {
 		n int
 		f int
@@ -68,7 +67,6 @@ func TestBasic(t *testing.T) {
 }
 
 func testBasic(t *testing.T, n, f int) {
-	t.Parallel()
 	rand.Seed(time.Now().UnixNano())
 	log := testlogger.NewLogger(t)
 	defer log.Sync()
@@ -262,7 +260,6 @@ func testBasic(t *testing.T, n, f int) {
 // all messages to be delivered before responding to the instance requests to
 // mempool, stateMgr and VM.
 func TestChained(t *testing.T) {
-	t.Parallel()
 	type test struct {
 		n int
 		f int
@@ -298,7 +295,6 @@ func TestChained(t *testing.T) {
 }
 
 func testChained(t *testing.T, n, f, b int) {
-	t.Parallel()
 	rand.Seed(time.Now().UnixNano())
 	log := testlogger.NewLogger(t)
 	defer log.Sync()

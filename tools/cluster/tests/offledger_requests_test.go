@@ -42,7 +42,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	waitUntil(t, e.counterEquals(43), clu.Config.AllNodes(), 30*time.Second)
+	waitUntil(t, e.counterEqualsCondition(43), clu.Config.AllNodes(), 30*time.Second)
 
 	// check off-ledger request was successfully processed (check by asking another access node)
 	ret, err := clu.WaspClient(6).CallView(
@@ -55,7 +55,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 
 // executed in cluster_test.go
 func testOffledgerRequest(t *testing.T, e *chainEnv) {
-	e.deployWasmInccounter(0)
+	e.deployWasmInccounter(42)
 
 	chClient := newWalletWithFunds(e, 0, 0, 1, 2, 3)
 

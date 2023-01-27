@@ -8,8 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/stretchr/testify/require"
+
+	"github.com/iotaledger/wasp/packages/util"
+	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
+	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
 
 	"github.com/iotaledger/wasp/contracts/wasm/inccounter/go/inccounter"
 	"github.com/iotaledger/wasp/contracts/wasm/inccounter/go/inccounterimpl"
@@ -99,9 +102,9 @@ func TestIncrementRepeatOnce(t *testing.T) {
 	repeatMany.Func.Post()
 	require.NoError(t, ctx.Err)
 
-	require.True(t, ctx.WaitForPendingRequests(1))
-
-	checkStateCounter(t, ctx, 2)
+	util.WaitUntilTrue(t, func() bool {
+		return getStateCounter(t, ctx).Value() == 2
+	}, 1*time.Second)
 }
 
 func TestIncrementRepeatThrice(t *testing.T) {
@@ -112,9 +115,9 @@ func TestIncrementRepeatThrice(t *testing.T) {
 	repeatMany.Func.Post()
 	require.NoError(t, ctx.Err)
 
-	require.True(t, ctx.WaitForPendingRequests(3))
-
-	checkStateCounter(t, ctx, 4)
+	util.WaitUntilTrue(t, func() bool {
+		return getStateCounter(t, ctx).Value() == 4
+	}, 1*time.Second)
 }
 
 func TestIncrementCallIncrement(t *testing.T) {
@@ -144,9 +147,9 @@ func TestIncrementPostIncrement(t *testing.T) {
 	postIncrement.Func.Post()
 	require.NoError(t, ctx.Err)
 
-	require.True(t, ctx.WaitForPendingRequests(1))
-
-	checkStateCounter(t, ctx, 2)
+	util.WaitUntilTrue(t, func() bool {
+		return getStateCounter(t, ctx).Value() == 2
+	}, 1*time.Second)
 }
 
 func TestIncrementLocalStateInternalCall(t *testing.T) {
@@ -184,17 +187,14 @@ func TestIncrementLocalStatePost(t *testing.T) {
 	localStatePost.Func.Post()
 	require.NoError(t, ctx.Err)
 
-	require.True(t, ctx.WaitForPendingRequests(3))
-
 	if ctx.IsWasm {
-		// global var in wasm execution has no effect
+		time.Sleep(1 * time.Second)
 		checkStateCounter(t, ctx, nil)
 		return
 	}
-
-	// when using WasmGoVM the 3 posts are run only after
-	// the LocalStateMustIncrement has been set to true
-	checkStateCounter(t, ctx, 3)
+	util.WaitUntilTrue(t, func() bool {
+		return getStateCounter(t, ctx).Value() == 3
+	}, 1*time.Second)
 }
 
 func TestVliCodec(t *testing.T) {
@@ -271,11 +271,15 @@ func TestLoop(t *testing.T) {
 	checkStateCounter(t, ctx, 1)
 }
 
-func checkStateCounter(t *testing.T, ctx *wasmsolo.SoloContext, expected interface{}) {
+func getStateCounter(t *testing.T, ctx *wasmsolo.SoloContext) wasmtypes.ScImmutableInt64 {
 	getCounter := inccounter.ScFuncs.GetCounter(ctx)
 	getCounter.Func.Call()
 	require.NoError(t, ctx.Err)
-	counter := getCounter.Results.Counter()
+	return getCounter.Results.Counter()
+}
+
+func checkStateCounter(t *testing.T, ctx *wasmsolo.SoloContext, expected interface{}) {
+	counter := getStateCounter(t, ctx)
 	if expected == nil {
 		require.False(t, counter.Exists())
 		return

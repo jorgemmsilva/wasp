@@ -59,5 +59,5 @@ func TestMissingRequests(t *testing.T) {
 	//-------
 
 	// expect request to be successful, as node #3 must ask for the missing request from other nodes
-	waitUntil(t, chEnv.counterEquals(43), clu.Config.AllNodes(), 30*time.Second)
+	waitUntil(t, chEnv.counterEqualsCondition(43), clu.Config.AllNodes(), 30*time.Second)
 }

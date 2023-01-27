@@ -81,7 +81,7 @@ func testSpamOnledger(t *testing.T, e *chainEnv) {
 		require.NoError(t, err)
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), []int{0}, 5*time.Minute)
 
 	res, err := e.Chain.Cluster.WaspClient(0).CallView(e.Chain.ChainID, blocklog.Contract.Hname(), blocklog.ViewGetEventsForBlock.Name, dict.Dict{})
 	require.NoError(t, err)
@@ -161,7 +161,7 @@ func testSpamOffLedger(t *testing.T, e *chainEnv) {
 		}
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), []int{0}, 5*time.Minute)
 
 	res, err := e.Chain.Cluster.WaspClient(0).CallView(e.Chain.ChainID, blocklog.Contract.Hname(), blocklog.ViewGetEventsForBlock.Name, dict.Dict{})
 	require.NoError(t, err)

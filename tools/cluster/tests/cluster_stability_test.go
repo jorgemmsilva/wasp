@@ -123,7 +123,7 @@ func TestSuccessfulIncCounterIncreaseWithoutInstability(t *testing.T) {
 
 	env := initializeStabilityTest(t, numValidators, clusterSize)
 	env.sendRequests(numRequests, time.Millisecond*250)
-	waitUntil(t, env.chainEnv.counterEquals(int64(numRequests)), env.chainEnv.Clu.Config.AllNodes(), 120*time.Second, "incCounter matches expectation")
+	waitUntil(t, env.chainEnv.counterEqualsCondition(int64(numRequests)), env.chainEnv.Clu.Config.AllNodes(), 120*time.Second, "incCounter matches expectation")
 }
 
 func TestSuccessfulIncCounterIncreaseWithMildInstability(t *testing.T) {
@@ -145,7 +145,7 @@ func TestSuccessfulIncCounterIncreaseWithMildInstability(t *testing.T) {
 
 	wg.Wait()
 
-	waitUntil(t, env.chainEnv.counterEquals(int64(numRequests)), env.getActiveNodeList(), 120*time.Second, "incCounter matches expectation")
+	waitUntil(t, env.chainEnv.counterEqualsCondition(int64(numRequests)), env.getActiveNodeList(), 120*time.Second, "incCounter matches expectation")
 }
 
 func runTestFailsIncCounterIncreaseAsQuorumNotMet(t *testing.T, clusterSize, numValidators, numBrokenNodes, numRequests int) {
@@ -158,7 +158,7 @@ func runTestFailsIncCounterIncreaseAsQuorumNotMet(t *testing.T, clusterSize, num
 	wg.Wait()
 	// quorum is not met, incCounter should not equal numRequests
 	time.Sleep(time.Second * 25)
-	counter := env.chainEnv.GetCounterValue()
+	counter := env.chainEnv.getCounterValue()
 	require.NotEqual(t, numRequests, int(counter))
 }
 

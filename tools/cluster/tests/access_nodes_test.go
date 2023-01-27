@@ -80,7 +80,7 @@ func testPermitionlessAccessNode(t *testing.T, e *chainEnv) {
 		),
 		incHname,
 	)
-	req, err := myClient.PostOffLedgerRequest(incName)
+	req, err := myClient.PostOffLedgerRequest(incrementFuncName)
 	require.NoError(t, err)
 
 	// request has been processed
@@ -92,7 +92,7 @@ func testPermitionlessAccessNode(t *testing.T, e *chainEnv) {
 	require.NoError(t, err)
 
 	// try sending the request again
-	req, err = myClient.PostOffLedgerRequest(incName)
+	req, err = myClient.PostOffLedgerRequest(incrementFuncName)
 	require.NoError(t, err)
 
 	// request is not processed after a while

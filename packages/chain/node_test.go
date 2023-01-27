@@ -44,9 +44,8 @@ type tc struct {
 	reliable bool
 }
 
-//nolint:tparallel // wasm VM will crash if these are run in parallel...
+
 func TestBasic(t *testing.T) {
-	t.Parallel()
 	tests := []tc{
 		{n: 1, f: 0, reliable: true},  // Low N
 		{n: 2, f: 0, reliable: true},  // Low N

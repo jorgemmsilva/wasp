@@ -13,7 +13,7 @@ func TestReboot(t *testing.T) {
 
 	_, err := client.PostRequest(incrementFuncName)
 	require.NoError(t, err)
-	e.counterEquals(1)
+	e.counterEqualsCondition(1)
 
 	// restart the nodes
 	err = e.Clu.RestartNodes(0, 1, 2)
@@ -22,5 +22,5 @@ func TestReboot(t *testing.T) {
 	// after rebooting, the chain should resume processing requests without issues
 	_, err = client.PostRequest(incrementFuncName)
 	require.NoError(t, err)
-	e.counterEquals(2)
+	e.counterEqualsCondition(2)
 }

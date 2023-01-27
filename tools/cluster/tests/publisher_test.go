@@ -102,7 +102,7 @@ func testNanoPublisher(t *testing.T, e *chainEnv) {
 		reqIDs[i] = req.ID()
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), util.MakeRange(0, 1), 60*time.Second, "requests counted - A")
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), util.MakeRange(0, 1), 60*time.Second, "requests counted - A")
 
 	// assert all clients received the correct number of messages, in the correct order.
 	for _, client := range nanoClients {
@@ -120,7 +120,7 @@ func testNanoPublisher(t *testing.T, e *chainEnv) {
 		// ---
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests*2)), util.MakeRange(0, 1), 60*time.Second, "requests counted - B")
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests*2)), util.MakeRange(0, 1), 60*time.Second, "requests counted - B")
 
 	// assert all clients received the correct number of messages, in the correct order.
 	for _, client := range nanoClients {

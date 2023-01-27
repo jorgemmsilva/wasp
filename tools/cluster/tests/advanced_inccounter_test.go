@@ -56,7 +56,7 @@ func testAccessNodesOnLedger(t *testing.T, numRequests, numValidatorNodes, clust
 		require.NoError(t, err)
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), e.Clu.AllNodes(), 40*time.Second, "a required number of testAccessNodesOnLedger requests")
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), e.Clu.AllNodes(), 40*time.Second, "a required number of testAccessNodesOnLedger requests")
 }
 
 func TestAccessNodesOffLedger(t *testing.T) {
@@ -110,7 +110,7 @@ func testAccessNodesOffLedger(t *testing.T, numRequests, numValidatorNodes, clus
 		require.NoError(t, err)
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), util.MakeRange(0, clusterSize-1), to, "requests counted")
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), util.MakeRange(0, clusterSize-1), to, "requests counted")
 }
 
 // extreme test
@@ -139,7 +139,7 @@ func TestAccessNodesMany(t *testing.T) {
 		require.NoError(t, err)
 		posted += requestsCount
 		requestsCumulative += requestsCount
-		waitUntil(t, e.counterEquals(int64(requestsCumulative)), e.Clu.Config.AllNodes(), 60*time.Second, logMsg)
+		waitUntil(t, e.counterEqualsCondition(int64(requestsCumulative)), e.Clu.Config.AllNodes(), 60*time.Second, logMsg)
 		requestsCount *= requestsCountProgression
 	}
 }

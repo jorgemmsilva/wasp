@@ -9,9 +9,11 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/client/chainclient"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/utxodb"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
 
@@ -19,7 +21,7 @@ const inccounterName = "inc"
 
 func deployInccounter42(e *chainEnv) *isc.ContractAgentID {
 	e.deployWasmInccounter(42)
-	counterValue := e.GetCounterValue()
+	counterValue := e.getCounterValue()
 	require.EqualValues(e.t, 42, counterValue)
 
 	// test calling root.FuncFindContractByName view function using client
@@ -37,32 +39,6 @@ func deployInccounter42(e *chainEnv) *isc.ContractAgentID {
 
 	e.expectCounter(42)
 	return isc.NewContractAgentID(e.Chain.ChainID, incHname)
-}
-
-func (e *chainEnv) waitUntilCounterEquals(hname isc.Hname, expected int64, duration time.Duration) {
-	timeout := time.After(duration)
-	var c int64
-	allNodesEqualFun := func() bool {
-		for _, node := range e.Chain.AllPeers {
-			c = e.GetCounterValue(node)
-			if c != expected {
-				return false
-			}
-		}
-		return true
-	}
-	for {
-		select {
-		case <-timeout:
-			e.t.Errorf("timeout waiting for inccounter, current: %d, expected: %d", c, expected)
-			e.t.Fatal()
-		default:
-			if allNodesEqualFun() {
-				return // success
-			}
-		}
-		time.Sleep(1 * time.Second)
-	}
 }
 
 // executed in cluster_test.go
@@ -98,11 +74,27 @@ func testPost3Recursive(t *testing.T, e *chainEnv) {
 	myWallet, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
+	// fund the contract, so it can post requests to itself
+
+	tx, err := e.NewChainClient().Post1Request(accounts.Contract.Hname(), accounts.FuncTransferAllowanceTo.Hname(), chainclient.PostRequestParams{
+		Transfer: isc.NewFungibleBaseTokens(1_500_000),
+		Args: map[kv.Key][]byte{
+			accounts.ParamAgentID: codec.EncodeAgentID(
+				isc.NewContractAgentID(e.Chain.ChainID, incHname),
+			),
+		},
+		Allowance: isc.NewAllowanceBaseTokens(1_000_000),
+	})
+	require.NoError(t, err)
+
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, 30*time.Second)
+	require.NoError(t, err)
+
 	myClient := e.Chain.SCClient(contractID.Hname(), myWallet)
 
-	tx, err := myClient.PostRequest(incrementRepeatManyFuncName, chainclient.PostRequestParams{
-		Transfer:  isc.NewFungibleBaseTokens(10 * isc.Million),
-		Allowance: isc.NewAllowanceBaseTokens(9 * isc.Million),
+	tx, err = myClient.PostRequest(incrementRepeatManyFuncName, chainclient.PostRequestParams{
+		// Transfer:  isc.NewFungibleBaseTokens(10 * isc.Million),
+		// Allowance: isc.NewAllowanceBaseTokens(9 * isc.Million),
 		Args: codec.MakeDict(map[string]interface{}{
 			varNumRepeats: 3,
 		}),

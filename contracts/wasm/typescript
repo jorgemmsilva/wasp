@@ -1,0 +1,812 @@
+Script started on 2023-01-26 12:41:42+00:00 [TERM="xterm-256color" TTY="/dev/pts/2" COLUMNS="119" LINES="82"]
+[1m[7m%[27m[1m[0m                                                                                                                       ]2;jorge@archlinux:~/dev/iota/wasp/contracts/wasm]1;..ontracts/wasm]7;file:///home/jorge/dev/iota/wasp/contracts/wasm\[0m[27m[24m[J
+[1;36mwasp/contracts/wasm[0m on [1;35m [0m[1;35mremove-native-contracts[0m [1;32m([0m[1;32mf4b7d20[0m[1;32m)[0m [1;31m[[0m[1;31m$[0m[1;31m![0m[1;31m?[0m[1;31m][0m | [1;32mnodejs [0m[1;32mv19.4.0[0m[1;32m [0mvia [1;31m🦀 [0m[1;31mv1.64.0[0m[1;31m [0m
+🕑 12:41:42 [1;32m➜[0m [K[?1h=[?2004hscript[32ms[32mc[32mr[32mi[32mp[32mt[39m[32mt[32ms[39m[4m[32ms[4m[32mc[4m[32mr[4m[32mi[4m[32mp[4m[32mt[4m[32ms[24m[39m[4m[32ms[1m[4m[32m/[0m[24m[39m[4m[32ms[24m[39m[0m[24m[39m [?1l>[?2004l
+]2;scripts]1;scripts[1m[7m%[27m[1m[0m                                                                                                                       ]2;jorge@archlinux:~/dev/iota/wasp/contracts/wasm/scripts]1;../wasm/scripts]7;file:///home/jorge/dev/iota/wasp/contracts/wasm/scripts\[0m[27m[24m[J
+[1;36mcontracts/wasm/scripts[0m on [1;35m [0m[1;35mremove-native-contracts[0m [1;32m([0m[1;32mf4b7d20[0m[1;32m)[0m [1;31m[[0m[1;31m$[0m[1;31m![0m[1;31m?[0m[1;31m][0m 
+🕑 12:41:44 [1;32m➜[0m [K[?1h=[?2004h.[32m.[39m[32m.[39m[90m/cleanup_all.sh && ./all_build.sh && ./update_hardcoded.sh[39m[58D[32m.[32m/[39m[4m[32m.[4m[32m/[24m[39m[39mc[39ml[39me[39ma[39mn[39mu[39mp[39m_[39ma[39ml[39ml[39m.[39ms[39mh[39m [39m&[39m&[39m [39m.[39m/[39ma[39ml[39ml[39m_[39mb[39mu[39mi[39ml[39md[39m.[39ms[39mh[39m [39m&[39m&[39m [39m.[39m/[39mu[39mp[39md[39ma[39mt[39me[39m_[39mh[39ma[39mr[39md[39mc[39mo[39md[39me[39md[39m.[39ms[39mh[59D[24m[32m.[24m[32m/[32mc[32ml[32me[32ma[32mn[32mu[32mp[32m_[32ma[32ml[32ml[32m.[32ms[32mh[39m[4C[32m.[32m/[32ma[32ml[32ml[32m_[32mb[32mu[32mi[32ml[32md[32m.[32ms[32mh[39m[4C[32m.[32m/[32mu[32mp[32md[32ma[32mt[32me[32m_[32mh[32ma[32mr[32md[32mc[32mo[32md[32me[32md[32m.[32ms[32mh[39m[?1l>[?2004l
+]2;./cleanup_all.sh && ./all_build.sh && ./update_hardcoded.sh]1;./cleanup_all.sh./corecontracts
+loading schema.yaml
+rm: cannot remove './rs/./corecontractsimpl/Cargo.lock': No such file or directory
+./dividend
+loading schema.yaml
+rm: cannot remove './rs/./dividendimpl/Cargo.lock': No such file or directory
+./donatewithfeedback
+loading schema.yaml
+rm: cannot remove './rs/./donatewithfeedbackimpl/Cargo.lock': No such file or directory
+./erc20
+loading schema.yaml
+rm: cannot remove './rs/./erc20impl/Cargo.lock': No such file or directory
+./erc721
+loading schema.yaml
+rm: cannot remove './rs/./erc721impl/Cargo.lock': No such file or directory
+./fairauction
+loading schema.yaml
+rm: cannot remove './rs/./fairauctionimpl/Cargo.lock': No such file or directory
+./fairroulette
+loading schema.yaml
+rm: cannot remove './rs/./fairrouletteimpl/Cargo.lock': No such file or directory
+./gascalibration
+Usage of schema:
+  -clean
+    	clean up (re-)generated files
+  -core
+    	generate core contract interface
+  -force
+    	force code generation
+  -go
+    	generate Go code
+  -init string
+    	generate new schema file for smart contract named <string>
+  -rs
+    	generate Rust code
+  -ts
+    	generate TypScript code
+rm: cannot remove './ts/./gascalibrationimpl/tsconfig.json': No such file or directory
+rm: cannot remove './rs/./gascalibrationimpl/Cargo.lock': No such file or directory
+rm: cannot remove './rs/./gascalibrationimpl/Cargo.toml': No such file or directory
+rm: cannot remove './rs/./gascalibrationimpl/LICENSE': No such file or directory
+rm: cannot remove './rs/./gascalibrationimpl/README.md': No such file or directory
+./helloworld
+loading schema.yaml
+rm: cannot remove './rs/./helloworldimpl/Cargo.lock': No such file or directory
+./inccounter
+loading schema.yaml
+rm: cannot remove './rs/./inccounterimpl/Cargo.lock': No such file or directory
+./node_modules
+Usage of schema:
+  -clean
+    	clean up (re-)generated files
+  -core
+    	generate core contract interface
+  -force
+    	force code generation
+  -go
+    	generate Go code
+  -init string
+    	generate new schema file for smart contract named <string>
+  -rs
+    	generate Rust code
+  -ts
+    	generate TypScript code
+rm: cannot remove './ts/./node_modulesimpl/tsconfig.json': No such file or directory
+rm: cannot remove './rs/./node_modulesimpl/Cargo.lock': No such file or directory
+rm: cannot remove './rs/./node_modulesimpl/Cargo.toml': No such file or directory
+rm: cannot remove './rs/./node_modulesimpl/LICENSE': No such file or directory
+rm: cannot remove './rs/./node_modulesimpl/README.md': No such file or directory
+./schemacomment
+loading schema.yaml
+warning: block and line comment for line 11, line comment was ignored.
+warning: block and line comment for line 19, line comment was ignored.
+warning: block and line comment for line 23, line comment was ignored.
+warning: block and line comment for line 30, line comment was ignored.
+warning: block and line comment for line 37, line comment was ignored.
+warning: block and line comment for line 40, line comment was ignored.
+warning: block and line comment for line 91, line comment was ignored.
+rm: cannot remove './rs/./schemacommentimpl/Cargo.lock': No such file or directory
+./scripts
+Usage of schema:
+  -clean
+    	clean up (re-)generated files
+  -core
+    	generate core contract interface
+  -force
+    	force code generation
+  -go
+    	generate Go code
+  -init string
+    	generate new schema file for smart contract named <string>
+  -rs
+    	generate Rust code
+  -ts
+    	generate TypScript code
+rm: cannot remove './ts/./scriptsimpl/tsconfig.json': No such file or directory
+rm: cannot remove './rs/./scriptsimpl/Cargo.lock': No such file or directory
+rm: cannot remove './rs/./scriptsimpl/Cargo.toml': No such file or directory
+rm: cannot remove './rs/./scriptsimpl/LICENSE': No such file or directory
+rm: cannot remove './rs/./scriptsimpl/README.md': No such file or directory
+./target
+Usage of schema:
+  -clean
+    	clean up (re-)generated files
+  -core
+    	generate core contract interface
+  -force
+    	force code generation
+  -go
+    	generate Go code
+  -init string
+    	generate new schema file for smart contract named <string>
+  -rs
+    	generate Rust code
+  -ts
+    	generate TypScript code
+rm: cannot remove './ts/./targetimpl/tsconfig.json': No such file or directory
+rm: cannot remove './rs/./targetimpl/Cargo.lock': No such file or directory
+rm: cannot remove './rs/./targetimpl/Cargo.toml': No such file or directory
+rm: cannot remove './rs/./targetimpl/LICENSE': No such file or directory
+rm: cannot remove './rs/./targetimpl/README.md': No such file or directory
+./testcore
+loading schema.yaml
+rm: cannot remove './rs/./testcoreimpl/Cargo.lock': No such file or directory
+./testwasmlib
+loading schema.yaml
+rm: cannot remove './rs/./testwasmlibimpl/Cargo.lock': No such file or directory
+./timestamp
+loading schema.yaml
+rm: cannot remove './rs/./timestampimpl/Cargo.lock': No such file or directory
+./tokenregistry
+loading schema.yaml
+rm: cannot remove './rs/./tokenregistryimpl/Cargo.lock': No such file or directory
+./executiontime
+loading schema.yaml
+rm: cannot remove './rs/./executiontimeimpl/Cargo.lock': No such file or directory
+./memory
+loading schema.yaml
+rm: cannot remove './rs/./memoryimpl/Cargo.lock': No such file or directory
+./storage
+loading schema.yaml
+rm: cannot remove './rs/./storageimpl/Cargo.lock': No such file or directory
+[?25l([100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠼ reify: [32;40mtiming[0m [35marborist:ctor[0m Completed in 2ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠼ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠏ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠙ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠙ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠙ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠙ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K([107;97m#########[0m[100;90m⠂⠂⠂⠂⠂⠂⠂⠂⠂[0m) ⠙ idealTree: [32;40mtiming[0m [35midealTree[0m Completed in 35ms[0m[K[K[?25h
+removed 2 packages, and audited 5 packages in 547ms
+
+1 package is looking for funding
+  run `npm fund` for details
+
+found [32m[1m0[22m[39m vulnerabilities
+loading interfaces/coreaccounts.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+generating TypeScript code
+loading interfaces/coreblob.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+generating TypeScript code
+loading interfaces/coreblocklog.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+generating TypeScript code
+loading interfaces/coregovernance.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+generating TypeScript code
+loading interfaces/coreroot.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+generating TypeScript code
+loading interfaces/wasmrequests.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+generating TypeScript code
+Generating ./corecontracts
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./dividend
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./donatewithfeedback
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./erc20
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./erc721
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./fairauction
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./fairroulette
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./helloworld
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./inccounter
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./schemacomment
+loading schema.yaml
+warning: block and line comment for line 11, line comment was ignored.
+warning: block and line comment for line 19, line comment was ignored.
+warning: block and line comment for line 23, line comment was ignored.
+warning: block and line comment for line 30, line comment was ignored.
+warning: block and line comment for line 37, line comment was ignored.
+warning: block and line comment for line 40, line comment was ignored.
+warning: block and line comment for line 91, line comment was ignored.
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./testcore
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./testwasmlib
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./timestamp
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./tokenregistry
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./executiontime
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./memory
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./storage
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Building corecontracts
+loading schema.yaml
+skipping Go code generation
+Compiling corecontracts_go.wasm
+Building dividend
+loading schema.yaml
+skipping Go code generation
+Compiling dividend_go.wasm
+Building donatewithfeedback
+loading schema.yaml
+skipping Go code generation
+Compiling donatewithfeedback_go.wasm
+Building erc20
+loading schema.yaml
+skipping Go code generation
+Compiling erc20_go.wasm
+Building erc721
+loading schema.yaml
+skipping Go code generation
+Compiling erc721_go.wasm
+Building fairauction
+loading schema.yaml
+skipping Go code generation
+Compiling fairauction_go.wasm
+Building fairroulette
+loading schema.yaml
+skipping Go code generation
+Compiling fairroulette_go.wasm
+schema.yaml not found
+Building helloworld
+loading schema.yaml
+skipping Go code generation
+Compiling helloworld_go.wasm
+Building inccounter
+loading schema.yaml
+skipping Go code generation
+Compiling inccounter_go.wasm
+schema.yaml not found
+Building schemacomment
+loading schema.yaml
+warning: block and line comment for line 11, line comment was ignored.
+warning: block and line comment for line 19, line comment was ignored.
+warning: block and line comment for line 23, line comment was ignored.
+warning: block and line comment for line 30, line comment was ignored.
+warning: block and line comment for line 37, line comment was ignored.
+warning: block and line comment for line 40, line comment was ignored.
+warning: block and line comment for line 91, line comment was ignored.
+skipping Go code generation
+Compiling schemacomment_go.wasm
+schema.yaml not found
+schema.yaml not found
+Building testcore
+loading schema.yaml
+skipping Go code generation
+Compiling testcore_go.wasm
+Building testwasmlib
+loading schema.yaml
+skipping Go code generation
+Compiling testwasmlib_go.wasm
+Building timestamp
+loading schema.yaml
+skipping Go code generation
+Compiling timestamp_go.wasm
+Building tokenregistry
+loading schema.yaml
+skipping Go code generation
+Compiling tokenregistry_go.wasm
+Building executiontime
+loading schema.yaml
+skipping Go code generation
+Compiling executiontime_go.wasm
+Building memory
+loading schema.yaml
+skipping Go code generation
+Compiling memory_go.wasm
+Building storage
+loading schema.yaml
+skipping Go code generation
+Compiling storage_go.wasm
+Building corecontracts
+loading schema.yaml
+skipping TypeScript code generation
+Compiling corecontracts_ts.wasm
+Building dividend
+loading schema.yaml
+skipping TypeScript code generation
+Compiling dividend_ts.wasm
+Building donatewithfeedback
+loading schema.yaml
+skipping TypeScript code generation
+Compiling donatewithfeedback_ts.wasm
+Building erc20
+loading schema.yaml
+skipping TypeScript code generation
+Compiling erc20_ts.wasm
+Building erc721
+loading schema.yaml
+skipping TypeScript code generation
+Compiling erc721_ts.wasm
+Building fairauction
+loading schema.yaml
+skipping TypeScript code generation
+Compiling fairauction_ts.wasm
+Building fairroulette
+loading schema.yaml
+skipping TypeScript code generation
+Compiling fairroulette_ts.wasm
+schema.yaml not found
+Building helloworld
+loading schema.yaml
+skipping TypeScript code generation
+Compiling helloworld_ts.wasm
+Building inccounter
+loading schema.yaml
+skipping TypeScript code generation
+Compiling inccounter_ts.wasm
+schema.yaml not found
+Building schemacomment
+loading schema.yaml
+warning: block and line comment for line 11, line comment was ignored.
+warning: block and line comment for line 19, line comment was ignored.
+warning: block and line comment for line 23, line comment was ignored.
+warning: block and line comment for line 30, line comment was ignored.
+warning: block and line comment for line 37, line comment was ignored.
+warning: block and line comment for line 40, line comment was ignored.
+warning: block and line comment for line 91, line comment was ignored.
+skipping TypeScript code generation
+Compiling schemacomment_ts.wasm
+schema.yaml not found
+schema.yaml not found
+Building testcore
+loading schema.yaml
+skipping TypeScript code generation
+Compiling testcore_ts.wasm
+Building testwasmlib
+loading schema.yaml
+skipping TypeScript code generation
+Compiling testwasmlib_ts.wasm
+Building timestamp
+loading schema.yaml
+skipping TypeScript code generation
+Compiling timestamp_ts.wasm
+Building tokenregistry
+loading schema.yaml
+skipping TypeScript code generation
+Compiling tokenregistry_ts.wasm
+Building executiontime
+loading schema.yaml
+skipping TypeScript code generation
+Compiling executiontime_ts.wasm
+Building memory
+loading schema.yaml
+skipping TypeScript code generation
+Compiling memory_ts.wasm
+Building storage
+loading schema.yaml
+skipping TypeScript code generation
+Compiling storage_ts.wasm
+Generating ./corecontracts
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./dividend
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./donatewithfeedback
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./erc20
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./erc721
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./fairauction
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./fairroulette
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./helloworld
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./inccounter
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./schemacomment
+loading schema.yaml
+warning: block and line comment for line 11, line comment was ignored.
+warning: block and line comment for line 19, line comment was ignored.
+warning: block and line comment for line 23, line comment was ignored.
+warning: block and line comment for line 30, line comment was ignored.
+warning: block and line comment for line 37, line comment was ignored.
+warning: block and line comment for line 40, line comment was ignored.
+warning: block and line comment for line 91, line comment was ignored.
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./testcore
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./testwasmlib
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./timestamp
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./tokenregistry
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./executiontime
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./memory
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+Generating ./storage
+loading schema.yaml
+generating Go code
+generating Rust code
+generating TypeScript code
+corecontracts
+Building corecontracts
+loading schema.yaml
+skipping Rust code generation
+Compiling corecontractswasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m corecontracts v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/corecontracts/rs/corecontracts)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: corecontracts                                                      [K[0m[0m[1m[32m   Compiling[0m corecontractsimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/corecontracts/rs/corecontractsimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: corecontractsimpl                                                  [K[0m[0m[1m[32m   Compiling[0m corecontractswasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/corecontracts/rs/corecontractswasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: corecontractswasm                                                  [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.48s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.85s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/corecontractswasm/pkg.
+dividend
+Building dividend
+loading schema.yaml
+skipping Rust code generation
+Compiling dividendwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m dividend v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/dividend/rs/dividend)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: dividend                                                           [K[0m[0m[1m[32m   Compiling[0m dividendimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/dividend/rs/dividendimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: dividendimpl                                                       [K[0m[0m[1m[32m   Compiling[0m dividendwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/dividend/rs/dividendwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: dividendwasm                                                       [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.44s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.20s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/dividendwasm/pkg.
+donatewithfeedback
+Building donatewithfeedback
+loading schema.yaml
+skipping Rust code generation
+Compiling donatewithfeedbackwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m donatewithfeedback v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/donatewithfeedback/rs/donatewithfeedback)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: donatewithfeedback                                                 [K[0m[0m[1m[32m   Compiling[0m donatewithfeedbackimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/donatewithfeedback/rs/donatewithfeedbackimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: donatewithfeedbackimpl                                             [K[0m[0m[1m[32m   Compiling[0m donatewithfeedbackwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/donatewithfeedback/rs/donatewithfeedbackwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: donatewithfeedbackwasm                                             [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.43s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.19s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/donatewithfeedbackwasm/pkg.
+erc20
+Building erc20
+loading schema.yaml
+skipping Rust code generation
+Compiling erc20wasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m erc20 v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/erc20/rs/erc20)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: erc20                                                              [K[0m[0m[1m[32m   Compiling[0m erc20impl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/erc20/rs/erc20impl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: erc20impl                                                          [K[0m[0m[1m[32m   Compiling[0m erc20wasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/erc20/rs/erc20wasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: erc20wasm                                                          [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.55s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.19s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/erc20wasm/pkg.
+erc721
+Building erc721
+loading schema.yaml
+skipping Rust code generation
+Compiling erc721wasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m erc721 v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/erc721/rs/erc721)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: erc721                                                             [K[0m[0m[1m[32m   Compiling[0m erc721impl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/erc721/rs/erc721impl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: erc721impl                                                         [K[0m[0m[1m[32m   Compiling[0m erc721wasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/erc721/rs/erc721wasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: erc721wasm                                                         [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.59s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.35s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/erc721wasm/pkg.
+fairauction
+Building fairauction
+loading schema.yaml
+skipping Rust code generation
+Compiling fairauctionwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m fairauction v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/fairauction/rs/fairauction)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: fairauction                                                        [K[0m[0m[1m[32m   Compiling[0m fairauctionimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/fairauction/rs/fairauctionimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: fairauctionimpl                                                    [K[0m[0m[1m[32m   Compiling[0m fairauctionwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/fairauction/rs/fairauctionwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: fairauctionwasm                                                    [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.51s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.36s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/fairauctionwasm/pkg.
+fairroulette
+Building fairroulette
+loading schema.yaml
+skipping Rust code generation
+Compiling fairroulettewasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m fairroulette v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/fairroulette/rs/fairroulette)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: fairroulette                                                       [K[0m[0m[1m[32m   Compiling[0m fairrouletteimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/fairroulette/rs/fairrouletteimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: fairrouletteimpl                                                   [K[0m[0m[1m[32m   Compiling[0m fairroulettewasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/fairroulette/rs/fairroulettewasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: fairroulettewasm                                                   [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.58s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.51s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/fairroulettewasm/pkg.
+gascalibration
+schema.yaml not found
+helloworld
+Building helloworld
+loading schema.yaml
+skipping Rust code generation
+Compiling helloworldwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m helloworld v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/helloworld/rs/helloworld)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: helloworld                                                         [K[0m[0m[1m[32m   Compiling[0m helloworldimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/helloworld/rs/helloworldimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: helloworldimpl                                                     [K[0m[0m[1m[32m   Compiling[0m helloworldwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/helloworld/rs/helloworldwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: helloworldwasm                                                     [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.37s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.87s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/helloworldwasm/pkg.
+inccounter
+Building inccounter
+loading schema.yaml
+skipping Rust code generation
+Compiling inccounterwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m inccounter v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/inccounter/rs/inccounter)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: inccounter                                                         [K[0m[0m[1m[32m   Compiling[0m inccounterimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/inccounter/rs/inccounterimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: inccounterimpl                                                     [K[0m[0m[1m[32m   Compiling[0m inccounterwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/inccounter/rs/inccounterwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: inccounterwasm                                                     [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.51s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.30s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/inccounterwasm/pkg.
+node_modules
+schema.yaml not found
+schemacomment
+Building schemacomment
+loading schema.yaml
+warning: block and line comment for line 11, line comment was ignored.
+warning: block and line comment for line 19, line comment was ignored.
+warning: block and line comment for line 23, line comment was ignored.
+warning: block and line comment for line 30, line comment was ignored.
+warning: block and line comment for line 37, line comment was ignored.
+warning: block and line comment for line 40, line comment was ignored.
+warning: block and line comment for line 91, line comment was ignored.
+skipping Rust code generation
+Compiling schemacommentwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m schemacomment v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/schemacomment/rs/schemacomment)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: schemacomment                                                      [K[0m[0m[1m[32m   Compiling[0m schemacommentimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/schemacomment/rs/schemacommentimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: schemacommentimpl                                                  [K[0m[0m[1m[32m   Compiling[0m schemacommentwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/schemacomment/rs/schemacommentwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: schemacommentwasm                                                  [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.50s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.99s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/schemacommentwasm/pkg.
+scripts
+schema.yaml not found
+target
+schema.yaml not found
+testcore
+Building testcore
+loading schema.yaml
+skipping Rust code generation
+Compiling testcorewasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m testcore v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/testcore/rs/testcore)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: testcore                                                           [K[0m[0m[1m[32m   Compiling[0m testcoreimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/testcore/rs/testcoreimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: testcoreimpl                                                       [K[0m[0m[1m[32m   Compiling[0m testcorewasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/testcore/rs/testcorewasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: testcorewasm                                                       [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.63s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.59s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/testcorewasm/pkg.
+testwasmlib
+Building testwasmlib
+loading schema.yaml
+skipping Rust code generation
+Compiling testwasmlibwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m testwasmlib v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/testwasmlib/rs/testwasmlib)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 30/33: testwasmlib                                                        [K[0m[0m[1m[32m   Compiling[0m testwasmlibimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/testwasmlib/rs/testwasmlibimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 31/33: testwasmlibimpl                                                    [K[0m[0m[1m[32m   Compiling[0m testwasmlibwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/testwasmlib/rs/testwasmlibwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 32/33: testwasmlibwasm                                                    [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 1.00s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 2.49s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/testwasmlibwasm/pkg.
+timestamp
+Building timestamp
+loading schema.yaml
+skipping Rust code generation
+Compiling timestampwasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m timestamp v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/timestamp/rs/timestamp)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: timestamp                                                          [K[0m[0m[1m[32m   Compiling[0m timestampimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/timestamp/rs/timestampimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: timestampimpl                                                      [K[0m[0m[1m[32m   Compiling[0m timestampwasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/timestamp/rs/timestampwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: timestampwasm                                                      [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.35s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.85s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/timestampwasm/pkg.
+tokenregistry
+Building tokenregistry
+loading schema.yaml
+skipping Rust code generation
+Compiling tokenregistrywasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m tokenregistry v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/tokenregistry/rs/tokenregistry)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: tokenregistry                                                      [K[0m[0m[1m[32m   Compiling[0m tokenregistryimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/tokenregistry/rs/tokenregistryimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: tokenregistryimpl                                                  [K[0m[0m[1m[32m   Compiling[0m tokenregistrywasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/tokenregistry/rs/tokenregistrywasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: tokenregistrywasm                                                  [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.39s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 1.09s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/tokenregistrywasm/pkg.
+executiontime
+Building executiontime
+loading schema.yaml
+skipping Rust code generation
+Compiling executiontimewasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m executiontime v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/executiontime/rs/executiontime)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: executiontime                                                      [K[0m[0m[1m[32m   Compiling[0m executiontimeimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/executiontime/rs/executiontimeimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: executiontimeimpl                                                  [K[0m[0m[1m[32m   Compiling[0m executiontimewasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/executiontime/rs/executiontimewasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: executiontimewasm                                                  [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.36s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.87s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/executiontimewasm/pkg.
+memory
+Building memory
+loading schema.yaml
+skipping Rust code generation
+Compiling memorywasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m memory v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/memory/rs/memory)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: memory                                                             [K[0m[0m[1m[32m   Compiling[0m memoryimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/memory/rs/memoryimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: memoryimpl                                                         [K[0m[0m[1m[32m   Compiling[0m memorywasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/memory/rs/memorywasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: memorywasm                                                         [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.37s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.83s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/memorywasm/pkg.
+storage
+Building storage
+loading schema.yaml
+skipping Rust code generation
+Compiling storagewasm_bg.wasm
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m storage v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/storage/rs/storage)
+[0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: storage                                                            [K[0m[0m[1m[32m   Compiling[0m storageimpl v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/storage/rs/storageimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: storageimpl                                                        [K[0m[0m[1m[32m   Compiling[0m storagewasm v0.1.0 (/home/jorge/dev/iota/wasp/contracts/wasm/gascalibration/storage/rs/storagewasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: storagewasm                                                        [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 0.37s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 0.87s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/storagewasm/pkg.
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[INFO][0m: Compiling to Wasm...
+[0m[0m[1m[32m   Compiling[0m wasmlib v0.1.0 (/home/jorge/dev/iota/wasp/packages/wasmvm/wasmlib)
+[0m[0m[1m[36m    Building[0m [=====================>     ] 27/32: wasmlib                                                            [K[0m[0m[1m[32m   Compiling[0m solotutorial v0.1.0 (/home/jorge/dev/iota/wasp/documentation/tutorial-examples/rs/solotutorial)
+[0m[0m[1m[32m   Compiling[0m wasmvmhost v0.1.0 (/home/jorge/dev/iota/wasp/packages/wasmvm/wasmvmhost)
+[0m[0m[1m[36m    Building[0m [======================>    ] 28/32: wasmvmhost, solotutorial                                           [0m[0m[1m[36m    Building[0m [=======================>   ] 29/32: solotutorial                                                       [K[0m[0m[1m[32m   Compiling[0m solotutorialimpl v0.1.0 (/home/jorge/dev/iota/wasp/documentation/tutorial-examples/rs/solotutorialimpl)
+[0m[0m[1m[36m    Building[0m [========================>  ] 30/32: solotutorialimpl                                                   [K[0m[0m[1m[32m   Compiling[0m solotutorialwasm v0.1.0 (/home/jorge/dev/iota/wasp/documentation/tutorial-examples/rs/solotutorialwasm)
+[0m[0m[1m[36m    Building[0m [=========================> ] 31/32: solotutorialwasm                                                   [K[0m[0m[1m[32m    Finished[0m release [optimized] target(s) in 1.86s
+[1m[2m[INFO][0m: Installing wasm-bindgen...
+[1m[2m[INFO][0m: Optimizing wasm binaries with `wasm-opt`...
+[1m[2m[INFO][0m: :-) Done in 2.38s
+[1m[2m[INFO][0m: :-) Your wasm pkg is ready to publish at rs/solotutorialwasm/pkg.
+[1m[2m[INFO][0m: Checking for the Wasm target...
+[1m[2m[I

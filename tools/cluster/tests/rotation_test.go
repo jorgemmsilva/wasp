@@ -108,7 +108,7 @@ func TestRotation(t *testing.T) {
 	_, err = myClient.PostNRequests(incrementFuncName, numRequests)
 	require.NoError(t, err)
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), e.Clu.Config.AllNodes(), 5*time.Second)
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), e.Clu.Config.AllNodes(), 5*time.Second)
 
 	govClient := chain.SCClient(governance.Contract.Hname(), chain.OriginatorKeyPair)
 
@@ -132,7 +132,7 @@ func TestRotation(t *testing.T) {
 	_, err = myClient.PostNRequests(incrementFuncName, numRequests)
 	require.NoError(t, err)
 
-	waitUntil(t, e.counterEquals(int64(2*numRequests)), clu.Config.AllNodes(), 15*time.Second)
+	waitUntil(t, e.counterEqualsCondition(int64(2*numRequests)), clu.Config.AllNodes(), 15*time.Second)
 }
 
 // cluster of 10 access nodes; chain is initialized by one node committee and then
@@ -212,7 +212,7 @@ func TestRotationFromSingle(t *testing.T) {
 		t.Fatal("Timeout waiting incCounterResult")
 	}
 
-	waitUntil(t, e.counterEquals(int64(numRequests)), e.Clu.Config.AllNodes(), 30*time.Second)
+	waitUntil(t, e.counterEqualsCondition(int64(numRequests)), e.Clu.Config.AllNodes(), 30*time.Second)
 }
 
 type testRotationSingleRotation struct {
@@ -281,7 +281,7 @@ func TestRotationMany(t *testing.T) {
 		_, err = myClient.PostNRequests(incrementFuncName, numRequests)
 		require.NoError(t, err)
 
-		waitUntil(t, e.counterEquals(int64(numRequests*(i+1))), e.Clu.Config.AllNodes(), 30*time.Second)
+		waitUntil(t, e.counterEqualsCondition(int64(numRequests*(i+1))), e.Clu.Config.AllNodes(), 30*time.Second)
 
 		par := chainclient.NewPostRequestParams(governance.ParamStateControllerAddress, rotation.Address).WithBaseTokens(1 * isc.Million)
 		tx, err := govClient.PostRequest(governance.FuncRotateStateController.Name, *par)

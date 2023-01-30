@@ -9,7 +9,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/transaction"
 )
@@ -296,7 +295,7 @@ func WrapISCDict(d dict.Dict) ISCDict {
 func (d ISCDict) Unwrap() dict.Dict {
 	ret := dict.Dict{}
 	for _, item := range d.Items {
-		ret[kv.Key(item.Key)] = item.Value
+		ret[string(item.Key)] = item.Value
 	}
 	return ret
 }

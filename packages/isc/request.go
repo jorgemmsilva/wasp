@@ -17,7 +17,6 @@ type Request interface {
 
 	IsOffLedger() bool
 
-	WriteToMarshalUtil(mu *marshalutil.MarshalUtil)
 	readFromMarshalUtil(mu *marshalutil.MarshalUtil) error
 
 	Bytes() []byte

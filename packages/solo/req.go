@@ -67,7 +67,7 @@ func NewCallParamsFromDictByHname(hContract, hFunction isc.Hname, par dict.Dict)
 	}
 	ret.params = dict.New()
 	for k, v := range par {
-		ret.params.Set(k, v)
+		ret.params.Set(kv.Key(k), v)
 	}
 	return ret
 }

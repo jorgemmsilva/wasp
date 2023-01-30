@@ -61,7 +61,7 @@ func (b *BufferedKVStore) DangerouslyDumpToString() string {
 	for k, v := range b.DangerouslyDumpToDict() {
 		ret += fmt.Sprintf(
 			"           [%s] %s: %s\n",
-			b.flag(k),
+			b.flag(kv.Key(k)),
 			slice(iotago.EncodeHex([]byte(k))),
 			slice(iotago.EncodeHex(v)),
 		)

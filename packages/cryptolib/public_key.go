@@ -12,7 +12,7 @@ import (
 )
 
 type PublicKey struct {
-	key ed25519.PublicKey
+	Key ed25519.PublicKey
 }
 
 type PublicKeyKey [PublicKeySize]byte
@@ -25,7 +25,7 @@ func newPublicKeyFromCrypto(cryptoPublicKey ed25519.PublicKey) *PublicKey {
 
 func NewEmptyPublicKey() *PublicKey {
 	return &PublicKey{
-		key: make([]byte, PublicKeySize),
+		Key: make([]byte, PublicKeySize),
 	}
 }
 
@@ -45,23 +45,23 @@ func NewPublicKeyFromBytes(publicKeyBytes []byte) (*PublicKey, error) {
 }
 
 func (pkT *PublicKey) Clone() *PublicKey {
-	key := make([]byte, len(pkT.key))
-	copy(key, pkT.key)
-	return &PublicKey{key: key}
+	key := make([]byte, len(pkT.Key))
+	copy(key, pkT.Key)
+	return &PublicKey{Key: key}
 }
 
 func (pkT *PublicKey) AsBytes() []byte {
-	return pkT.key
+	return pkT.Key
 }
 
 func (pkT *PublicKey) AsKey() PublicKeyKey {
 	var result [PublicKeySize]byte
-	copy(result[:], pkT.key)
+	copy(result[:], pkT.Key)
 	return result
 }
 
 func (pkT *PublicKey) AsEd25519Address() *iotago.Ed25519Address {
-	ret := iotago.Ed25519AddressFromPubKey(pkT.key)
+	ret := iotago.Ed25519AddressFromPubKey(pkT.Key)
 	return &ret
 }
 
@@ -75,11 +75,11 @@ func (pkT *PublicKey) AsKyberPoint() (kyber.Point, error) {
 }
 
 func (pkT *PublicKey) Equals(other *PublicKey) bool {
-	if len(pkT.key) != len(other.key) {
+	if len(pkT.Key) != len(other.Key) {
 		return false
 	}
-	for i := range pkT.key {
-		if pkT.key[i] != other.key[i] {
+	for i := range pkT.Key {
+		if pkT.Key[i] != other.Key[i] {
 			return false
 		}
 	}
@@ -87,9 +87,9 @@ func (pkT *PublicKey) Equals(other *PublicKey) bool {
 }
 
 func (pkT *PublicKey) Verify(message, sig []byte) bool {
-	return ed25519.Verify(pkT.key, message, sig)
+	return ed25519.Verify(pkT.Key, message, sig)
 }
 
 func (pkT *PublicKey) String() string {
-	return iotago.EncodeHex(pkT.key)
+	return iotago.EncodeHex(pkT.Key)
 }

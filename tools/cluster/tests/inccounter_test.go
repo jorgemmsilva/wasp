@@ -8,7 +8,6 @@ import (
 
 	"github.com/iotaledger/wasp/client/chainclient"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -42,7 +41,7 @@ func setupContract(env *ChainEnv) *contractWithMessageCounterEnv {
 	contractAgentID := isc.NewContractAgentID(env.Chain.ChainID, incHname)
 	tx, err := env.NewChainClient().Post1Request(accounts.Contract.Hname(), accounts.FuncTransferAllowanceTo.Hname(), chainclient.PostRequestParams{
 		Transfer: isc.NewFungibleBaseTokens(1_500_000),
-		Args: map[kv.Key][]byte{
+		Args: map[string][]byte{
 			accounts.ParamAgentID: codec.EncodeAgentID(contractAgentID),
 		},
 		Allowance: isc.NewAllowanceBaseTokens(1_000_000),

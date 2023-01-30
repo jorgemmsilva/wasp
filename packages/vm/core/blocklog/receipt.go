@@ -6,6 +6,8 @@ import (
 	"io"
 	"math"
 
+	"github.com/near/borsh-go"
+
 	"github.com/iotaledger/hive.go/core/marshalutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -19,7 +21,6 @@ import (
 
 // RequestReceipt represents log record of processed request on the chain
 type RequestReceipt struct {
-	// TODO request may be big (blobs). Do we want to store it all?
 	Request       isc.Request            `json:"request"`
 	Error         *isc.UnresolvedVMError `json:"error"`
 	GasBudget     uint64                 `json:"gasBudget"`
@@ -32,7 +33,9 @@ type RequestReceipt struct {
 }
 
 func RequestReceiptFromBytes(data []byte) (*RequestReceipt, error) {
-	return RequestReceiptFromMarshalUtil(marshalutil.New(data))
+	ret := new(RequestReceipt)
+	err := borsh.Deserialize(ret, data)
+	return ret, err
 }
 
 func RequestReceiptFromMarshalUtil(mu *marshalutil.MarshalUtil) (*RequestReceipt, error) {
@@ -86,22 +89,11 @@ func RequestReceiptsFromBlock(block state.Block) ([]*RequestReceipt, error) {
 }
 
 func (r *RequestReceipt) Bytes() []byte {
-	mu := marshalutil.New()
-
-	mu.WriteUint64(r.GasBudget).
-		WriteUint64(r.GasBurned).
-		WriteUint64(r.GasFeeCharged)
-
-	r.Request.WriteToMarshalUtil(mu)
-
-	if r.Error == nil {
-		mu.WriteBool(false)
-	} else {
-		mu.WriteBool(true)
-		mu.WriteBytes(r.Error.Bytes())
+	data, err := borsh.Serialize(*r)
+	if err != nil {
+		panic(err)
 	}
-
-	return mu.Bytes()
+	return data
 }
 
 func (r *RequestReceipt) WithBlockData(blockIndex uint32, requestIndex uint16) *RequestReceipt {

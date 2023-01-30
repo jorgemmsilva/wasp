@@ -10,7 +10,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util"
 )
@@ -262,14 +261,14 @@ func TestMoveAll(t *testing.T) {
 	require.EqualValues(t, 1, allAccountsMapR(state).MustLen())
 	accs := allAccountsAsDict(state)
 	require.EqualValues(t, 1, len(accs))
-	_, ok := accs[kv.Key(agentID1.Bytes())]
+	_, ok := accs[string(agentID1.Bytes())]
 	require.True(t, ok)
 
 	MustMoveBetweenAccounts(state, agentID1, agentID2, transfer, nil)
 	require.EqualValues(t, 2, allAccountsMapR(state).MustLen())
 	accs = allAccountsAsDict(state)
 	require.EqualValues(t, 2, len(accs))
-	_, ok = accs[kv.Key(agentID2.Bytes())]
+	_, ok = accs[string(agentID2.Bytes())]
 	require.True(t, ok)
 }
 
@@ -282,7 +281,7 @@ func TestDebitAll(t *testing.T) {
 	require.EqualValues(t, 1, allAccountsMapR(state).MustLen())
 	accs := allAccountsAsDict(state)
 	require.EqualValues(t, 1, len(accs))
-	_, ok := accs[kv.Key(agentID1.Bytes())]
+	_, ok := accs[string(agentID1.Bytes())]
 	require.True(t, ok)
 
 	DebitFromAccount(state, agentID1, transfer)

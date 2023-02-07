@@ -26,13 +26,13 @@ var (
 	funcBigEvent   = coreutil.Func("bigevent")
 
 	manyEventsContractProcessor = manyEventsContract.Processor(nil,
-		funcManyEvents.WithHandler(func(ctx isc.Sandbox) dict.Dict {
+		funcManyEvents.WithHandler(func(ctx isc.Sandbox) []byte {
 			for i := 0; i < nEvents; i++ {
 				ctx.Event(fmt.Sprintf("testing many events %d", i))
 			}
 			return nil
 		}),
-		funcBigEvent.WithHandler(func(ctx isc.Sandbox) dict.Dict {
+		funcBigEvent.WithHandler(func(ctx isc.Sandbox) []byte {
 			buf := make([]byte, bigEventSize)
 			ctx.Event(string(buf))
 			return nil

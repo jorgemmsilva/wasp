@@ -12,6 +12,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/registry"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
@@ -98,7 +99,7 @@ func (d *Dashboard) getLatestBlock(chainID isc.ChainID) (*LatestBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	index, err := codec.DecodeUint32(ret.MustGet(blocklog.ParamBlockIndex), 0)
+	index, err := util.Deserialize[uint32](ret)
 	if err != nil {
 		return nil, err
 	}

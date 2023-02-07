@@ -72,15 +72,21 @@ func initInfoCmd() *cobra.Command {
 				log.Check(err)
 				log.Printf("#Contracts: %d\n", len(contracts))
 
-				log.Printf("Owner: %s\n", govInfo.ChainOwnerID.String())
+				chOwner, err := govInfo.ChainOwnerIDDeserialized()
+				log.Check(err)
+
+				log.Printf("Owner: %s\n", chOwner.String())
+
+				feePolicy, err := govInfo.GasFeePolicyDeserialized()
+				log.Check(err)
 
 				if govInfo.GasFeePolicy != nil {
 					gasFeeToken := util.BaseTokenStr
-					if !isc.IsEmptyNativeTokenID(govInfo.GasFeePolicy.GasFeeTokenID) {
-						gasFeeToken = govInfo.GasFeePolicy.GasFeeTokenID.String()
+					if !isc.IsEmptyNativeTokenID(feePolicy.GasFeeTokenID) {
+						gasFeeToken = feePolicy.GasFeeTokenID.String()
 					}
-					log.Printf("Gas fee: 1 %s = %d gas units\n", gasFeeToken, govInfo.GasFeePolicy.GasPerToken)
-					log.Printf("Validator fee share: %d%%\n", govInfo.GasFeePolicy.ValidatorFeeShare)
+					log.Printf("Gas fee: 1 %s = %d gas units\n", gasFeeToken, feePolicy.GasPerToken)
+					log.Printf("Validator fee share: %d%%\n", feePolicy.ValidatorFeeShare)
 				}
 
 				log.Printf("Maximum blob size: %d bytes\n", govInfo.MaxBlobSize)

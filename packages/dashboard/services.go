@@ -154,7 +154,7 @@ func (w *WaspServices) GetChainConsensusPipeMetrics(chainID isc.ChainID) (chain.
 	return ch.GetConsensusPipeMetrics(), nil
 }
 
-func (w *WaspServices) CallView(chainID isc.ChainID, scName, funName string, params dict.Dict) (dict.Dict, error) {
+func (w *WaspServices) CallView(chainID isc.ChainID, scName, funName string, params dict.Dict) ([]byte, error) {
 	ch := w.chains.Get(chainID)
 	if ch == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, "Chain not found")

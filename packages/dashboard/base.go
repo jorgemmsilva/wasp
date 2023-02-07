@@ -50,7 +50,7 @@ type WaspServicesInterface interface {
 	ChainRecords() ([]*registry.ChainRecord, error)
 	GetChainRecord(chainID isc.ChainID) (*registry.ChainRecord, error)
 	GetChainCommitteeInfo(chainID isc.ChainID) (*chain.CommitteeInfo, error)
-	CallView(chainID isc.ChainID, scName, fname string, params dict.Dict) (dict.Dict, error)
+	CallView(chainID isc.ChainID, scName, fname string, params dict.Dict) ([]byte, error)
 	GetChainNodeConnectionMetrics(isc.ChainID) (nodeconnmetrics.NodeConnectionMessagesMetrics, error)
 	GetNodeConnectionMetrics() (nodeconnmetrics.NodeConnectionMetrics, error)
 	GetChainConsensusWorkflowStatus(isc.ChainID) (chain.ConsensusWorkflowStatus, error)

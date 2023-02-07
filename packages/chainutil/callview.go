@@ -9,7 +9,7 @@ import (
 )
 
 // CallView executes a view call on the latest block of the chain
-func CallView(chainState state.State, ch chain.ChainCore, contractHname, viewHname isc.Hname, params dict.Dict) (dict.Dict, error) {
+func CallView(chainState state.State, ch chain.ChainCore, contractHname, viewHname isc.Hname, params dict.Dict) ([]byte, error) {
 	vctx, err := viewcontext.New(ch, chainState)
 	if err != nil {
 		return nil, err

@@ -27,7 +27,7 @@ import (
 //	addCandidateNode(
 //	    accessNodeInfo{NodePubKey, Certificate, ForCommittee, AccessAPI}
 //	) => ()
-func addCandidateNode(ctx isc.Sandbox) dict.Dict {
+func addCandidateNode(ctx isc.Sandbox) []byte {
 	ani := governance.NewAccessNodeInfoFromAddCandidateNodeParams(ctx)
 	ctx.Requiref(ani.ValidateCertificate(ctx), "certificate invalid")
 	pubKeyStr := base64.StdEncoding.EncodeToString(ani.NodePubKey)
@@ -56,7 +56,7 @@ func addCandidateNode(ctx isc.Sandbox) dict.Dict {
 // in the list of validators, and will be absent in the candidate or an access node set.
 // The node is removed from the list of access nodes immediately, but the validator rotation
 // must be initiated by the chain owner explicitly.
-func revokeAccessNode(ctx isc.Sandbox) dict.Dict {
+func revokeAccessNode(ctx isc.Sandbox) []byte {
 	ani := governance.NewAccessNodeInfoFromRevokeAccessNodeParams(ctx)
 	ctx.Requiref(ani.ValidateCertificate(ctx), "certificate invalid")
 
@@ -74,7 +74,7 @@ func revokeAccessNode(ctx isc.Sandbox) dict.Dict {
 //	changeAccessNodes(
 //	    actions: map(pubKey => ChangeAccessNodeAction)
 //	) => ()
-func changeAccessNodes(ctx isc.Sandbox) dict.Dict {
+func changeAccessNodes(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 
 	accessNodeCandidates := collections.NewMap(ctx.State(), governance.VarAccessNodeCandidates)
@@ -108,7 +108,8 @@ func changeAccessNodes(ctx isc.Sandbox) dict.Dict {
 //	    accessNodeCandidates :: map(pubKey => AccessNodeInfo),
 //	    accessNodes          :: map(pubKey => ())
 //	)
-func getChainNodes(ctx isc.SandboxView) dict.Dict {
+
+func getChainNodes(ctx isc.SandboxView) []byte {
 	res := dict.New()
 	ac := collections.NewMap(res, governance.ParamGetChainNodesAccessNodeCandidates)
 	an := collections.NewMap(res, governance.ParamGetChainNodesAccessNodes)
@@ -120,5 +121,5 @@ func getChainNodes(ctx isc.SandboxView) dict.Dict {
 		an.MustSetAt(key, value)
 		return true
 	})
-	return res
+	return res.Bytes()
 }

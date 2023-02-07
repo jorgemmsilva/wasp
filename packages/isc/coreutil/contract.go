@@ -11,7 +11,6 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
 )
 
@@ -66,7 +65,7 @@ type (
 		Hname() isc.Hname
 	}
 
-	Handler func(ctx isc.Sandbox) dict.Dict
+	Handler func(ctx isc.Sandbox) []byte
 
 	// EntryPointInfo holds basic information about a full entry point
 	EntryPointInfo struct{ Name string }
@@ -76,7 +75,7 @@ type (
 		Handler Handler
 	}
 
-	ViewHandler func(ctx isc.SandboxView) dict.Dict
+	ViewHandler func(ctx isc.SandboxView) []byte
 
 	// ViewEntryPointInfo holds basic information about a view entry point
 	ViewEntryPointInfo struct {
@@ -108,7 +107,7 @@ func (ep *EntryPointInfo) Hname() isc.Hname {
 	return isc.Hn(ep.Name)
 }
 
-func (h *EntryPointHandler) Call(ctx interface{}) dict.Dict {
+func (h *EntryPointHandler) Call(ctx interface{}) []byte {
 	return h.Handler(ctx.(isc.Sandbox))
 }
 
@@ -138,7 +137,7 @@ func (ep *ViewEntryPointInfo) Hname() isc.Hname {
 	return isc.Hn(ep.Name)
 }
 
-func (h *ViewEntryPointHandler) Call(ctx interface{}) dict.Dict {
+func (h *ViewEntryPointHandler) Call(ctx interface{}) []byte {
 	return h.Handler(ctx.(isc.SandboxView))
 }
 
@@ -159,7 +158,7 @@ var (
 	FuncDefaultInitializer = Func("initializer")
 )
 
-func defaultInitFunc(ctx isc.Sandbox) dict.Dict {
+func defaultInitFunc(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("default init function invoked for contract %s from caller %s", ctx.Contract(), ctx.Caller())
 	return nil
 }

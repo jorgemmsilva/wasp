@@ -16,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
@@ -45,7 +46,7 @@ var Processor = root.Contract.Processor(initialize,
 // - ParamChainID isc.ChainID. ID of the chain. Cannot be changed
 // - ParamDescription string defaults to "N/A"
 // - ParamStorageDepositAssumptionsBin encoded assumptions about minimum storage deposit for internal outputs
-func initialize(ctx isc.Sandbox) dict.Dict {
+func initialize(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("root.initialize.begin")
 
 	state := ctx.State()
@@ -117,7 +118,7 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 //   - ParamProgramHash HashValue is a hash of the blob which represents program binary in the 'blob' contract.
 //     In case of hardcoded examples its an arbitrary unique hash set in the global call examples.AddProcessor
 //   - ParamDescription string is an arbitrary string. Defaults to "N/A"
-func deployContract(ctx isc.Sandbox) dict.Dict {
+func deployContract(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("root.deployContract.begin")
 	ctx.Requiref(isAuthorizedToDeploy(ctx), "root.deployContract: deploy not permitted for: %s", ctx.Caller().String())
 
@@ -154,7 +155,7 @@ func deployContract(ctx isc.Sandbox) dict.Dict {
 // grantDeployPermission grants permission to deploy contracts
 // Input:
 //   - ParamDeployer isc.AgentID
-func grantDeployPermission(ctx isc.Sandbox) dict.Dict {
+func grantDeployPermission(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 
 	deployer := ctx.Params().MustGetAgentID(root.ParamDeployer)
@@ -168,7 +169,7 @@ func grantDeployPermission(ctx isc.Sandbox) dict.Dict {
 // revokeDeployPermission revokes permission to deploy contracts
 // Input:
 //   - ParamDeployer isc.AgentID
-func revokeDeployPermission(ctx isc.Sandbox) dict.Dict {
+func revokeDeployPermission(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 
 	deployer := ctx.Params().MustGetAgentID(root.ParamDeployer)
@@ -178,7 +179,7 @@ func revokeDeployPermission(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func requireDeployPermissions(ctx isc.Sandbox) dict.Dict {
+func requireDeployPermissions(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 	permissionsEnabled := ctx.Params().MustGetBool(root.ParamDeployPermissionsEnabled)
 	ctx.State().Set(root.StateVarDeployPermissionsEnabled, codec.EncodeBool(permissionsEnabled))
@@ -190,32 +191,30 @@ func requireDeployPermissions(ctx isc.Sandbox) dict.Dict {
 // - ParamHname
 // Output:
 // - ParamData
-func findContract(ctx isc.SandboxView) dict.Dict {
+func findContract(ctx isc.SandboxView) []byte {
 	hname := ctx.Params().MustGetHname(root.ParamHname)
 	rec := root.FindContract(ctx.StateR(), hname)
-	ret := dict.New()
-	found := rec != nil
-	ret.Set(root.ParamContractFound, codec.EncodeBool(found))
-	if found {
-		ret.Set(root.ParamContractRecData, rec.Bytes())
+	if rec != nil {
+		return nil
 	}
-	return ret
+	return rec.Bytes()
 }
 
-func getContractRecords(ctx isc.SandboxView) dict.Dict {
+func getContractRecords(ctx isc.SandboxView) []byte {
 	src := root.GetContractRegistryR(ctx.StateR())
 
-	ret := dict.New()
-	dst := collections.NewMap(ret, root.StateVarContractRegistry)
+	ret := make(map[isc.Hname][]byte)
 	src.MustIterate(func(elemKey []byte, value []byte) bool {
-		dst.MustSetAt(elemKey, value)
+		hname, err := isc.HnameFromBytes(elemKey)
+		ctx.RequireNoError(err)
+		ret[hname] = value
 		return true
 	})
 
-	return ret
+	return util.MustSerialize(ret)
 }
 
-func subscribeBlockContext(ctx isc.Sandbox) dict.Dict {
+func subscribeBlockContext(ctx isc.Sandbox) []byte {
 	ctx.Requiref(ctx.StateAnchor().StateIndex == 0, "subscribeBlockContext must be called when initializing the chain")
 	root.SubscribeBlockContext(
 		ctx.State(),

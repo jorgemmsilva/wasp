@@ -41,7 +41,7 @@ type SandboxBase interface {
 	// GetNFTData returns information about a NFTID (issuer and metadata)
 	GetNFTData(nftID iotago.NFTID) *NFT
 	// CallView calls another contract. Only calls view entry points
-	CallView(contractHname Hname, entryPoint Hname, params dict.Dict) dict.Dict
+	CallView(contractHname Hname, entryPoint Hname, params dict.Dict) []byte
 	// StateR returns the immutable k/v store of the current call (in the context of the smart contract)
 	StateR() kv.KVStoreReader
 }
@@ -89,7 +89,7 @@ type Sandbox interface {
 	// Call calls the entry point of the contract with parameters and allowance.
 	// If the entry point is full entry point, allowance tokens are available to be moved from the caller's
 	// accounts (if enough). If the entry point is view, 'allowance' has no effect
-	Call(target, entryPoint Hname, params dict.Dict, allowance *Assets) dict.Dict
+	Call(target, entryPoint Hname, params dict.Dict, allowance *Assets) []byte
 	// DeployContract deploys contract on the same chain. 'initParams' are passed to the 'init' entry point
 	DeployContract(programHash hashing.HashValue, name string, description string, initParams dict.Dict)
 	// Event emits an event

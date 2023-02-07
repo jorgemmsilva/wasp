@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
@@ -17,7 +15,7 @@ var Processor = Contract.Processor(initialize,
 	ViewListBlobs.WithHandler(listBlobs),
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
+func initialize(ctx isc.Sandbox) []byte {
 	// storing hname as a terminal value of the contract's state root.
 	// This way we will be able to retrieve commitment to the contract's state
 	ctx.State().Set("", ctx.Contract().Bytes())
@@ -27,7 +25,7 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 // storeBlob treats parameters as names of fields and field values
 // it stores it in the state in deterministic binary representation
 // Returns hash of the blob
-func storeBlob(ctx isc.Sandbox) dict.Dict {
+func storeBlob(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("blob.storeBlob.begin")
 	state := ctx.State()
 	params := ctx.Params()
@@ -59,31 +57,30 @@ func storeBlob(ctx isc.Sandbox) dict.Dict {
 		totalSizeWithKeys += size + uint32(len(k))
 	}
 
-	ret := dict.New()
-	ret.Set(ParamHash, codec.EncodeHashValue(blobHash))
-
 	directory.MustSetAt(blobHash[:], EncodeSize(totalSize))
 
 	ctx.Event(fmt.Sprintf("[blob] hash: %s, field sizes: %+v", blobHash.String(), sizes))
-	return ret
+	return util.MustSerialize(blobHash)
 }
 
 // getBlobInfo return lengths of all fields in the blob
-func getBlobInfo(ctx isc.SandboxView) dict.Dict {
+func getBlobInfo(ctx isc.SandboxView) []byte {
 	ctx.Log().Debugf("blob.getBlobInfo.begin")
 
 	blobHash := ctx.Params().MustGetHashValue(ParamHash)
 
 	blbSizes := GetBlobSizesR(ctx.StateR(), blobHash)
-	ret := dict.New()
+	ret := make(map[string]uint32)
+	var err error
 	blbSizes.MustIterate(func(field []byte, value []byte) bool {
-		ret.Set(kv.Key(field), value)
+		ret[string(field)], err = DecodeSize(value)
+		ctx.RequireNoError(err)
 		return true
 	})
-	return ret
+	return util.MustSerialize(ret)
 }
 
-func getBlobField(ctx isc.SandboxView) dict.Dict {
+func getBlobField(ctx isc.SandboxView) []byte {
 	ctx.Log().Debugf("blob.getBlobField.begin")
 	state := ctx.StateR()
 
@@ -94,26 +91,22 @@ func getBlobField(ctx isc.SandboxView) dict.Dict {
 	ctx.Requiref(blobValues.MustLen() != 0, "blob with hash %s has not been found", blobHash.String())
 	value := blobValues.MustGetAt(field)
 	ctx.Requiref(value != nil, "'blob field %s value not found", string(field))
-	ret := dict.New()
-	ret.Set(ParamBytes, value)
-	return ret
+	return value
 }
 
-func listBlobs(ctx isc.SandboxView) dict.Dict {
+func listBlobs(ctx isc.SandboxView) []byte {
 	ctx.Log().Debugf("blob.listBlobs.begin")
-	ret := dict.New()
+	ret := make(map[string]uint32)
+	var err error
 	GetDirectoryR(ctx.StateR()).MustIterate(func(hash []byte, totalSize []byte) bool {
-		ret.Set(kv.Key(hash), totalSize)
+		ret[string(hash)], err = DecodeSize(totalSize)
+		ctx.RequireNoError(err)
 		return true
 	})
-	return ret
+	return util.MustSerialize(ret)
 }
 
 func getMaxBlobSize(ctx isc.Sandbox) uint32 {
-	r := ctx.Call(governance.Contract.Hname(), governance.ViewGetMaxBlobSize.Hname(), nil, nil)
-	maxBlobSize, err := codec.DecodeUint32(r.MustGet(governance.ParamMaxBlobSizeUint32), 0)
-	if err != nil {
-		ctx.Log().Panicf("error getting max blob size, %v", err)
-	}
-	return maxBlobSize
+	data := ctx.Call(governance.Contract.Hname(), governance.ViewGetMaxBlobSize.Hname(), nil, nil)
+	return util.MustDeserialize[uint32](data)
 }

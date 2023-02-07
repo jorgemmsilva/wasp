@@ -34,18 +34,12 @@ func GetChainInfo(state kv.KVStoreReader) (*ChainInfo, error) {
 	d := kvdecoder.New(state)
 	ret := &ChainInfo{}
 	var err error
-	if ret.ChainID, err = d.GetChainID(VarChainID); err != nil {
-		return nil, err
-	}
-	if ret.ChainOwnerID, err = d.GetAgentID(VarChainOwnerID); err != nil {
-		return nil, err
-	}
+	ret.ChainID = state.MustGet(VarChainID)
+	ret.ChainOwnerID = state.MustGet(VarChainOwnerID)
 	if ret.Description, err = d.GetString(VarDescription, ""); err != nil {
 		return nil, err
 	}
-	if ret.GasFeePolicy, err = GetGasFeePolicy(state); err != nil {
-		return nil, err
-	}
+	ret.GasFeePolicy = state.MustGet(VarGasFeePolicyBytes)
 	if ret.MaxBlobSize, err = d.GetUint32(VarMaxBlobSize, 0); err != nil {
 		return nil, err
 	}
@@ -70,11 +64,6 @@ func MustGetChainInfo(state kv.KVStoreReader) *ChainInfo {
 func MustGetChainOwnerID(state kv.KVStoreReader) isc.AgentID {
 	d := kvdecoder.New(state)
 	return d.MustGetAgentID(VarChainOwnerID)
-}
-
-// GetGasFeePolicy returns gas policy from the state
-func GetGasFeePolicy(state kv.KVStoreReader) (*gas.GasFeePolicy, error) {
-	return gas.FeePolicyFromBytes(state.MustGet(VarGasFeePolicyBytes))
 }
 
 func MustGetGasFeePolicy(state kv.KVStoreReader) *gas.GasFeePolicy {

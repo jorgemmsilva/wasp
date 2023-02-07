@@ -10,7 +10,7 @@ import (
 )
 
 // testSplitFunds calls Send in a loop by sending 200 base tokens back to the caller
-func testSplitFunds(ctx isc.Sandbox) dict.Dict {
+func testSplitFunds(ctx isc.Sandbox) []byte {
 	addr, ok := isc.AddressFromAgentID(ctx.Caller())
 	ctx.Requiref(ok, "caller must have L1 address")
 	// claim 1Mi base tokens from allowance at a time
@@ -30,7 +30,7 @@ func testSplitFunds(ctx isc.Sandbox) dict.Dict {
 }
 
 // testSplitFundsNativeTokens calls Send for each Native token
-func testSplitFundsNativeTokens(ctx isc.Sandbox) dict.Dict {
+func testSplitFundsNativeTokens(ctx isc.Sandbox) []byte {
 	addr, ok := isc.AddressFromAgentID(ctx.Caller())
 	ctx.Requiref(ok, "caller must have L1 address")
 	// claims all base tokens from allowance
@@ -55,7 +55,7 @@ func testSplitFundsNativeTokens(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func pingAllowanceBack(ctx isc.Sandbox) dict.Dict {
+func pingAllowanceBack(ctx isc.Sandbox) []byte {
 	addr, ok := isc.AddressFromAgentID(ctx.Caller())
 	// assert caller is L1 address, not a SC
 	ctx.Requiref(ok && !ctx.ChainID().IsSameChain(ctx.Caller()),
@@ -82,7 +82,7 @@ func pingAllowanceBack(ctx isc.Sandbox) dict.Dict {
 }
 
 // testEstimateMinimumStorageDeposit returns true if the provided allowance is enough to pay for a L1 request, panics otherwise
-func testEstimateMinimumStorageDeposit(ctx isc.Sandbox) dict.Dict {
+func testEstimateMinimumStorageDeposit(ctx isc.Sandbox) []byte {
 	addr, ok := isc.AddressFromAgentID(ctx.Caller())
 	ctx.Requiref(ok, "caller must have L1 address")
 
@@ -103,7 +103,7 @@ func testEstimateMinimumStorageDeposit(ctx isc.Sandbox) dict.Dict {
 }
 
 // tries to sendback whaever NFTs are specified in allowance
-func sendNFTsBack(ctx isc.Sandbox) dict.Dict {
+func sendNFTsBack(ctx isc.Sandbox) []byte {
 	addr, ok := isc.AddressFromAgentID(ctx.Caller())
 	ctx.Requiref(ok, "caller must have L1 address")
 
@@ -123,7 +123,7 @@ func sendNFTsBack(ctx isc.Sandbox) dict.Dict {
 
 // just claims everything from allowance and does nothing with it
 // tests the "getData" sandbox call for every NFT sent in allowance
-func claimAllowance(ctx isc.Sandbox) dict.Dict {
+func claimAllowance(ctx isc.Sandbox) []byte {
 	initialNFTset := ctx.OwnedNFTs()
 	allowance := ctx.AllowanceAvailable()
 	ctx.TransferAllowedFunds(ctx.AccountID())
@@ -138,7 +138,7 @@ func claimAllowance(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func sendLargeRequest(ctx isc.Sandbox) dict.Dict {
+func sendLargeRequest(ctx isc.Sandbox) []byte {
 	req := isc.RequestParameters{
 		TargetAddress: tpkg.RandEd25519Address(),
 		Metadata: &isc.SendMetadata{

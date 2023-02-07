@@ -9,7 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 )
 
-func testCheckContextFromFullEP(ctx isc.Sandbox) dict.Dict {
+func testCheckContextFromFullEP(ctx isc.Sandbox) []byte {
 	par := kvdecoder.New(ctx.Params(), ctx.Log())
 
 	ctx.Requiref(par.MustGetChainID(ParamChainID).Equals(ctx.ChainID()), "fail: chainID")
@@ -20,7 +20,7 @@ func testCheckContextFromFullEP(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func testCheckContextFromViewEP(ctx isc.SandboxView) dict.Dict {
+func testCheckContextFromViewEP(ctx isc.SandboxView) []byte {
 	par := kvdecoder.New(ctx.Params(), ctx.Log())
 	a := assert.NewAssert(ctx.Log())
 
@@ -31,7 +31,7 @@ func testCheckContextFromViewEP(ctx isc.SandboxView) dict.Dict {
 	return nil
 }
 
-func passTypesFull(ctx isc.Sandbox) dict.Dict {
+func passTypesFull(ctx isc.Sandbox) []byte {
 	ret := dict.New()
 	s, err := codec.DecodeString(ctx.Params().MustGet("string"))
 	checkFull(ctx, err)
@@ -83,7 +83,7 @@ func passTypesFull(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func passTypesView(ctx isc.SandboxView) dict.Dict {
+func passTypesView(ctx isc.SandboxView) []byte {
 	s, err := codec.DecodeString(ctx.Params().MustGet("string"))
 	checkView(ctx, err)
 	if s != "string" {

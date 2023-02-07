@@ -6,7 +6,6 @@ package governanceimpl
 import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
@@ -14,7 +13,7 @@ import (
 // claimChainOwnership changes the chain owner to the delegated agentID (if any)
 // Checks authorisation if the caller is the one to which the ownership is delegated
 // Note that ownership is only changed by the successful call to  claimChainOwnership
-func claimChainOwnership(ctx isc.Sandbox) dict.Dict {
+func claimChainOwnership(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("governance.delegateChainOwnership.begin")
 	state := ctx.State()
 
@@ -37,7 +36,7 @@ func claimChainOwnership(ctx isc.Sandbox) dict.Dict {
 // delegateChainOwnership stores next possible (delegated) chain owner to another agentID
 // checks authorisation by the current owner
 // Two step process allow/change is in order to avoid mistakes
-func delegateChainOwnership(ctx isc.Sandbox) dict.Dict {
+func delegateChainOwnership(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("governance.delegateChainOwnership.begin")
 	ctx.RequireCallerIsChainOwner()
 
@@ -47,8 +46,6 @@ func delegateChainOwnership(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func getChainOwner(ctx isc.SandboxView) dict.Dict {
-	ret := dict.New()
-	ret.Set(governance.ParamChainOwner, ctx.StateR().MustGet(governance.VarChainOwnerID))
-	return ret
+func getChainOwner(ctx isc.SandboxView) []byte {
+	return ctx.StateR().MustGet(governance.VarChainOwnerID)
 }

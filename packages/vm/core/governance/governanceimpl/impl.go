@@ -6,7 +6,6 @@ package governanceimpl
 import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -46,7 +45,7 @@ var Processor = governance.Contract.Processor(initialize,
 	governance.ViewGetMaintenanceStatus.WithHandler(getMaintenanceStatus),
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
+func initialize(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("governance.initialize.begin")
 	state := ctx.State()
 

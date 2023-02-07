@@ -128,12 +128,12 @@ func (vmctx *VMContext) GetSenderTokenBalanceForFees() uint64 {
 	if sender == nil {
 		return 0
 	}
-	if isc.IsEmptyNativeTokenID(vmctx.chainInfo.GasFeePolicy.GasFeeTokenID) {
+	if isc.IsEmptyNativeTokenID(vmctx.feePolicy.GasFeeTokenID) {
 		// base tokens are used as gas tokens
 		return vmctx.GetBaseTokensBalance(sender)
 	}
 	// native tokens are used for gas fee
-	nativeTokenID := vmctx.chainInfo.GasFeePolicy.GasFeeTokenID
+	nativeTokenID := vmctx.feePolicy.GasFeeTokenID
 	// to pay for gas chain is configured to use some native token, not base tokens
 	tokensAvailableBig := vmctx.GetNativeTokenBalance(sender, nativeTokenID)
 	if tokensAvailableBig.IsUint64() {

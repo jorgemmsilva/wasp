@@ -30,18 +30,33 @@ type GovChainInfoResponse struct {
 func MapGovChainInfoResponse(chainInfo *governance.ChainInfo) GovChainInfoResponse {
 	gasFeeTokenID := ""
 
-	if !isc.IsEmptyNativeTokenID(chainInfo.GasFeePolicy.GasFeeTokenID) {
-		gasFeeTokenID = chainInfo.GasFeePolicy.GasFeeTokenID.String()
+	feePolicy, err := chainInfo.GasFeePolicyDeserialized()
+	if err != nil {
+		panic(err)
+	}
+
+	chainID, err := chainInfo.ChainIDDeserialized()
+	if err != nil {
+		panic(err)
+	}
+
+	chOwner, err := chainInfo.ChainOwnerIDDeserialized()
+	if err != nil {
+		panic(err)
+	}
+
+	if !isc.IsEmptyNativeTokenID(feePolicy.GasFeeTokenID) {
+		gasFeeTokenID = feePolicy.GasFeeTokenID.String()
 	}
 
 	chainInfoResponse := GovChainInfoResponse{
-		ChainID:      chainInfo.ChainID.String(),
-		ChainOwnerID: chainInfo.ChainOwnerID.String(),
+		ChainID:      chainID.String(),
+		ChainOwnerID: chOwner.String(),
 		Description:  chainInfo.Description,
 		GasFeePolicy: gasFeePolicy{
 			GasFeeTokenID:     gasFeeTokenID,
-			GasPerToken:       chainInfo.GasFeePolicy.GasPerToken,
-			ValidatorFeeShare: chainInfo.GasFeePolicy.ValidatorFeeShare,
+			GasPerToken:       feePolicy.GasPerToken,
+			ValidatorFeeShare: feePolicy.ValidatorFeeShare,
 		},
 		MaxBlobSize:     chainInfo.MaxBlobSize,
 		MaxEventSize:    chainInfo.MaxEventSize,

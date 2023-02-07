@@ -8,7 +8,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
@@ -33,7 +32,7 @@ type WasmContext struct {
 	gasDisabled bool
 	id          int32
 	proc        *WasmProcessor
-	results     dict.Dict
+	results     []byte
 	sandbox     ISandbox
 	vm          WasmVM
 	wcSandbox   *WasmContextSandbox
@@ -67,7 +66,7 @@ func NewWasmContextForSoloContext(function string, sandbox ISandbox) *WasmContex
 	}
 }
 
-func (wc *WasmContext) Call(ctx interface{}) dict.Dict {
+func (wc *WasmContext) Call(ctx interface{}) []byte {
 	wc.wcSandbox = NewWasmContextSandbox(wc, ctx)
 	wc.sandbox = wc.wcSandbox
 

@@ -27,7 +27,7 @@ func NewSandbox(vmctx *VMContext) isc.Sandbox {
 }
 
 // Call calls an entry point of contract, passes parameters and funds
-func (s *contractSandbox) Call(target, entryPoint isc.Hname, params dict.Dict, transfer *isc.Assets) dict.Dict {
+func (s *contractSandbox) Call(target, entryPoint isc.Hname, params dict.Dict, transfer *isc.Assets) []byte {
 	s.Ctx.GasBurn(gas.BurnCodeCallContract)
 	return s.Ctx.Call(target, entryPoint, params, transfer)
 }
@@ -172,7 +172,7 @@ func (s *contractSandbox) TotalGasTokens() *isc.Assets {
 		return isc.NewEmptyAssets()
 	}
 	amount := s.Ctx.(*VMContext).gasMaxTokensToSpendForGasFee
-	nativeTokenID := s.Ctx.(*VMContext).chainInfo.GasFeePolicy.GasFeeTokenID
+	nativeTokenID := s.Ctx.(*VMContext).feePolicy.GasFeeTokenID
 	if isc.IsEmptyNativeTokenID(nativeTokenID) {
 		return isc.NewAssetsBaseTokens(amount)
 	}

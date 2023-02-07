@@ -31,6 +31,7 @@ type VMContext struct {
 	task *vm.VMTask
 	// same for the block
 	chainOwnerID              isc.AgentID
+	feePolicy                 *gas.GasFeePolicy
 	stateDraft                state.StateDraft
 	finalStateTimestamp       time.Time
 	blockContext              map[isc.Hname]interface{}

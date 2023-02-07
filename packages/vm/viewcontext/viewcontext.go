@@ -133,17 +133,17 @@ func (ctx *ViewContext) GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID
 		nativeTokenID)
 }
 
-func (ctx *ViewContext) Call(targetContract, epCode isc.Hname, params dict.Dict, _ *isc.Assets) dict.Dict {
+func (ctx *ViewContext) Call(targetContract, epCode isc.Hname, params dict.Dict, _ *isc.Assets) []byte {
 	ctx.log.Debugf("Call. TargetContract: %s entry point: %s", targetContract, epCode)
 	return ctx.callView(targetContract, epCode, params)
 }
 
 func (ctx *ViewContext) ChainID() isc.ChainID {
-	return ctx.chainInfo.ChainID
+	return ctx.ChainID()
 }
 
 func (ctx *ViewContext) ChainOwnerID() isc.AgentID {
-	return ctx.chainInfo.ChainOwnerID
+	return ctx.ChainOwnerID()
 }
 
 func (ctx *ViewContext) CurrentContractHname() isc.Hname {
@@ -184,7 +184,7 @@ func (ctx *ViewContext) GasBurnLog() *gas.BurnLog {
 	return ctx.gasBurnLog
 }
 
-func (ctx *ViewContext) callView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret dict.Dict) {
+func (ctx *ViewContext) callView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret []byte) {
 	contractRecord := ctx.GetContractRecord(targetContract)
 	if contractRecord == nil {
 		panic(vm.ErrContractNotFound.Create(targetContract))
@@ -201,7 +201,7 @@ func (ctx *ViewContext) callView(targetContract, entryPoint isc.Hname, params di
 	return ep.Call(sandbox.NewSandboxView(ctx))
 }
 
-func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret dict.Dict) {
+func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret []byte) {
 	ctx.gasBurnLog = gas.NewGasBurnLog()
 	ctx.gasBudget = gas.MaxGasExternalViewCall
 
@@ -211,7 +211,7 @@ func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, pa
 }
 
 // CallViewExternal calls a view from outside the VM, for example API call
-func (ctx *ViewContext) CallViewExternal(targetContract, epCode isc.Hname, params dict.Dict) (ret dict.Dict, err error) {
+func (ctx *ViewContext) CallViewExternal(targetContract, epCode isc.Hname, params dict.Dict) (ret []byte, err error) {
 	err = panicutil.CatchAllButDBError(func() {
 		ret = ctx.initAndCallView(targetContract, epCode, params)
 	}, ctx.log, "CallViewExternal: ")
@@ -250,7 +250,7 @@ func (ctx *ViewContext) GetBlockProof(blockIndex uint32) ([]byte, *trie.MerklePr
 			codec.MakeDict(map[string]interface{}{
 				blocklog.ParamBlockIndex: blockIndex,
 			}),
-		).MustGet(blocklog.ParamBlockInfo)
+		)
 
 		// retrieve proof to serialized block
 		key := blocklog.Contract.FullKey(blocklog.BlockInfoKey(blockIndex))

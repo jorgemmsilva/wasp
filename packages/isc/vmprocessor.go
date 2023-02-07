@@ -5,8 +5,6 @@ package isc
 
 import (
 	"errors"
-
-	"github.com/iotaledger/wasp/packages/kv/dict"
 )
 
 // package present processor interface. It must be implemented by VM
@@ -20,7 +18,7 @@ type VMProcessor interface {
 // VMProcessorEntryPoint is an abstract interface by which VM is called by passing
 // the Sandbox interface
 type VMProcessorEntryPoint interface {
-	Call(ctx interface{}) dict.Dict
+	Call(ctx interface{}) []byte
 	IsView() bool
 }
 

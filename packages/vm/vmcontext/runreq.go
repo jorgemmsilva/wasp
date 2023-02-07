@@ -13,7 +13,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -142,7 +141,7 @@ func (vmctx *VMContext) prepareGasBudget() {
 }
 
 // callTheContract runs the contract. It catches and processes all panics except the one which cancel the whole block
-func (vmctx *VMContext) callTheContract() (receipt *blocklog.RequestReceipt, callRet dict.Dict) {
+func (vmctx *VMContext) callTheContract() (receipt *blocklog.RequestReceipt, callRet []byte) {
 	vmctx.txsnapshot = vmctx.createTxBuilderSnapshot()
 	snapMutations := vmctx.currentStateUpdate.Clone()
 
@@ -211,7 +210,7 @@ func (vmctx *VMContext) checkVMPluginPanic(r interface{}) *isc.VMError {
 }
 
 // callFromRequest is the call itself. Assumes sc exists
-func (vmctx *VMContext) callFromRequest() dict.Dict {
+func (vmctx *VMContext) callFromRequest() []byte {
 	vmctx.Debugf("callFromRequest: %s", vmctx.req.ID().String())
 
 	if vmctx.req.SenderAccount() == nil {
@@ -264,10 +263,10 @@ func (vmctx *VMContext) calculateAffordableGasBudget() uint64 {
 	// calculate how many tokens for gas fee can be guaranteed after taking into account the allowance
 	guaranteedFeeTokens := vmctx.calcGuaranteedFeeTokens()
 	// calculate how many tokens maximum will be charged taking into account the budget
-	f1, f2 := vmctx.chainInfo.GasFeePolicy.FeeFromGas(gasBudget, guaranteedFeeTokens)
+	f1, f2 := vmctx.feePolicy.FeeFromGas(gasBudget, guaranteedFeeTokens)
 	vmctx.gasMaxTokensToSpendForGasFee = f1 + f2
 	// calculate affordable gas budget
-	affordable := vmctx.chainInfo.GasFeePolicy.AffordableGasBudgetFromAvailableTokens(guaranteedFeeTokens)
+	affordable := vmctx.feePolicy.AffordableGasBudgetFromAvailableTokens(guaranteedFeeTokens)
 	// adjust gas budget to what is affordable
 	affordable = util.MinUint64(gasBudget, affordable)
 	// cap gas to the maximum allowed per tx
@@ -280,7 +279,7 @@ func (vmctx *VMContext) calculateAffordableGasBudget() uint64 {
 func (vmctx *VMContext) calcGuaranteedFeeTokens() uint64 {
 	var tokensGuaranteed uint64
 
-	if isc.IsEmptyNativeTokenID(vmctx.chainInfo.GasFeePolicy.GasFeeTokenID) {
+	if isc.IsEmptyNativeTokenID(vmctx.feePolicy.GasFeeTokenID) {
 		// base tokens are used as gas tokens
 		tokensGuaranteed = vmctx.GetBaseTokensBalance(vmctx.req.SenderAccount())
 		// safely subtract the allowed from the sender to the target
@@ -294,7 +293,7 @@ func (vmctx *VMContext) calcGuaranteedFeeTokens() uint64 {
 		return tokensGuaranteed
 	}
 	// native tokens are used for gas fee
-	nativeTokenID := vmctx.chainInfo.GasFeePolicy.GasFeeTokenID
+	nativeTokenID := vmctx.feePolicy.GasFeeTokenID
 	// to pay for gas chain is configured to use some native token, not base tokens
 	tokensAvailableBig := vmctx.GetNativeTokenBalance(vmctx.req.SenderAccount(), nativeTokenID)
 	if tokensAvailableBig != nil {
@@ -340,13 +339,13 @@ func (vmctx *VMContext) chargeGasFee() {
 	}
 
 	availableToPayFee := vmctx.gasMaxTokensToSpendForGasFee
-	if !vmctx.task.EstimateGasMode && !vmctx.chainInfo.GasFeePolicy.IsEnoughForMinimumFee(availableToPayFee) {
+	if !vmctx.task.EstimateGasMode && !vmctx.feePolicy.IsEnoughForMinimumFee(availableToPayFee) {
 		// user didn't specify enough base tokens to cover the minimum request fee, charge whatever is present in the user's account
 		availableToPayFee = vmctx.GetSenderTokenBalanceForFees()
 	}
 
 	// total fees to charge
-	sendToOwner, sendToValidator := vmctx.chainInfo.GasFeePolicy.FeeFromGas(vmctx.GasBurned(), availableToPayFee)
+	sendToOwner, sendToValidator := vmctx.feePolicy.FeeFromGas(vmctx.GasBurned(), availableToPayFee)
 	vmctx.gasFeeCharged = sendToOwner + sendToValidator
 
 	// calc gas totals
@@ -359,12 +358,12 @@ func (vmctx *VMContext) chargeGasFee() {
 
 	transferToValidator := &isc.Assets{}
 	transferToOwner := &isc.Assets{}
-	if !isc.IsEmptyNativeTokenID(vmctx.chainInfo.GasFeePolicy.GasFeeTokenID) {
+	if !isc.IsEmptyNativeTokenID(vmctx.feePolicy.GasFeeTokenID) {
 		transferToValidator.NativeTokens = iotago.NativeTokens{
-			&iotago.NativeToken{ID: vmctx.chainInfo.GasFeePolicy.GasFeeTokenID, Amount: big.NewInt(int64(sendToValidator))},
+			&iotago.NativeToken{ID: vmctx.feePolicy.GasFeeTokenID, Amount: big.NewInt(int64(sendToValidator))},
 		}
 		transferToOwner.NativeTokens = iotago.NativeTokens{
-			&iotago.NativeToken{ID: vmctx.chainInfo.GasFeePolicy.GasFeeTokenID, Amount: big.NewInt(int64(sendToOwner))},
+			&iotago.NativeToken{ID: vmctx.feePolicy.GasFeeTokenID, Amount: big.NewInt(int64(sendToOwner))},
 		}
 	} else {
 		transferToValidator.BaseTokens = sendToValidator
@@ -400,7 +399,15 @@ func (vmctx *VMContext) loadChainConfig() {
 		return
 	}
 	vmctx.chainInfo = vmctx.getChainInfo()
-	vmctx.chainOwnerID = vmctx.chainInfo.ChainOwnerID
+	var err error
+	vmctx.chainOwnerID, err = vmctx.chainInfo.ChainOwnerIDDeserialized()
+	if err != nil {
+		vmctx.Panicf("error loading chain info: %w", err)
+	}
+	vmctx.feePolicy, err = vmctx.chainInfo.GasFeePolicyDeserialized()
+	if err != nil {
+		vmctx.Panicf("error loading chain info: %w", err)
+	}
 }
 
 func (vmctx *VMContext) isInitChainRequest() bool {

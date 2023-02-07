@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 var Contract = coreutil.NewContract("inccounter", "Increment counter, a PoC smart contract")
@@ -37,7 +38,7 @@ const (
 	VarDescription = "dscr"
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
+func initialize(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("inccounter.init in %s", ctx.Contract().String())
 	params := ctx.Params()
 	val := codec.MustDecodeInt64(params.MustGet(VarCounter), 0)
@@ -46,7 +47,7 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func incCounter(ctx isc.Sandbox) dict.Dict {
+func incCounter(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("inccounter.incCounter in %s", ctx.Contract().String())
 	par := kvdecoder.New(ctx.Params(), ctx.Log())
 	inc := par.MustGetInt64(VarCounter, 1)
@@ -65,7 +66,7 @@ func incCounter(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
+func incCounterAndRepeatOnce(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("inccounter.incCounterAndRepeatOnce")
 	state := ctx.State()
 	val := codec.MustDecodeInt64(state.MustGet(VarCounter), 0)
@@ -92,7 +93,7 @@ func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func incCounterAndRepeatMany(ctx isc.Sandbox) dict.Dict {
+func incCounterAndRepeatMany(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("inccounter.incCounterAndRepeatMany")
 
 	state := ctx.State()
@@ -138,7 +139,7 @@ func incCounterAndRepeatMany(ctx isc.Sandbox) dict.Dict {
 }
 
 // spawn deploys new contract and calls it
-func spawn(ctx isc.Sandbox) dict.Dict {
+func spawn(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("inccounter.spawn")
 
 	state := kvdecoder.New(ctx.State(), ctx.Log())
@@ -158,8 +159,8 @@ func spawn(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func getCounter(ctx isc.SandboxView) dict.Dict {
+func getCounter(ctx isc.SandboxView) []byte {
 	state := ctx.StateR()
 	val := codec.MustDecodeInt64(state.MustGet(VarCounter), 0)
-	return dict.Dict{VarCounter: codec.EncodeInt64(val)}
+	return util.MustSerialize(val)
 }

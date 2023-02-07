@@ -2,12 +2,11 @@ package sbtestsc
 
 import (
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 )
 
 // spawn deploys new contract and calls it
-func spawn(ctx isc.Sandbox) dict.Dict {
+func spawn(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf(FuncSpawn.Name)
 	par := kvdecoder.New(ctx.Params(), ctx.Log())
 	progHash := par.MustGetHashValue(ParamProgHash)

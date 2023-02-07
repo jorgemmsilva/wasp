@@ -4,7 +4,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 )
@@ -14,7 +13,7 @@ var Processor = Contract.Processor(initialize,
 	ViewGetErrorMessageFormat.WithHandler(funcGetErrorMessageFormat),
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
+func initialize(ctx isc.Sandbox) []byte {
 	// storing hname as a terminal value of the contract's state root.
 	// This way we will be able to retrieve commitment to the contract's state
 	ctx.State().Set("", ctx.Contract().Bytes())
@@ -23,7 +22,7 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func funcRegisterError(ctx isc.Sandbox) dict.Dict {
+func funcRegisterError(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("Registering error")
 	e := NewStateErrorCollectionWriter(ctx.State(), ctx.Contract())
 
@@ -37,16 +36,16 @@ func funcRegisterError(ctx isc.Sandbox) dict.Dict {
 	template, err := e.Register(errorMessageFormat)
 	ctx.RequireNoError(err)
 
-	return dict.Dict{ParamErrorCode: codec.EncodeVMErrorCode(template.Code())}
+	return codec.EncodeVMErrorCode(template.Code())
 }
 
-func funcGetErrorMessageFormat(ctx isc.SandboxView) dict.Dict {
+func funcGetErrorMessageFormat(ctx isc.SandboxView) []byte {
 	code := codec.MustDecodeVMErrorCode(ctx.Params().MustGet(ParamErrorCode))
 
 	template, err := getErrorMessageFormat(ctx.StateR(), code)
 	ctx.RequireNoError(err)
 
-	return dict.Dict{ParamErrorMessageFormat: codec.EncodeString(template.MessageFormat())}
+	return codec.EncodeString(template.MessageFormat())
 }
 
 func getErrorMessageFormat(state kv.KVStoreReader, code isc.VMErrorCode) (*isc.VMErrorTemplate, error) {

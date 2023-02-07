@@ -92,16 +92,15 @@ func (h *magicContractHandler) Call(
 	entryPoint uint32,
 	params iscmagic.ISCDict,
 	allowance iscmagic.ISCAssets,
-) iscmagic.ISCDict {
+) []byte {
 	a := allowance.Unwrap()
 	h.moveAssetsToCommonAccount(a)
-	callRet := h.ctx.Call(
+	return h.ctx.Call(
 		isc.Hname(contractHname),
 		isc.Hname(entryPoint),
 		params.Unwrap(),
 		a,
 	)
-	return iscmagic.WrapISCDict(callRet)
 }
 
 func (h *magicContractHandler) adjustStorageDeposit(req isc.RequestParameters) {

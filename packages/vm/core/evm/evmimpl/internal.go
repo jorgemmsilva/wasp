@@ -37,7 +37,7 @@ type blockContext struct {
 // openBlockContext creates a new emulator instance before processing any
 // requests in the ISC block. The purpose is to create a single Ethereum block
 // for each ISC block.
-func openBlockContext(ctx isc.Sandbox) dict.Dict {
+func openBlockContext(ctx isc.Sandbox) []byte {
 	ctx.RequireCaller(&isc.NilAgentID{}) // called from ISC VM
 	emu, l2Balance := createEmulator(ctx)
 	ctx.Privileged().SetBlockContext(&blockContext{emu: emu, l2Balance: l2Balance})
@@ -46,7 +46,7 @@ func openBlockContext(ctx isc.Sandbox) dict.Dict {
 
 // closeBlockContext "mints" the Ethereum block after all requests in the ISC
 // block have been processed.
-func closeBlockContext(ctx isc.Sandbox) dict.Dict {
+func closeBlockContext(ctx isc.Sandbox) []byte {
 	ctx.RequireCaller(&isc.NilAgentID{}) // called from ISC VM
 	getBlockContext(ctx).mintBlock()
 	return nil
@@ -110,21 +110,20 @@ func timestamp(ctx isc.SandboxBase) uint64 {
 	return uint64(ctx.Timestamp().Unix())
 }
 
-func result(value []byte) dict.Dict {
-	if value == nil {
-		return nil
-	}
-	return dict.Dict{evm.FieldResult: value}
-}
-
-func blockResult(emu *emulator.EVMEmulator, block *types.Block) dict.Dict {
+func blockResult(emu *emulator.EVMEmulator, block *types.Block) []byte {
 	if block == nil {
 		return nil
 	}
-	return result(evmtypes.EncodeBlock(block))
+	return evmtypes.EncodeBlock(block)
 }
 
-func txResult(emu *emulator.EVMEmulator, tx *types.Transaction) dict.Dict {
+type TxResult struct {
+	tx          []byte
+	blockHash   common.Hash
+	blockNumber uint64
+}
+
+func txResult(emu *emulator.EVMEmulator, tx *types.Transaction) []byte {
 	if tx == nil {
 		return nil
 	}
@@ -133,14 +132,14 @@ func txResult(emu *emulator.EVMEmulator, tx *types.Transaction) dict.Dict {
 	if !ok {
 		panic("cannot find block number of tx")
 	}
-	return dict.Dict{
-		evm.FieldTransaction: evmtypes.EncodeTransaction(tx),
-		evm.FieldBlockHash:   bc.GetBlockHashByBlockNumber(blockNumber).Bytes(),
-		evm.FieldBlockNumber: codec.EncodeUint64(blockNumber),
-	}
+	return util.MustSerialize(TxResult{
+		tx:          evmtypes.EncodeTransaction(tx),
+		blockHash:   bc.GetBlockHashByBlockNumber(blockNumber),
+		blockNumber: blockNumber,
+	})
 }
 
-func txCountResult(emu *emulator.EVMEmulator, block *types.Block) dict.Dict {
+func txCountResult(emu *emulator.EVMEmulator, block *types.Block) []byte {
 	if block == nil {
 		return nil
 	}
@@ -148,7 +147,7 @@ func txCountResult(emu *emulator.EVMEmulator, block *types.Block) dict.Dict {
 	if block.NumberU64() != 0 {
 		n = 1
 	}
-	return result(codec.EncodeUint64(n))
+	return util.MustSerialize(n)
 }
 
 func blockByNumber(ctx isc.SandboxView) (*emulator.EVMEmulator, *types.Block) {
@@ -245,7 +244,7 @@ func (b *l2BalanceR) getFeePolicy() *gas.GasFeePolicy {
 			nil,
 		)
 		var err error
-		b.feePolicy, err = gas.FeePolicyFromBytes(res.MustGet(governance.ParamFeePolicyBytes))
+		b.feePolicy, err = gas.FeePolicyFromBytes(res)
 		b.ctx.RequireNoError(err)
 	}
 	return b.feePolicy
@@ -266,7 +265,7 @@ func (b *l2BalanceR) Get(addr common.Address) *big.Int {
 				accounts.ParamNativeTokenID: feePolicy.GasFeeTokenID[:],
 			},
 		)
-		ret := new(big.Int).SetBytes(res.MustGet(accounts.ParamBalance))
+		ret := util.MustDeserialize[*big.Int](res)
 		return util.CustomTokensDecimalsToEthereumDecimals(ret, feePolicy.GasFeeTokenDecimals)
 	}
 	res := b.ctx.CallView(
@@ -275,7 +274,7 @@ func (b *l2BalanceR) Get(addr common.Address) *big.Int {
 		dict.Dict{accounts.ParamAgentID: isc.NewEthereumAddressAgentID(addr).Bytes()},
 	)
 	decimals := parameters.L1().BaseToken.Decimals
-	ret := new(big.Int).SetUint64(codec.MustDecodeUint64(res.MustGet(accounts.ParamBalance), 0))
+	ret := util.MustDeserialize[*big.Int](res)
 	return util.CustomTokensDecimalsToEthereumDecimals(ret, decimals)
 }
 

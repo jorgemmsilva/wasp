@@ -9,7 +9,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
 	"github.com/iotaledger/wasp/packages/vm/core/errors"
@@ -32,15 +31,15 @@ var (
 var testError *isc.VMErrorTemplate
 
 var errorContractProcessor = errorContract.Processor(nil,
-	funcRegisterErrors.WithHandler(func(ctx isc.Sandbox) dict.Dict {
+	funcRegisterErrors.WithHandler(func(ctx isc.Sandbox) []byte {
 		testError = ctx.RegisterError(errorMessageToTest)
 
 		return nil
 	}),
-	funcThrowErrorWithoutArgs.WithHandler(func(ctx isc.Sandbox) dict.Dict {
+	funcThrowErrorWithoutArgs.WithHandler(func(ctx isc.Sandbox) []byte {
 		panic(testError.Create())
 	}),
-	funcThrowErrorWithArgs.WithHandler(func(ctx isc.Sandbox) dict.Dict {
+	funcThrowErrorWithArgs.WithHandler(func(ctx isc.Sandbox) []byte {
 		panic(testError.Create(42.0))
 	}),
 )

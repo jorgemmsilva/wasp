@@ -134,7 +134,7 @@ func (s *SandboxBase) RequireNoError(err error, str ...string) {
 	s.assert().RequireNoError(err, str...)
 }
 
-func (s *SandboxBase) CallView(contractHname, entryPoint isc.Hname, params dict.Dict) dict.Dict {
+func (s *SandboxBase) CallView(contractHname, entryPoint isc.Hname, params dict.Dict) []byte {
 	s.Ctx.GasBurn(gas.BurnCodeCallContract)
 	if params == nil {
 		params = make(dict.Dict)

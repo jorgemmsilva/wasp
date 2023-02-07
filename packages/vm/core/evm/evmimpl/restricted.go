@@ -3,7 +3,6 @@ package evmimpl
 import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm"
 )
 
@@ -16,14 +15,14 @@ func cannotBeCalledFromContracts(ctx isc.SandboxBase) {
 }
 
 func restricted(handler coreutil.Handler) coreutil.Handler {
-	return func(ctx isc.Sandbox) dict.Dict {
+	return func(ctx isc.Sandbox) []byte {
 		cannotBeCalledFromContracts(ctx)
 		return handler(ctx)
 	}
 }
 
 func restrictedView(handler coreutil.ViewHandler) coreutil.ViewHandler {
-	return func(ctx isc.SandboxView) dict.Dict {
+	return func(ctx isc.SandboxView) []byte {
 		cannotBeCalledFromContracts(ctx)
 		return handler(ctx)
 	}

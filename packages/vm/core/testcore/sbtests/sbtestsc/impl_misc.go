@@ -8,12 +8,13 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 // ParamCallOption
 // ParamCallIntParam
 // ParamHnameContract
-func callOnChain(ctx isc.Sandbox) dict.Dict {
+func callOnChain(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf(FuncCallOnChain.Name)
 	params := kvdecoder.New(ctx.Params(), ctx.Log())
 	paramIn := params.MustGetUint64(ParamN)
@@ -32,22 +33,20 @@ func callOnChain(ctx isc.Sandbox) dict.Dict {
 	}), nil)
 }
 
-func incCounter(ctx isc.Sandbox) dict.Dict {
+func incCounter(ctx isc.Sandbox) []byte {
 	state := kvdecoder.New(ctx.State(), ctx.Log())
 	counter := state.MustGetUint64(VarCounter, 0)
 	ctx.State().Set(VarCounter, codec.EncodeUint64(counter+1))
 	return nil
 }
 
-func getCounter(ctx isc.SandboxView) dict.Dict {
-	ret := dict.New()
+func getCounter(ctx isc.SandboxView) []byte {
 	state := kvdecoder.New(ctx.StateR(), ctx.Log())
 	counter := state.MustGetUint64(VarCounter, 0)
-	ret.Set(VarCounter, codec.EncodeUint64(counter))
-	return ret
+	return util.MustSerialize(counter)
 }
 
-func runRecursion(ctx isc.Sandbox) dict.Dict {
+func runRecursion(ctx isc.Sandbox) []byte {
 	params := kvdecoder.New(ctx.Params(), ctx.Log())
 	depth := params.MustGetUint64(ParamN)
 	if depth == 0 {
@@ -66,61 +65,52 @@ func fibonacci(n uint64) uint64 {
 	return fibonacci(n-1) + fibonacci(n-2)
 }
 
-func getFibonacci(ctx isc.SandboxView) dict.Dict {
+func getFibonacci(ctx isc.SandboxView) []byte {
 	params := kvdecoder.New(ctx.Params(), ctx.Log())
 	n := params.MustGetUint64(ParamN)
 	ctx.Log().Infof("fibonacci( %d )", n)
-	result := fibonacci(n)
-	ret := dict.New()
-	ret.Set(ParamN, codec.EncodeUint64(result))
-	return ret
+	return util.MustSerialize(fibonacci(n))
 }
 
-func getFibonacciIndirect(ctx isc.SandboxView) dict.Dict {
+func getFibonacciIndirect(ctx isc.SandboxView) []byte {
 	params := kvdecoder.New(ctx.Params(), ctx.Log())
 
 	n := params.MustGetUint64(ParamN)
 	ctx.Log().Infof("fibonacciIndirect( %d )", n)
-	ret := dict.New()
 	if n <= 1 {
-		ret.Set(ParamN, codec.EncodeUint64(n))
-		return ret
+		return util.MustSerialize(n)
 	}
 
 	ret1 := ctx.CallView(ctx.Contract(), FuncGetFibonacciIndirect.Hname(), codec.MakeDict(map[string]interface{}{
 		ParamN: n - 1,
 	}))
-	result := kvdecoder.New(ret1, ctx.Log())
-	n1 := result.MustGetUint64(ParamN)
+
+	n1 := util.MustDeserialize[uint64](ret1)
 
 	ret2 := ctx.CallView(ctx.Contract(), FuncGetFibonacciIndirect.Hname(), codec.MakeDict(map[string]interface{}{
 		ParamN: n - 2,
 	}))
-	result = kvdecoder.New(ret2, ctx.Log())
-	n2 := result.MustGetUint64(ParamN)
+	n2 := util.MustDeserialize[uint64](ret2)
 
-	ret.Set(ParamN, codec.EncodeUint64(n1+n2))
-	return ret
+	return util.MustSerialize(n1 + n2)
 }
 
 // calls the "fib indirect" view and stores the result in the state
-func calcFibonacciIndirectStoreValue(ctx isc.Sandbox) dict.Dict {
+func calcFibonacciIndirectStoreValue(ctx isc.Sandbox) []byte {
 	ret := ctx.CallView(ctx.Contract(), FuncGetFibonacciIndirect.Hname(), dict.Dict{
 		ParamN: ctx.Params().MustGet(ParamN),
 	})
-	ctx.State().Set(ParamN, ret.MustGet(ParamN))
+	ctx.State().Set(ParamN, codec.Encode(util.MustDeserialize[uint64](ret)))
 	return nil
 }
 
-func viewFibResult(ctx isc.SandboxView) dict.Dict {
-	return dict.Dict{
-		ParamN: ctx.StateR().MustGet(ParamN),
-	}
+func viewFibResult(ctx isc.SandboxView) []byte {
+	return ctx.StateR().MustGet(ParamN)
 }
 
 // ParamIntParamName
 // ParamIntParamValue
-func setInt(ctx isc.Sandbox) dict.Dict {
+func setInt(ctx isc.Sandbox) []byte {
 	ctx.Log().Infof(FuncSetInt.Name)
 	params := kvdecoder.New(ctx.Params(), ctx.Log())
 	paramName := params.MustGetString(ParamIntParamName)
@@ -130,25 +120,22 @@ func setInt(ctx isc.Sandbox) dict.Dict {
 }
 
 // ParamIntParamName
-func getInt(ctx isc.SandboxView) dict.Dict {
+func getInt(ctx isc.SandboxView) []byte {
 	ctx.Log().Infof(FuncGetInt.Name)
 	params := kvdecoder.New(ctx.Params(), ctx.Log())
 	paramName := params.MustGetString(ParamIntParamName)
 	state := kvdecoder.New(ctx.StateR(), ctx.Log())
-	paramValue := state.MustGetInt64(kv.Key(paramName), 0)
-	ret := dict.New()
-	ret.Set(kv.Key(paramName), codec.EncodeInt64(paramValue))
-	return ret
+	return util.MustSerialize(state.MustGetInt64(kv.Key(paramName), 0))
 }
 
-func infiniteLoop(ctx isc.Sandbox) dict.Dict {
+func infiniteLoop(ctx isc.Sandbox) []byte {
 	for {
 		// do nothing, just waste gas
 		ctx.State().Set("foo", []byte(strings.Repeat("dummy data", 1000)))
 	}
 }
 
-func infiniteLoopView(ctx isc.SandboxView) dict.Dict {
+func infiniteLoopView(ctx isc.SandboxView) []byte {
 	for {
 		// do nothing, just waste gas
 		ctx.CallView(ctx.Contract(), FuncGetCounter.Hname(), dict.Dict{})

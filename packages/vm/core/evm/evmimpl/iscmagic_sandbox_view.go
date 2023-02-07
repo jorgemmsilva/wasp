@@ -56,13 +56,12 @@ func (h *magicContractViewHandler) CallView(
 	contractHname uint32,
 	entryPoint uint32,
 	params iscmagic.ISCDict,
-) iscmagic.ISCDict {
-	callRet := h.ctx.CallView(
+) []byte {
+	return h.ctx.CallView(
 		isc.Hname(contractHname),
 		isc.Hname(entryPoint),
 		params.Unwrap(),
 	)
-	return iscmagic.WrapISCDict(callRet)
 }
 
 // handler for ISCSandbox::getAllowanceFrom
@@ -109,7 +108,7 @@ func (h *magicContractViewHandler) GetNativeTokenID(foundrySN uint32) iscmagic.N
 		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
-	_, err := out.Deserialize(r.MustGet(accounts.ParamFoundryOutputBin), serializer.DeSeriModeNoValidation, nil)
+	_, err := out.Deserialize(r, serializer.DeSeriModeNoValidation, nil)
 	h.ctx.RequireNoError(err)
 	nativeTokenID := out.MustNativeTokenID()
 	return iscmagic.WrapNativeTokenID(nativeTokenID)
@@ -121,7 +120,7 @@ func (h *magicContractViewHandler) GetNativeTokenScheme(foundrySN uint32) iotago
 		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
-	_, err := out.Deserialize(r.MustGet(accounts.ParamFoundryOutputBin), serializer.DeSeriModeNoValidation, nil)
+	_, err := out.Deserialize(r, serializer.DeSeriModeNoValidation, nil)
 	h.ctx.RequireNoError(err)
 	s, ok := out.TokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {

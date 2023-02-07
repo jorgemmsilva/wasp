@@ -9,8 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/collections"
-	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
@@ -19,7 +18,7 @@ import (
 // If it fails, nothing happens and the state has trace of the failure in the state
 // If it is successful VM takes over and replaces resulting transaction with
 // governance transition. The state of the chain remains unchanged
-func rotateStateController(ctx isc.Sandbox) dict.Dict {
+func rotateStateController(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 	newStateControllerAddr := ctx.Params().MustGetAddress(governance.ParamStateControllerAddress)
 	// check is address is allowed
@@ -38,9 +37,11 @@ func rotateStateController(ctx isc.Sandbox) dict.Dict {
 	// Two situations possible:
 	// - either there's no need to rotate
 	// - or it just has been rotated. In case of the second situation we emit a 'rotate' event
-	addrs := ctx.Call(coreutil.CoreContractBlocklogHname, blocklog.ViewControlAddresses.Hname(), nil, nil)
-	par := kvdecoder.New(addrs, ctx.Log())
-	storedStateController := par.MustGetAddress(blocklog.ParamStateControllerAddress)
+	data := ctx.Call(coreutil.CoreContractBlocklogHname, blocklog.ViewControlAddresses.Hname(), nil, nil)
+
+	addresses := util.MustDeserialize[blocklog.ControllingAddressReturn](data)
+	storedStateController, _, err := isc.AddressFromBytes(addresses.StateAddress)
+	ctx.RequireNoError(err)
 	if !storedStateController.Equal(newStateControllerAddr) {
 		// state controller address recorded in the blocklog is different from the new one
 		// It means rotation happened
@@ -51,7 +52,7 @@ func rotateStateController(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func addAllowedStateControllerAddress(ctx isc.Sandbox) dict.Dict {
+func addAllowedStateControllerAddress(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 	addr := ctx.Params().MustGetAddress(governance.ParamStateControllerAddress)
 	amap := collections.NewMap(ctx.State(), governance.StateVarAllowedStateControllerAddresses)
@@ -59,7 +60,7 @@ func addAllowedStateControllerAddress(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func removeAllowedStateControllerAddress(ctx isc.Sandbox) dict.Dict {
+func removeAllowedStateControllerAddress(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 	addr := ctx.Params().MustGetAddress(governance.ParamStateControllerAddress)
 	amap := collections.NewMap(ctx.State(), governance.StateVarAllowedStateControllerAddresses)
@@ -67,16 +68,14 @@ func removeAllowedStateControllerAddress(ctx isc.Sandbox) dict.Dict {
 	return nil
 }
 
-func getAllowedStateControllerAddresses(ctx isc.SandboxView) dict.Dict {
+func getAllowedStateControllerAddresses(ctx isc.SandboxView) []byte {
 	amap := collections.NewMapReadOnly(ctx.StateR(), governance.StateVarAllowedStateControllerAddresses)
-	if amap.MustLen() == 0 {
-		return nil
-	}
-	ret := dict.New()
-	retArr := collections.NewArray16(ret, governance.ParamAllowedStateControllerAddresses)
-	amap.MustIterateKeys(func(elemKey []byte) bool {
-		retArr.MustPush(elemKey)
+	ret := make([][]byte, amap.MustLen())
+	i := 0
+	amap.MustIterateKeys(func(addrBytes []byte) bool {
+		ret[i] = addrBytes
+		i++
 		return true
 	})
-	return ret
+	return util.MustSerialize(ret)
 }

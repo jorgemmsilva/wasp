@@ -23,12 +23,24 @@ type ChainInfo struct {
 }
 
 func MapChainInfo(info *governance.ChainInfo, isActive bool) *ChainInfo {
+	chID, err := info.ChainIDDeserialized()
+	if err != nil {
+		panic(err)
+	}
+	chOwner, err := info.ChainOwnerIDDeserialized()
+	if err != nil {
+		panic(err)
+	}
+	feePolicy, err := info.GasFeePolicyDeserialized()
+	if err != nil {
+		panic(err)
+	}
 	return &ChainInfo{
 		IsActive:        isActive,
-		ChainID:         info.ChainID,
-		ChainOwnerID:    info.ChainOwnerID,
+		ChainID:         chID,
+		ChainOwnerID:    chOwner,
 		Description:     info.Description,
-		GasFeePolicy:    info.GasFeePolicy,
+		GasFeePolicy:    feePolicy,
 		MaxBlobSize:     info.MaxBlobSize,
 		MaxEventSize:    info.MaxEventSize,
 		MaxEventsPerReq: info.MaxEventsPerReq,

@@ -243,10 +243,10 @@ func (s *WasmContextSandbox) fnCall(args []byte) []byte {
 	allowance := cvt.IscAllowance(wasmlib.NewScAssets(req.Allowance))
 	s.Tracef("CALL %s.%s", contract.String(), function.String())
 	results := s.callUnlocked(contract, function, params, allowance)
-	return results.Bytes()
+	return results
 }
 
-func (s *WasmContextSandbox) callUnlocked(contract, function isc.Hname, params dict.Dict, transfer *isc.Assets) dict.Dict {
+func (s *WasmContextSandbox) callUnlocked(contract, function isc.Hname, params dict.Dict, transfer *isc.Assets) []byte {
 	// TODO is this really necessary? We should not be able to call in parallel
 	s.wc.proc.instanceLock.Unlock()
 	defer s.wc.proc.instanceLock.Lock()
@@ -348,11 +348,8 @@ func (s *WasmContextSandbox) fnRequestSender(_ []byte) []byte {
 }
 
 func (s *WasmContextSandbox) fnResults(args []byte) []byte {
-	results, err := dict.FromBytes(args)
-	if err != nil {
-		s.Panicf("call results: %s", err.Error())
-	}
-	s.wc.results = results
+	// TODO is this correct?
+	s.wc.results = args
 	return nil
 }
 

@@ -39,7 +39,7 @@ var Processor = Contract.Processor(initialize,
 	ViewTotalAssets.WithHandler(viewTotalAssets),
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
+func initialize(ctx isc.Sandbox) []byte {
 	// validating and storing storage deposit assumption constants
 	baseTokensOnAnchor := ctx.StateAnchor().Deposit
 	storageDepositAssumptionsBin := ctx.Params().MustGet(ParamStorageDepositAssumptionsBin)
@@ -61,7 +61,7 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 // deposit is a function to deposit attached assets to the sender's chain account
 // It does nothing because assets are already on the sender's account
 // Allowance is ignored
-func deposit(ctx isc.Sandbox) dict.Dict {
+func deposit(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("accounts.deposit")
 	return nil
 }
@@ -70,7 +70,7 @@ func deposit(ctx isc.Sandbox) dict.Dict {
 // Can be sent as a request (sender is the caller) or can be called
 // Params:
 // - ParamAgentID. AgentID. Required
-func transferAllowanceTo(ctx isc.Sandbox) dict.Dict {
+func transferAllowanceTo(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("accounts.transferAllowanceTo.begin -- %s", ctx.AllowanceAvailable())
 	targetAccount := ctx.Params().MustGetAgentID(ParamAgentID)
 	ctx.TransferAllowedFunds(targetAccount)
@@ -84,7 +84,7 @@ const ConstDepositFeeTmp = 1 * isc.Million
 // withdraw sends caller's funds to the caller on-ledger (cross chain)
 // The caller explicitly specify the funds to withdraw via the allowance in the request
 // Btw: the whole code of entry point is generic, i.e. not specific to the accounts TODO use this feature
-func withdraw(ctx isc.Sandbox) dict.Dict {
+func withdraw(ctx isc.Sandbox) []byte {
 	ctx.Requiref(!ctx.AllowanceAvailable().IsEmpty(), "Allowance can't be empty in 'accounts.withdraw'")
 
 	callerAddress, ok := isc.AddressFromAgentID(ctx.Caller())
@@ -145,7 +145,7 @@ func withdraw(ctx isc.Sandbox) dict.Dict {
 //	ParamForceMinimumBaseTokens: specify the number of BaseTokens left on the common account will be not less than MinimumBaseTokensOnCommonAccount constant
 //
 // TODO refactor owner of the chain moves all tokens balance the common account to its own account
-func harvest(ctx isc.Sandbox) dict.Dict {
+func harvest(ctx isc.Sandbox) []byte {
 	ctx.RequireCallerIsChainOwner()
 
 	state := ctx.State()
@@ -169,7 +169,7 @@ func harvest(ctx isc.Sandbox) dict.Dict {
 // Params:
 // - token scheme
 // - must be enough allowance for the storage deposit
-func foundryCreateNew(ctx isc.Sandbox) dict.Dict {
+func foundryCreateNew(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("accounts.foundryCreateNew")
 
 	tokenScheme := ctx.Params().MustGetTokenScheme(ParamTokenScheme, &iotago.SimpleTokenScheme{})
@@ -185,14 +185,11 @@ func foundryCreateNew(ctx isc.Sandbox) dict.Dict {
 
 	// add to the ownership list of the account
 	addFoundryToAccount(ctx.State(), ctx.Caller(), sn)
-
-	ret := dict.New()
-	ret.Set(ParamFoundrySN, util.Uint32To4Bytes(sn))
-	return ret
+	return util.MustSerialize(sn)
 }
 
 // foundryDestroy destroys foundry if that is possible
-func foundryDestroy(ctx isc.Sandbox) dict.Dict {
+func foundryDestroy(ctx isc.Sandbox) []byte {
 	ctx.Log().Debugf("accounts.foundryDestroy")
 	sn := ctx.Params().MustGetUint32(ParamFoundrySN)
 	// check if foundry is controlled by the caller
@@ -219,7 +216,7 @@ func foundryDestroy(ctx isc.Sandbox) dict.Dict {
 // - ParamSupplyDeltaAbs absolute delta of the supply as big.Int
 // - ParamDestroyTokens true if destroy supply, false (default) if mint new supply
 // NOTE: ParamDestroyTokens is needed since `big.Int` `Bytes()` function does not serialize the sign, only the absolute value
-func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
+func foundryModifySupply(ctx isc.Sandbox) []byte {
 	sn := ctx.Params().MustGetUint32(ParamFoundrySN)
 	delta := new(big.Int).Abs(ctx.Params().MustGetBigInt(ParamSupplyDeltaAbs))
 	if util.IsZeroBigInt(delta) {

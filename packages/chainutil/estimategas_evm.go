@@ -13,7 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/runvm"
@@ -64,7 +64,7 @@ func EstimateGas(ch chain.ChainCore, call ethereum.CallMsg) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	maximumPossibleGas := codec.MustDecodeUint64(ret.MustGet(evm.FieldResult))
+	maximumPossibleGas := util.MustDeserialize[uint64](ret)
 
 	if call.Gas >= params.TxGas {
 		hi = call.Gas

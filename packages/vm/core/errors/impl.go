@@ -5,6 +5,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 )
 
@@ -45,7 +46,7 @@ func funcGetErrorMessageFormat(ctx isc.SandboxView) []byte {
 	template, err := getErrorMessageFormat(ctx.StateR(), code)
 	ctx.RequireNoError(err)
 
-	return codec.EncodeString(template.MessageFormat())
+	return util.MustSerialize(template.MessageFormat())
 }
 
 func getErrorMessageFormat(state kv.KVStoreReader, code isc.VMErrorCode) (*isc.VMErrorTemplate, error) {

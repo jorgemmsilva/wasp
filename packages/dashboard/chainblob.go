@@ -10,9 +10,8 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 )
 
@@ -49,35 +48,32 @@ func (d *Dashboard) handleChainBlob(c echo.Context) error {
 		Hash:    hash,
 	}
 
-	fields, err := d.wasp.CallView(chainID, blob.Contract.Name, blob.ViewGetBlobInfo.Name, codec.MakeDict(map[string]interface{}{
+	data, err := d.wasp.CallView(chainID, blob.Contract.Name, blob.ViewGetBlobInfo.Name, codec.MakeDict(map[string]interface{}{
 		blob.ParamHash: hash,
 	}))
 	if err != nil {
 		return err
 	}
-	result.Blob = make([]BlobField, len(fields))
-	i := 0
-	fields.MustIterateKeysSorted("", func(key kv.Key) bool {
-		field := []byte(key)
-		var value dict.Dict
-		value, err = d.wasp.CallView(chainID, blob.Contract.Name, blob.ViewGetBlobField.Name, codec.MakeDict(map[string]interface{}{
-			blob.ParamHash:  hash,
-			blob.ParamField: field,
-		}))
-		if err != nil {
-			return false
-		}
-		result.Blob[i] = BlobField{
-			Key:   field,
-			Value: value[blob.ParamBytes],
-		}
-		i++
-		return true
-	})
+	fields, err := util.Deserialize[map[string]uint32](data)
 	if err != nil {
 		return err
 	}
-
+	result.Blob = make([]BlobField, len(fields))
+	i := 0
+	for key := range fields {
+		value, err := d.wasp.CallView(chainID, blob.Contract.Name, blob.ViewGetBlobField.Name, codec.MakeDict(map[string]interface{}{
+			blob.ParamHash:  hash,
+			blob.ParamField: []byte(key),
+		}))
+		if err != nil {
+			return err
+		}
+		result.Blob[i] = BlobField{
+			Key:   []byte(key),
+			Value: value,
+		}
+		i++
+	}
 	return c.Render(http.StatusOK, c.Path(), result)
 }
 
@@ -105,7 +101,7 @@ func (d *Dashboard) handleChainBlobDownload(c echo.Context) error {
 		return err
 	}
 
-	return c.Blob(http.StatusOK, "application/octet-stream", value[blob.ParamBytes])
+	return c.Blob(http.StatusOK, "application/octet-stream", value)
 }
 
 type ChainBlobTemplateParams struct {

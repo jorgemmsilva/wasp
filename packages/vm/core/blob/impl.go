@@ -3,7 +3,9 @@ package blob
 import (
 	"fmt"
 
+	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
@@ -96,10 +98,11 @@ func getBlobField(ctx isc.SandboxView) []byte {
 
 func listBlobs(ctx isc.SandboxView) []byte {
 	ctx.Log().Debugf("blob.listBlobs.begin")
-	ret := make(map[string]uint32)
-	var err error
-	GetDirectoryR(ctx.StateR()).MustIterate(func(hash []byte, totalSize []byte) bool {
-		ret[string(hash)], err = DecodeSize(totalSize)
+	ret := make(map[hashing.HashValue]uint32)
+	GetDirectoryR(ctx.StateR()).MustIterate(func(hashBytes []byte, totalSize []byte) bool {
+		hash, err := codec.DecodeHashValue(hashBytes)
+		ctx.RequireNoError(err)
+		ret[hash], err = DecodeSize(totalSize)
 		ctx.RequireNoError(err)
 		return true
 	})

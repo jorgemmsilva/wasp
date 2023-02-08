@@ -9,6 +9,7 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
 
@@ -42,13 +43,17 @@ func (d *Dashboard) handleChainAccount(c echo.Context) error {
 		AgentID: agentID,
 	}
 
-	bal, err := d.wasp.CallView(chainID, accounts.Contract.Name, accounts.ViewBalance.Name, codec.MakeDict(map[string]interface{}{
+	data, err := d.wasp.CallView(chainID, accounts.Contract.Name, accounts.ViewBalance.Name, codec.MakeDict(map[string]interface{}{
 		accounts.ParamAgentID: codec.EncodeAgentID(agentID),
 	}))
 	if err != nil {
 		return err
 	}
-	result.Balances, err = isc.AssetsFromDict(bal)
+	assetsDict, err := dict.FromBytes(data)
+	if err != nil {
+		return err
+	}
+	result.Balances, err = isc.AssetsFromDict(assetsDict)
 	if err != nil {
 		return err
 	}

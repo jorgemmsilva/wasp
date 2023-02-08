@@ -67,8 +67,10 @@ func viewGetBlockInfo(ctx isc.SandboxView) []byte {
 	blockIndex := getBlockIndexParams(ctx)
 	data, err := getBlockInfoBytes(ctx.StateR(), blockIndex)
 	ctx.RequireNoError(err)
-	// TODO return block index?...........
-	return data
+	blockInfo, err := BlockInfoFromBytes(blockIndex, data)
+	ctx.RequireNoError(err)
+	// This uses a different encoding than what is stored in the state (blockInfo.Bytes). The return here will include the blockIndex
+	return util.MustSerialize(blockInfo)
 }
 
 // viewGetRequestIDsForBlock returns a list of requestIDs for a given block.

@@ -10,9 +10,9 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/errors"
 )
@@ -51,45 +51,49 @@ func (d *Dashboard) handleChainBlock(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	result.LatestBlockIndex = latestBlock.Index
+	result.LatestBlockIndex = latestBlock.BlockIndex
 
 	if uint32(index) == result.LatestBlockIndex {
-		result.Block = latestBlock.Info
+		result.Block = latestBlock
 	} else {
-		ret, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetBlockInfo.Name, dict.Dict{
+		data, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetBlockInfo.Name, dict.Dict{
 			blocklog.ParamBlockIndex: codec.EncodeUint32(uint32(index)),
 		})
 		if err != nil {
 			return err
 		}
-		result.Block, err = blocklog.BlockInfoFromBytes(uint32(index), ret.MustGet(blocklog.ParamBlockInfo))
+		result.Block, err = util.Deserialize[*blocklog.BlockInfo](data)
 		if err != nil {
 			return err
 		}
-		if result.Block.L1Commitment == nil {
-			// to please the template.
-			result.Block.L1Commitment = state.L1CommitmentNil
-		}
+	}
+	if result.Block.L1Commitment == nil {
+		// to please the template.
+		result.Block.L1Commitment = state.L1CommitmentNil
 	}
 
 	{
-		ret, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetRequestReceiptsForBlock.Name, dict.Dict{
+		data, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetRequestReceiptsForBlock.Name, dict.Dict{
 			blocklog.ParamBlockIndex: codec.EncodeUint32(uint32(index)),
 		})
 		if err != nil {
 			return err
 		}
-		arr := collections.NewArray16ReadOnly(ret, blocklog.ParamRequestRecord)
-		result.Receipts = make([]*blocklog.RequestReceipt, arr.MustLen())
-		result.ResolvedErrors = make([]string, arr.MustLen())
-		for i := uint16(0); i < arr.MustLen(); i++ {
-			receipt, err := blocklog.RequestReceiptFromBytes(arr.MustGetAt(i))
+		dataArr, err := util.Deserialize[[][]byte](data)
+		if err != nil {
+			return err
+		}
+
+		result.Receipts = make([]*blocklog.RequestReceipt, len(dataArr))
+		result.ResolvedErrors = make([]string, len(dataArr))
+		for i, bytes := range dataArr {
+			receipt, err := blocklog.RequestReceiptFromBytes(bytes)
 			if err != nil {
 				return err
 			}
 			result.Receipts[i] = receipt
 			if receipt.Error != nil {
-				resolved, err := errors.Resolve(receipt.Error, func(c string, f string, params dict.Dict) (dict.Dict, error) {
+				resolved, err := errors.Resolve(receipt.Error, func(c string, f string, params dict.Dict) ([]byte, error) {
 					return d.wasp.CallView(chainID, c, f, params)
 				})
 				if err != nil {
@@ -101,16 +105,15 @@ func (d *Dashboard) handleChainBlock(c echo.Context) error {
 	}
 
 	{
-		ret, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name, dict.Dict{
+		data, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetEventsForBlock.Name, dict.Dict{
 			blocklog.ParamBlockIndex: codec.EncodeUint32(uint32(index)),
 		})
 		if err != nil {
 			return err
 		}
-		arr := collections.NewArray16ReadOnly(ret, blocklog.ParamEvent)
-		result.Events = make([]string, arr.MustLen())
-		for i := uint16(0); i < arr.MustLen(); i++ {
-			result.Events[i] = string(arr.MustGetAt(i))
+		result.Events, err = util.Deserialize[[]string](data)
+		if err != nil {
+			return err
 		}
 	}
 

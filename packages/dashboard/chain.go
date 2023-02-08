@@ -11,6 +11,7 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -94,28 +95,27 @@ func (d *Dashboard) handleChain(c echo.Context) error {
 	return c.Render(http.StatusOK, c.Path(), result)
 }
 
-func (d *Dashboard) getLatestBlock(chainID isc.ChainID) (*LatestBlock, error) {
+func (d *Dashboard) getLatestBlock(chainID isc.ChainID) (*blocklog.BlockInfo, error) {
 	ret, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetBlockInfo.Name, nil)
 	if err != nil {
 		return nil, err
 	}
-	index, err := util.Deserialize[uint32](ret)
+	bInfo, err := util.Deserialize[*blocklog.BlockInfo](ret)
 	if err != nil {
 		return nil, err
 	}
-	block, err := blocklog.BlockInfoFromBytes(index, ret.MustGet(blocklog.ParamBlockInfo))
-	if err != nil {
-		return nil, err
-	}
-	return &LatestBlock{Index: index, Info: block}, nil
+	return bInfo, nil
 }
 
 func (d *Dashboard) fetchAccounts(chainID isc.ChainID) ([]isc.AgentID, error) {
-	accs, err := d.wasp.CallView(chainID, accounts.Contract.Name, accounts.ViewAccounts.Name, nil)
+	data, err := d.wasp.CallView(chainID, accounts.Contract.Name, accounts.ViewAccounts.Name, nil)
 	if err != nil {
 		return nil, err
 	}
-
+	accs, err := dict.FromBytes(data)
+	if err != nil {
+		return nil, err
+	}
 	ret := make([]isc.AgentID, 0)
 	for k := range accs {
 		agentid, err := codec.DecodeAgentID([]byte(k))
@@ -128,7 +128,11 @@ func (d *Dashboard) fetchAccounts(chainID isc.ChainID) ([]isc.AgentID, error) {
 }
 
 func (d *Dashboard) fetchTotalAssets(chainID isc.ChainID) (*isc.Assets, error) {
-	bal, err := d.wasp.CallView(chainID, accounts.Contract.Name, accounts.ViewTotalAssets.Name, nil)
+	data, err := d.wasp.CallView(chainID, accounts.Contract.Name, accounts.ViewTotalAssets.Name, nil)
+	if err != nil {
+		return nil, err
+	}
+	bal, err := dict.FromBytes(data)
 	if err != nil {
 		return nil, err
 	}
@@ -136,24 +140,23 @@ func (d *Dashboard) fetchTotalAssets(chainID isc.ChainID) (*isc.Assets, error) {
 }
 
 func (d *Dashboard) fetchBlobs(chainID isc.ChainID) (map[hashing.HashValue]uint32, error) {
-	ret, err := d.wasp.CallView(chainID, blob.Contract.Name, blob.ViewListBlobs.Name, nil)
+	data, err := d.wasp.CallView(chainID, blob.Contract.Name, blob.ViewListBlobs.Name, nil)
 	if err != nil {
 		return nil, err
 	}
-	return blob.DecodeDirectory(ret)
+	ret, err := util.Deserialize[map[hashing.HashValue]uint32](data)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }
 
 func (d *Dashboard) fetchEVMChainID(chainID isc.ChainID) (uint16, error) {
-	ret, err := d.wasp.CallView(chainID, evm.Contract.Name, evm.FuncGetChainID.Name, nil)
+	data, err := d.wasp.CallView(chainID, evm.Contract.Name, evm.FuncGetChainID.Name, nil)
 	if err != nil {
 		return 0, err
 	}
-	return codec.DecodeUint16(ret.MustGet(evm.FieldResult))
-}
-
-type LatestBlock struct {
-	Index uint32
-	Info  *blocklog.BlockInfo
+	return util.Deserialize[uint16](data)
 }
 
 type ChainTemplateParams struct {
@@ -163,7 +166,7 @@ type ChainTemplateParams struct {
 
 	EVMChainID  uint16
 	Record      *registry.ChainRecord
-	LatestBlock *LatestBlock
+	LatestBlock *blocklog.BlockInfo
 	ChainInfo   *ChainInfo
 	Accounts    []isc.AgentID
 	TotalAssets *isc.Assets

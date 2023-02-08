@@ -5,19 +5,20 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 // ViewCaller is a generic interface for any function that can call views
-type ViewCaller func(contractName string, funcName string, params dict.Dict) (dict.Dict, error)
+type ViewCaller func(contractName string, funcName string, params dict.Dict) ([]byte, error)
 
 func GetMessageFormat(code isc.VMErrorCode, callView ViewCaller) (string, error) {
-	ret, err := callView(Contract.Name, ViewGetErrorMessageFormat.Name, dict.Dict{
+	data, err := callView(Contract.Name, ViewGetErrorMessageFormat.Name, dict.Dict{
 		ParamErrorCode: codec.EncodeVMErrorCode(code),
 	})
 	if err != nil {
 		return "", err
 	}
-	return codec.DecodeString(ret.MustGet(ParamErrorMessageFormat))
+	return util.Deserialize[string](data)
 }
 
 func Resolve(e *isc.UnresolvedVMError, callView ViewCaller) (*isc.VMError, error) {

@@ -90,7 +90,10 @@ func initialize(ctx isc.Sandbox) []byte {
 	}
 	addToPrivileged(ctx, iscmagic.ERC721NFTsAddress)
 
-	chainID := evmtypes.MustDecodeChainID(ctx.Params().MustGet(evm.FieldChainID), evm.DefaultChainID)
+	chainID := evm.DefaultChainID
+	if ctx.Params().MustHas(evm.FieldChainID) {
+		chainID = util.MustDeserialize[uint16](ctx.Params().MustGet(evm.FieldChainID))
+	}
 
 	emulator.Init(
 		evmStateSubrealm(ctx.State()),
@@ -319,7 +322,7 @@ func getLogs(ctx isc.SandboxView) []byte {
 
 func getChainID(ctx isc.SandboxView) []byte {
 	emu := createEmulatorR(ctx)
-	return evmtypes.EncodeChainID(emu.BlockchainDB().GetChainID())
+	return util.MustSerialize(emu.BlockchainDB().GetChainID())
 }
 
 func callContract(ctx isc.SandboxView) []byte {

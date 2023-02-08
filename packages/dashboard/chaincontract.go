@@ -2,7 +2,6 @@ package dashboard
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 	"net/http"
 
@@ -10,7 +9,7 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/collections"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
@@ -45,35 +44,27 @@ func (d *Dashboard) handleChainContract(c echo.Context) error {
 		Hname:   hname,
 	}
 
-	r, err := d.wasp.CallView(chainID, root.Contract.Name, root.ViewFindContract.Name, codec.MakeDict(map[string]interface{}{
+	contractBytes, err := d.wasp.CallView(chainID, root.Contract.Name, root.ViewFindContract.Name, codec.MakeDict(map[string]interface{}{
 		root.ParamHname: codec.EncodeHname(hname),
 	}))
 	if err != nil {
 		return fmt.Errorf("call view failed: %w", err)
 	}
-	if r[root.ParamContractRecData] == nil {
-		return errors.New("contract not found")
-	}
-	result.ContractRecord, err = root.ContractRecordFromBytes(r[root.ParamContractRecData])
+
+	result.ContractRecord, err = root.ContractRecordFromBytes(contractBytes)
 	if err != nil {
 		return fmt.Errorf("cannot decode contract record: %w", err)
 	}
 
-	r, err = d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetEventsForContract.Name, codec.MakeDict(map[string]interface{}{
+	data, err := d.wasp.CallView(chainID, blocklog.Contract.Name, blocklog.ViewGetEventsForContract.Name, codec.MakeDict(map[string]interface{}{
 		blocklog.ParamContractHname: codec.EncodeHname(hname),
 	}))
 	if err != nil {
 		return fmt.Errorf("call view failed: %w", err)
 	}
-
-	recs := collections.NewArray16ReadOnly(r, blocklog.ParamEvent)
-	result.Log = make([]string, recs.MustLen())
-	for i := range result.Log {
-		data, err := recs.GetAt(uint16(i))
-		if err != nil {
-			return err
-		}
-		result.Log[i] = string(data)
+	result.Log, err = util.Deserialize[[]string](data)
+	if err != nil {
+		return fmt.Errorf("deserializing call view result failed: %w", err)
 	}
 
 	return c.Render(http.StatusOK, c.Path(), result)

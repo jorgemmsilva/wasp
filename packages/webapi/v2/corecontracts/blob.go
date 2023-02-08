@@ -4,6 +4,7 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/webapi/v2/interfaces"
 )
@@ -51,10 +52,13 @@ func (b *Blob) GetBlobValue(chainID isc.ChainID, blobHash hashing.HashValue, key
 }
 
 func (b *Blob) ListBlobs(chainID isc.ChainID) (map[hashing.HashValue]uint32, error) {
-	ret, err := b.vmService.CallViewByChainID(chainID, blob.Contract.Hname(), blob.ViewListBlobs.Hname(), nil)
+	data, err := b.vmService.CallViewByChainID(chainID, blob.Contract.Hname(), blob.ViewListBlobs.Hname(), nil)
 	if err != nil {
 		return nil, err
 	}
-
-	return blob.DecodeDirectory(ret)
+	ret, err := util.Deserialize[map[hashing.HashValue]uint32](data)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
 }

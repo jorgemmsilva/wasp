@@ -7,6 +7,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 func GetContractRegistry(state kv.KVStore) *collections.Map {
@@ -43,25 +44,20 @@ func ContractExists(state kv.KVStoreReader, hname isc.Hname) bool {
 }
 
 // DecodeContractRegistry encodes the whole contract registry from the map into a Go map.
-func DecodeContractRegistry(contractRegistry *collections.ImmutableMap) (map[isc.Hname]*ContractRecord, error) {
-	ret := make(map[isc.Hname]*ContractRecord)
-	var err error
-	contractRegistry.MustIterate(func(k []byte, v []byte) bool {
-		var deploymentHash isc.Hname
-		deploymentHash, err = isc.HnameFromBytes(k)
-		if err != nil {
-			return false
-		}
+func DecodeContractRegistry(data []byte) (map[isc.Hname]*ContractRecord, error) {
+	recs, err := util.Deserialize[map[isc.Hname][]byte](data)
+	if err != nil {
+		return nil, err
+	}
 
-		cr, err := ContractRecordFromBytes(v)
+	ret := make(map[isc.Hname]*ContractRecord, len(recs))
+	for i, bytes := range recs {
+		ret[i], err = ContractRecordFromBytes(bytes)
 		if err != nil {
-			return false
+			return nil, err
 		}
-
-		ret[deploymentHash] = cr
-		return true
-	})
-	return ret, err
+	}
+	return ret, nil
 }
 
 type BlockContextSubscription struct {

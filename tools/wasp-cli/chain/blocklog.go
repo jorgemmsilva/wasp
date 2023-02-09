@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/errors"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -37,23 +38,21 @@ func initBlockCmd() *cobra.Command {
 
 func fetchBlockInfo(args []string) *blocklog.BlockInfo {
 	if len(args) == 0 {
-		ret, err := SCClient(blocklog.Contract.Hname()).CallView(blocklog.ViewGetBlockInfo.Name, nil)
+		data, err := SCClient(blocklog.Contract.Hname()).CallView(blocklog.ViewGetBlockInfo.Name, nil)
 		log.Check(err)
-		index, err := codec.DecodeUint32(ret.MustGet(blocklog.ParamBlockIndex))
+		blockInfo, err := util.Deserialize[*blocklog.BlockInfo](data)
 		log.Check(err)
-		b, err := blocklog.BlockInfoFromBytes(index, ret.MustGet(blocklog.ParamBlockInfo))
-		log.Check(err)
-		return b
+		return blockInfo
 	}
 	index, err := strconv.Atoi(args[0])
 	log.Check(err)
-	ret, err := SCClient(blocklog.Contract.Hname()).CallView(blocklog.ViewGetBlockInfo.Name, dict.Dict{
+	data, err := SCClient(blocklog.Contract.Hname()).CallView(blocklog.ViewGetBlockInfo.Name, dict.Dict{
 		blocklog.ParamBlockIndex: codec.EncodeUint32(uint32(index)),
 	})
 	log.Check(err)
-	b, err := blocklog.BlockInfoFromBytes(uint32(index), ret.MustGet(blocklog.ParamBlockInfo))
+	blockInfo, err := util.Deserialize[*blocklog.BlockInfo](data)
 	log.Check(err)
-	return b
+	return blockInfo
 }
 
 func logRequestsInBlock(index uint32) {
@@ -85,7 +84,7 @@ func logReceipt(receipt *blocklog.RequestReceipt, index ...uint16) {
 
 	errMsg := "(empty)"
 	if receipt.Error != nil {
-		resolved, err := errors.Resolve(receipt.Error, func(contractName string, funcName string, params dict.Dict) (dict.Dict, error) {
+		resolved, err := errors.Resolve(receipt.Error, func(contractName string, funcName string, params dict.Dict) ([]byte, error) {
 			return SCClient(isc.Hn(contractName)).CallView(funcName, params)
 		})
 		log.Check(err)

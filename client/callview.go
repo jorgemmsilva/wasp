@@ -8,7 +8,7 @@ import (
 	"github.com/iotaledger/wasp/packages/webapi/v1/routes"
 )
 
-func (c *WaspClient) CallView(chainID isc.ChainID, hContract isc.Hname, functionName string, args dict.Dict) (dict.Dict, error) {
+func (c *WaspClient) CallView(chainID isc.ChainID, hContract isc.Hname, functionName string, args dict.Dict) ([]byte, error) {
 	arguments := args
 	if arguments == nil {
 		arguments = dict.Dict(nil)

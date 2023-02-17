@@ -218,14 +218,8 @@ func (c *Chains) activateWithoutLocking(chainID isc.ChainID) error {
 		return fmt.Errorf("error when creating chain KV store: %w", err)
 	}
 	chainStore := state.NewStore(chainKVStore)
-	chainState, err := chainStore.LatestState()
-	if err != nil {
+	if !chainStore.HasTrieRoot(state.OriginL1Commitment().TrieRoot()) {
 		chainStore = state.InitChainStore(chainKVStore)
-	} else {
-		chainIDInState, errChainID := chainState.Has(state.KeyChainID)
-		if errChainID != nil || !chainIDInState {
-			chainStore = state.InitChainStore(chainKVStore)
-		}
 	}
 
 	// Initialize WAL

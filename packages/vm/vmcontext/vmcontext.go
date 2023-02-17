@@ -151,6 +151,7 @@ func CreateVMContext(task *vm.VMTask) *VMContext {
 		ret.storageDepositAssumptions,
 	)
 
+	initStateIfNeeded(ret)
 	return ret
 }
 
@@ -320,9 +321,6 @@ func (vmctx *VMContext) saveInternalUTXOs() {
 }
 
 func (vmctx *VMContext) assertConsistentL2WithL1TxBuilder(checkpoint string) {
-	if vmctx.task.AnchorOutput.StateIndex == 0 && vmctx.isInitChainRequest() {
-		return
-	}
 	var totalL2Assets *isc.Assets
 	vmctx.callCore(accounts.Contract, func(s kv.KVStore) {
 		totalL2Assets = accounts.GetTotalL2FungibleTokens(s)

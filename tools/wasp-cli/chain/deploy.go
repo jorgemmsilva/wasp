@@ -12,7 +12,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/apilib"
-	"github.com/iotaledger/wasp/packages/evm/evmtypes"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -87,12 +86,11 @@ func initDeployCmd() *cobra.Command {
 				GovernanceController: govController,
 				InitParams: dict.Dict{
 					root.ParamEVM(evm.FieldChainID):         codec.EncodeUint16(evmParams.ChainID),
-					root.ParamEVM(evm.FieldGenesisAlloc):    evmtypes.EncodeGenesisAlloc(evmParams.getGenesis(nil)),
 					root.ParamEVM(evm.FieldBlockKeepAmount): codec.EncodeInt32(evmParams.BlockKeepAmount),
 				},
 			}
 
-			chainid, _, err := apilib.DeployChain(par, stateController, govController)
+			chainid, err := apilib.DeployChain(par, stateController, govController)
 			log.Check(err)
 
 			config.AddChain(chainName, chainid.String())

@@ -45,9 +45,6 @@ func (vmctx *VMContext) RunTheRequest(req isc.Request, requestIndex uint16) (res
 
 	vmctx.currentStateUpdate = NewStateUpdate()
 	vmctx.chainState().Set(kv.Key(coreutil.StatePrefixTimestamp), codec.EncodeTime(vmctx.task.StateDraft.Timestamp().Add(1*time.Nanosecond)))
-	if vmctx.isInitChainRequest() {
-		vmctx.chainState().Set(state.KeyChainID, vmctx.ChainID().Bytes())
-	}
 	defer func() { vmctx.currentStateUpdate = nil }()
 
 	if err2 := vmctx.earlyCheckReasonToSkip(); err2 != nil {
@@ -131,9 +128,6 @@ func (vmctx *VMContext) checkAllowance() {
 
 func (vmctx *VMContext) prepareGasBudget() {
 	if vmctx.req.SenderAccount() == nil {
-		return
-	}
-	if vmctx.isInitChainRequest() {
 		return
 	}
 	vmctx.gasSetBudget(vmctx.calculateAffordableGasBudget())
@@ -333,10 +327,6 @@ func (vmctx *VMContext) chargeGasFee() {
 		// no charging if sender is unknown
 		return
 	}
-	if vmctx.isInitChainRequest() {
-		// do not charge gas fees if init request
-		return
-	}
 
 	availableToPayFee := vmctx.gasMaxTokensToSpendForGasFee
 	if !vmctx.task.EstimateGasMode && !vmctx.chainInfo.GasFeePolicy.IsEnoughForMinimumFee(availableToPayFee) {
@@ -385,29 +375,13 @@ func (vmctx *VMContext) GetContractRecord(contractHname isc.Hname) (ret *root.Co
 }
 
 func (vmctx *VMContext) getOrCreateContractRecord(contractHname isc.Hname) (ret *root.ContractRecord) {
-	if contractHname == root.Contract.Hname() && vmctx.isInitChainRequest() {
-		return root.ContractRecordFromContractInfo(root.Contract)
-	}
 	return vmctx.GetContractRecord(contractHname)
 }
 
 // loadChainConfig only makes sense if chain is already deployed
 func (vmctx *VMContext) loadChainConfig() {
-	if vmctx.isInitChainRequest() {
-		vmctx.chainOwnerID = vmctx.req.SenderAccount()
-		vmctx.chainInfo = nil
-		return
-	}
 	vmctx.chainInfo = vmctx.getChainInfo()
 	vmctx.chainOwnerID = vmctx.chainInfo.ChainOwnerID
-}
-
-func (vmctx *VMContext) isInitChainRequest() bool {
-	if vmctx.req == nil {
-		return false
-	}
-	target := vmctx.req.CallTarget()
-	return target.Contract == root.Contract.Hname() && target.EntryPoint == isc.EntryPointInit
 }
 
 // mustCheckTransactionSize panics with ErrMaxTransactionSizeExceeded if the estimated transaction size exceeds the limit

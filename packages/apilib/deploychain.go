@@ -36,7 +36,7 @@ type CreateChainParams struct {
 // DeployChain creates a new chain on specified committee address
 // noinspection ALL
 
-func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr iotago.Address) (isc.ChainID, *iotago.Transaction, error) {
+func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr iotago.Address) (isc.ChainID, error) {
 	var err error
 	textout := io.Discard
 	if par.Textout != nil {
@@ -49,7 +49,7 @@ func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr i
 		originatorAddr, stateControllerAddr, par.N, par.T)
 	fmt.Fprint(textout, par.Prefix)
 
-	chainID, initRequestTx, err := CreateChainOrigin(
+	chainID, err := CreateChainOrigin(
 		par.Layer1Client,
 		par.OriginatorKeyPair,
 		stateControllerAddr,
@@ -60,22 +60,15 @@ func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr i
 	fmt.Fprint(textout, par.Prefix)
 	if err != nil {
 		fmt.Fprintf(textout, "creating chain origin and init transaction.. FAILED: %v\n", err)
-		return isc.ChainID{}, nil, fmt.Errorf("DeployChain: %w", err)
+		return isc.ChainID{}, fmt.Errorf("DeployChain: %w", err)
 	}
-	txID, err := initRequestTx.ID()
-	if err != nil {
-		fmt.Fprintf(textout, "creating chain origin and init transaction.. FAILED: %v\n", err)
-		return isc.ChainID{}, nil, fmt.Errorf("DeployChain: %w", err)
-	}
-	fmt.Fprintf(textout, "created chain origin and init transaction %s.. OK\n", txID.ToHex())
-
 	fmt.Fprint(textout, par.Prefix)
 	fmt.Fprintf(textout, "chain has been created successfully on the Tangle. ChainID: %s, State address: %s, N = %d, T = %d\n",
 		chainID.String(), stateControllerAddr.Bech32(parameters.L1().Protocol.Bech32HRP), par.N, par.T)
 
 	fmt.Fprintf(textout, "make sure to activate the sure on all committee nodes\n")
 
-	return chainID, initRequestTx, err
+	return chainID, err
 }
 
 func utxoIDsFromUtxoMap(utxoMap iotago.OutputSet) iotago.OutputIDs {
@@ -93,12 +86,12 @@ func CreateChainOrigin(
 	stateController iotago.Address,
 	governanceController iotago.Address,
 	dscr string, initParams dict.Dict,
-) (isc.ChainID, *iotago.Transaction, error) {
+) (isc.ChainID, error) {
 	originatorAddr := originator.GetPublicKey().AsEd25519Address()
 	// ----------- request owner address' outputs from the ledger
 	utxoMap, err := layer1Client.OutputMap(originatorAddr)
 	if err != nil {
-		return isc.ChainID{}, nil, fmt.Errorf("CreateChainOrigin: %w", err)
+		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}
 
 	// ----------- create origin transaction
@@ -111,41 +104,21 @@ func CreateChainOrigin(
 		utxoIDsFromUtxoMap(utxoMap),
 	)
 	if err != nil {
-		return isc.ChainID{}, nil, fmt.Errorf("CreateChainOrigin: %w", err)
+		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}
 
 	// ------------- post origin transaction and wait for confirmation
 	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)
 	if err != nil {
-		return isc.ChainID{}, nil, fmt.Errorf("CreateChainOrigin: %w", err)
+		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}
 
 	utxoMap, err = layer1Client.OutputMap(originatorAddr)
 	if err != nil {
-		return isc.ChainID{}, nil, fmt.Errorf("CreateChainOrigin: %w", err)
+		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}
 
-	// NOTE: whoever send first init request, is an owner of the chain
-	// create root init transaction
-	reqTx, err := transaction.NewRootInitRequestTransaction(
-		originator,
-		chainID,
-		dscr,
-		utxoMap,
-		utxoIDsFromUtxoMap(utxoMap),
-		initParams,
-	)
-	if err != nil {
-		return isc.ChainID{}, nil, fmt.Errorf("CreateChainOrigin: %w", err)
-	}
-
-	// ---------- post root init request transaction and wait for confirmation
-	_, err = layer1Client.PostTxAndWaitUntilConfirmation(reqTx)
-	if err != nil {
-		return isc.ChainID{}, nil, fmt.Errorf("CreateChainOrigin: %w", err)
-	}
-
-	return chainID, reqTx, nil
+	return chainID, nil
 }
 
 // ActivateChainOnNodes puts chain records into nodes and activates its

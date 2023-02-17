@@ -205,7 +205,10 @@ func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, pa
 	ctx.gasBurnLog = gas.NewGasBurnLog()
 	ctx.gasBudget = gas.MaxGasExternalViewCall
 
-	ctx.chainInfo = governance.MustGetChainInfo(ctx.contractStateReader(governance.Contract.Hname()))
+	ctx.chainInfo = governance.MustGetChainInfo(
+		ctx.contractStateReader(governance.Contract.Hname()),
+		ctx.chainID,
+	)
 
 	return ctx.callView(targetContract, entryPoint, params)
 }

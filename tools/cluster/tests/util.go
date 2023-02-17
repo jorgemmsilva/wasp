@@ -24,10 +24,6 @@ import (
 
 func (e *ChainEnv) checkCoreContracts() {
 	for i := range e.Chain.AllPeers {
-		b, err := e.Chain.GetStateVariable(root.Contract.Hname(), root.StateVarStateInitialized, i)
-		require.NoError(e.t, err)
-		require.EqualValues(e.t, []byte{0xFF}, b)
-
 		cl := e.Chain.SCClient(governance.Contract.Hname(), nil, i)
 		ret, err := cl.CallView(context.Background(), governance.ViewGetChainInfo.Name, nil)
 		require.NoError(e.t, err)

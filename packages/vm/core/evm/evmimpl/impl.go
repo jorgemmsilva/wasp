@@ -6,6 +6,7 @@ package evmimpl
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,7 +32,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
-var Processor = evm.Contract.Processor(initialize,
+var Processor = evm.Contract.Processor(nil,
 	evm.FuncOpenBlockContext.WithHandler(restricted(openBlockContext)),
 	evm.FuncCloseBlockContext.WithHandler(restricted(closeBlockContext)),
 	evm.FuncSendTransaction.WithHandler(restricted(applyTransaction)),
@@ -61,60 +62,42 @@ var Processor = evm.Contract.Processor(initialize,
 	evm.FuncGetERC20ExternalNativeTokenAddress.WithHandler(restrictedView(viewERC20ExternalNativeTokenAddress)),
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
-	genesisAlloc := core.GenesisAlloc{}
-	var err error
-	if ctx.Params().MustHas(evm.FieldGenesisAlloc) {
-		genesisAlloc, err = evmtypes.DecodeGenesisAlloc(ctx.Params().MustGet(evm.FieldGenesisAlloc))
-		ctx.RequireNoError(err)
-	}
-
-	blockKeepAmount, err := codec.DecodeInt32(ctx.Params().MustGet(evm.FieldBlockKeepAmount), evm.BlockKeepAmountDefault)
-	ctx.RequireNoError(err)
-
+func SetInitialState(state kv.KVStore, t time.Time, evmChainID uint16, blockKeepAmount int32) {
 	// add the standard ISC contract at arbitrary address 0x1074...
+	genesisAlloc := core.GenesisAlloc{}
 	deployMagicContractOnGenesis(genesisAlloc)
 
 	// add the standard ERC20 contract
 	genesisAlloc[iscmagic.ERC20BaseTokensAddress] = core.GenesisAccount{
 		Code:    iscmagic.ERC20BaseTokensRuntimeBytecode,
 		Storage: map[common.Hash]common.Hash{},
-		Balance: &big.Int{},
+		Balance: nil,
 	}
-	addToPrivileged(ctx, iscmagic.ERC20BaseTokensAddress)
+	addToPrivileged(state, iscmagic.ERC20BaseTokensAddress)
 
 	// add the standard ERC721 contract
 	genesisAlloc[iscmagic.ERC721NFTsAddress] = core.GenesisAccount{
 		Code:    iscmagic.ERC721NFTsRuntimeBytecode,
 		Storage: map[common.Hash]common.Hash{},
-		Balance: &big.Int{},
+		Balance: nil,
 	}
-	addToPrivileged(ctx, iscmagic.ERC721NFTsAddress)
+	addToPrivileged(state, iscmagic.ERC721NFTsAddress)
 
-	chainID := evmtypes.MustDecodeChainID(ctx.Params().MustGet(evm.FieldChainID), evm.DefaultChainID)
-
-	getFeePolicy := func() *gas.GasFeePolicy { return getFeePolicy(ctx) }
-	gasRatio := getFeePolicy().EVMGasRatio
+	// chain always starts with default gas policy
+	gasRatio := gas.DefaultGasFeePolicy().EVMGasRatio
 	emulator.Init(
-		evmStateSubrealm(ctx.State()),
-		chainID,
+		evmStateSubrealm(state),
+		evmChainID,
 		blockKeepAmount,
 		emulator.GasLimits{
 			Block: gas.EVMBlockGasLimit(&gasRatio),
 			Call:  gas.EVMCallGasLimit(&gasRatio),
 		},
-		timestamp(ctx),
+		timestamp(t),
 		genesisAlloc,
-		newL2Balance(ctx, getFeePolicy),
 	)
 
-	// storing hname as a terminal value of the contract's state nil key.
-	// This way we will be able to retrieve commitment to the contract's state
-	ctx.State().Set("", ctx.Contract().Bytes())
-
-	ctx.Privileged().SubscribeBlockContext(evm.FuncOpenBlockContext.Hname(), evm.FuncCloseBlockContext.Hname())
-
-	return nil
+	// subscription to block context is now done in `vmcontext/bootstrapstate.go`
 }
 
 func applyTransaction(ctx isc.Sandbox) dict.Dict {
@@ -192,7 +175,7 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 	evmState.SetState(addr, solidity.StorageSlot(1), solidity.StorageEncodeShortString(tickerSymbol))
 	evmState.SetState(addr, solidity.StorageSlot(2), solidity.StorageEncodeUint8(decimals))
 
-	addToPrivileged(ctx, addr)
+	addToPrivileged(ctx.State(), addr)
 
 	return nil
 }
@@ -295,7 +278,7 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	}
 	evmState.SetState(addr, solidity.StorageSlot(4), solidity.StorageEncodeUint256(simpleTS.MaximumSupply))
 
-	addToPrivileged(ctx, addr)
+	addToPrivileged(ctx.State(), addr)
 
 	return result(addr[:])
 }
@@ -339,7 +322,7 @@ func registerERC721NFTCollection(ctx isc.Sandbox) dict.Dict {
 		evmState.SetState(addr, k, v)
 	}
 
-	addToPrivileged(ctx, addr)
+	addToPrivileged(ctx.State(), addr)
 
 	return nil
 }

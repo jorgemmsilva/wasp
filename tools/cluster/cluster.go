@@ -239,7 +239,7 @@ func (clu *Cluster) DeployChain(description string, allPeers, committeeNodes []i
 		committeePubKeys[i] = peeringNode.PublicKey
 	}
 
-	chainID, initRequestTx, err := apilib.DeployChain(
+	chainID, err := apilib.DeployChain(
 		apilib.CreateChainParams{
 			Layer1Client:      clu.L1Client(),
 			CommitteeAPIHosts: chain.CommitteeAPIHosts(),
@@ -265,12 +265,13 @@ func (clu *Cluster) DeployChain(description string, allPeers, committeeNodes []i
 	fmt.Printf("activating chain %s.. OK.\n", chainID.String())
 
 	// ---------- wait until the request is processed at least in all committee nodes
-	_, err = multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts()).
-		WaitUntilAllRequestsProcessedSuccessfully(chainID, initRequestTx, 30*time.Second)
+	// TODO refactor - find another way to wait. (probably querying for chainInfo will be enough)
+	// _, err = multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts()).
+	// 	WaitUntilAllRequestsProcessedSuccessfully(chainID, initRequestTx, 30*time.Second)
 
-	if err != nil {
-		clu.t.Fatalf("waiting root init request transaction.. FAILED: %v\n", err)
-	}
+	// if err != nil {
+	// 	clu.t.Fatalf("waiting root init request transaction.. FAILED: %v\n", err)
+	// }
 
 	chain.StateAddress = stateAddr
 	chain.ChainID = chainID

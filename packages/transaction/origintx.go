@@ -4,12 +4,8 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
-	"github.com/iotaledger/wasp/packages/vm/core/governance"
-	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
 
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
@@ -84,45 +80,4 @@ func NewChainOriginTransaction(
 	}
 	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0)))
 	return tx, chainID, nil
-}
-
-// NewRootInitRequestTransaction is a transaction with one request output.
-// It is the first request to be sent to the uninitialized
-// chain. At this moment it is only able to process this specific request.
-// The request contains the minimum data needed to bootstrap the chain.
-// The signer must be the same that created the origin transaction.
-func NewRootInitRequestTransaction(
-	keyPair *cryptolib.KeyPair,
-	chainID isc.ChainID,
-	description string,
-	unspentOutputs iotago.OutputSet,
-	unspentOutputIDs iotago.OutputIDs,
-	initParams ...dict.Dict,
-) (*iotago.Transaction, error) {
-	params := dict.Dict{
-		root.ParamStorageDepositAssumptionsBin: NewStorageDepositEstimate().Bytes(),
-		governance.ParamDescription:            codec.EncodeString(description),
-	}
-	for _, p := range initParams {
-		params.Extend(p)
-	}
-	tx, err := NewRequestTransaction(NewRequestTransactionParams{
-		SenderKeyPair:    keyPair,
-		SenderAddress:    keyPair.Address(),
-		UnspentOutputs:   unspentOutputs,
-		UnspentOutputIDs: unspentOutputIDs,
-		Request: &isc.RequestParameters{
-			TargetAddress: chainID.AsAddress(),
-			Metadata: &isc.SendMetadata{
-				TargetContract: root.Contract.Hname(),
-				EntryPoint:     isc.EntryPointInit,
-				GasBudget:      0, // TODO. Probably we need minimum fixed budget for core contract calls. 0 for init call
-				Params:         params,
-			},
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
-	return tx, nil
 }

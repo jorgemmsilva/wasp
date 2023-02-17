@@ -1,18 +1,20 @@
 package accounts
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
-var Processor = Contract.Processor(initialize,
+var Processor = Contract.Processor(nil,
 	// funcs
 	FuncDeposit.WithHandler(deposit),
 	FuncFoundryCreateNew.WithHandler(foundryCreateNew),
@@ -39,23 +41,22 @@ var Processor = Contract.Processor(initialize,
 	ViewTotalAssets.WithHandler(viewTotalAssets),
 )
 
-func initialize(ctx isc.Sandbox) dict.Dict {
+func SetInitialState(state kv.KVStore, anchorOutput *iotago.AliasOutput, chainID isc.ChainID, storageDepositAssumption *transaction.StorageDepositAssumption) {
 	// validating and storing storage deposit assumption constants
-	baseTokensOnAnchor := ctx.StateAnchor().Deposit
-	storageDepositAssumptionsBin := ctx.Params().MustGet(ParamStorageDepositAssumptionsBin)
-	storageDepositAssumptions, err := transaction.StorageDepositAssumptionFromBytes(storageDepositAssumptionsBin)
+	baseTokensOnAnchor := anchorOutput.Deposit()
+
+	if len(anchorOutput.NativeTokens) > 0 {
+		panic("native tokens not allowed in the chain origin output")
+	}
 	// checking if assumptions are consistent
-	ctx.Requiref(err == nil && baseTokensOnAnchor >= storageDepositAssumptions.AnchorOutput,
-		"accounts.initialize.fail: %v", ErrStorageDepositAssumptionsWrong)
-	ctx.State().Set(keyStorageDepositAssumptions, storageDepositAssumptionsBin)
-	// storing hname as a terminal value of the contract's state root.
-	// This way we will be able to retrieve commitment to the contract's state
-	ctx.State().Set("", ctx.Contract().Bytes())
+	if baseTokensOnAnchor < storageDepositAssumption.AnchorOutput {
+		panic(fmt.Sprintf("accounts.initialize.fail: %v", ErrStorageDepositAssumptionsWrong))
+	}
+	state.Set(keyStorageDepositAssumptions, storageDepositAssumption.Bytes())
 
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
-	initialLoadBaseTokens := isc.NewAssets(baseTokensOnAnchor-storageDepositAssumptions.AnchorOutput, nil)
-	CreditToAccount(ctx.State(), ctx.ChainID().CommonAccount(), initialLoadBaseTokens)
-	return nil
+	initialLoadBaseTokens := isc.NewAssets(baseTokensOnAnchor-storageDepositAssumption.AnchorOutput, nil)
+	CreditToAccount(state, chainID.CommonAccount(), initialLoadBaseTokens)
 }
 
 // deposit is a function to deposit attached assets to the sender's chain account

@@ -36,8 +36,10 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/metrics/nodeconnmetrics"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/shutdown"
@@ -583,6 +585,20 @@ func (cni *chainNodeImpl) handleTxPublished(ctx context.Context, txPubResult *tx
 
 func (cni *chainNodeImpl) handleAliasOutput(ctx context.Context, aliasOutput *isc.AliasOutputWithID) {
 	cni.log.Debugf("handleAliasOutput: %v", aliasOutput)
+	// TODO is this the best place to do this?
+	if aliasOutput.GetStateIndex() == 0 {
+		var initParams dict.Dict
+		if originMetadata := aliasOutput.GetAliasOutput().FeatureSet().MetadataFeature(); originMetadata != nil {
+			var err error
+			initParams, err = dict.FromBytes(originMetadata.Data)
+			if err != nil {
+				panic(fmt.Sprintf("invalid parameters on origin AO, %s", err.Error()))
+			}
+		}
+		origin.InitChain(cni.chainStore, initParams, aliasOutput.GetAliasOutput().Amount)
+	}
+
+	cni.log.Debugf("handleAliasOutput, aliasOutput[StateIndex=%v].ID=", aliasOutput.GetStateIndex(), aliasOutput.OutputID().ToHex())
 	cni.stateTrackerCnf.TrackAliasOutput(aliasOutput, true)
 	cni.stateTrackerAct.TrackAliasOutput(aliasOutput, false) // ACT state will be equal to CNF or ahead of it.
 	outMsgs := cni.chainMgr.Input(

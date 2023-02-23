@@ -47,7 +47,14 @@ const (
 	numberOfNodesToRequestBlockFromConst = 5
 )
 
-func New(chainID isc.ChainID, nr smUtils.NodeRandomiser, wal smGPAUtils.BlockWAL, store state.Store, log *logger.Logger, timers StateManagerTimers) (gpa.GPA, error) {
+func New(
+	chainID isc.ChainID,
+	nr smUtils.NodeRandomiser,
+	wal smGPAUtils.BlockWAL,
+	store state.Store,
+	log *logger.Logger,
+	timers StateManagerTimers,
+) (gpa.GPA, error) {
 	var err error
 	smLog := log.Named("gpa")
 	blockCache, err := smGPAUtils.NewBlockCache(timers.TimeProvider, wal, smLog)
@@ -423,8 +430,8 @@ func (smT *stateManagerGPA) traceBlockChainByRequest(request blockRequest) (gpa.
 func (smT *stateManagerGPA) traceBlockChain(initCommitment *state.L1Commitment, requests []blockRequest) (gpa.OutMessages, error) {
 	smT.log.Debugf("Tracing block %s chain...", initCommitment)
 	commitment := initCommitment
-	for !smT.store.HasTrieRoot(commitment.TrieRoot()) && !commitment.Equals(state.OriginL1Commitment()) {
-		smT.log.Debugf("Tracing block %s chain: block %s is not in store and is not an origin block",
+	for !smT.store.HasTrieRoot(commitment.TrieRoot()) {
+		smT.log.Debugf("Tracing block %s chain: block %s is not in store",
 			initCommitment, commitment)
 		block := smT.blockCache.GetBlock(commitment)
 		if block == nil {

@@ -24,6 +24,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics/nodeconnmetrics"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
@@ -84,7 +85,6 @@ func testBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration) {
 		tnc.waitAttached()
 	}
 	te.log.Debugf("All attached to node conns.")
-	initTime := time.Now()
 	go func() {
 		ticker := time.NewTicker(100 * time.Millisecond) // TODO: Maybe we have to pass initial time to all sub-components...
 		closed := te.ctx.Done()
@@ -99,30 +99,7 @@ func testBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration) {
 			}
 		}
 	}()
-	//
-	// Create the chain, post Chain Init, wait for the first block.
-	initRequests := te.tcl.MakeTxChainInit()
-	for _, tnc := range te.nodeConns {
-		tnc.recvAliasOutput(
-			isc.NewOutputInfo(te.originAO.OutputID(), te.originAO.GetAliasOutput(), iotago.TransactionID{}),
-		)
-		tnc.recvMilestone(initTime)
-		for _, req := range initRequests {
-			onLedgerRequest := req.(isc.OnLedgerRequest)
-			tnc.recvRequestCB(
-				isc.NewOutputInfo(onLedgerRequest.ID().OutputID(), onLedgerRequest.Output(), iotago.TransactionID{}),
-			)
-		}
-	}
-	awaitRequestsProcessed(te, ctxTimeout, initRequests, "initRequests")
-	awaitPredicate(te, ctxTimeout, "len(published) > 0", func() bool {
-		for _, tnc := range te.nodeConns {
-			if len(tnc.published) == 0 {
-				return false
-			}
-		}
-		return true
-	})
+
 	//
 	// Create SC Client account with some deposit, deploy a contract, wait for a confirming TX.
 	scClient := cryptolib.NewKeyPair()
@@ -205,7 +182,7 @@ func testBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration) {
 		awaitPredicate(te, ctxTimeout, "LatestAliasOutput", func() bool {
 			confirmedAO, activeAO := node.LatestAliasOutput()
 			lastPublishedTX := te.nodeConns[i].published[len(te.nodeConns[i].published)-1]
-			lastPublishedAO, err := transaction.GetAliasOutput(lastPublishedTX, te.chainID.AsAddress())
+			lastPublishedAO, err := isc.AliasOutputWithIDFromTx(lastPublishedTX, te.chainID.AsAddress())
 			require.NoError(t, err)
 			if !lastPublishedAO.Equals(confirmedAO) { // In this test we confirm outputs immediately.
 				te.log.Debugf("lastPublishedAO(%v) != confirmedAO(%v)", lastPublishedAO, confirmedAO)
@@ -442,7 +419,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 		te.nodes[i], err = chain.New(
 			te.ctx,
 			te.chainID,
-			state.InitChainStore(mapdb.NewMapDB()),
+			origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0),
 			te.nodeConns[i],
 			te.peerIdentities[i],
 			coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor),

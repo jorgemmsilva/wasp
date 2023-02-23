@@ -48,11 +48,12 @@ func (tcl *TestChainLedger) ChainID() isc.ChainID {
 
 func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*isc.AliasOutputWithID, isc.ChainID) {
 	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.originator.Address())
-	originTX, chainID, err := transaction.NewChainOriginTransaction(
+	originTX, _, chainID, err := transaction.NewChainOriginTransaction(
 		tcl.originator,
 		committeeAddress,
 		tcl.governor.Address(),
 		1_000_000,
+		nil,
 		outs,
 		outIDs,
 	)
@@ -65,15 +66,6 @@ func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(originTX))
 	tcl.chainID = chainID
 	return originAO, chainID
-}
-
-func (tcl *TestChainLedger) MakeTxChainInit() []isc.Request {
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.originator.Address())
-	initTX, err := transaction.NewRootInitRequestTransaction(tcl.originator, tcl.chainID, "my test chain", outs, outIDs)
-	require.NoError(tcl.t, err)
-	require.NotNil(tcl.t, initTX)
-	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(initTX))
-	return tcl.findChainRequests(initTX)
 }
 
 func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []isc.Request {

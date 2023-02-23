@@ -2,14 +2,12 @@ package blocklog
 
 import (
 	"math"
-	"time"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/state"
 )
 
 var Processor = Contract.Processor(nil,
@@ -24,16 +22,8 @@ var Processor = Contract.Processor(nil,
 	ViewIsRequestProcessed.WithHandler(viewIsRequestProcessed),
 )
 
-func SetInitialState(s kv.KVStore, timestamp time.Time) {
-	SaveNextBlockInfo(s, &BlockInfo{
-		BlockIndex:            0,
-		Timestamp:             timestamp,
-		TotalRequests:         1,
-		NumSuccessfulRequests: 1,
-		NumOffLedgerRequests:  0,
-		PreviousL1Commitment:  *state.OriginL1Commitment(),
-		L1Commitment:          nil, // not known yet
-	})
+func SetInitialState(s kv.KVStore) {
+	// does not do anything
 }
 
 func viewControlAddresses(ctx isc.SandboxView) dict.Dict {

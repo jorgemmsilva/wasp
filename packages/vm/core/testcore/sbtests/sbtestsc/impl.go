@@ -6,7 +6,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
 func initialize(ctx isc.Sandbox) dict.Dict {
@@ -39,10 +38,11 @@ func testChainOwnerIDFull(ctx isc.Sandbox) dict.Dict {
 }
 
 func testSandboxCall(ctx isc.SandboxView) dict.Dict {
-	ret := ctx.CallView(governance.Contract.Hname(), governance.ViewGetChainInfo.Hname(), nil)
-	desc := ret.MustGet(governance.VarDescription)
-	ret.Set(VarSandboxCall, desc)
-	return ret
+	panic("TODO change this to call some other view (maybe accounts)")
+	// ret := ctx.CallView(governance.Contract.Hname(), governance.ViewGetChainInfo.Hname(), nil)
+	// desc := ret.MustGet(state.KeyChainID)
+	// ret.Set(VarSandboxCall, desc)
+	// return ret
 }
 
 func testEventLogDeploy(ctx isc.Sandbox) dict.Dict {

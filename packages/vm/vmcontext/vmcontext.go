@@ -83,13 +83,13 @@ func CreateVMContext(task *vm.VMTask) *VMContext {
 		// should never happen
 		panic(errors.New("CreateVMContext.invalid params: must be at least 1 request"))
 	}
-	l1Commitment, err := state.L1CommitmentFromBytes(task.AnchorOutput.StateMetadata)
+	prevL1Commitment, err := state.L1CommitmentFromBytes(task.AnchorOutput.StateMetadata)
 	if err != nil {
 		// should never happen
 		panic(fmt.Errorf("CreateVMContext: can't parse state data as L1Commitment from chain input %w", err))
 	}
 
-	task.StateDraft, err = task.Store.NewStateDraft(task.TimeAssumption, l1Commitment)
+	task.StateDraft, err = task.Store.NewStateDraft(task.TimeAssumption, prevL1Commitment)
 	if err != nil {
 		// should never happen
 		panic(err)
@@ -111,27 +111,8 @@ func CreateVMContext(task *vm.VMTask) *VMContext {
 		ret.runMigrations(migrations.BaseSchemaVersion, migrations.Migrations)
 	})
 
-	if task.AnchorOutput.StateIndex > 0 {
-		ret.withStateUpdate(func() {
-			// load and validate chain's storage deposit assumptions about internal outputs. They must not get bigger!
-			ret.callCore(accounts.Contract, func(s kv.KVStore) {
-				ret.storageDepositAssumptions = accounts.GetStorageDepositAssumptions(s)
-			})
-			currentStorageDepositValues := transaction.NewStorageDepositEstimate()
-			if currentStorageDepositValues.AnchorOutput > ret.storageDepositAssumptions.AnchorOutput ||
-				currentStorageDepositValues.NativeTokenOutput > ret.storageDepositAssumptions.NativeTokenOutput {
-				panic(vm.ErrInconsistentStorageDepositAssumptions)
-			}
-
-			// save the anchor tx ID of the current state
-			ret.callCore(blocklog.Contract, func(s kv.KVStore) {
-				blocklog.UpdateLatestBlockInfo(s, ret.task.AnchorOutputID.TransactionID(), l1Commitment)
-			})
-		})
-	} else {
-		// assuming storage deposit assumptions for the first block. It must be consistent with parameters in the init request
-		ret.storageDepositAssumptions = transaction.NewStorageDepositEstimate()
-	}
+	// TODO revisit
+	ret.storageDepositAssumptions = transaction.NewStorageDepositEstimate()
 
 	nativeTokenBalanceLoader := func(nativeTokenID iotago.NativeTokenID) (*iotago.BasicOutput, iotago.OutputID) {
 		return ret.loadNativeTokenOutput(nativeTokenID)
@@ -151,7 +132,6 @@ func CreateVMContext(task *vm.VMTask) *VMContext {
 		ret.storageDepositAssumptions,
 	)
 
-	initStateIfNeeded(ret)
 	return ret
 }
 

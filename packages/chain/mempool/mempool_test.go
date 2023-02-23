@@ -24,6 +24,7 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil"
@@ -33,6 +34,7 @@ import (
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/utxodb"
 	"github.com/iotaledger/wasp/packages/vm"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
 	"github.com/iotaledger/wasp/packages/vm/processors"
@@ -83,19 +85,12 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	rand.Seed(time.Now().UnixNano())
 	te := newEnv(t, n, f, reliable)
 	defer te.close()
-	chainInitReqs := te.tcl.MakeTxChainInit()
-	require.Len(t, chainInitReqs, 1)
-	chainInitReq := chainInitReqs[0]
 	//
 	offLedgerReq := isc.NewOffLedgerRequest(isc.RandomChainID(), isc.Hn("foo"), isc.Hn("bar"), dict.New(), 0).Sign(te.governor)
 	t.Log("Sending off-ledger request")
 	chosenMempool := rand.Intn(len(te.mempools))
 	te.mempools[chosenMempool].ReceiveOffLedgerRequest(offLedgerReq)
 	te.mempools[chosenMempool].ReceiveOffLedgerRequest(offLedgerReq) // Check for duplicate receives.
-	t.Log("Sending on-ledger request")
-	for _, node := range te.mempools {
-		node.ReceiveOnLedgerRequest(chainInitReq.(isc.OnLedgerRequest))
-	}
 	t.Log("ServerNodesUpdated")
 	tangleTime := time.Now()
 	for _, node := range te.mempools {
@@ -116,7 +111,7 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	for i, node := range te.mempools {
 		proposal := <-proposals[i]
 		require.True(t, len(proposal) == 1 || len(proposal) == 2)
-		decided[i] = node.ConsensusRequestsAsync(te.ctx, isc.RequestRefsFromRequests([]isc.Request{chainInitReq, offLedgerReq}))
+		decided[i] = node.ConsensusRequestsAsync(te.ctx, isc.RequestRefsFromRequests([]isc.Request{offLedgerReq}))
 	}
 	t.Log("Wait for decided requests")
 	for i := range te.mempools {
@@ -131,10 +126,10 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 		AnchorOutput:           te.originAO.GetAliasOutput(),
 		AnchorOutputID:         te.originAO.OutputID(),
 		Store:                  store,
-		Requests:               []isc.Request{chainInitReq, offLedgerReq},
+		Requests:               []isc.Request{offLedgerReq},
 		TimeAssumption:         tangleTime,
 		Entropy:                hashing.HashDataBlake2b([]byte{2, 1, 7}),
-		ValidatorFeeTarget:     te.chainID.CommonAccount(),
+		ValidatorFeeTarget:     accounts.CommonAccount(),
 		EstimateGasMode:        false,
 		EnableGasBurnLogging:   false,
 		MaintenanceModeEnabled: false,
@@ -153,7 +148,6 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	for i := range receipts {
 		blockReqs = append(blockReqs, receipts[i].Request)
 	}
-	require.Contains(t, blockReqs, chainInitReq)
 	require.Contains(t, blockReqs, offLedgerReq)
 	nextAO, _ := te.tcl.FakeTX(te.originAO, te.cmtAddress)
 	//
@@ -454,7 +448,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.mempools = make([]mempool.Mempool, len(te.peerIdentities))
 	te.stores = make([]state.Store, len(te.peerIdentities))
 	for i := range te.peerIdentities {
-		te.stores[i] = state.InitChainStore(mapdb.NewMapDB())
+		te.stores[i] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
 		te.mempools[i] = mempool.New(
 			te.ctx,
 			te.chainID,

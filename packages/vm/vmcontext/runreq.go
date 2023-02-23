@@ -19,6 +19,7 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
@@ -102,7 +103,7 @@ func (vmctx *VMContext) creditAssetsToChain() {
 	// Otherwise it all goes to the common account and panics is logged in the SC call
 	account := vmctx.req.SenderAccount()
 	if account == nil {
-		account = vmctx.ChainID().CommonAccount()
+		account = accounts.CommonAccount()
 	}
 	vmctx.creditToAccount(account, vmctx.req.Assets())
 	vmctx.creditNFTToAccount(account, vmctx.req.NFT())
@@ -362,7 +363,7 @@ func (vmctx *VMContext) chargeGasFee() {
 	sender := vmctx.req.SenderAccount()
 
 	vmctx.mustMoveBetweenAccounts(sender, vmctx.task.ValidatorFeeTarget, transferToValidator)
-	vmctx.mustMoveBetweenAccounts(sender, vmctx.ChainID().CommonAccount(), transferToOwner)
+	vmctx.mustMoveBetweenAccounts(sender, accounts.CommonAccount(), transferToOwner)
 }
 
 func (vmctx *VMContext) GetContractRecord(contractHname isc.Hname) (ret *root.ContractRecord) {

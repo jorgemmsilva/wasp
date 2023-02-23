@@ -17,6 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/cons"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -75,7 +76,6 @@ func testBasic(t *testing.T, n, f int) {
 	// Chain identifiers.
 	tcl := testchain.NewTestChainLedger(t, utxoDB, governor, originator)
 	originAO, chainID := tcl.MakeTxChainOrigin(cmtAddrA)
-	// chainInitReqs := tcl.MakeTxChainInit()
 	//
 	// Construct the nodes.
 	nodes := map[gpa.NodeID]gpa.GPA{}
@@ -109,7 +109,7 @@ func testBasic(t *testing.T, n, f int) {
 	step2AO, step2TX := tcl.FakeTX(originAO, cmtAddrA)
 	for nid := range nodes {
 		consReq := nodes[nid].Output().(*chainMgr.Output).NeedConsensus()
-		fake2ST := state.InitChainStore(mapdb.NewMapDB()).NewOriginStateDraft()
+		fake2ST := origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0).NewOriginStateDraft()
 		tc.WithInput(nid, chainMgr.NewInputConsensusOutputDone( // TODO: Consider the SKIP cases as well.
 			*cmtAddrA.(*iotago.Ed25519Address),
 			consReq.LogIndex, consReq.BaseAliasOutput.OutputID(),

@@ -24,6 +24,7 @@ import (
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -84,11 +85,12 @@ func testBasic(t *testing.T, n, f int) {
 	//
 	// Construct the chain on L1: Create the origin TX.
 	outputs, outIDs := utxoDB.GetUnspentOutputs(originator.Address())
-	originTX, chainID, err := transaction.NewChainOriginTransaction(
+	originTX, _, chainID, err := transaction.NewChainOriginTransaction(
 		originator,
 		committeeAddress,
 		governor.Address(),
 		1_000_000,
+		nil,
 		outputs,
 		outIDs,
 	)
@@ -99,20 +101,6 @@ func testBasic(t *testing.T, n, f int) {
 	require.NotNil(t, aliasOutput)
 	ao0 := isc.NewAliasOutputWithID(aliasOutput, stateAnchor.OutputID)
 	err = utxoDB.AddToLedger(originTX)
-	require.NoError(t, err)
-	//
-	// Construct the chain on L1: Create the Init Request TX.
-	outputs, outIDs = utxoDB.GetUnspentOutputs(originator.Address())
-	initTX, err := transaction.NewRootInitRequestTransaction(
-		originator,
-		chainID,
-		"my test chain",
-		outputs,
-		outIDs,
-	)
-	require.NoError(t, err)
-	require.NotNil(t, initTX)
-	err = utxoDB.AddToLedger(initTX)
 	require.NoError(t, err)
 	//
 	// Construct the chain on L1: Find the requests (the init request).
@@ -151,7 +139,7 @@ func testBasic(t *testing.T, n, f int) {
 		nodeLog := log.Named(nid.ShortString())
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareProviders[i].LoadDKShare(committeeAddress)
-		chainStates[nid] = state.InitChainStore(mapdb.NewMapDB())
+		chainStates[nid] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
 		require.NoError(t, err)
 		nodes[nid] = cons.New(chainID, chainStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, nodeLog).AsGPA()
 	}
@@ -318,11 +306,10 @@ func testChained(t *testing.T, n, f, b int) {
 	tcl := testchain.NewTestChainLedger(t, utxoDB, governor, originator)
 	originAO, chainID := tcl.MakeTxChainOrigin(committeeAddress)
 	allRequests := map[int][]isc.Request{}
-	allRequests[0] = tcl.MakeTxChainInit()
-	if b > 1 {
+	if b > 0 {
 		_, err = utxoDB.GetFundsFromFaucet(scClient.Address(), 150_000_000)
 		require.NoError(t, err)
-		allRequests[1] = append(tcl.MakeTxAccountsDeposit(scClient), tcl.MakeTxDeployIncCounterContract()...)
+		allRequests[0] = append(tcl.MakeTxAccountsDeposit(scClient), tcl.MakeTxDeployIncCounterContract()...)
 	}
 	incTotal := 0
 	for i := 2; i < b; i++ {
@@ -350,7 +337,7 @@ func testChained(t *testing.T, n, f, b int) {
 	}
 	testNodeStates := map[gpa.NodeID]state.Store{}
 	for _, nid := range nodeIDs {
-		testNodeStates[nid] = state.InitChainStore(mapdb.NewMapDB())
+		testNodeStates[nid] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
 	}
 	testChainInsts := make([]testConsInst, b)
 	for i := range testChainInsts {

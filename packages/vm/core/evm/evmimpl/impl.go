@@ -6,7 +6,6 @@ package evmimpl
 import (
 	"fmt"
 	"math/big"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -21,7 +20,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -62,7 +60,7 @@ var Processor = evm.Contract.Processor(nil,
 	evm.FuncGetERC20ExternalNativeTokenAddress.WithHandler(restrictedView(viewERC20ExternalNativeTokenAddress)),
 )
 
-func SetInitialState(state kv.KVStore, t time.Time, evmChainID uint16, blockKeepAmount int32) {
+func SetInitialState(state kv.KVStore, evmChainID uint16, blockKeepAmount int32) {
 	// add the standard ISC contract at arbitrary address 0x1074...
 	genesisAlloc := core.GenesisAlloc{}
 	deployMagicContractOnGenesis(genesisAlloc)
@@ -93,7 +91,7 @@ func SetInitialState(state kv.KVStore, t time.Time, evmChainID uint16, blockKeep
 			Block: gas.EVMBlockGasLimit(&gasRatio),
 			Call:  gas.EVMCallGasLimit(&gasRatio),
 		},
-		timestamp(t),
+		0,
 		genesisAlloc,
 	)
 
@@ -306,7 +304,7 @@ func registerERC721NFTCollection(ctx isc.Sandbox) dict.Dict {
 		return collection
 	}()
 
-	metadata, err := transaction.IRC27NFTMetadataFromBytes(collection.Metadata)
+	metadata, err := isc.IRC27NFTMetadataFromBytes(collection.Metadata)
 	ctx.RequireNoError(err, "cannot decode IRC27 collection NFT metadata")
 
 	// deploy the contract to the EVM state

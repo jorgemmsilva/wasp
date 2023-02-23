@@ -4,8 +4,9 @@ import (
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/parameters"
-	"github.com/iotaledger/wasp/packages/state"
 )
 
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
@@ -15,18 +16,29 @@ func NewChainOriginTransaction(
 	stateControllerAddress iotago.Address,
 	governanceControllerAddress iotago.Address,
 	deposit uint64,
+	initParams dict.Dict,
 	unspentOutputs iotago.OutputSet,
 	unspentOutputIDs iotago.OutputIDs,
-) (*iotago.Transaction, isc.ChainID, error) {
+) (*iotago.Transaction, *iotago.AliasOutput, isc.ChainID, error) {
 	if len(unspentOutputs) != len(unspentOutputIDs) {
 		panic("mismatched lengths of outputs and inputs slices")
 	}
 
 	walletAddr := keyPair.GetPublicKey().AsEd25519Address()
 
+	if initParams == nil {
+		initParams = dict.New()
+	}
+
+	// TODO this storage assumption stuff needs to go
+	minSD := NewStorageDepositEstimate().AnchorOutput
+	if deposit < minSD {
+		deposit = minSD
+	}
+
 	aliasOutput := &iotago.AliasOutput{
 		Amount:        deposit,
-		StateMetadata: state.OriginL1Commitment().Bytes(),
+		StateMetadata: origin.L1Commitment(initParams, deposit-minSD).Bytes(),
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governanceControllerAddress},
@@ -35,14 +47,16 @@ func NewChainOriginTransaction(
 			&iotago.SenderFeature{
 				Address: walletAddr,
 			},
+			&iotago.MetadataFeature{Data: initParams.Bytes()},
 		},
 	}
-	{
-		aliasStorageDeposit := NewStorageDepositEstimate().AnchorOutput
-		if aliasOutput.Amount < aliasStorageDeposit {
-			aliasOutput.Amount = aliasStorageDeposit
-		}
-	}
+
+	// minSD := parameters.L1().Protocol.RentStructure.MinRent(aliasOutput)
+	// if aliasOutput.Deposit() < minSD {
+	// 	aliasOutput.Amount = minSD
+	// 	aliasOutput.StateMetadata = origin.L1Commitment(initParams, minSD).Bytes()
+	// }
+
 	txInputs, remainderOutput, err := computeInputsAndRemainder(
 		walletAddr,
 		aliasOutput.Amount,
@@ -52,7 +66,7 @@ func NewChainOriginTransaction(
 		unspentOutputIDs,
 	)
 	if err != nil {
-		return nil, isc.ChainID{}, err
+		return nil, aliasOutput, isc.ChainID{}, err
 	}
 	outputs := iotago.Outputs{aliasOutput}
 	if remainderOutput != nil {
@@ -68,7 +82,7 @@ func NewChainOriginTransaction(
 		keyPair.GetPrivateKey().AddressKeysForEd25519Address(walletAddr),
 	)
 	if err != nil {
-		return nil, isc.ChainID{}, err
+		return nil, aliasOutput, isc.ChainID{}, err
 	}
 	tx := &iotago.Transaction{
 		Essence: essence,
@@ -76,8 +90,8 @@ func NewChainOriginTransaction(
 	}
 	txid, err := tx.ID()
 	if err != nil {
-		return nil, isc.ChainID{}, err
+		return nil, aliasOutput, isc.ChainID{}, err
 	}
 	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0)))
-	return tx, chainID, nil
+	return tx, aliasOutput, chainID, nil
 }

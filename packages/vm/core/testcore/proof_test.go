@@ -8,25 +8,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/packages/solo"
-	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
 )
 
 func TestProofs(t *testing.T) {
-	t.Run("chain ID", func(t *testing.T) {
-		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch := env.NewChain()
-
-		proof := ch.GetMerkleProofRaw([]byte(state.KeyChainID))
-		l1Commitment := ch.GetL1Commitment()
-		st, err := ch.Store().LatestState()
-		require.NoError(t, err)
-		require.EqualValues(t, ch.ChainID[:], st.ChainID().Bytes())
-		err = proof.ValidateValue(l1Commitment.TrieRoot(), ch.ChainID[:])
-		require.NoError(t, err)
-	})
 	t.Run("check PoI blob", func(t *testing.T) {
 		env := solo.New(t)
 		ch := env.NewChain()

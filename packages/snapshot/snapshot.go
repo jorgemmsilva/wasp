@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path"
 	"time"
 
 	"github.com/iotaledger/wasp/packages/isc"
@@ -59,35 +58,36 @@ func WriteKVToStream(store kv.KVIterator, stream kv.StreamWriter, p ...ConsoleRe
 }
 
 func WriteSnapshot(sr state.State, dir string, p ...ConsoleReportParams) error {
-	par := ConsoleReportParams{
-		Console:           io.Discard,
-		StatsEveryKVPairs: 100,
-	}
-	if len(p) > 0 {
-		par = p[0]
-	}
-	chainID := sr.ChainID()
-	stateIndex := sr.BlockIndex()
-	timestamp := sr.Timestamp()
-	fmt.Fprintf(par.Console, "[WriteSnapshot] chainID:     %s\n", chainID)
-	fmt.Fprintf(par.Console, "[WriteSnapshot] state index: %d\n", stateIndex)
-	fmt.Fprintf(par.Console, "[WriteSnapshot] timestamp: %v\n", timestamp)
-	fname := path.Join(dir, FileName(chainID, stateIndex))
-	fmt.Fprintf(par.Console, "[WriteSnapshot] will be writing to file: %s\n", fname)
+	panic("TODO revisit")
+	// par := ConsoleReportParams{
+	// 	Console:           io.Discard,
+	// 	StatsEveryKVPairs: 100,
+	// }
+	// if len(p) > 0 {
+	// 	par = p[0]
+	// }
+	// chainID := sr.ChainID()
+	// stateIndex := sr.BlockIndex()
+	// timestamp := sr.Timestamp()
+	// fmt.Fprintf(par.Console, "[WriteSnapshot] chainID:     %s\n", chainID)
+	// fmt.Fprintf(par.Console, "[WriteSnapshot] state index: %d\n", stateIndex)
+	// fmt.Fprintf(par.Console, "[WriteSnapshot] timestamp: %v\n", timestamp)
+	// fname := path.Join(dir, FileName(chainID, stateIndex))
+	// fmt.Fprintf(par.Console, "[WriteSnapshot] will be writing to file: %s\n", fname)
 
-	fstream, err := kv.CreateKVStreamFile(fname)
-	if err != nil {
-		return err
-	}
-	defer fstream.File.Close()
+	// fstream, err := kv.CreateKVStreamFile(fname)
+	// if err != nil {
+	// 	return err
+	// }
+	// defer fstream.File.Close()
 
-	fmt.Printf("[WriteSnapshot] writing to file ")
-	if err := WriteKVToStream(sr, fstream, par); err != nil {
-		return err
-	}
-	tKV, tBytes := fstream.Stats()
-	fmt.Fprintf(par.Console, "[WriteSnapshot] TOTAL: kv records: %d, bytes: %d\n", tKV, tBytes)
-	return nil
+	// fmt.Printf("[WriteSnapshot] writing to file ")
+	// if err := WriteKVToStream(sr, fstream, par); err != nil {
+	// 	return err
+	// }
+	// tKV, tBytes := fstream.Stats()
+	// fmt.Fprintf(par.Console, "[WriteSnapshot] TOTAL: kv records: %d, bytes: %d\n", tKV, tBytes)
+	// return nil
 }
 
 type FileProperties struct {
@@ -102,20 +102,10 @@ type FileProperties struct {
 
 func Scan(rdr kv.StreamIterator) (*FileProperties, error) {
 	ret := &FileProperties{}
-	var chainIDFound, stateIndexFound, timestampFound bool
+	var stateIndexFound, timestampFound bool
 	var errR error
 
 	err := rdr.Iterate(func(k, v []byte) bool {
-		if kv.Key(k) == state.KeyChainID {
-			if chainIDFound {
-				errR = errors.New("duplicate record with chainID")
-				return false
-			}
-			if ret.ChainID, errR = isc.ChainIDFromBytes(v); errR != nil {
-				return false
-			}
-			chainIDFound = true
-		}
 		if string(k) == coreutil.StatePrefixBlockIndex {
 			if stateIndexFound {
 				errR = errors.New("duplicate record with state index")

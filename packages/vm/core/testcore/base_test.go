@@ -35,7 +35,7 @@ func TestInitLoad(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 	user, userAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(12))
 	env.AssertL1BaseTokens(userAddr, utxodb.FundsFromFaucetAmount)
-	ch, _, _ := env.NewChainExt(user, 10_000, "chain1")
+	ch, _ := env.NewChainExt(user, 10_000, "chain1")
 	_ = ch.Log().Sync()
 
 	storageDepositCosts := transaction.NewStorageDepositEstimate()
@@ -55,7 +55,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	require.EqualValues(t, env.L1Ledger().Supply(), assets.BaseTokens)
 
 	// create chain
-	ch, _, initTx := env.NewChainExt(nil, 0, "chain1")
+	ch, _ := env.NewChainExt(nil, 0, "chain1")
 	defer func() {
 		_ = ch.Log().Sync()
 	}()
@@ -77,12 +77,6 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	// what has left on L1 address
 	env.AssertL1BaseTokens(ch.OriginatorAddress, utxodb.FundsFromFaucetAmount-totalSpent)
 
-	// let's analise storage deposit on origin and init transactions
-	vByteCostInit := GetStorageDeposit(initTx)[0]
-	storageDepositCosts := transaction.NewStorageDepositEstimate()
-	// what we spent is only for storage deposits for those 2 transactions
-	require.EqualValues(t, int(totalSpent), int(storageDepositCosts.AnchorOutput+vByteCostInit))
-
 	// check if there's a single alias output on chain's address
 	aliasOutputs := env.L1Ledger().GetAliasOutputs(ch.ChainID.AsAddress())
 	require.EqualValues(t, 1, len(aliasOutputs))
@@ -98,10 +92,9 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	// what spent all goes to the alias output
 	require.EqualValues(t, int(totalSpent), int(aliasOut.Amount))
 	// total base tokens on L2 must be equal to alias output base tokens - storage deposit
+	storageDepositCosts := transaction.NewStorageDepositEstimate()
 	ch.AssertL2TotalBaseTokens(aliasOut.Amount - storageDepositCosts.AnchorOutput)
 
-	// all storage deposit of the init request goes to the user account
-	ch.AssertL2BaseTokens(ch.OriginatorAgentID, vByteCostInit)
 	// common account is empty
 	require.EqualValues(t, 0, ch.L2CommonAccountBaseTokens())
 }

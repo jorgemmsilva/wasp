@@ -22,6 +22,7 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil"
@@ -106,14 +107,13 @@ func testGeneric(t *testing.T, n, f int, reliable bool) {
 	procConfig := coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)
 	tcl := testchain.NewTestChainLedger(t, utxoDB, governor, originator)
 	originAO, chainID := tcl.MakeTxChainOrigin(cmtAddress)
-	chainInitReqs := tcl.MakeTxChainInit()
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	logIndex := cmtLog.LogIndex(0)
 	for i := range peerIdentities {
 		procCache := processors.MustNew(procConfig)
 		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)
 		require.NoError(t, err)
-		chainStore := state.InitChainStore(mapdb.NewMapDB())
+		chainStore := origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
 		mempools[i] = newTestMempool(t)
 		stateMgrs[i] = newTestStateMgr(t, chainStore)
 		nodes[i] = consGR.New(
@@ -138,7 +138,6 @@ func testGeneric(t *testing.T, n, f int, reliable bool) {
 	// Provide data from Mempool and StateMgr.
 	for i := range nodes {
 		nodes[i].Time(time.Now())
-		mempools[i].addRequests(originAO.OutputID(), chainInitReqs)
 		stateMgrs[i].addOriginState(originAO)
 	}
 	//
@@ -267,7 +266,7 @@ func newTestStateMgr(t *testing.T, chainStore state.Store) *testStateMgr {
 }
 
 func (tsm *testStateMgr) addOriginState(originAO *isc.AliasOutputWithID) {
-	chainState, err := tsm.chainStore.StateByTrieRoot(state.OriginL1Commitment().TrieRoot())
+	chainState, err := tsm.chainStore.StateByTrieRoot(origin.L1Commitment(nil, 0).TrieRoot())
 	require.NoError(tsm.t, err)
 	tsm.addState(originAO, chainState)
 }

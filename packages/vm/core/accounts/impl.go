@@ -1,7 +1,6 @@
 package accounts
 
 import (
-	"fmt"
 	"math"
 	"math/big"
 
@@ -10,9 +9,14 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 )
+
+func CommonAccount() isc.AgentID {
+	return isc.NewAgentID(
+		&iotago.Ed25519Address{0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
+	)
+}
 
 var Processor = Contract.Processor(nil,
 	// funcs
@@ -41,22 +45,10 @@ var Processor = Contract.Processor(nil,
 	ViewTotalAssets.WithHandler(viewTotalAssets),
 )
 
-func SetInitialState(state kv.KVStore, anchorOutput *iotago.AliasOutput, chainID isc.ChainID, storageDepositAssumption *transaction.StorageDepositAssumption) {
-	// validating and storing storage deposit assumption constants
-	baseTokensOnAnchor := anchorOutput.Deposit()
-
-	if len(anchorOutput.NativeTokens) > 0 {
-		panic("native tokens not allowed in the chain origin output")
-	}
-	// checking if assumptions are consistent
-	if baseTokensOnAnchor < storageDepositAssumption.AnchorOutput {
-		panic(fmt.Sprintf("accounts.initialize.fail: %v", ErrStorageDepositAssumptionsWrong))
-	}
-	state.Set(keyStorageDepositAssumptions, storageDepositAssumption.Bytes())
-
+// TODO this expects the origin amount minus SD
+func SetInitialState(state kv.KVStore, baseTokensOnAnchor uint64) {
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
-	initialLoadBaseTokens := isc.NewAssets(baseTokensOnAnchor-storageDepositAssumption.AnchorOutput, nil)
-	CreditToAccount(state, chainID.CommonAccount(), initialLoadBaseTokens)
+	CreditToAccount(state, CommonAccount(), isc.NewAssetsBaseTokens(baseTokensOnAnchor))
 }
 
 // deposit is a function to deposit attached assets to the sender's chain account
@@ -153,15 +145,14 @@ func harvest(ctx isc.Sandbox) dict.Dict {
 	if bottomBaseTokens > MinimumBaseTokensOnCommonAccount {
 		bottomBaseTokens = MinimumBaseTokensOnCommonAccount
 	}
-	commonAccount := ctx.ChainID().CommonAccount()
-	toWithdraw := GetAccountFungibleTokens(state, commonAccount)
+	toWithdraw := GetAccountFungibleTokens(state, CommonAccount())
 	if toWithdraw.BaseTokens <= bottomBaseTokens {
 		// below minimum, nothing to withdraw
 		return nil
 	}
 	ctx.Requiref(toWithdraw.BaseTokens > bottomBaseTokens, "assertion failed: toWithdraw.BaseTokens > availableBaseTokens")
 	toWithdraw.BaseTokens -= bottomBaseTokens
-	MustMoveBetweenAccounts(state, commonAccount, ctx.Caller(), toWithdraw)
+	MustMoveBetweenAccounts(state, CommonAccount(), ctx.Caller(), toWithdraw)
 	return nil
 }
 

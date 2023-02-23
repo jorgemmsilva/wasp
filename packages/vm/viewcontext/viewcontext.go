@@ -46,11 +46,11 @@ type ViewContext struct {
 
 var _ execution.WaspContext = &ViewContext{}
 
-func New(ch chain.ChainCore, latestState state.State) (*ViewContext, error) {
+func New(ch chain.ChainCore, stateReader state.State) (*ViewContext, error) {
 	chainID := ch.ID()
 	return &ViewContext{
 		processors:     ch.Processors(),
-		stateReader:    latestState,
+		stateReader:    stateReader,
 		chainID:        chainID,
 		log:            ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
 		gasBurnEnabled: true,
@@ -84,7 +84,7 @@ func (ctx *ViewContext) GasBurn(burnCode gas.BurnCode, par ...uint64) {
 func (ctx *ViewContext) AccountID() isc.AgentID {
 	hname := ctx.CurrentContractHname()
 	if corecontracts.IsCoreHname(hname) {
-		return ctx.ChainID().CommonAccount()
+		return accounts.CommonAccount()
 	}
 	return isc.NewContractAgentID(ctx.ChainID(), hname)
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
@@ -56,7 +55,6 @@ func setChainInfo(ctx isc.Sandbox) dict.Dict {
 func getChainInfo(ctx isc.SandboxView) dict.Dict {
 	info := governance.MustGetChainInfo(ctx.StateR(), ctx.ChainID())
 	ret := dict.New()
-	ret.Set(state.KeyChainID, codec.EncodeChainID(info.ChainID))
 	ret.Set(governance.VarChainOwnerID, codec.EncodeAgentID(info.ChainOwnerID))
 	ret.Set(governance.VarGasFeePolicyBytes, info.GasFeePolicy.Bytes())
 	ret.Set(governance.VarMaxBlobSize, codec.EncodeUint32(info.MaxBlobSize))

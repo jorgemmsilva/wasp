@@ -85,7 +85,8 @@ func CreateChainOrigin(
 	originator *cryptolib.KeyPair,
 	stateController iotago.Address,
 	governanceController iotago.Address,
-	dscr string, initParams dict.Dict,
+	dscr string,
+	initParams dict.Dict,
 ) (isc.ChainID, error) {
 	originatorAddr := originator.GetPublicKey().AsEd25519Address()
 	// ----------- request owner address' outputs from the ledger
@@ -95,11 +96,12 @@ func CreateChainOrigin(
 	}
 
 	// ----------- create origin transaction
-	originTx, chainID, err := transaction.NewChainOriginTransaction(
+	originTx, _, chainID, err := transaction.NewChainOriginTransaction(
 		originator,
 		stateController,
 		governanceController,
 		0,
+		initParams,
 		utxoMap,
 		utxoIDsFromUtxoMap(utxoMap),
 	)
@@ -109,11 +111,6 @@ func CreateChainOrigin(
 
 	// ------------- post origin transaction and wait for confirmation
 	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)
-	if err != nil {
-		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
-	}
-
-	utxoMap, err = layer1Client.OutputMap(originatorAddr)
 	if err != nil {
 		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}

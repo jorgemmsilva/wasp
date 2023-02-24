@@ -1,6 +1,8 @@
 package origin
 
 import (
+	"time"
+
 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -37,6 +39,8 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) st
 	}
 	d := store.NewOriginStateDraft()
 	d.Set(kv.Key(coreutil.StatePrefixBlockIndex), codec.Encode(uint32(0)))
+	d.Set(kv.Key(coreutil.StatePrefixTimestamp), codec.EncodeTime(time.Unix(0, 0)))
+
 	contractState := func(contract *coreutil.ContractInfo) kv.KVStore {
 		return subrealm.New(d, kv.Key(contract.Hname().Bytes()))
 	}
@@ -63,6 +67,7 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) st
 		evm.FuncOpenBlockContext.Hname(),
 		evm.FuncCloseBlockContext.Hname(),
 	)
+
 	block := store.Commit(d)
 	if err := store.SetLatest(block.TrieRoot()); err != nil {
 		panic(err)

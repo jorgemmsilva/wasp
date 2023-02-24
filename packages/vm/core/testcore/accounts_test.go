@@ -38,6 +38,7 @@ func TestDeposit(t *testing.T) {
 	require.NoError(t, err)
 
 	rec := ch.LastReceipt()
+	require.NotNil(t, rec)
 	t.Logf("========= receipt: %s", rec)
 	t.Logf("========= burn log:\n%s", rec.GasBurnLog)
 }

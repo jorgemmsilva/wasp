@@ -7,6 +7,8 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
@@ -29,11 +31,16 @@ func NewChainOriginTransaction(
 	if initParams == nil {
 		initParams = dict.New()
 	}
+	if initParams.MustGet(governance.ParamChainOwner) == nil {
+		// default chain owner to the gov address
+		initParams.Set(governance.ParamChainOwner, isc.NewAgentID(governanceControllerAddress).Bytes())
+	}
 
 	// TODO this storage assumption stuff needs to go
 	minSD := NewStorageDepositEstimate().AnchorOutput
-	if deposit < minSD {
-		deposit = minSD
+	minAmount := minSD + accounts.MinimumBaseTokensOnCommonAccount
+	if deposit < minAmount {
+		deposit = minAmount
 	}
 
 	aliasOutput := &iotago.AliasOutput{

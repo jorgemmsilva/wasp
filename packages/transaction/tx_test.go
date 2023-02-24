@@ -11,13 +11,15 @@ import (
 	"github.com/iotaledger/iota.go/v3/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/utxodb"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
 func TestCreateOrigin(t *testing.T) {
 	var u *utxodb.UtxoDB
-	var originTx, txInit *iotago.Transaction
+	var originTx *iotago.Transaction
 	var userKey *cryptolib.KeyPair
 	var userAddr, stateAddr *iotago.Ed25519Address
 	var err error
@@ -77,7 +79,9 @@ func TestCreateOrigin(t *testing.T) {
 		require.EqualValues(t, 0, anchor.StateIndex)
 		require.True(t, stateAddr.Equal(anchor.StateController))
 		require.True(t, stateAddr.Equal(anchor.GovernanceController))
-		require.True(t, bytes.Equal(origin.L1Commitment(nil, 1000).Bytes(), anchor.StateData))
+		require.True(t, bytes.Equal(origin.L1Commitment(dict.Dict{
+			governance.ParamChainOwner: isc.NewAgentID(anchor.GovernanceController).Bytes(),
+		}, 0).Bytes(), anchor.StateData))
 
 		// only one output is expected in the ledger under the address of chainID
 		outs, ids := u.GetUnspentOutputs(chainID.AsAddress())
@@ -92,15 +96,14 @@ func TestCreateOrigin(t *testing.T) {
 		createOrigin()
 
 		chainBaseTokens := originTx.Essence.Outputs[0].Deposit()
-		initBaseTokens := txInit.Essence.Outputs[0].Deposit()
 
-		t.Logf("chainBaseTokens: %d initBaseTokens: %d", chainBaseTokens, initBaseTokens)
+		t.Logf("chainBaseTokens: %d", chainBaseTokens)
 
-		require.EqualValues(t, utxodb.FundsFromFaucetAmount-chainBaseTokens-initBaseTokens, int(u.GetAddressBalanceBaseTokens(userAddr)))
+		require.EqualValues(t, utxodb.FundsFromFaucetAmount-chainBaseTokens, int(u.GetAddressBalanceBaseTokens(userAddr)))
 		require.EqualValues(t, 0, u.GetAddressBalanceBaseTokens(stateAddr))
 		allOutputs, ids := u.GetUnspentOutputs(chainID.AsAddress())
-		require.EqualValues(t, 2, len(allOutputs))
-		require.EqualValues(t, 2, len(ids))
+		require.EqualValues(t, 1, len(allOutputs))
+		require.EqualValues(t, 1, len(ids))
 	})
 }
 

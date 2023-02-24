@@ -391,7 +391,7 @@ func TestRepeatInit(t *testing.T) {
 			WithGasBudget(100_000)
 		_, err = ch.PostRequestSync(req, nil)
 		require.Error(t, err)
-		testmisc.RequireErrorToBe(t, err, root.ErrChainInitConditionsFailed)
+		testmisc.RequireErrorToBe(t, err, vm.ErrRepeatingInitCall)
 		ch.CheckAccountLedger()
 	})
 	t.Run("accounts", func(t *testing.T) {

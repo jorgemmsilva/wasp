@@ -37,6 +37,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 	"github.com/iotaledger/wasp/packages/vm/runvm"
 )
@@ -116,7 +117,7 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	t.Log("Wait for decided requests")
 	for i := range te.mempools {
 		nodeDecidedReqs := <-decided[i]
-		require.Len(t, nodeDecidedReqs, 2)
+		require.Len(t, nodeDecidedReqs, 1)
 	}
 	//
 	// Make a block consuming those 2 requests.
@@ -143,7 +144,7 @@ func testBasic(t *testing.T, n, f int, reliable bool) {
 	// Check if block has both requests as consumed.
 	receipts, err := blocklog.RequestReceiptsFromBlock(block)
 	require.NoError(t, err)
-	require.Len(t, receipts, 2)
+	require.Len(t, receipts, 1)
 	blockReqs := []isc.Request{}
 	for i := range receipts {
 		blockReqs = append(blockReqs, receipts[i].Request)
@@ -393,7 +394,6 @@ type testEnv struct {
 	log              *logger.Logger
 	utxoDB           *utxodb.UtxoDB
 	governor         *cryptolib.KeyPair
-	originator       *cryptolib.KeyPair
 	peeringURLs      []string
 	peerIdentities   []*cryptolib.KeyPair
 	peerPubKeys      []*cryptolib.PublicKey
@@ -415,10 +415,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	// Create ledger accounts.
 	te.utxoDB = utxodb.New(utxodb.DefaultInitParams())
 	te.governor = cryptolib.NewKeyPair()
-	te.originator = cryptolib.NewKeyPair()
 	_, err := te.utxoDB.GetFundsFromFaucet(te.governor.Address())
-	require.NoError(t, err)
-	_, err = te.utxoDB.GetFundsFromFaucet(te.originator.Address())
 	require.NoError(t, err)
 	//
 	// Create a fake network and keys for the tests.
@@ -441,14 +438,16 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	)
 	te.networkProviders = te.peeringNetwork.NetworkProviders()
 	te.cmtAddress, _ = testpeers.SetupDkgTrivial(t, n, f, te.peerIdentities, nil)
-	te.tcl = testchain.NewTestChainLedger(t, te.utxoDB, te.governor, te.originator)
-	te.originAO, te.chainID = te.tcl.MakeTxChainOrigin(te.cmtAddress)
+	te.tcl = testchain.NewTestChainLedger(t, te.utxoDB, te.governor)
+	_, te.originAO, te.chainID = te.tcl.MakeTxChainOrigin(te.cmtAddress)
 	//
 	// Initialize the nodes.
 	te.mempools = make([]mempool.Mempool, len(te.peerIdentities))
 	te.stores = make([]state.Store, len(te.peerIdentities))
 	for i := range te.peerIdentities {
-		te.stores[i] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
+		te.stores[i] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), dict.Dict{
+			governance.ParamChainOwner: isc.NewAgentID(te.governor.Address()).Bytes(),
+		}, 0)
 		te.mempools[i] = mempool.New(
 			te.ctx,
 			te.chainID,

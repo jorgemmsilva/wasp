@@ -32,14 +32,16 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/utxodb"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 	"github.com/iotaledger/wasp/packages/vm/runvm"
 )
 
 // Here we run a single consensus instance, step by step with
 // regards to the requests to external components (mempool, stateMgr, VM).
-func TestBasic(t *testing.T) {
+func TestConsBasic(t *testing.T) {
 	t.Parallel()
 	type test struct {
 		n int
@@ -59,12 +61,12 @@ func TestBasic(t *testing.T) {
 	for _, test := range tests {
 		t.Run(
 			fmt.Sprintf("N=%v,F=%v", test.n, test.f),
-			func(tt *testing.T) { testBasic(tt, test.n, test.f) },
+			func(tt *testing.T) { testConsBasic(tt, test.n, test.f) },
 		)
 	}
 }
 
-func testBasic(t *testing.T, n, f int) {
+func testConsBasic(t *testing.T, n, f int) {
 	t.Parallel()
 	rand.Seed(time.Now().UnixNano())
 	log := testlogger.NewLogger(t)
@@ -78,7 +80,6 @@ func testBasic(t *testing.T, n, f int) {
 	utxoDB := utxodb.New(utxodb.DefaultInitParams())
 	//
 	// Construct the chain on L1: Create the accounts.
-	governor := cryptolib.NewKeyPair()
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
@@ -88,8 +89,8 @@ func testBasic(t *testing.T, n, f int) {
 	originTX, _, chainID, err := transaction.NewChainOriginTransaction(
 		originator,
 		committeeAddress,
-		governor.Address(),
-		1_000_000,
+		originator.Address(),
+		0,
 		nil,
 		outputs,
 		outIDs,
@@ -102,10 +103,36 @@ func testBasic(t *testing.T, n, f int) {
 	ao0 := isc.NewAliasOutputWithID(aliasOutput, stateAnchor.OutputID)
 	err = utxoDB.AddToLedger(originTX)
 	require.NoError(t, err)
+
 	//
-	// Construct the chain on L1: Find the requests (the init request).
-	initReqs := []isc.Request{}
-	initReqRefs := []*isc.RequestRef{}
+	// Deposit some funds
+	outputs, outIDs = utxoDB.GetUnspentOutputs(originator.Address())
+	depositTx, err := transaction.NewRequestTransaction(
+		transaction.NewRequestTransactionParams{
+			SenderKeyPair:    originator,
+			SenderAddress:    originator.Address(),
+			UnspentOutputs:   outputs,
+			UnspentOutputIDs: outIDs,
+			Request: &isc.RequestParameters{
+				TargetAddress:                 chainID.AsAddress(),
+				Assets:                        isc.NewAssetsBaseTokens(100_000_000),
+				AdjustToMinimumStorageDeposit: false,
+				Metadata: &isc.SendMetadata{
+					TargetContract: accounts.Contract.Hname(),
+					EntryPoint:     accounts.FuncDeposit.Hname(),
+					GasBudget:      10_000,
+				},
+			},
+		},
+	)
+	require.NoError(t, err)
+	err = utxoDB.AddToLedger(depositTx)
+	require.NoError(t, err)
+
+	//
+	// Construct the chain on L1: Find the requests (the first request).
+	reqs := []isc.Request{}
+	reqRefs := []*isc.RequestRef{}
 	outputs, _ = utxoDB.GetUnspentOutputs(chainID.AsAddress())
 	for outputID, output := range outputs {
 		if output.Type() == iotago.OutputAlias {
@@ -124,8 +151,8 @@ func testBasic(t *testing.T, n, f int) {
 		if err != nil {
 			continue
 		}
-		initReqs = append(initReqs, req)
-		initReqRefs = append(initReqRefs, isc.RequestRefFromRequest(req))
+		reqs = append(reqs, req)
+		reqRefs = append(reqRefs, isc.RequestRefFromRequest(req))
 	}
 	//
 	// Construct the nodes.
@@ -139,7 +166,10 @@ func testBasic(t *testing.T, n, f int) {
 		nodeLog := log.Named(nid.ShortString())
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareProviders[i].LoadDKShare(committeeAddress)
-		chainStates[nid] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
+		chainStates[nid] = origin.InitChain(state.NewStore(mapdb.NewMapDB()),
+			dict.Dict{
+				governance.ParamChainOwner: isc.NewAgentID(originator.Address()).Bytes(),
+			}, 0)
 		require.NoError(t, err)
 		nodes[nid] = cons.New(chainID, chainStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, nodeLog).AsGPA()
 	}
@@ -162,7 +192,7 @@ func testBasic(t *testing.T, n, f int) {
 		require.Equal(t, cons.Running, out.Status)
 		require.NotNil(t, out.NeedMempoolProposal)
 		require.NotNil(t, out.NeedStateMgrStateProposal)
-		tc.WithInput(nid, cons.NewInputMempoolProposal(initReqRefs))
+		tc.WithInput(nid, cons.NewInputMempoolProposal(reqRefs))
 		tc.WithInput(nid, cons.NewInputStateMgrProposalConfirmed())
 		tc.WithInput(nid, cons.NewInputTimeData(now))
 	}
@@ -182,7 +212,7 @@ func testBasic(t *testing.T, n, f int) {
 		require.NoError(t, err)
 		chainState, err := chainStates[nid].StateByTrieRoot(l1Commitment.TrieRoot())
 		require.NoError(t, err)
-		tc.WithInput(nid, cons.NewInputMempoolRequests(initReqs))
+		tc.WithInput(nid, cons.NewInputMempoolRequests(reqs))
 		tc.WithInput(nid, cons.NewInputStateMgrDecidedVirtualState(chainState))
 	}
 	tc.RunAll()
@@ -295,16 +325,13 @@ func testChained(t *testing.T, n, f, b int) {
 	//
 	// Create the accounts.
 	scClient := cryptolib.NewKeyPair()
-	governor := cryptolib.NewKeyPair()
 	originator := cryptolib.NewKeyPair()
-	_, err := utxoDB.GetFundsFromFaucet(governor.Address())
-	require.NoError(t, err)
-	_, err = utxoDB.GetFundsFromFaucet(originator.Address())
+	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
 	//
 	// Construct the chain on L1 and prepare requests.
-	tcl := testchain.NewTestChainLedger(t, utxoDB, governor, originator)
-	originAO, chainID := tcl.MakeTxChainOrigin(committeeAddress)
+	tcl := testchain.NewTestChainLedger(t, utxoDB, originator)
+	_, originAO, chainID := tcl.MakeTxChainOrigin(committeeAddress)
 	allRequests := map[int][]isc.Request{}
 	if b > 0 {
 		_, err = utxoDB.GetFundsFromFaucet(scClient.Address(), 150_000_000)

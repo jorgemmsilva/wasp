@@ -3,7 +3,6 @@ package root
 import (
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 )
 
 var Contract = coreutil.NewContract(coreutil.CoreContractRoot, "Root Contract")
@@ -46,5 +45,3 @@ var (
 	ViewFindContract             = coreutil.ViewFunc("findContract")
 	ViewGetContractRecords       = coreutil.ViewFunc("getContractRecords")
 )
-
-var ErrChainInitConditionsFailed = coreerrors.Register("root.init can't be called in this state").Create()

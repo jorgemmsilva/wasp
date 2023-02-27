@@ -144,7 +144,7 @@ func (e *EVMChain) iscStateFromEVMBlockNumber(blockNumber *big.Int) (state.State
 		return nil, fmt.Errorf("block number is too large: %s", blockNumber)
 	}
 	// the first EVM block (number 0) is "minted" at ISC block index 1 (init chain)
-	return e.backend.ISCStateByBlockIndex(uint32(n) + 1)
+	return e.backend.ISCStateByBlockIndex(uint32(n))
 }
 
 func (e *EVMChain) iscStateFromEVMBlockNumberOrHash(blockNumberOrHash rpc.BlockNumberOrHash) (state.State, error) {

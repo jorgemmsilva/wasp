@@ -169,7 +169,9 @@ func testConsBasic(t *testing.T, n, f int) {
 		chainStates[nid] = origin.InitChain(state.NewStore(mapdb.NewMapDB()),
 			dict.Dict{
 				governance.ParamChainOwner: isc.NewAgentID(originator.Address()).Bytes(),
-			}, 0)
+			},
+			accounts.MinimumBaseTokensOnCommonAccount,
+		)
 		require.NoError(t, err)
 		nodes[nid] = cons.New(chainID, chainStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, nodeLog).AsGPA()
 	}
@@ -339,7 +341,7 @@ func testChained(t *testing.T, n, f, b int) {
 		allRequests[0] = append(tcl.MakeTxAccountsDeposit(scClient), tcl.MakeTxDeployIncCounterContract()...)
 	}
 	incTotal := 0
-	for i := 2; i < b; i++ {
+	for i := 1; i < b; i++ {
 		reqs := []isc.Request{}
 		reqPerBlock := 3
 		for ii := 0; ii < reqPerBlock; ii++ {
@@ -364,7 +366,13 @@ func testChained(t *testing.T, n, f, b int) {
 	}
 	testNodeStates := map[gpa.NodeID]state.Store{}
 	for _, nid := range nodeIDs {
-		testNodeStates[nid] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), nil, 0)
+		testNodeStates[nid] = origin.InitChain(
+			state.NewStore(mapdb.NewMapDB()),
+			dict.Dict{
+				governance.ParamChainOwner: isc.NewAgentID(originator.Address()).Bytes(),
+			},
+			accounts.MinimumBaseTokensOnCommonAccount,
+		)
 	}
 	testChainInsts := make([]testConsInst, b)
 	for i := range testChainInsts {

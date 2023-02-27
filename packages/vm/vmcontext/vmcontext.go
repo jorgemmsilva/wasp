@@ -106,9 +106,19 @@ func CreateVMContext(task *vm.VMTask) *VMContext {
 		ret.gasBurnLog = gas.NewGasBurnLog()
 	}
 	// at the beginning of each block
+	l1Commitment, err := state.L1CommitmentFromBytes(task.AnchorOutput.StateMetadata)
+	if err != nil {
+		// should never happen
+		panic(err)
+	}
 
 	ret.withStateUpdate(func() {
 		ret.runMigrations(migrations.BaseSchemaVersion, migrations.Migrations)
+
+		// save the anchor tx ID of the current state
+		ret.callCore(blocklog.Contract, func(s kv.KVStore) {
+			blocklog.UpdateLatestBlockInfo(s, ret.task.AnchorOutputID.TransactionID(), l1Commitment)
+		})
 	})
 
 	// TODO revisit
@@ -149,9 +159,7 @@ func (vmctx *VMContext) CloseVMContext(numRequests, numSuccess, numOffLedger uin
 	var rotationAddr iotago.Address
 	vmctx.withStateUpdate(func() {
 		rotationAddr = vmctx.saveBlockInfo(numRequests, numSuccess, numOffLedger)
-		if vmctx.task.AnchorOutput.StateIndex > 0 {
-			vmctx.closeBlockContexts()
-		}
+		vmctx.closeBlockContexts()
 		vmctx.saveInternalUTXOs()
 	})
 

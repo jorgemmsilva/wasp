@@ -529,7 +529,7 @@ func TestAccountBalances(t *testing.T) {
 		totalGasFeeCharged += bi.GasFeeCharged
 		require.EqualValues(t,
 			int(l2BaseTokens(ch.CommonAccount())),
-			int(totalGasFeeCharged),
+			int(totalGasFeeCharged+accounts.MinimumBaseTokensOnCommonAccount),
 		)
 
 		require.EqualValues(t,

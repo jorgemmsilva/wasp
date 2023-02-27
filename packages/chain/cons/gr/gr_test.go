@@ -31,6 +31,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
 	"github.com/iotaledger/wasp/packages/utxodb"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/processors"
@@ -114,7 +115,9 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)
 		require.NoError(t, err)
 		chainStore := origin.InitChain(state.NewStore(mapdb.NewMapDB()),
-			dict.Dict{governance.ParamChainOwner: isc.NewAgentID(originator.Address()).Bytes()}, 0)
+			dict.Dict{governance.ParamChainOwner: isc.NewAgentID(originator.Address()).Bytes()},
+			accounts.MinimumBaseTokensOnCommonAccount,
+		)
 		mempools[i] = newTestMempool(t)
 		stateMgrs[i] = newTestStateMgr(t, chainStore)
 		nodes[i] = consGR.New(
@@ -272,7 +275,9 @@ func (tsm *testStateMgr) addOriginState(originAO *isc.AliasOutputWithID) {
 	initParams := dict.Dict{
 		governance.ParamChainOwner: isc.NewAgentID(originAO.GetAliasOutput().GovernorAddress()).Bytes(),
 	}
-	chainState, err := tsm.chainStore.StateByTrieRoot(origin.L1Commitment(initParams, 0).TrieRoot())
+	chainState, err := tsm.chainStore.StateByTrieRoot(
+		origin.L1Commitment(initParams, accounts.MinimumBaseTokensOnCommonAccount).TrieRoot(),
+	)
 	require.NoError(tsm.t, err)
 	tsm.addState(originAO, chainState)
 }

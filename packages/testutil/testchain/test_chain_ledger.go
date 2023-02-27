@@ -50,7 +50,7 @@ func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (
 		tcl.governor,
 		committeeAddress,
 		tcl.governor.Address(),
-		1_000_000,
+		0,
 		nil,
 		outs,
 		outIDs,

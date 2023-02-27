@@ -267,25 +267,6 @@ func (ch *Chain) GetInfo() (isc.ChainID, isc.AgentID, map[isc.Hname]*root.Contra
 	return ch.ChainID, chainOwnerID, contracts
 }
 
-type StorageDepositInfo struct {
-	TotalBaseTokensInL2Accounts uint64
-	TotalStorageDeposit         uint64
-	NumNativeTokens             int
-}
-
-func (d *StorageDepositInfo) Total() uint64 {
-	return d.TotalBaseTokensInL2Accounts + d.TotalStorageDeposit*uint64(d.NumNativeTokens)
-}
-
-func (ch *Chain) GetTotalBaseTokensInfo() *StorageDepositInfo {
-	bi := ch.GetLatestBlockInfo()
-	return &StorageDepositInfo{
-		TotalBaseTokensInL2Accounts: bi.TotalBaseTokensInL2Accounts,
-		TotalStorageDeposit:         bi.TotalStorageDeposit,
-		NumNativeTokens:             len(ch.GetOnChainTokenIDs()),
-	}
-}
-
 func eventsFromViewResult(t TestContext, viewResult dict.Dict) []string {
 	recs := collections.NewArray16ReadOnly(viewResult, blocklog.ParamEvent)
 	ret := make([]string, recs.MustLen())

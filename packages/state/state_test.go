@@ -13,7 +13,6 @@ import (
 	"github.com/iotaledger/hive.go/core/kvstore/mapdb"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -95,10 +94,6 @@ func TestOriginBlock(t *testing.T) {
 	validateBlock0 := func(block0 state.Block, err error) {
 		require.NoError(t, err)
 		require.True(t, block0.PreviousL1Commitment() == nil)
-		require.EqualValues(t, map[kv.Key][]byte{
-			kv.Key(coreutil.StatePrefixBlockIndex): codec.EncodeUint32(0),
-			kv.Key(coreutil.StatePrefixTimestamp):  codec.EncodeTime(time.Unix(0, 0)),
-		}, block0.Mutations().Sets)
 		require.Empty(t, block0.Mutations().Dels)
 	}
 

@@ -74,7 +74,7 @@ func TestConcurrency(t *testing.T) {
 		if *wasmsolo.TsWasm {
 			t.SkipNow()
 		}
-		
+
 		ctx := deployTestCore(t, w)
 
 		repeats := []int{300, 100, 100, 100, 200, 100, 100}

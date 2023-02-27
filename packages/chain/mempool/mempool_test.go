@@ -48,7 +48,7 @@ type tc struct {
 	reliable bool
 }
 
-func TestBasic(t *testing.T) {
+func TestMempoolBasic(t *testing.T) {
 	t.Parallel()
 	tests := []tc{
 		{n: 1, f: 0, reliable: true},  // Low N
@@ -67,7 +67,7 @@ func TestBasic(t *testing.T) {
 	for _, tst := range tests {
 		t.Run(
 			fmt.Sprintf("N=%v,F=%v,Reliable=%v", tst.n, tst.f, tst.reliable),
-			func(tt *testing.T) { testBasic(tt, tst.n, tst.f, tst.reliable) },
+			func(tt *testing.T) { testMempoolBasic(tt, tst.n, tst.f, tst.reliable) },
 		)
 	}
 }
@@ -81,7 +81,7 @@ func TestBasic(t *testing.T) {
 //   - Get proposals -- all waiting.
 //   - Send a request.
 //   - Get proposals -- all received 1 request.
-func testBasic(t *testing.T, n, f int, reliable bool) {
+func testMempoolBasic(t *testing.T, n, f int, reliable bool) {
 	t.Parallel()
 	rand.Seed(time.Now().UnixNano())
 	te := newEnv(t, n, f, reliable)
@@ -447,7 +447,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	for i := range te.peerIdentities {
 		te.stores[i] = origin.InitChain(state.NewStore(mapdb.NewMapDB()), dict.Dict{
 			governance.ParamChainOwner: isc.NewAgentID(te.governor.Address()).Bytes(),
-		}, 0)
+		}, accounts.MinimumBaseTokensOnCommonAccount)
 		te.mempools[i] = mempool.New(
 			te.ctx,
 			te.chainID,

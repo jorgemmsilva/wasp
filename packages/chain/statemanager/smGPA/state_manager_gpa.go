@@ -428,6 +428,10 @@ func (smT *stateManagerGPA) traceBlockChainByRequest(request blockRequest) (gpa.
 //	node has the required block committed into the store, it certainly has
 //	all the blocks before it.
 func (smT *stateManagerGPA) traceBlockChain(initCommitment *state.L1Commitment, requests []blockRequest) (gpa.OutMessages, error) {
+	if initCommitment == nil {
+		// origin block
+		return nil, nil
+	}
 	smT.log.Debugf("Tracing block %s chain...", initCommitment)
 	commitment := initCommitment
 	for !smT.store.HasTrieRoot(commitment.TrieRoot()) {

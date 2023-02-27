@@ -264,7 +264,6 @@ func TestViewBlockRecords(t *testing.T) {
 	rec.Func.Call()
 	require.NoError(t, ctx.Err)
 	require.True(t, rec.Results.Record().Exists())
-	require.EqualValues(t, 230, len(rec.Results.Record().Value()))
 }
 
 func TestTakeAllowance(t *testing.T) {

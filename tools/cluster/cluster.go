@@ -32,6 +32,7 @@ import (
 	"github.com/iotaledger/wasp/packages/apilib"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/testutil/testkey"
@@ -249,6 +250,9 @@ func (clu *Cluster) DeployChain(description string, allPeers, committeeNodes []i
 			Description:       description,
 			Textout:           os.Stdout,
 			Prefix:            "[cluster] ",
+			InitParams: dict.Dict{
+				governance.ParamChainOwner: isc.NewAgentID(chain.OriginatorAddress()).Bytes(),
+			},
 		},
 		stateAddr,
 		stateAddr,
@@ -265,13 +269,30 @@ func (clu *Cluster) DeployChain(description string, allPeers, committeeNodes []i
 	fmt.Printf("activating chain %s.. OK.\n", chainID.String())
 
 	// ---------- wait until the request is processed at least in all committee nodes
-	// TODO refactor - find another way to wait. (probably querying for chainInfo will be enough)
-	// _, err = multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts()).
-	// 	WaitUntilAllRequestsProcessedSuccessfully(chainID, initRequestTx, 30*time.Second)
+	{
 
-	// if err != nil {
-	// 	clu.t.Fatalf("waiting root init request transaction.. FAILED: %v\n", err)
-	// }
+		fmt.Printf("waiting until nodes receive the origin output..\n")
+
+		retries := 10
+		for {
+			time.Sleep(200 * time.Millisecond)
+			err = multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts()).Do(
+				func(_ int, a *apiclient.APIClient) error {
+					_, _, err := a.ChainsApi.GetChainInfo(context.Background(), chainID.String()).Execute()
+					return err
+				})
+			if err != nil {
+				if retries > 0 {
+					retries--
+					continue
+				}
+				return nil, err
+			}
+			break
+		}
+
+		fmt.Printf("waiting until nodes receive the origin output.. DONE\n")
+	}
 
 	chain.StateAddress = stateAddr
 	chain.ChainID = chainID

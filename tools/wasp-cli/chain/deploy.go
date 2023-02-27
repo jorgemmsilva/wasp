@@ -64,6 +64,7 @@ func initDeployCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
+			chainName = defaultChainFallback(chainName)
 
 			if !util.IsSlug(chainName) {
 				log.Fatalf("invalid chain name: %s, must be in slug format, only lowercase and hypens, example: foo-bar", chainName)
@@ -90,12 +91,12 @@ func initDeployCmd() *cobra.Command {
 				},
 			}
 
-			chainid, err := apilib.DeployChain(par, stateController, govController)
+			chainID, err := apilib.DeployChain(par, stateController, govController)
 			log.Check(err)
 
-			config.AddChain(chainName, chainid.String())
+			config.AddChain(chainName, chainID.String())
 
-			activateChain(node, chainid)
+			activateChain(node, chainName, chainID)
 		},
 	}
 

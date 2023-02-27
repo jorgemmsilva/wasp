@@ -6,7 +6,6 @@ package consGR_test
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"sync"
 	"testing"
 	"time"
@@ -68,7 +67,6 @@ func TestGrBasic(t *testing.T) {
 
 func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	t.Parallel()
-	rand.Seed(time.Now().UnixNano())
 	log := testlogger.NewLogger(t)
 	defer log.Sync()
 	//

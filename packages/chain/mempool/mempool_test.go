@@ -83,7 +83,6 @@ func TestMempoolBasic(t *testing.T) {
 //   - Get proposals -- all received 1 request.
 func testMempoolBasic(t *testing.T, n, f int, reliable bool) {
 	t.Parallel()
-	rand.Seed(time.Now().UnixNano())
 	te := newEnv(t, n, f, reliable)
 	defer te.close()
 	//
@@ -202,7 +201,6 @@ func TestTimeLock(t *testing.T) {
 
 func testTimeLock(t *testing.T, n, f int, reliable bool) { //nolint: gocyclo
 	t.Parallel()
-	rand.Seed(time.Now().UnixNano())
 	te := newEnv(t, n, f, reliable)
 	defer te.close()
 	start := time.Now()
@@ -320,7 +318,6 @@ func TestExpiration(t *testing.T) {
 
 func testExpiration(t *testing.T, n, f int, reliable bool) {
 	t.Parallel()
-	rand.Seed(time.Now().UnixNano())
 	te := newEnv(t, n, f, reliable)
 	defer te.close()
 	start := time.Now()

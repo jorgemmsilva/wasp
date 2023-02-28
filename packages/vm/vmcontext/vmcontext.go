@@ -121,7 +121,6 @@ func CreateVMContext(task *vm.VMTask) *VMContext {
 		})
 	})
 
-	// TODO revisit
 	ret.storageDepositAssumptions = transaction.NewStorageDepositEstimate()
 
 	nativeTokenBalanceLoader := func(nativeTokenID iotago.NativeTokenID) (*iotago.BasicOutput, iotago.OutputID) {

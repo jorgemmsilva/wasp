@@ -36,7 +36,6 @@ func NewChainOriginTransaction(
 		initParams.Set(governance.ParamChainOwner, isc.NewAgentID(governanceControllerAddress).Bytes())
 	}
 
-	// TODO this storage assumption stuff needs to go
 	minSD := NewStorageDepositEstimate().AnchorOutput
 	minAmount := minSD + accounts.MinimumBaseTokensOnCommonAccount
 	if deposit < minAmount {

@@ -45,7 +45,6 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) st
 		return subrealm.New(d, kv.Key(contract.Hname().Bytes()))
 	}
 
-	// TODO chainOwner could be removed and substituted by the gov address of the chain AO
 	chainOwner := codec.MustDecodeAgentID(initParams.MustGet(governance.ParamChainOwner), &isc.NilAgentID{})
 
 	blockKeepAmount := codec.MustDecodeInt32(initParams.MustGet(evm.FieldBlockKeepAmount), evm.BlockKeepAmountDefault)

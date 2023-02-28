@@ -297,7 +297,6 @@ func (env *Solo) NewChainExt(chainOriginator *cryptolib.KeyPair, initBaseTokens 
 
 	kvStore, err := env.chainStateDatabaseManager.ChainStateKVStore(chainID)
 	require.NoError(env.T, err)
-	// TODO this SD estimate stuff needs to go
 	aoSD := transaction.NewStorageDepositEstimate().AnchorOutput
 	store := origin.InitChain(state.NewStore(kvStore), originParams, originAO.Amount-aoSD)
 

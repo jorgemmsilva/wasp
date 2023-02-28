@@ -47,7 +47,6 @@ var Processor = governance.Contract.Processor(nil,
 )
 
 func SetInitialState(state kv.KVStore, chainOwner isc.AgentID) {
-	// TODO refactor - should come from the AO
 	state.Set(governance.VarChainOwnerID, chainOwner.Bytes())
 
 	state.Set(governance.VarMaxBlobSize, codec.Encode(governance.DefaultMaxBlobSize))

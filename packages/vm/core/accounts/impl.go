@@ -45,7 +45,7 @@ var Processor = Contract.Processor(nil,
 	ViewTotalAssets.WithHandler(viewTotalAssets),
 )
 
-// TODO this expects the origin amount minus SD
+// this expects the origin amount minus SD
 func SetInitialState(state kv.KVStore, baseTokensOnAnchor uint64) {
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
 	CreditToAccount(state, CommonAccount(), isc.NewAssetsBaseTokens(baseTokensOnAnchor))

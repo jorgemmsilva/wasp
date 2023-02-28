@@ -596,7 +596,6 @@ func (cni *chainNodeImpl) handleAliasOutput(ctx context.Context, aliasOutput *is
 				panic(fmt.Sprintf("invalid parameters on origin AO, %s", err.Error()))
 			}
 		}
-		// TODO this SD estimate stuff needs to go
 		aoSD := transaction.NewStorageDepositEstimate().AnchorOutput
 		origin.InitChain(cni.chainStore, initParams, aliasOutput.GetAliasOutput().Amount-aoSD)
 	}

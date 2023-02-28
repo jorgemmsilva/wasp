@@ -428,13 +428,9 @@ func (smT *stateManagerGPA) traceBlockChainByRequest(request blockRequest) (gpa.
 //	node has the required block committed into the store, it certainly has
 //	all the blocks before it.
 func (smT *stateManagerGPA) traceBlockChain(initCommitment *state.L1Commitment, requests []blockRequest) (gpa.OutMessages, error) {
-	if initCommitment == nil {
-		// origin block
-		return nil, nil
-	}
 	smT.log.Debugf("Tracing block %s chain...", initCommitment)
 	commitment := initCommitment
-	for !smT.store.HasTrieRoot(commitment.TrieRoot()) {
+	for commitment != nil && !smT.store.HasTrieRoot(commitment.TrieRoot()) {
 		smT.log.Debugf("Tracing block %s chain: block %s is not in store",
 			initCommitment, commitment)
 		block := smT.blockCache.GetBlock(commitment)
@@ -489,7 +485,12 @@ func (smT *stateManagerGPA) completeRequests(alreadyCommittedL1C *state.L1Commit
 				var stateDraft state.StateDraft
 				previousCommitment := block.PreviousL1Commitment()
 				var err error
-				stateDraft, err = smT.store.NewEmptyStateDraft(previousCommitment)
+				if previousCommitment == nil {
+					// origin block
+					stateDraft = smT.store.NewOriginStateDraft()
+				} else {
+					stateDraft, err = smT.store.NewEmptyStateDraft(previousCommitment)
+				}
 				if err != nil {
 					return fmt.Errorf("completing %d requests: error creating empty state draft to store block %s: %w",
 						len(requests), blockCommitment, err)

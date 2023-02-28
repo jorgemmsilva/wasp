@@ -29,13 +29,13 @@ func TestAccessNodesOnLedger(t *testing.T) {
 		testAccessNodesOnLedger(t, numRequests, numValidatorNodes, clusterSize)
 	})
 
-	// t.Run("cluster=15, N=6, req=200", func(t *testing.T) {
-	// 	testutil.RunHeavy(t)
-	// 	const numRequests = 200
-	// 	const numValidatorNodes = 6
-	// 	const clusterSize = 15
-	// 	testAccessNodesOnLedger(t, numRequests, numValidatorNodes, clusterSize)
-	// })
+	t.Run("cluster=15, N=6, req=200", func(t *testing.T) {
+		testutil.RunHeavy(t)
+		const numRequests = 200
+		const numValidatorNodes = 6
+		const clusterSize = 15
+		testAccessNodesOnLedger(t, numRequests, numValidatorNodes, clusterSize)
+	})
 }
 
 func testAccessNodesOnLedger(t *testing.T, numRequests, numValidatorNodes, clusterSize int) {
@@ -46,7 +46,7 @@ func testAccessNodesOnLedger(t *testing.T, numRequests, numValidatorNodes, clust
 		client := e.createNewClient()
 
 		var err error
-		for i := 0; i < 5; i++ {
+		for j := 0; j < 5; j++ {
 			_, err = client.PostRequest(inccounter.FuncIncCounter.Name)
 			if err == nil {
 				break

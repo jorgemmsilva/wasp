@@ -79,6 +79,11 @@ docker-build: compile-solidity
 		--build-arg BUILD_LD_FLAGS=${BUILD_LD_FLAGS} \
 		.
 
+docker-push-local: docker-build
+	echo "$(DOCKER_ACCESS_TOKEN)" | docker login --username $(DOCKER_USERNAME) --password-stdin && \
+	docker tag iotaledger/wasp $(DOCKER_USERNAME)/wasp:latest && \
+	docker push $(DOCKER_USERNAME)/wasp:latest
+
 deps-versions:
 	@grep -n "====" packages/testutil/privtangle/privtangle.go | \
 		awk -F ":" '{ print $$1 }' | \

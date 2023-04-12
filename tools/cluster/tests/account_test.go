@@ -207,5 +207,5 @@ func testBasic2Accounts(t *testing.T, env *ChainEnv) {
 
 	env.printAccounts("withdraw after")
 
-	require.Equal(t, env.Clu.AddressBalances(originatorAddress).BaseTokens, origL1Balance+allowanceBaseTokens)
+	require.EqualValues(t, env.Clu.AddressBalances(originatorAddress).BaseTokens, origL1Balance+allowanceBaseTokens)
 }

@@ -56,9 +56,11 @@ func getBlockContext(ctx isc.Sandbox) *blockContext {
 func (bctx *blockContext) mintBlock() {
 	// count txs where status = success (which are already stored in the pending block)
 	txCount := uint(0)
+	cumulativeGas := uint64(0)
 	for i := range bctx.txs {
 		if bctx.receipts[i].Status == types.ReceiptStatusSuccessful {
 			txCount++
+			cumulativeGas = bctx.receipts[i].CumulativeGasUsed
 		}
 	}
 
@@ -68,6 +70,8 @@ func (bctx *blockContext) mintBlock() {
 			continue
 		}
 		bctx.receipts[i].TransactionIndex = txCount
+		cumulativeGas += bctx.receipts[i].GasUsed
+		bctx.receipts[i].CumulativeGasUsed = cumulativeGas
 		bctx.emu.BlockchainDB().AddTransaction(bctx.txs[i], bctx.receipts[i])
 
 		// we must also increment the nonce manually since the original request was reverted

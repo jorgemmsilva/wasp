@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
 
 	iotago "github.com/iotaledger/iota.go/v3"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
@@ -110,41 +109,21 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 	// Send the tx to the emulator.
 	// ISC gas burn will be enabled right before executing the tx, and disabled right after,
 	// so that ISC magic calls are charged gas.
-	receipt, result, err := bctx.emu.SendTransaction(
+	receipt, result, iscGasErr, err := bctx.emu.SendTransaction(
 		tx,
-		ctx.Privileged().GasBurnEnable,
+		ctx,
 		tracer,
 	)
 
-	// burn EVM gas as ISC gas
-	var gasErr error
-	if result != nil {
-		// convert burnt EVM gas to ISC gas
-		chainInfo := ctx.ChainInfo()
-		ctx.Privileged().GasBurnEnable(true)
-		gasErr = panicutil.CatchPanic(
-			func() {
-				ctx.Gas().Burn(
-					gas.BurnCodeEVM1P,
-					gas.EVMGasToISC(result.UsedGas, &chainInfo.GasFeePolicy.EVMGasRatio),
-				)
-			},
-		)
-		ctx.Privileged().GasBurnEnable(false)
-		if gasErr != nil {
-			// out of gas when burning ISC gas, edit the EVM receipt so that it fails
-			receipt.Status = types.ReceiptStatusFailed
-		}
-	}
-
-	if receipt != nil { // receipt can be nil when "intrinsic gas too low" or not enough funds
+	if receipt != nil {
+		// receipt can be nil when "intrinsic gas too low" or not enough funds
 		// If EVM execution was reverted we must revert the ISC request as well.
 		// Failed txs will be stored when closing the block context.
 		bctx.txs = append(bctx.txs, tx)
 		bctx.receipts = append(bctx.receipts, receipt)
 	}
 	ctx.RequireNoError(err)
-	ctx.RequireNoError(gasErr)
+	ctx.RequireNoError(iscGasErr)
 	ctx.RequireNoError(tryGetRevertError(result))
 
 	return nil

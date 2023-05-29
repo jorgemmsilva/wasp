@@ -299,8 +299,8 @@ func (e *EVMEmulator) SendTransaction(
 			)
 			ctx.Privileged().GasBurnEnable(false)
 			if iscGasErr != nil {
-				// out of gas when burning ISC gas, edit the EVM receipt so that it fails
-				// receipt.Status = types.ReceiptStatusFailed
+				// out of gas when burning ISC gas, amend the EVM receipt so that it fails
+				receipt.Status = types.ReceiptStatusFailed
 				result.Err = core.ErrInsufficientFunds
 			}
 			// amend the gas usage (to include any ISC gas from sandbox calls)

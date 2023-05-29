@@ -216,9 +216,10 @@ func TestNotEnoughISCGas(t *testing.T) {
 	senderAddress := crypto.PubkeyToAddress(storage.defaultSender.PublicKey)
 	nonce := env.getNonce(senderAddress)
 
+	evmGasLimit := uint64(21204)
 	// try to issue a call to store(something) in EVM
 	res, err := storage.store(44, ethCallOptions{
-		gasLimit: 21204, // provide a gas limit because the estimation will fail
+		gasLimit: evmGasLimit, // provide a gas limit because the estimation will fail
 	})
 
 	// the call must fail with "not enough gas"
@@ -229,6 +230,11 @@ func TestNotEnoughISCGas(t *testing.T) {
 	// there must be an EVM receipt
 	require.NotNil(t, res.evmReceipt)
 	require.Equal(t, res.evmReceipt.Status, types.ReceiptStatusFailed)
+
+	require.EqualValues(t, evmGasLimit, res.evmReceipt.GasUsed)
+	require.EqualValues(t, evmGasLimit, res.evmReceipt.CumulativeGasUsed)
+	require.EqualValues(t, res.evmReceipt.GasUsed, gas.ISCGasBudgetToEVM(res.iscReceipt.GasBudget, &newGasRatio))
+	require.EqualValues(t, res.evmReceipt.GasUsed, gas.ISCGasBudgetToEVM(res.iscReceipt.GasBurned, &newGasRatio))
 
 	// no changes should persist
 	require.EqualValues(t, 43, storage.retrieve())

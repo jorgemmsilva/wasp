@@ -112,7 +112,7 @@ func EVMEstimateGas(ch chain.ChainCore, aliasOutput *isc.AliasOutputWithID, call
 		}
 		if failed {
 			if hi == maximumPossibleGas {
-				return 0, fmt.Errorf("request might require more gas than it is allowed by the VM (%d), or will never succeed", gasCap)
+				return 0, fmt.Errorf("request might require more gas than it is allowed by the VM (%d), or will never succeed - err: %s", gasCap, err.Error())
 			}
 			// the specified gas cap is too low
 			return 0, fmt.Errorf("gas required exceeds budget (%d)", gasCap)

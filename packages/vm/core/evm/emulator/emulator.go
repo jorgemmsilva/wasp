@@ -71,7 +71,7 @@ func getConfig(chainID int) *params.ChainConfig {
 		Ethash:              &params.EthashConfig{},
 		ShanghaiTime:        new(uint64),
 	}
-	if !c.IsShanghai(common.Big0, 0) {
+	if !c.IsShanghai(0) {
 		panic("ChainConfig should report EVM version as Shanghai")
 	}
 	configCache.Add(chainID, c)
@@ -271,7 +271,7 @@ func (e *EVMEmulator) SendTransaction(
 		return nil, nil, fmt.Errorf("invalid transaction nonce: got %d, want %d", tx.Nonce(), nonce)
 	}
 
-	signer := types.MakeSigner(e.chainConfig, pendingHeader.Number, pendingHeader.Time)
+	signer := types.MakeSigner(e.chainConfig, pendingHeader.Number)
 	msg, err := core.TransactionToMessage(tx, signer, pendingHeader.BaseFee)
 	if err != nil {
 		return nil, nil, err

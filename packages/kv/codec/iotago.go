@@ -2,7 +2,7 @@ package codec
 
 import (
 	"github.com/iotaledger/hive.go/serializer/v2"
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 func DecodeOutput(b []byte) (iotago.Output, error) {

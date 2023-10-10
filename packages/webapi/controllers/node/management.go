@@ -7,7 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 func (c *Controller) nodeOwnerCertificate(e echo.Context) error {

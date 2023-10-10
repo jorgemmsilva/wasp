@@ -3,7 +3,7 @@ package chainmanager
 import (
 	"testing"
 
-	"github.com/iotaledger/iota.go/v3/tpkg"
+	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/util/rwutil"

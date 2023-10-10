@@ -11,7 +11,7 @@ import (
 
 	"go.uber.org/atomic"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 // pendingTransaction holds info about a sent transaction that is pending.

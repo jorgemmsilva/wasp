@@ -1,6 +1,6 @@
 package util
 
-import iotago "github.com/iotaledger/iota.go/v3"
+import iotago "github.com/iotaledger/iota.go/v4"
 
 func NFTIDFromNFTOutput(nftOutput *iotago.NFTOutput, outputID iotago.OutputID) iotago.NFTID {
 	if nftOutput.NFTID.Empty() {

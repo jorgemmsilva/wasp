@@ -3,7 +3,7 @@ package codec
 import (
 	"errors"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 func DecodeNFTID(b []byte, def ...iotago.NFTID) (ret iotago.NFTID, err error) {

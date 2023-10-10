@@ -11,7 +11,7 @@ import (
 	"regexp"
 
 	"github.com/iotaledger/hive.go/runtime/ioutils"
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/onchangemap"
 	"github.com/iotaledger/wasp/packages/tcrypto"

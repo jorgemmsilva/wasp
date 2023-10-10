@@ -1,7 +1,7 @@
 package isc
 
 import (
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 const Million = uint64(1_000_000)

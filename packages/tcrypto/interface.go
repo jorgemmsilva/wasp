@@ -13,7 +13,7 @@ import (
 	"go.dedis.ch/kyber/v3/sign/tbls"
 
 	"github.com/iotaledger/hive.go/crypto/bls"
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/onchangemap"
 	"github.com/iotaledger/wasp/packages/util"

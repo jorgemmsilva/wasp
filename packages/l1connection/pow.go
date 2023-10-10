@@ -4,11 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
-	inxpow "github.com/iotaledger/inx-app/pkg/pow"
-	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/iota.go/v3/nodeclient"
-	"github.com/iotaledger/wasp/packages/parameters"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/nodeclient"
 )
 
 const (
@@ -18,7 +15,7 @@ const (
 
 // doBlockPow will update the parents during PoW and add initial parents if no parents were given.
 func doBlockPow(ctx context.Context, block *iotago.Block, nodeClient *nodeclient.Client) error {
-	var refreshTipsFunc inxpow.RefreshTipsFunc
+	// FIXME var refreshTipsFunc inxpow.RefreshTipsFunc
 
 	// only allow to update tips during proof of work if no parents were given
 	if len(block.Parents) == 0 {
@@ -34,6 +31,6 @@ func doBlockPow(ctx context.Context, block *iotago.Block, nodeClient *nodeclient
 
 	// DoPoW does the proof-of-work required to hit the target score configured on this Handler.
 	// The given iota.Block's nonce is automatically updated.
-	_, err := inxpow.DoPoW(ctx, block, serializer.DeSeriModePerformValidation|serializer.DeSeriModePerformLexicalOrdering, parameters.L1().Protocol, parallelism, refreshTipsInterval, refreshTipsFunc)
+	// FIXME _, err := inxpow.DoPoW(ctx, block, serializer.DeSeriModePerformValidation|serializer.DeSeriModePerformLexicalOrdering, parameters.L1().Protocol, parallelism, refreshTipsInterval, refreshTipsFunc)
 	return err
 }

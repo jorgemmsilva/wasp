@@ -1,6 +1,6 @@
 package util
 
-import iotago "github.com/iotaledger/iota.go/v3"
+import iotago "github.com/iotaledger/iota.go/v4"
 
 func AliasIDFromAliasOutput(out *iotago.AliasOutput, outID iotago.OutputID) iotago.AliasID {
 	if out.AliasID.Empty() {

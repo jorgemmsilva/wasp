@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/iotaledger/hive.go/serializer/v2"
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 func OutputFromBytes(data []byte) (iotago.Output, error) {

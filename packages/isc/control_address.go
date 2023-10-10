@@ -3,7 +3,7 @@
 
 package isc
 
-import iotago "github.com/iotaledger/iota.go/v3"
+import iotago "github.com/iotaledger/iota.go/v4"
 
 type ControlAddresses struct {
 	StateAddress     iotago.Address

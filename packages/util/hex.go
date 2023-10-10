@@ -3,7 +3,7 @@ package util
 import (
 	"encoding"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 func EncodeHexBinaryMarshaled(value encoding.BinaryMarshaler) (string, error) {

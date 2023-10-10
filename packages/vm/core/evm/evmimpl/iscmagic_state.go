@@ -11,7 +11,7 @@ import (
 	gethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/samber/lo"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"

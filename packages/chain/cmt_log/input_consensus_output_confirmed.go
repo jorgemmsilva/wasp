@@ -11,17 +11,17 @@ import (
 )
 
 type inputConsensusOutputConfirmed struct {
-	aliasOutput *isc.AliasOutputWithID
+	accountOutput *isc.AccountOutputWithID
 	logIndex    LogIndex
 }
 
-func NewInputConsensusOutputConfirmed(aliasOutput *isc.AliasOutputWithID, logIndex LogIndex) gpa.Input {
+func NewInputConsensusOutputConfirmed(accountOutput *isc.AccountOutputWithID, logIndex LogIndex) gpa.Input {
 	return &inputConsensusOutputConfirmed{
-		aliasOutput: aliasOutput,
+		accountOutput: accountOutput,
 		logIndex:    logIndex,
 	}
 }
 
 func (inp *inputConsensusOutputConfirmed) String() string {
-	return fmt.Sprintf("{cmtLog.inputConsensusOutputConfirmed, %v, li=%v}", inp.aliasOutput, inp.logIndex)
+	return fmt.Sprintf("{cmtLog.inputConsensusOutputConfirmed, %v, li=%v}", inp.accountOutput, inp.logIndex)
 }

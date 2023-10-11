@@ -48,7 +48,7 @@ func (tcl *TestChainLedger) ChainID() isc.ChainID {
 	return tcl.chainID
 }
 
-func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.Transaction, *isc.AliasOutputWithID, isc.ChainID) {
+func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.Transaction, *isc.AccountOutputWithID, isc.ChainID) {
 	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.governor.Address())
 	originTX, _, chainID, err := origin.NewChainOriginTransaction(
 		tcl.governor,
@@ -61,11 +61,11 @@ func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 	)
 	require.NoError(tcl.t, err)
-	stateAnchor, aliasOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, accountOutput, err := transaction.GetAnchorFromTransaction(originTX)
 	require.NoError(tcl.t, err)
 	require.NotNil(tcl.t, stateAnchor)
-	require.NotNil(tcl.t, aliasOutput)
-	originAO := isc.NewAliasOutputWithID(aliasOutput, stateAnchor.OutputID)
+	require.NotNil(tcl.t, accountOutput)
+	originAO := isc.NewAliasOutputWithID(accountOutput, stateAnchor.OutputID)
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(originTX))
 	tcl.chainID = chainID
 	return originTX, originAO, chainID
@@ -127,16 +127,16 @@ func (tcl *TestChainLedger) MakeTxDeployIncCounterContract() []isc.Request {
 	return tcl.findChainRequests(tx)
 }
 
-func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AliasOutputWithID, stateCommitment *state.L1Commitment) *isc.AliasOutputWithID {
+func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AccountOutputWithID, stateCommitment *state.L1Commitment) *isc.AccountOutputWithID {
 	stateMetadata := transaction.NewStateMetadata(
 		stateCommitment,
 		gas.DefaultFeePolicy(),
 		0,
 		"",
 	)
-	anchorOutput := &iotago.AliasOutput{
+	anchorOutput := &iotago.AccountOutput{
 		Amount:        baseAO.GetAliasOutput().Deposit(),
-		AliasID:       tcl.chainID.AsAliasID(),
+		AccountID:       tcl.chainID.AsAliasID(),
 		StateIndex:    baseAO.GetStateIndex() + 1,
 		StateMetadata: stateMetadata.Bytes(),
 		Conditions: iotago.UnlockConditions{
@@ -152,7 +152,7 @@ func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AliasOutputWithID, s
 	return isc.NewAliasOutputWithID(anchorOutput, iotago.OutputID{byte(anchorOutput.StateIndex)})
 }
 
-func (tcl *TestChainLedger) FakeRotationTX(baseAO *isc.AliasOutputWithID, nextCommitteeAddr iotago.Address) (*isc.AliasOutputWithID, *iotago.Transaction) {
+func (tcl *TestChainLedger) FakeRotationTX(baseAO *isc.AccountOutputWithID, nextCommitteeAddr iotago.Address) (*isc.AccountOutputWithID, *iotago.Transaction) {
 	tx, err := transaction.NewRotateChainStateControllerTx(
 		tcl.chainID.AsAliasID(),
 		nextCommitteeAddr,
@@ -169,7 +169,7 @@ func (tcl *TestChainLedger) FakeRotationTX(baseAO *isc.AliasOutputWithID, nextCo
 	}
 	for outputID, output := range outputs {
 		if output.Type() == iotago.OutputAlias {
-			ao := output.(*iotago.AliasOutput)
+			ao := output.(*iotago.AccountOutput)
 			ao.StateIndex = baseAO.GetStateIndex() + 1 // Fake next state index, just for tests.
 			return isc.NewAliasOutputWithID(ao, outputID), tx
 		}
@@ -184,11 +184,11 @@ func (tcl *TestChainLedger) findChainRequests(tx *iotago.Transaction) []isc.Requ
 	for outputID, output := range outputs {
 		// If that's alias output of the chain, then it is not a request.
 		if output.Type() == iotago.OutputAlias {
-			outAsAlias := output.(*iotago.AliasOutput)
-			if outAsAlias.AliasID == tcl.chainID.AsAliasID() {
+			outAsAlias := output.(*iotago.AccountOutput)
+			if outAsAlias.AccountID == tcl.chainID.AsAliasID() {
 				continue // That's our alias output, not the request, skip it here.
 			}
-			if outAsAlias.AliasID.Empty() {
+			if outAsAlias.AccountID.Empty() {
 				implicitAliasID := iotago.AliasIDFromOutputID(outputID)
 				if implicitAliasID == tcl.chainID.AsAliasID() {
 					continue // That's our origin alias output, not the request, skip it here.

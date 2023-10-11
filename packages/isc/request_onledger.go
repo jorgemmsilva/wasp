@@ -233,7 +233,7 @@ func (req *onLedgerRequestData) SenderAccount() AgentID {
 		return nil
 	}
 	if req.requestMetadata != nil && !req.requestMetadata.SenderContract.Empty() {
-		if sender.Type() == iotago.AddressAlias {
+		if sender.Type() == iotago.AddressAccount {
 			chainID := ChainIDFromAddress(sender.(*iotago.AccountAddress))
 			return req.requestMetadata.SenderContract.AgentID(chainID)
 		}
@@ -272,8 +272,8 @@ func (req *onLedgerRequestData) TargetAddress() iotago.Address {
 		return out.Ident()
 	case *iotago.NFTOutput:
 		return out.Ident()
-	case *iotago.AliasOutput:
-		return out.AliasID.ToAddress()
+	case *iotago.AccountOutput:
+		return out.AccountID.ToAddress()
 	default:
 		panic("onLedgerRequestData:TargetAddress implement me")
 	}

@@ -89,17 +89,17 @@ func TestNoSenderFeature(t *testing.T) {
 	require.NoError(t, err)
 
 	// tweak the tx before adding to the ledger, so the request output has no sender feature
-	for i, out := range tx.Essence.Outputs {
+	for i, out := range tx.Outputs {
 		if out.FeatureSet().MetadataFeature() == nil {
 			// skip if not the request output
 			continue
 		}
 		customOut := out.Clone().(*iotago.NFTOutput)                                   // must be NFT output because we're sending an NFT
 		customOut.Features = iotago.Features{customOut.FeatureSet().MetadataFeature()} // keep metadata feature only
-		tx.Essence.Outputs[i] = customOut
+		tx.Outputs[i] = customOut
 	}
 
-	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Essence.Outputs, wallet, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Outputs, wallet, parameters.L1().Protocol.NetworkID())
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(t, err)
@@ -165,7 +165,7 @@ func TestSendBack(t *testing.T) {
 	require.NoError(t, err)
 
 	// tweak the tx before adding to the ledger, so the request output has a StorageDepositReturn unlock condition
-	for i, out := range tx.Essence.Outputs {
+	for i, out := range tx.Outputs {
 		if out.FeatureSet().MetadataFeature() == nil {
 			// skip if not the request output
 			continue
@@ -176,10 +176,10 @@ func TestSendBack(t *testing.T) {
 			Amount:        1 * isc.Million,
 		}
 		customOut.Conditions = append(customOut.Conditions, sendBackCondition)
-		tx.Essence.Outputs[i] = customOut
+		tx.Outputs[i] = customOut
 	}
 
-	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Essence.Outputs, wallet, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Outputs, wallet, parameters.L1().Protocol.NetworkID())
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(t, err)
@@ -224,7 +224,7 @@ func TestBadMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// tweak the tx before adding to the ledger, set bad metadata
-	for i, out := range tx.Essence.Outputs {
+	for i, out := range tx.Outputs {
 		if out.FeatureSet().MetadataFeature() == nil {
 			// skip if not the request output
 			continue
@@ -236,10 +236,10 @@ func TestBadMetadata(t *testing.T) {
 				customOut.Features[ii] = mf
 			}
 		}
-		tx.Essence.Outputs[i] = customOut
+		tx.Outputs[i] = customOut
 	}
 
-	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Essence.Outputs, wallet, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Outputs, wallet, parameters.L1().Protocol.NetworkID())
 	require.NoError(t, err)
 	require.Zero(t, ch.L2BaseTokens(isc.NewAddressAgentID(addr)))
 	err = ch.Env.AddToLedger(tx)

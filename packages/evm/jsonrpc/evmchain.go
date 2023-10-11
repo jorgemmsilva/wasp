@@ -254,7 +254,7 @@ func (e *EVMChain) iscStateFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.Block
 	return e.iscStateFromEVMBlockNumber(block.Number())
 }
 
-func (e *EVMChain) iscAliasOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.AliasOutputWithID, error) {
+func (e *EVMChain) iscAliasOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.AccountOutputWithID, error) {
 	if blockNumber == nil || blockNumber.Cmp(big.NewInt(int64(e.backend.ISCLatestState().BlockIndex()))) == 0 {
 		return e.backend.ISCLatestAliasOutput()
 	}
@@ -282,7 +282,7 @@ func (e *EVMChain) iscAliasOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.
 	return nextBlock.PreviousAliasOutput, nil
 }
 
-func (e *EVMChain) iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.BlockNumberOrHash) (*isc.AliasOutputWithID, error) {
+func (e *EVMChain) iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.BlockNumberOrHash) (*isc.AccountOutputWithID, error) {
 	if blockNumberOrHash == nil {
 		return e.backend.ISCLatestAliasOutput()
 	}
@@ -433,20 +433,20 @@ func (e *EVMChain) TransactionCount(address common.Address, blockNumberOrHash *r
 
 func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {
 	e.log.Debugf("CallContract(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
-	aliasOutput, err := e.iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
+	accountOutput, err := e.iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return nil, err
 	}
-	return e.backend.EVMCall(aliasOutput, callMsg)
+	return e.backend.EVMCall(accountOutput, callMsg)
 }
 
 func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) (uint64, error) {
 	e.log.Debugf("EstimateGas(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
-	aliasOutput, err := e.iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
+	accountOutput, err := e.iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return 0, err
 	}
-	return e.backend.EVMEstimateGas(aliasOutput, callMsg)
+	return e.backend.EVMEstimateGas(accountOutput, callMsg)
 }
 
 func (e *EVMChain) GasPrice() *big.Int {

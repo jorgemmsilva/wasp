@@ -26,7 +26,7 @@ func (vmctx *vmContext) ChainID() isc.ChainID {
 		// origin
 		chainID = isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(vmctx.task.AnchorOutputID))
 	} else {
-		chainID = isc.ChainIDFromAliasID(vmctx.task.AnchorOutput.AliasID)
+		chainID = isc.ChainIDFromAliasID(vmctx.task.AnchorOutput.AccountID)
 	}
 	return chainID
 }
@@ -128,7 +128,7 @@ func (reqctx *requestContext) transferAllowedFunds(target isc.AgentID, transfer 
 }
 
 func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
-	var nilAliasID iotago.AliasID
+	var nilAliasID iotago.AccountID
 	blockset := vmctx.task.AnchorOutput.FeatureSet()
 	senderBlock := blockset.SenderFeature()
 	var sender iotago.Address
@@ -138,7 +138,7 @@ func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
 	return &isc.StateAnchor{
 		ChainID:              vmctx.ChainID(),
 		Sender:               sender,
-		IsOrigin:             vmctx.task.AnchorOutput.AliasID == nilAliasID,
+		IsOrigin:             vmctx.task.AnchorOutput.AccountID == nilAliasID,
 		StateController:      vmctx.task.AnchorOutput.StateController(),
 		GovernanceController: vmctx.task.AnchorOutput.GovernorAddress(),
 		StateIndex:           vmctx.task.AnchorOutput.StateIndex,

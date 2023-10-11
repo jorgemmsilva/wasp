@@ -110,7 +110,7 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions.
 
-func inputAliasOutputConfirmed(gpaNodes map[gpa.NodeID]gpa.GPA, ao *isc.AliasOutputWithID) map[gpa.NodeID]gpa.Input {
+func inputAliasOutputConfirmed(gpaNodes map[gpa.NodeID]gpa.GPA, ao *isc.AccountOutputWithID) map[gpa.NodeID]gpa.Input {
 	inputs := map[gpa.NodeID]gpa.Input{}
 	for n := range gpaNodes {
 		inputs[n] = cmt_log.NewInputAliasOutputConfirmed(ao)
@@ -118,7 +118,7 @@ func inputAliasOutputConfirmed(gpaNodes map[gpa.NodeID]gpa.GPA, ao *isc.AliasOut
 	return inputs
 }
 
-func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Output, nextAO *isc.AliasOutputWithID) map[gpa.NodeID]gpa.Input {
+func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Output, nextAO *isc.AccountOutputWithID) map[gpa.NodeID]gpa.Input {
 	inputs := map[gpa.NodeID]gpa.Input{}
 	for n := range gpaNodes {
 		inputs[n] = cmt_log.NewInputConsensusOutputDone(consReq.GetLogIndex(), consReq.GetBaseAliasOutput().OutputID(), consReq.GetBaseAliasOutput().OutputID(), nextAO)
@@ -126,15 +126,15 @@ func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Outp
 	return inputs
 }
 
-func randomAliasOutputWithID(aliasID iotago.AliasID, governorAddress, stateAddress iotago.Address, stateIndex uint32) *isc.AliasOutputWithID {
+func randomAliasOutputWithID(aliasID iotago.AccountID, governorAddress, stateAddress iotago.Address, stateIndex uint32) *isc.AccountOutputWithID {
 	outputID := testiotago.RandOutputID()
-	aliasOutput := &iotago.AliasOutput{
-		AliasID:    aliasID,
+	accountOutput := &iotago.AccountOutput{
+		AccountID:    aliasID,
 		StateIndex: stateIndex,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governorAddress},
 		},
 	}
-	return isc.NewAliasOutputWithID(aliasOutput, outputID)
+	return isc.NewAliasOutputWithID(accountOutput, outputID)
 }

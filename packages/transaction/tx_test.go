@@ -18,9 +18,9 @@ func TestConsumeRequest(t *testing.T) {
 	addrKeys := stateController.AddressKeysForEd25519Address(stateControllerAddr)
 
 	aliasOutput1ID := tpkg.RandOutputID(0)
-	aliasOutput1 := &iotago.AliasOutput{
+	aliasOutput1 := &iotago.AccountOutput{
 		Amount:     1337,
-		AliasID:    tpkg.RandAccountAddress().AliasID(),
+		AccountID:    tpkg.RandAccountAddress().AccountID(),
 		StateIndex: 1,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddr},
@@ -33,14 +33,14 @@ func TestConsumeRequest(t *testing.T) {
 	request := &iotago.BasicOutput{
 		Amount: 1337,
 		Conditions: iotago.UnlockConditions{
-			&iotago.AddressUnlockCondition{Address: aliasOutput1.AliasID.ToAddress()},
+			&iotago.AddressUnlockCondition{Address: aliasOutput1.AccountID.ToAddress()},
 		},
 	}
 	requestUTXOInput := tpkg.RandUTXOInput()
 
-	aliasOut2 := &iotago.AliasOutput{
+	aliasOut2 := &iotago.AccountOutput{
 		Amount:     1337 * 2,
-		AliasID:    aliasOutput1.AliasID,
+		AccountID:    aliasOutput1.AccountID,
 		StateIndex: 2,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddr},

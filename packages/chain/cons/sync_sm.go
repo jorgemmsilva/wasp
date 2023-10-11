@@ -12,11 +12,11 @@ import (
 type SyncSM interface {
 	//
 	// State proposal.
-	ProposedBaseAliasOutputReceived(baseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages
+	ProposedBaseAliasOutputReceived(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages
 	StateProposalConfirmedByStateMgr() gpa.OutMessages
 	//
 	// Decided state.
-	DecidedVirtualStateNeeded(decidedBaseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages
+	DecidedVirtualStateNeeded(decidedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages
 	DecidedVirtualStateReceived(chainState state.State) gpa.OutMessages
 	//
 	// Save the block.
@@ -30,14 +30,14 @@ type SyncSM interface {
 type syncSMImpl struct {
 	//
 	// Query for a proposal.
-	proposedBaseAliasOutput         *isc.AliasOutputWithID
-	stateProposalQueryInputsReadyCB func(baseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages
+	proposedBaseAliasOutput         *isc.AccountOutputWithID
+	stateProposalQueryInputsReadyCB func(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages
 	stateProposalReceived           bool
-	stateProposalReceivedCB         func(proposedAliasOutput *isc.AliasOutputWithID) gpa.OutMessages
+	stateProposalReceivedCB         func(proposedAliasOutput *isc.AccountOutputWithID) gpa.OutMessages
 	//
 	// Query for a decided Virtual State.
-	decidedBaseAliasOutput         *isc.AliasOutputWithID
-	decidedStateQueryInputsReadyCB func(decidedBaseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages
+	decidedBaseAliasOutput         *isc.AccountOutputWithID
+	decidedStateQueryInputsReadyCB func(decidedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages
 	decidedStateReceived           bool
 	decidedStateReceivedCB         func(chainState state.State) gpa.OutMessages
 	//
@@ -50,9 +50,9 @@ type syncSMImpl struct {
 }
 
 func NewSyncSM(
-	stateProposalQueryInputsReadyCB func(baseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages,
-	stateProposalReceivedCB func(proposedAliasOutput *isc.AliasOutputWithID) gpa.OutMessages,
-	decidedStateQueryInputsReadyCB func(decidedBaseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages,
+	stateProposalQueryInputsReadyCB func(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages,
+	stateProposalReceivedCB func(proposedAliasOutput *isc.AccountOutputWithID) gpa.OutMessages,
+	decidedStateQueryInputsReadyCB func(decidedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages,
 	decidedStateReceivedCB func(chainState state.State) gpa.OutMessages,
 	saveProducedBlockInputsReadyCB func(producedBlock state.StateDraft) gpa.OutMessages,
 	saveProducedBlockDoneCB func(savedBlock state.Block) gpa.OutMessages,
@@ -67,7 +67,7 @@ func NewSyncSM(
 	}
 }
 
-func (sub *syncSMImpl) ProposedBaseAliasOutputReceived(baseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages {
+func (sub *syncSMImpl) ProposedBaseAliasOutputReceived(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	if sub.proposedBaseAliasOutput != nil {
 		return nil
 	}
@@ -83,7 +83,7 @@ func (sub *syncSMImpl) StateProposalConfirmedByStateMgr() gpa.OutMessages {
 	return sub.stateProposalReceivedCB(sub.proposedBaseAliasOutput)
 }
 
-func (sub *syncSMImpl) DecidedVirtualStateNeeded(decidedBaseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages {
+func (sub *syncSMImpl) DecidedVirtualStateNeeded(decidedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	if sub.decidedBaseAliasOutput != nil {
 		return nil
 	}

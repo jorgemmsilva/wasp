@@ -20,7 +20,7 @@ type AggregatedBatchProposals struct {
 	shouldBeSkipped        bool
 	batchProposalSet       batchProposalSet
 	decidedIndexProposals  map[gpa.NodeID][]int
-	decidedBaseAliasOutput *isc.AliasOutputWithID
+	decidedBaseAliasOutput *isc.AccountOutputWithID
 	decidedRequestRefs     []*isc.RequestRef
 	aggregatedTime         time.Time
 }
@@ -78,7 +78,7 @@ func (abp *AggregatedBatchProposals) DecidedDSSIndexProposals() map[gpa.NodeID][
 	return abp.decidedIndexProposals
 }
 
-func (abp *AggregatedBatchProposals) DecidedBaseAliasOutput() *isc.AliasOutputWithID {
+func (abp *AggregatedBatchProposals) DecidedBaseAliasOutput() *isc.AccountOutputWithID {
 	if abp.shouldBeSkipped {
 		panic("trying to use aggregated proposal marked to be skipped")
 	}

@@ -86,7 +86,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		activeAccessNodesCB := func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey) {
 			return []*cryptolib.PublicKey{}, []*cryptolib.PublicKey{}
 		}
-		trackActiveStateCB := func(ao *isc.AliasOutputWithID) {
+		trackActiveStateCB := func(ao *isc.AccountOutputWithID) {
 			// Nothing
 		}
 		savePreliminaryBlockCB := func(state.Block) {

@@ -13,15 +13,15 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-func TestAliasOutputWithIDSerialization(t *testing.T) {
-	output := iotago.AliasOutput{
-		Amount:     mathrand.Uint64(),
+func TestAccountOutputWithIDSerialization(t *testing.T) {
+	output := iotago.AccountOutput{
+		Amount:     iotago.BaseToken(mathrand.Uint64()),
 		StateIndex: mathrand.Uint32(),
 	}
-	rand.Read(output.AliasID[:])
+	rand.Read(output.AccountID[:])
 	outputID := iotago.OutputID{}
 	rand.Read(outputID[:])
-	aliasOutputWithID := isc.NewAliasOutputWithID(&output, outputID)
-	rwutil.ReadWriteTest(t, aliasOutputWithID, new(isc.AliasOutputWithID))
-	rwutil.BytesTest(t, aliasOutputWithID, isc.AliasOutputWithIDFromBytes)
+	aliasOutputWithID := isc.NewAccountOutputWithID(&output, outputID)
+	rwutil.ReadWriteTest(t, aliasOutputWithID, new(isc.AccountOutputWithID))
+	rwutil.BytesTest(t, aliasOutputWithID, isc.AccountOutputWithIDFromBytes)
 }

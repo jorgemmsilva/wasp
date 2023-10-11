@@ -134,7 +134,7 @@ func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
 		return out
 	}
 	switch out := iotago.Output(out).(type) {
-	case *iotago.AliasOutput:
+	case *iotago.AccountOutput:
 		out.Amount = storageDeposit
 	case *iotago.BasicOutput:
 		out.Amount = storageDeposit

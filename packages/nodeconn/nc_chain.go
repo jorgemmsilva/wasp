@@ -604,7 +604,7 @@ func (ncc *ncChain) queryChainOutputIDs(ctx context.Context) ([]iotago.OutputID,
 }
 
 func (ncc *ncChain) queryChainState(ctx context.Context) (iotago.MilestoneIndex, time.Time, *isc.OutputInfo, error) {
-	ledgerIndexAlias, aliasOutput, err := ncc.queryLatestChainStateAliasOutput(ctx)
+	ledgerIndexAlias, accountOutput, err := ncc.queryLatestChainStateAliasOutput(ctx)
 	if err != nil {
 		return 0, time.Time{}, nil, fmt.Errorf("failed to get latest chain state alias output: %w", err)
 	}
@@ -627,7 +627,7 @@ func (ncc *ncChain) queryChainState(ctx context.Context) (iotago.MilestoneIndex,
 		return 0, time.Time{}, nil, fmt.Errorf("failed to get milestone timestamp: %w", err)
 	}
 
-	return ledgerIndexAlias, milestoneTimestamp, aliasOutput, nil
+	return ledgerIndexAlias, milestoneTimestamp, accountOutput, nil
 }
 
 // SyncChainStateWithL1 synchronizes the chain state by applying the current confirmed milestone and alias output of the chain.
@@ -642,7 +642,7 @@ func (ncc *ncChain) SyncChainStateWithL1(ctx context.Context) error {
 		// there is a potential race condition if the ledger index on L1 changes during querying of the initial chain state
 		// => we need to retry in that case
 		for i := 0; i < inxInitialStateRetries; i++ {
-			ledgerIndex, milestoneTimestamp, aliasOutput, err := ncc.queryChainState(ctx)
+			ledgerIndex, milestoneTimestamp, accountOutput, err := ncc.queryChainState(ctx)
 			if err != nil {
 				if i == inxInitialStateRetries-1 {
 					// last try, return the error
@@ -653,13 +653,13 @@ func (ncc *ncChain) SyncChainStateWithL1(ctx context.Context) error {
 				time.Sleep(1 * time.Second)
 				continue
 			}
-			return ledgerIndex, milestoneTimestamp, aliasOutput, nil
+			return ledgerIndex, milestoneTimestamp, accountOutput, nil
 		}
 
 		return 0, time.Time{}, nil, errors.New("failed to query initial chain state")
 	}
 
-	ledgerIndex, milestoneTimestamp, aliasOutput, err := queryChainStateLoop()
+	ledgerIndex, milestoneTimestamp, accountOutput, err := queryChainStateLoop()
 	if err != nil {
 		return err
 	}
@@ -667,7 +667,7 @@ func (ncc *ncChain) SyncChainStateWithL1(ctx context.Context) error {
 	// we can safely forward the state to the chain.
 	// ledger updates won't be applied in parallel as long as synchronized is not set to true.
 	ncc.milestoneHandler(ledgerIndex, milestoneTimestamp)
-	ncc.aliasOutputHandler(ledgerIndex, aliasOutput)
+	ncc.aliasOutputHandler(ledgerIndex, accountOutput)
 
 	// the indexer returns the outputs in sorted order by timestampBooked,
 	// so we don't miss newly added outputs if the ledgerIndex increases during the query.

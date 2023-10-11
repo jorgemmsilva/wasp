@@ -96,11 +96,11 @@ func testConsBasic(t *testing.T, n, f int) {
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 	)
 	require.NoError(t, err)
-	stateAnchor, aliasOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, accountOutput, err := transaction.GetAnchorFromTransaction(originTX)
 	require.NoError(t, err)
 	require.NotNil(t, stateAnchor)
-	require.NotNil(t, aliasOutput)
-	ao0 := isc.NewAliasOutputWithID(aliasOutput, stateAnchor.OutputID)
+	require.NotNil(t, accountOutput)
+	ao0 := isc.NewAliasOutputWithID(accountOutput, stateAnchor.OutputID)
 	err = utxoDB.AddToLedger(originTX)
 	require.NoError(t, err)
 
@@ -136,11 +136,11 @@ func testConsBasic(t *testing.T, n, f int) {
 	outputs, _ = utxoDB.GetUnspentOutputs(chainID.AsAddress())
 	for outputID, output := range outputs {
 		if output.Type() == iotago.OutputAlias {
-			aliasOutput := output.(*iotago.AliasOutput)
-			if aliasOutput.AliasID == chainID.AsAliasID() {
+			accountOutput := output.(*iotago.AccountOutput)
+			if accountOutput.AccountID == chainID.AsAliasID() {
 				continue // That's our alias output, not the request, skip it here.
 			}
-			if aliasOutput.AliasID.Empty() {
+			if accountOutput.AccountID.Empty() {
 				implicitAliasID := iotago.AliasIDFromOutputID(outputID)
 				if implicitAliasID == chainID.AsAliasID() {
 					continue // That's our origin alias output, not the request, skip it here.
@@ -421,7 +421,7 @@ func testChained(t *testing.T, n, f, b int) {
 
 type testInstInput struct {
 	nodeID          gpa.NodeID
-	baseAliasOutput *isc.AliasOutputWithID
+	baseAliasOutput *isc.AccountOutputWithID
 	baseState       state.State // State committed with the baseAliasOutput
 }
 

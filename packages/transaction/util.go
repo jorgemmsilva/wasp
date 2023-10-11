@@ -13,11 +13,11 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
-var ErrNoAliasOutputAtIndex0 = errors.New("origin AliasOutput not found at index 0")
+var ErrNoAliasOutputAtIndex0 = errors.New("origin AccountOutput not found at index 0")
 
 // GetAnchorFromTransaction analyzes the output at index 0 and extracts anchor information. Otherwise error
-func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago.AliasOutput, error) {
-	anchorOutput, ok := tx.Essence.Outputs[0].(*iotago.AliasOutput)
+func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago.AccountOutput, error) {
+	anchorOutput, ok := tx.Outputs[0].(*iotago.AccountOutput)
 	if !ok {
 		return nil, nil, ErrNoAliasOutputAtIndex0
 	}
@@ -25,7 +25,7 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 	if err != nil {
 		return nil, anchorOutput, fmt.Errorf("GetAnchorFromTransaction: %w", err)
 	}
-	aliasID := anchorOutput.AliasID
+	aliasID := anchorOutput.AccountID
 	isOrigin := false
 
 	if aliasID.Empty() {
@@ -87,7 +87,7 @@ func ComputeInputsAndRemainder(
 				continue
 			}
 		}
-		if _, ok := output.(*iotago.AliasOutput); ok {
+		if _, ok := output.(*iotago.AccountOutput); ok {
 			// this is an UTXO that holds an alias that is not relevant for this tx, should be skipped
 			continue
 		}

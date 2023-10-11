@@ -14,7 +14,7 @@ import (
 
 type BatchProposal struct {
 	nodeIndex               uint16                 // Just for a double-check.
-	baseAliasOutput         *isc.AliasOutputWithID // Proposed Base AliasOutput to use.
+	baseAliasOutput         *isc.AccountOutputWithID // Proposed Base AccountOutput to use.
 	dssIndexProposal        util.BitVector         // DSS Index proposal.
 	timeData                time.Time              // Our view of time.
 	validatorFeeDestination isc.AgentID            // Proposed destination for fees.
@@ -23,7 +23,7 @@ type BatchProposal struct {
 
 func NewBatchProposal(
 	nodeIndex uint16,
-	baseAliasOutput *isc.AliasOutputWithID,
+	baseAliasOutput *isc.AccountOutputWithID,
 	dssIndexProposal util.BitVector,
 	timeData time.Time,
 	validatorFeeDestination isc.AgentID,
@@ -46,7 +46,7 @@ func (b *BatchProposal) Bytes() []byte {
 func (b *BatchProposal) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	b.nodeIndex = rr.ReadUint16()
-	b.baseAliasOutput = new(isc.AliasOutputWithID)
+	b.baseAliasOutput = new(isc.AccountOutputWithID)
 	rr.Read(b.baseAliasOutput)
 	b.dssIndexProposal = util.NewFixedSizeBitVector(0)
 	rr.Read(b.dssIndexProposal)

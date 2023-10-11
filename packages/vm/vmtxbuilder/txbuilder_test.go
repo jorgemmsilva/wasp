@@ -45,7 +45,7 @@ func (m *mockAccountContractRead) Read() AccountsContractRead {
 	}
 }
 
-func newMockAccountsContractRead(anchor *iotago.AliasOutput) *mockAccountContractRead {
+func newMockAccountsContractRead(anchor *iotago.AccountOutput) *mockAccountContractRead {
 	anchorMinSD := parameters.L1().Protocol.RentStructure.MinRent(anchor)
 	assets := isc.NewAssetsBaseTokens(anchor.Deposit() - anchorMinSD)
 	return &mockAccountContractRead{
@@ -58,10 +58,10 @@ func TestTxBuilderBasic(t *testing.T) {
 	const initialTotalBaseTokens = 10 * isc.Million
 	addr := tpkg.RandEd25519Address()
 	aliasID := testiotago.RandAliasID()
-	anchor := &iotago.AliasOutput{
+	anchor := &iotago.AccountOutput{
 		Amount:       initialTotalBaseTokens,
 		NativeTokens: nil,
-		AliasID:      aliasID,
+		AccountID:      aliasID,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
@@ -145,10 +145,10 @@ func TestTxBuilderConsistency(t *testing.T) {
 	const initialTotalBaseTokens = 10000 * isc.Million
 	addr := tpkg.RandEd25519Address()
 	aliasID := testiotago.RandAliasID()
-	anchor := &iotago.AliasOutput{
+	anchor := &iotago.AccountOutput{
 		Amount:       initialTotalBaseTokens,
 		NativeTokens: nil,
-		AliasID:      aliasID,
+		AccountID:      aliasID,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
@@ -183,7 +183,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	// return deposit in BaseToken
 	consumeUTXO := func(t *testing.T, txb *AnchorTransactionBuilder, id iotago.NativeTokenID, amountNative uint64, mockedAccounts *mockAccountContractRead) {
 		out := transaction.MakeBasicOutput(
-			txb.anchorOutput.AliasID.ToAddress(),
+			txb.anchorOutput.AccountID.ToAddress(),
 			nil,
 			&isc.Assets{
 				NativeTokens: []*iotago.NativeTokenFeature{{ID: id, Amount: big.NewInt(int64(amountNative))}},
@@ -210,7 +210,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			}},
 		}
 		out := transaction.BasicOutputFromPostData(
-			txb.anchorOutput.AliasID.ToAddress(),
+			txb.anchorOutput.AccountID.ToAddress(),
 			isc.ContractIdentityFromHname(isc.Hn("test")),
 			isc.RequestParameters{
 				TargetAddress:                 tpkg.RandEd25519Address(),
@@ -383,10 +383,10 @@ func TestFoundries(t *testing.T) {
 	const initialTotalBaseTokens = 10*isc.Million + governance.DefaultMinBaseTokensOnCommonAccount
 	addr := tpkg.RandEd25519Address()
 	aliasID := testiotago.RandAliasID()
-	anchor := &iotago.AliasOutput{
+	anchor := &iotago.AccountOutput{
 		Amount:       initialTotalBaseTokens,
 		NativeTokens: nil,
-		AliasID:      aliasID,
+		AccountID:      aliasID,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},

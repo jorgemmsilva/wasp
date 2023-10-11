@@ -236,7 +236,7 @@ func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*
 		return nil, err
 	}
 
-	if tx.Essence.Outputs[0].Deposit() == 0 {
+	if tx.Outputs[0].Deposit() == 0 {
 		return nil, errors.New("createRequestTx: amount == 0. Consider: solo.InitOptions{AutoAdjustStorageDeposit: true}")
 	}
 	return tx, err

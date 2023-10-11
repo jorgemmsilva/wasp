@@ -152,7 +152,7 @@ func TestValidSizeParams(t *testing.T) {
 				bytes[0] = wasmtypes.ScAgentIDAddress
 			}
 			if param == testwasmlib.ParamChainID {
-				bytes[0] = byte(iotago.AddressAlias)
+				bytes[0] = byte(iotago.AddressAccount)
 			}
 			pt.Params.Param().GetBytes(param).SetValue(bytes)
 			pt.Func.Post()

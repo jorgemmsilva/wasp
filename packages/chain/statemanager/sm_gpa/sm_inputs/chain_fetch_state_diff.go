@@ -21,7 +21,7 @@ type ChainFetchStateDiff struct {
 
 var _ gpa.Input = &ChainFetchStateDiff{}
 
-func NewChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.AliasOutputWithID) (*ChainFetchStateDiff, <-chan *ChainFetchStateDiffResults) {
+func NewChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.AccountOutputWithID) (*ChainFetchStateDiff, <-chan *ChainFetchStateDiffResults) {
 	if prevAO == nil {
 		// Only the current state is needed, if prevAO is unknown.
 		prevAO = nextAO

@@ -18,15 +18,15 @@ type ConsensusStateProposal struct {
 
 var _ gpa.Input = &ConsensusStateProposal{}
 
-func NewConsensusStateProposal(ctx context.Context, aliasOutput *isc.AliasOutputWithID) (*ConsensusStateProposal, <-chan interface{}) {
-	commitment, err := transaction.L1CommitmentFromAliasOutput(aliasOutput.GetAliasOutput())
+func NewConsensusStateProposal(ctx context.Context, accountOutput *isc.AccountOutputWithID) (*ConsensusStateProposal, <-chan interface{}) {
+	commitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
 	if err != nil {
 		panic("Cannot make L1 commitment from alias output")
 	}
 	resultChannel := make(chan interface{}, 1)
 	return &ConsensusStateProposal{
 		context:      ctx,
-		stateIndex:   aliasOutput.GetStateIndex(),
+		stateIndex:   accountOutput.GetStateIndex(),
 		l1Commitment: commitment,
 		resultCh:     resultChannel,
 	}, resultChannel

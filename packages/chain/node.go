@@ -151,7 +151,7 @@ type chainNodeImpl struct {
 	tangleTime          time.Time
 	mempool             mempool.Mempool
 	stateMgr            statemanager.StateMgr
-	recvAliasOutputPipe pipe.Pipe[*isc.AliasOutputWithID]
+	recvAliasOutputPipe pipe.Pipe[*isc.AccountOutputWithID]
 	recvTxPublishedPipe pipe.Pipe[*txPublished]
 	recvMilestonePipe   pipe.Pipe[time.Time]
 	consensusInsts      *shrinkingmap.ShrinkingMap[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]] // Running consensus instances.
@@ -182,12 +182,12 @@ type chainNodeImpl struct {
 	accessNodesFromCNF     []*cryptolib.PublicKey // Access nodes, as configured in the governance contract (for the active state).
 	accessNodesFromACT     []*cryptolib.PublicKey // Access nodes, as configured in the governance contract (for the confirmed state).
 	serverNodes            []*cryptolib.PublicKey // The nodes we can query (because they consider us an access node).
-	latestConfirmedAO      *isc.AliasOutputWithID // Confirmed by L1, can be lagging from latestActiveAO.
+	latestConfirmedAO      *isc.AccountOutputWithID // Confirmed by L1, can be lagging from latestActiveAO.
 	latestConfirmedState   state.State            // State corresponding to latestConfirmedAO, for performance reasons.
-	latestConfirmedStateAO *isc.AliasOutputWithID // Set only when the corresponding state is retrieved.
-	latestActiveAO         *isc.AliasOutputWithID // This is the AO the chain is build on.
+	latestConfirmedStateAO *isc.AccountOutputWithID // Set only when the corresponding state is retrieved.
+	latestActiveAO         *isc.AccountOutputWithID // This is the AO the chain is build on.
 	latestActiveState      state.State            // State corresponding to latestActiveAO, for performance reasons.
-	latestActiveStateAO    *isc.AliasOutputWithID // Set only when the corresponding state is retrieved.
+	latestActiveStateAO    *isc.AccountOutputWithID // Set only when the corresponding state is retrieved.
 	//
 	// Infrastructure.
 	netRecvPipe         pipe.Pipe[*peering.PeerMessageIn]
@@ -238,7 +238,7 @@ type txPublished struct {
 	committeeAddr   iotago.Ed25519Address
 	logIndex        cmt_log.LogIndex
 	txID            iotago.TransactionID
-	nextAliasOutput *isc.AliasOutputWithID
+	nextAliasOutput *isc.AccountOutputWithID
 	confirmed       bool
 }
 
@@ -295,7 +295,7 @@ func New(
 		chainStore:             chainStore,
 		nodeConn:               nodeConn,
 		tangleTime:             time.Time{}, // Zero time, while we haven't received it from the L1.
-		recvAliasOutputPipe:    pipe.NewInfinitePipe[*isc.AliasOutputWithID](),
+		recvAliasOutputPipe:    pipe.NewInfinitePipe[*isc.AccountOutputWithID](),
 		recvTxPublishedPipe:    pipe.NewInfinitePipe[*txPublished](),
 		recvMilestonePipe:      pipe.NewInfinitePipe[time.Time](),
 		consensusInsts:         shrinkingmap.New[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]](),
@@ -363,7 +363,7 @@ func New(
 			defer cni.accessLock.RUnlock()
 			return cni.activeAccessNodes, cni.activeCommitteeNodes
 		},
-		func(ao *isc.AliasOutputWithID) {
+		func(ao *isc.AccountOutputWithID) {
 			cni.stateTrackerAct.TrackAliasOutput(ao, true)
 		},
 		func(block state.Block) {
@@ -473,7 +473,7 @@ func New(
 			// we don't need to send consumed alias outputs to the pipe
 			return
 		}
-		recvAliasOutputPipeInCh <- outputInfo.AliasOutputWithID()
+		recvAliasOutputPipeInCh <- outputInfo.AccountOutputWithID()
 	}
 	recvMilestonePipeInCh := cni.recvMilestonePipe.In()
 	recvMilestoneCB := func(timestamp time.Time) {
@@ -542,12 +542,12 @@ func (cni *chainNodeImpl) run(ctx context.Context, cleanupFunc context.CancelFun
 				continue
 			}
 			cni.handleTxPublished(ctx, txPublishResult)
-		case aliasOutput, ok := <-recvAliasOutputPipeOutCh:
+		case accountOutput, ok := <-recvAliasOutputPipeOutCh:
 			if !ok {
 				recvAliasOutputPipeOutCh = nil
 				continue
 			}
-			cni.handleAliasOutput(ctx, aliasOutput)
+			cni.handleAliasOutput(ctx, accountOutput)
 		case timestamp, ok := <-recvMilestonePipeOutCh:
 			if !ok {
 				recvMilestonePipeOutCh = nil
@@ -617,7 +617,7 @@ func (cni *chainNodeImpl) run(ctx context.Context, cleanupFunc context.CancelFun
 
 // The active state is needed by the mempool to cleanup the processed requests, etc.
 // The request/receipt awaits are already handled in the StateTracker.
-func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *isc.AliasOutputWithID, added, removed []state.Block) {
+func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *isc.AccountOutputWithID, added, removed []state.Block) {
 	cni.log.Debugf("handleStateTrackerActCB: till %v from %v", till, from)
 	cni.accessLock.Lock()
 	cni.latestActiveState = st
@@ -649,7 +649,7 @@ func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *is
 //   - We set it as latest here. This is then used in many places to access the latest version of the state.
 //
 // The request/receipt awaits are already handled in the StateTracker.
-func (cni *chainNodeImpl) handleStateTrackerCnfCB(st state.State, from, till *isc.AliasOutputWithID, added, removed []state.Block) {
+func (cni *chainNodeImpl) handleStateTrackerCnfCB(st state.State, from, till *isc.AccountOutputWithID, added, removed []state.Block) {
 	cni.log.Debugf("handleStateTrackerCnfCB: till %v from %v", till, from)
 	cni.accessLock.Lock()
 	cni.latestConfirmedState = st
@@ -700,10 +700,10 @@ func (cni *chainNodeImpl) handleTxPublished(ctx context.Context, txPubResult *tx
 	cni.handleChainMgrOutput(ctx, cni.chainMgr.Output())
 }
 
-func (cni *chainNodeImpl) handleAliasOutput(ctx context.Context, aliasOutput *isc.AliasOutputWithID) {
-	cni.log.Debugf("handleAliasOutput: %v", aliasOutput)
-	if aliasOutput.GetStateIndex() == 0 {
-		initBlock, err := origin.InitChainByAliasOutput(cni.chainStore, aliasOutput)
+func (cni *chainNodeImpl) handleAliasOutput(ctx context.Context, accountOutput *isc.AccountOutputWithID) {
+	cni.log.Debugf("handleAliasOutput: %v", accountOutput)
+	if accountOutput.GetStateIndex() == 0 {
+		initBlock, err := origin.InitChainByAliasOutput(cni.chainStore, accountOutput)
 		if err != nil {
 			cni.log.Errorf("Ignoring InitialAO for the chain: %v", err)
 			return
@@ -713,10 +713,10 @@ func (cni *chainNodeImpl) handleAliasOutput(ctx context.Context, aliasOutput *is
 		}
 	}
 
-	cni.stateTrackerCnf.TrackAliasOutput(aliasOutput, true)
-	cni.stateTrackerAct.TrackAliasOutput(aliasOutput, false) // ACT state will be equal to CNF or ahead of it.
+	cni.stateTrackerCnf.TrackAliasOutput(accountOutput, true)
+	cni.stateTrackerAct.TrackAliasOutput(accountOutput, false) // ACT state will be equal to CNF or ahead of it.
 	outMsgs := cni.chainMgr.Input(
-		chainmanager.NewInputAliasOutputConfirmed(aliasOutput),
+		chainmanager.NewInputAliasOutputConfirmed(accountOutput),
 	)
 	cni.sendMessages(outMsgs)
 	cni.handleChainMgrOutput(ctx, cni.chainMgr.Output())
@@ -1050,7 +1050,7 @@ func (cni *chainNodeImpl) Log() *logger.Logger {
 	return cni.log
 }
 
-func (cni *chainNodeImpl) LatestAliasOutput(freshness StateFreshness) (*isc.AliasOutputWithID, error) {
+func (cni *chainNodeImpl) LatestAliasOutput(freshness StateFreshness) (*isc.AccountOutputWithID, error) {
 	cni.accessLock.RLock()
 	latestActiveAO := cni.latestActiveStateAO
 	latestConfirmedAO := cni.latestConfirmedStateAO

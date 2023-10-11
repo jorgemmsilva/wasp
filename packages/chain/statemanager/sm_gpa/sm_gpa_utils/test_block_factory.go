@@ -29,7 +29,7 @@ type BlockFactory struct {
 	chainID             isc.ChainID
 	chainInitParams     dict.Dict
 	lastBlockCommitment *state.L1Commitment
-	aliasOutputs        map[state.BlockHash]*isc.AliasOutputWithID
+	aliasOutputs        map[state.BlockHash]*isc.AccountOutputWithID
 }
 
 func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *BlockFactory {
@@ -43,9 +43,9 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(aliasOutput0ID))
 	stateAddress := cryptolib.NewKeyPair().GetPublicKey().AsEd25519Address()
 	originCommitment := origin.L1Commitment(chainInitParams, 0)
-	aliasOutput0 := &iotago.AliasOutput{
+	aliasOutput0 := &iotago.AccountOutput{
 		Amount:        tpkg.TestTokenSupply,
-		AliasID:       chainID.AsAliasID(), // NOTE: not very correct: origin output's AliasID should be empty; left here to make mocking transitions easier
+		AccountID:       chainID.AsAliasID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
 		StateMetadata: testutil.DummyStateMetadata(originCommitment).Bytes(),
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
@@ -57,7 +57,7 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 			},
 		},
 	}
-	aliasOutputs := make(map[state.BlockHash]*isc.AliasOutputWithID)
+	aliasOutputs := make(map[state.BlockHash]*isc.AccountOutputWithID)
 	originOutput := isc.NewAliasOutputWithID(aliasOutput0, aliasOutput0ID)
 	aliasOutputs[originCommitment.BlockHash()] = originOutput
 	chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
@@ -80,7 +80,7 @@ func (bfT *BlockFactory) GetChainInitParameters() dict.Dict {
 	return bfT.chainInitParams
 }
 
-func (bfT *BlockFactory) GetOriginOutput() *isc.AliasOutputWithID {
+func (bfT *BlockFactory) GetOriginOutput() *isc.AccountOutputWithID {
 	return bfT.GetAliasOutput(origin.L1Commitment(nil, 0))
 }
 
@@ -142,10 +142,10 @@ func (bfT *BlockFactory) GetNextBlock(
 
 	consumedAliasOutput := bfT.GetAliasOutput(commitment).GetAliasOutput()
 
-	aliasOutput := &iotago.AliasOutput{
+	accountOutput := &iotago.AccountOutput{
 		Amount:         consumedAliasOutput.Amount,
 		NativeTokens:   consumedAliasOutput.NativeTokens,
-		AliasID:        consumedAliasOutput.AliasID,
+		AccountID:        consumedAliasOutput.AccountID,
 		StateIndex:     consumedAliasOutput.StateIndex + 1,
 		StateMetadata:  testutil.DummyStateMetadata(newCommitment).Bytes(),
 		FoundryCounter: consumedAliasOutput.FoundryCounter,
@@ -153,7 +153,7 @@ func (bfT *BlockFactory) GetNextBlock(
 		Features:       consumedAliasOutput.Features,
 	}
 	aliasOutputID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(bfT.t), 0)
-	aliasOutputWithID := isc.NewAliasOutputWithID(aliasOutput, aliasOutputID)
+	aliasOutputWithID := isc.NewAliasOutputWithID(accountOutput, aliasOutputID)
 	bfT.aliasOutputs[newCommitment.BlockHash()] = aliasOutputWithID
 
 	return block
@@ -170,7 +170,7 @@ func (bfT *BlockFactory) GetStateDraft(block state.Block) state.StateDraft {
 	return result
 }
 
-func (bfT *BlockFactory) GetAliasOutput(commitment *state.L1Commitment) *isc.AliasOutputWithID {
+func (bfT *BlockFactory) GetAliasOutput(commitment *state.L1Commitment) *isc.AccountOutputWithID {
 	result, ok := bfT.aliasOutputs[commitment.BlockHash()]
 	require.True(bfT.t, ok)
 	return result

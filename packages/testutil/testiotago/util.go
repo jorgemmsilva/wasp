@@ -13,6 +13,6 @@ func RandOutputID() iotago.OutputID {
 	return tpkg.RandOutputID(tpkg.RandUint16(10))
 }
 
-func RandAliasID() (ret iotago.AliasID) {
-	return tpkg.RandAccountAddress().AliasID()
+func RandAliasID() (ret iotago.AccountID) {
+	return tpkg.RandAccountAddress().AccountID()
 }

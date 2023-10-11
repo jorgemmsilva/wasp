@@ -22,7 +22,7 @@ type BlockInfo struct {
 	TotalRequests         uint16
 	NumSuccessfulRequests uint16 // which didn't panic
 	NumOffLedgerRequests  uint16
-	PreviousAliasOutput   *isc.AliasOutputWithID // nil for block #0
+	PreviousAliasOutput   *isc.AccountOutputWithID // nil for block #0
 	GasBurned             uint64
 	GasFeeCharged         uint64
 }
@@ -53,7 +53,7 @@ func (bi *BlockInfo) String() string {
 	ret += fmt.Sprintf("\tTotal requests: %d\n", bi.TotalRequests)
 	ret += fmt.Sprintf("\toff-ledger requests: %d\n", bi.NumOffLedgerRequests)
 	ret += fmt.Sprintf("\tSuccessful requests: %d\n", bi.NumSuccessfulRequests)
-	ret += fmt.Sprintf("\tPrev AliasOutput: %s\n", bi.PreviousAliasOutput.String())
+	ret += fmt.Sprintf("\tPrev AccountOutput: %s\n", bi.PreviousAliasOutput.String())
 	ret += fmt.Sprintf("\tGas burned: %d\n", bi.GasBurned)
 	ret += fmt.Sprintf("\tGas fee charged: %d\n", bi.GasFeeCharged)
 	ret += "}\n"
@@ -89,7 +89,7 @@ func (bi *BlockInfo) Read(r io.Reader) error {
 	bi.NumOffLedgerRequests = rr.ReadUint16()
 	hasPreviousAliasOutput := rr.ReadBool()
 	if hasPreviousAliasOutput {
-		bi.PreviousAliasOutput = &isc.AliasOutputWithID{}
+		bi.PreviousAliasOutput = &isc.AccountOutputWithID{}
 		rr.Read(bi.PreviousAliasOutput)
 	}
 	bi.GasBurned = rr.ReadGas64()

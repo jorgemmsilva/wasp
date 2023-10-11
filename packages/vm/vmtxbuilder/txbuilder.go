@@ -33,11 +33,11 @@ type AccountsContractRead struct {
 // build an essence of the anchor transaction
 type AnchorTransactionBuilder struct {
 	// anchorOutput output of the chain
-	anchorOutput               *iotago.AliasOutput
+	anchorOutput               *iotago.AccountOutput
 	anchorOutputStorageDeposit uint64
 
 	// result new AO of the chain, filled by "BuildTransactionEssence"
-	resultAnchorOutput *iotago.AliasOutput
+	resultAnchorOutput *iotago.AccountOutput
 
 	// anchorOutputID is the ID of the anchor output
 	anchorOutputID iotago.OutputID
@@ -61,7 +61,7 @@ type AnchorTransactionBuilder struct {
 
 // NewAnchorTransactionBuilder creates new AnchorTransactionBuilder object
 func NewAnchorTransactionBuilder(
-	anchorOutput *iotago.AliasOutput,
+	anchorOutput *iotago.AccountOutput,
 	anchorOutputID iotago.OutputID,
 	anchorOutputStorageDeposit uint64, // because we don't know what L1 parameters were used to calculate the last AO, we need to infer it from the accounts state
 	accounts AccountsContractRead,
@@ -86,7 +86,7 @@ func (txb *AnchorTransactionBuilder) Clone() *AnchorTransactionBuilder {
 	copy(anchorOutputID[:], txb.anchorOutputID[:])
 
 	return &AnchorTransactionBuilder{
-		anchorOutput:               txb.anchorOutput.Clone().(*iotago.AliasOutput),
+		anchorOutput:               txb.anchorOutput.Clone().(*iotago.AccountOutput),
 		anchorOutputID:             anchorOutputID,
 		anchorOutputStorageDeposit: txb.anchorOutputStorageDeposit,
 		accountsView:               txb.accountsView,
@@ -156,7 +156,7 @@ func (txb *AnchorTransactionBuilder) Consume(req isc.OnLedgerRequest) uint64 {
 func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerRequest) int {
 	defer txb.assertLimits()
 	txb.consumed = append(txb.consumed, req)
-	txb.postedOutputs = append(txb.postedOutputs, retryOutputFromOnLedgerRequest(req, txb.anchorOutput.AliasID))
+	txb.postedOutputs = append(txb.postedOutputs, retryOutputFromOnLedgerRequest(req, txb.anchorOutput.AccountID))
 	return len(txb.postedOutputs) - 1
 }
 
@@ -224,7 +224,7 @@ func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputID
 		output := req.Output()
 		if retrReq, ok := req.(*isc.RetryOnLedgerRequest); ok {
 			outputID = retrReq.RetryOutputID()
-			output = retryOutputFromOnLedgerRequest(req, txb.anchorOutput.AliasID)
+			output = retryOutputFromOnLedgerRequest(req, txb.anchorOutput.AccountID)
 		}
 		outputIDs = append(outputIDs, outputID)
 		inputs[outputID] = output
@@ -263,15 +263,15 @@ func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputID
 	return inputs, outputIDs
 }
 
-func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *iotago.AliasOutput {
-	aliasID := txb.anchorOutput.AliasID
+func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *iotago.AccountOutput {
+	aliasID := txb.anchorOutput.AccountID
 	if aliasID.Empty() {
 		aliasID = iotago.AliasIDFromOutputID(txb.anchorOutputID)
 	}
-	anchorOutput := &iotago.AliasOutput{
+	anchorOutput := &iotago.AccountOutput{
 		Amount:         0,
 		NativeTokens:   nil, // anchor output does not contain native tokens
-		AliasID:        aliasID,
+		AccountID:        aliasID,
 		StateIndex:     txb.anchorOutput.StateIndex + 1,
 		StateMetadata:  stateMetadata,
 		FoundryCounter: txb.nextFoundryCounter(),
@@ -396,7 +396,7 @@ func (txb *AnchorTransactionBuilder) AnchorOutputStorageDeposit() uint64 {
 	return txb.anchorOutputStorageDeposit
 }
 
-func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAliasID iotago.AliasID) iotago.Output {
+func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAliasID iotago.AccountID) iotago.Output {
 	out := req.Output().Clone()
 
 	features := iotago.Features{
@@ -419,7 +419,7 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAliasID iotago
 	case *iotago.NFTOutput:
 		o.Features = features
 		o.Conditions = unlock
-	case *iotago.AliasOutput:
+	case *iotago.AccountOutput:
 		o.Features = features
 		o.Conditions = unlock
 	default:
@@ -429,5 +429,5 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAliasID iotago
 }
 
 func (txb *AnchorTransactionBuilder) chainAddress() iotago.Address {
-	return txb.anchorOutput.AliasID.ToAddress()
+	return txb.anchorOutput.AccountID.ToAddress()
 }

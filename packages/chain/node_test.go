@@ -390,7 +390,7 @@ type testEnv struct {
 	tcl              *testchain.TestChainLedger
 	cmtAddress       iotago.Address
 	chainID          isc.ChainID
-	originAO         *isc.AliasOutputWithID
+	originAO         *isc.AccountOutputWithID
 	originTx         *iotago.Transaction
 	nodeConns        []*testNodeConn
 	nodes            []chain.Chain

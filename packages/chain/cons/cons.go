@@ -111,10 +111,10 @@ type Output struct {
 	Terminated bool
 	//
 	// Requests for other components.
-	NeedMempoolProposal       *isc.AliasOutputWithID // Requests for the mempool are needed for this Base Alias Output.
+	NeedMempoolProposal       *isc.AccountOutputWithID // Requests for the mempool are needed for this Base Alias Output.
 	NeedMempoolRequests       []*isc.RequestRef      // Request payloads are needed from mempool for this IDs/Hash.
-	NeedStateMgrStateProposal *isc.AliasOutputWithID // Query for a proposal for Virtual State (it will go to the batch proposal).
-	NeedStateMgrDecidedState  *isc.AliasOutputWithID // Query for a decided Virtual State to be used by VM.
+	NeedStateMgrStateProposal *isc.AccountOutputWithID // Query for a proposal for Virtual State (it will go to the batch proposal).
+	NeedStateMgrDecidedState  *isc.AccountOutputWithID // Query for a decided Virtual State to be used by VM.
 	NeedStateMgrSaveBlock     state.StateDraft       // Ask StateMgr to save the produced block.
 	NeedVMResult              *vm.VMTask             // VM Result is needed for this (agreed) batch.
 	//
@@ -126,7 +126,7 @@ type Output struct {
 type Result struct {
 	Transaction     *iotago.Transaction    // The TX for committing the block.
 	BaseAliasOutput iotago.OutputID        // AO consumed in the TX.
-	NextAliasOutput *isc.AliasOutputWithID // AO produced in the TX.
+	NextAliasOutput *isc.AccountOutputWithID // AO produced in the TX.
 	Block           state.Block            // The state diff produced.
 }
 
@@ -377,7 +377,7 @@ func (c *consImpl) StatusString() string {
 ////////////////////////////////////////////////////////////////////////////////
 // MP -- MemPool
 
-func (c *consImpl) uponMPProposalInputsReady(baseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponMPProposalInputsReady(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	c.output.NeedMempoolProposal = baseAliasOutput
 	return nil
 }
@@ -400,17 +400,17 @@ func (c *consImpl) uponMPRequestsReceived(requests []isc.Request) gpa.OutMessage
 ////////////////////////////////////////////////////////////////////////////////
 // SM -- StateManager
 
-func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	c.output.NeedStateMgrStateProposal = baseAliasOutput
 	return nil
 }
 
-func (c *consImpl) uponSMStateProposalReceived(proposedAliasOutput *isc.AliasOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMStateProposalReceived(proposedAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	c.output.NeedStateMgrStateProposal = nil
 	return c.subACS.StateProposalReceived(proposedAliasOutput)
 }
 
-func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAliasOutput *isc.AliasOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	c.output.NeedStateMgrDecidedState = decidedBaseAliasOutput
 	return nil
 }
@@ -474,7 +474,7 @@ func (c *consImpl) uponDSSOutputReady(signature []byte) gpa.OutMessages {
 ////////////////////////////////////////////////////////////////////////////////
 // ACS
 
-func (c *consImpl) uponACSInputsReceived(baseAliasOutput *isc.AliasOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
+func (c *consImpl) uponACSInputsReceived(baseAliasOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
 	batchProposal := bp.NewBatchProposal(
 		*c.dkShare.GetIndex(),
 		baseAliasOutput,
@@ -632,7 +632,7 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 	}
 	chained, err := isc.AliasOutputWithIDFromTx(tx, c.chainID.AsAddress())
 	if err != nil {
-		panic(fmt.Errorf("cannot get AliasOutput from produced TX: %w", err))
+		panic(fmt.Errorf("cannot get AccountOutput from produced TX: %w", err))
 	}
 	c.output.Result = &Result{
 		Transaction:     tx,

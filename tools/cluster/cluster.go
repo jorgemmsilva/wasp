@@ -851,12 +851,12 @@ func (clu *Cluster) AddressBalances(addr iotago.Address) *isc.Assets {
 
 	// if the address is an alias output, we also need to fetch the output itself and add that balance
 	if aliasAddr, ok := addr.(*iotago.AccountAddress); ok {
-		_, aliasOutput, err := clu.l1.GetAliasOutput(aliasAddr.AliasID())
+		_, accountOutput, err := clu.l1.GetAliasOutput(aliasAddr.AccountID())
 		if err != nil {
 			fmt.Printf("[cluster] GetAliasOutput error: %v\n", err)
 			return nil
 		}
-		balance.Add(transaction.AssetsFromOutput(aliasOutput))
+		balance.Add(transaction.AssetsFromOutput(accountOutput))
 	}
 	return balance
 }

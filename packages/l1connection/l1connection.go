@@ -43,7 +43,7 @@ type Client interface {
 	// returns the outputs owned by a given address
 	OutputMap(myAddress iotago.Address, timeout ...time.Duration) (iotago.OutputSet, error)
 	// output
-	GetAliasOutput(aliasID iotago.AliasID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error)
+	GetAliasOutput(aliasID iotago.AccountID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error)
 	// used to query the health endpoint of the node
 	Health(timeout ...time.Duration) (bool, error)
 }
@@ -302,7 +302,7 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 	}
 }
 
-func (c *l1client) GetAliasOutput(aliasID iotago.AliasID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error) {
+func (c *l1client) GetAliasOutput(aliasID iotago.AccountID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error) {
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	outputID, stateOutput, _, err := c.indexerClient.Alias(ctxWithTimeout, aliasID)
 	cancelContext()

@@ -15,7 +15,7 @@ type inputConsensusOutputDone struct {
 	logIndex          LogIndex
 	proposedBaseAO    iotago.OutputID        // Proposed BaseAO
 	baseAliasOutputID iotago.OutputID        // Decided BaseAO
-	nextAliasOutput   *isc.AliasOutputWithID // And the next one.
+	nextAliasOutput   *isc.AccountOutputWithID // And the next one.
 }
 
 // This message is internal one, but should be sent by other components (e.g. consensus or the chain).
@@ -23,7 +23,7 @@ func NewInputConsensusOutputDone(
 	logIndex LogIndex,
 	proposedBaseAO iotago.OutputID,
 	baseAliasOutputID iotago.OutputID,
-	nextAliasOutput *isc.AliasOutputWithID,
+	nextAliasOutput *isc.AccountOutputWithID,
 ) gpa.Input {
 	return &inputConsensusOutputDone{
 		logIndex:          logIndex,

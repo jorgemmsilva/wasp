@@ -600,7 +600,7 @@ func TestDepositBaseTokens(t *testing.T) {
 			require.NoError(t, err)
 			rec := v.ch.LastReceipt()
 
-			storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(tx.Essence.Outputs[0])
+			storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(tx.Outputs[0])
 			t.Logf("byteCost = %d", storageDeposit)
 
 			adjusted := addBaseTokens
@@ -933,10 +933,10 @@ func TestMintedTokensBurn(t *testing.T) {
 				&iotago.AddressUnlockCondition{Address: ident1},
 			},
 		},
-		inputIDs[1]: &iotago.AliasOutput{
+		inputIDs[1]: &iotago.AccountOutput{
 			Amount:         OneMi,
 			NativeTokens:   nil,
-			AliasID:        aliasIdent1.AliasID(),
+			AccountID:        aliasIdent1.AccountID(),
 			StateIndex:     1,
 			StateMetadata:  nil,
 			FoundryCounter: 1,
@@ -975,10 +975,10 @@ func TestMintedTokensBurn(t *testing.T) {
 		NetworkID: tpkg.TestNetworkID,
 		Inputs:    inputIDs.UTXOInputs(),
 		Outputs: iotago.Outputs{
-			&iotago.AliasOutput{
+			&iotago.AccountOutput{
 				Amount:         OneMi,
 				NativeTokens:   nil,
-				AliasID:        aliasIdent1.AliasID(),
+				AccountID:        aliasIdent1.AccountID(),
 				StateIndex:     2,
 				StateMetadata:  nil,
 				FoundryCounter: 1,

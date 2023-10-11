@@ -117,7 +117,7 @@ func cloneInternalBasicOutputOrNil(o *iotago.BasicOutput) *iotago.BasicOutput {
 	return o.Clone().(*iotago.BasicOutput)
 }
 
-func (txb *AnchorTransactionBuilder) newInternalTokenOutput(aliasID iotago.AliasID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
+func (txb *AnchorTransactionBuilder) newInternalTokenOutput(aliasID iotago.AccountID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
 	out := &iotago.BasicOutput{
 		Amount: 0,
 		NativeTokens: []*iotago.NativeTokenFeature{{

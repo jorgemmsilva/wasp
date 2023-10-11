@@ -25,9 +25,9 @@ type varLocalViewSM struct {
 	lv cmt_log.VarLocalView
 	//
 	// Following stands for the model.
-	confirmed []*isc.AliasOutputWithID // A chain of confirmed AOs.
-	pending   []*isc.AliasOutputWithID // A list of AOs proposed by the chain, not confirmed yet.
-	rejected  []*isc.AliasOutputWithID // Rejected AOs, that should not impact the output anymore.
+	confirmed []*isc.AccountOutputWithID // A chain of confirmed AOs.
+	pending   []*isc.AccountOutputWithID // A list of AOs proposed by the chain, not confirmed yet.
+	rejected  []*isc.AccountOutputWithID // Rejected AOs, that should not impact the output anymore.
 	rejSync   bool                     // True, if reject was done and pending was not made empty yet.
 	//
 	// Helpers.
@@ -38,10 +38,10 @@ var _ rapid.StateMachine = &varLocalViewSM{}
 
 func newVarLocalViewSM(t *rapid.T) *varLocalViewSM {
 	sm := new(varLocalViewSM)
-	sm.lv = cmt_log.NewVarLocalView(-1, func(ao *isc.AliasOutputWithID) {}, testlogger.NewLogger(t))
-	sm.confirmed = []*isc.AliasOutputWithID{}
-	sm.pending = []*isc.AliasOutputWithID{}
-	sm.rejected = []*isc.AliasOutputWithID{}
+	sm.lv = cmt_log.NewVarLocalView(-1, func(ao *isc.AccountOutputWithID) {}, testlogger.NewLogger(t))
+	sm.confirmed = []*isc.AccountOutputWithID{}
+	sm.pending = []*isc.AccountOutputWithID{}
+	sm.rejected = []*isc.AccountOutputWithID{}
 	sm.rejSync = false
 	return sm
 }
@@ -63,7 +63,7 @@ func (sm *varLocalViewSM) L1ExternalAOConfirmed(t *rapid.T) {
 	sm.confirmed = append(sm.confirmed, newAO)
 	sm.rejected = append(sm.rejected, sm.pending...)
 	sm.rejSync = false
-	sm.pending = []*isc.AliasOutputWithID{}
+	sm.pending = []*isc.AccountOutputWithID{}
 }
 
 // E.g. A TX proposed by the consensus was approved.
@@ -163,7 +163,7 @@ func (sm *varLocalViewSM) Check(t *rapid.T) {
 }
 
 // We don't use randomness to generate AOs because they have to be unique.
-func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AliasOutputWithID) *isc.AliasOutputWithID {
+func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AccountOutputWithID) *isc.AccountOutputWithID {
 	sm.utxoIDCounter++
 	txIDBytes := []byte(fmt.Sprintf("%v", sm.utxoIDCounter))
 	utxoInput := iotago.UTXOInput{}
@@ -178,7 +178,7 @@ func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AliasOutputWithID) *isc.AliasOut
 	} else {
 		stateIndex = uint32(sm.utxoIDCounter)
 	}
-	return isc.NewAliasOutputWithID(&iotago.AliasOutput{StateIndex: stateIndex}, utxoInput.ID())
+	return isc.NewAliasOutputWithID(&iotago.AccountOutput{StateIndex: stateIndex}, utxoInput.ID())
 }
 
 // Alias output can be proposed, if there is at least one AO confirmed and there is no

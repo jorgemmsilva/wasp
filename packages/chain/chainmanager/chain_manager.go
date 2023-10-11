@@ -98,13 +98,13 @@ type Output struct {
 	cmi *chainMgrImpl
 }
 
-func (o *Output) LatestActiveAliasOutput() *isc.AliasOutputWithID {
+func (o *Output) LatestActiveAliasOutput() *isc.AccountOutputWithID {
 	if o.cmi.needConsensus == nil {
 		return nil
 	}
 	return o.cmi.needConsensus.BaseAliasOutput
 }
-func (o *Output) LatestConfirmedAliasOutput() *isc.AliasOutputWithID { return o.cmi.latestConfirmedAO }
+func (o *Output) LatestConfirmedAliasOutput() *isc.AccountOutputWithID { return o.cmi.latestConfirmedAO }
 func (o *Output) NeedConsensus() *NeedConsensus                      { return o.cmi.needConsensus }
 func (o *Output) NeedPublishTX() *shrinkingmap.ShrinkingMap[iotago.TransactionID, *NeedPublishTX] {
 	return o.cmi.needPublishTX
@@ -123,7 +123,7 @@ type NeedConsensus struct {
 	CommitteeAddr   iotago.Ed25519Address
 	LogIndex        cmt_log.LogIndex
 	DKShare         tcrypto.DKShare
-	BaseAliasOutput *isc.AliasOutputWithID
+	BaseAliasOutput *isc.AccountOutputWithID
 }
 
 func (nc *NeedConsensus) IsFor(output *cmt_log.Output) bool {
@@ -144,8 +144,8 @@ type NeedPublishTX struct {
 	LogIndex          cmt_log.LogIndex
 	TxID              iotago.TransactionID
 	Tx                *iotago.Transaction
-	BaseAliasOutputID iotago.OutputID        // The consumed AliasOutput.
-	NextAliasOutput   *isc.AliasOutputWithID // The next one (produced by the TX.)
+	BaseAliasOutputID iotago.OutputID        // The consumed AccountOutput.
+	NextAliasOutput   *isc.AccountOutputWithID // The next one (produced by the TX.)
 }
 
 type ChainMgr interface {
@@ -165,9 +165,9 @@ type chainMgrImpl struct {
 	cmtLogs                 map[iotago.Ed25519Address]*cmtLogInst                            // All the committee log instances for this chain.
 	consensusStateRegistry  cmt_log.ConsensusStateRegistry                                   // Persistent store for log indexes.
 	latestActiveCmt         *iotago.Ed25519Address                                           // The latest active committee.
-	latestConfirmedAO       *isc.AliasOutputWithID                                           // The latest confirmed AO (follows Active AO).
+	latestConfirmedAO       *isc.AccountOutputWithID                                           // The latest confirmed AO (follows Active AO).
 	activeNodesCB           func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey)          // All the nodes authorized for being access nodes (for the ActiveAO).
-	trackActiveStateCB      func(ao *isc.AliasOutputWithID)                                  // We will call this to set new AO for the active state.
+	trackActiveStateCB      func(ao *isc.AccountOutputWithID)                                  // We will call this to set new AO for the active state.
 	savePreliminaryBlockCB  func(block state.Block)                                          // We will call this, when a preliminary block matching the tx signatures is received.
 	committeeUpdatedCB      func(dkShare tcrypto.DKShare)                                    // Will be called, when a committee changes.
 	needConsensus           *NeedConsensus                                                   // Query for a consensus.
@@ -197,7 +197,7 @@ func New(
 	dkShareRegistryProvider registry.DKShareRegistryProvider,
 	nodeIDFromPubKey func(pubKey *cryptolib.PublicKey) gpa.NodeID,
 	activeNodesCB func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey),
-	trackActiveStateCB func(ao *isc.AliasOutputWithID),
+	trackActiveStateCB func(ao *isc.AccountOutputWithID),
 	savePreliminaryBlockCB func(block state.Block),
 	committeeUpdatedCB func(dkShare tcrypto.DKShare),
 	deriveAOByQuorum bool,
@@ -278,10 +278,10 @@ func (cmi *chainMgrImpl) handleInputAliasOutputConfirmed(input *inputAliasOutput
 	cmi.log.Debugf("handleInputAliasOutputConfirmed: %+v", input)
 	//
 	// >     Set LatestConfirmedAO <- ConfirmedAO
-	vsaTip, vsaUpdated := cmi.varAccessNodeState.BlockConfirmed(input.aliasOutput)
-	cmi.latestConfirmedAO = input.aliasOutput
+	vsaTip, vsaUpdated := cmi.varAccessNodeState.BlockConfirmed(input.accountOutput)
+	cmi.latestConfirmedAO = input.accountOutput
 	msgs := gpa.NoMessages()
-	committeeAddr := input.aliasOutput.GetAliasOutput().StateController().(*iotago.Ed25519Address)
+	committeeAddr := input.accountOutput.GetAliasOutput().StateController().(*iotago.Ed25519Address)
 	committeeLog, err := cmi.ensureCmtLog(*committeeAddr)
 	if errors.Is(err, ErrNotInCommittee) {
 		// >     IF this node is in the committee THEN ... ELSE
@@ -299,7 +299,7 @@ func (cmi *chainMgrImpl) handleInputAliasOutputConfirmed(input *inputAliasOutput
 			cmi.log.Debugf("⊢ going to track %v as an access node on confirmed block.", vsaTip)
 			cmi.trackActiveStateCB(vsaTip)
 		}
-		cmi.log.Debugf("This node is not in the committee for aliasOutput: %v", input.aliasOutput)
+		cmi.log.Debugf("This node is not in the committee for accountOutput: %v", input.accountOutput)
 		return msgs
 	}
 	if err != nil {
@@ -310,7 +310,7 @@ func (cmi *chainMgrImpl) handleInputAliasOutputConfirmed(input *inputAliasOutput
 	// >         Pass it to the corresponding CmtLog; HandleCmtLogOutput.
 	msgs.AddAll(cmi.handleCmtLogOutput(
 		committeeLog,
-		committeeLog.gpaInstance.Input(cmt_log.NewInputAliasOutputConfirmed(input.aliasOutput)),
+		committeeLog.gpaInstance.Input(cmt_log.NewInputAliasOutputConfirmed(input.accountOutput)),
 	))
 	return msgs
 }
@@ -329,13 +329,13 @@ func (cmi *chainMgrImpl) handleInputChainTxPublishResult(input *inputChainTxPubl
 		// >     If result.confirmed = false THEN ... ELSE
 		// >         NOP // AO has to be received as Confirmed AO. // TODO: Not true, anymore.
 		return cmi.withCmtLog(input.committeeAddr, func(cl gpa.GPA) gpa.OutMessages {
-			return cl.Input(cmt_log.NewInputConsensusOutputConfirmed(input.aliasOutput, input.logIndex))
+			return cl.Input(cmt_log.NewInputConsensusOutputConfirmed(input.accountOutput, input.logIndex))
 		})
 	}
 	// >     If result.confirmed = false THEN
 	// >         Forward it to ChainMgr; HandleCmtLogOutput.
 	return cmi.withCmtLog(input.committeeAddr, func(cl gpa.GPA) gpa.OutMessages {
-		return cl.Input(cmt_log.NewInputConsensusOutputRejected(input.aliasOutput, input.logIndex))
+		return cl.Input(cmt_log.NewInputConsensusOutputRejected(input.accountOutput, input.logIndex))
 	})
 }
 

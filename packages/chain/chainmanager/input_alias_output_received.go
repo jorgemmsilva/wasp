@@ -11,15 +11,15 @@ import (
 )
 
 type inputAliasOutputConfirmed struct {
-	aliasOutput *isc.AliasOutputWithID
+	accountOutput *isc.AccountOutputWithID
 }
 
-func NewInputAliasOutputConfirmed(aliasOutput *isc.AliasOutputWithID) gpa.Input {
+func NewInputAliasOutputConfirmed(accountOutput *isc.AccountOutputWithID) gpa.Input {
 	return &inputAliasOutputConfirmed{
-		aliasOutput: aliasOutput,
+		accountOutput: accountOutput,
 	}
 }
 
 func (inp *inputAliasOutputConfirmed) String() string {
-	return fmt.Sprintf("{chainMgr.inputAliasOutputConfirmed, %v}", inp.aliasOutput)
+	return fmt.Sprintf("{chainMgr.inputAliasOutputConfirmed, %v}", inp.accountOutput)
 }

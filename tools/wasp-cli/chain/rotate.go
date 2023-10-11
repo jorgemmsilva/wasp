@@ -107,7 +107,7 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 		minSD := parameters.L1().Protocol.RentStructure.MinRent(chainOutput)
 		log.Printf("original chain output: %s, minSD: %d\n", s, minSD)
 
-		rotOut := tx.Essence.Outputs[0]
+		rotOut := tx.Outputs[0]
 		s, err2 = rotOut.MarshalJSON()
 		log.Check(err2)
 		minSD = parameters.L1().Protocol.RentStructure.MinRent(rotOut)

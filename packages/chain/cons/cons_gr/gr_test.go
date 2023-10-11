@@ -231,10 +231,10 @@ func (tmp *testMempool) tryRespondRequestQueries() {
 	tmp.qRequests = remaining
 }
 
-func (tmp *testMempool) ConsensusProposalAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef {
+func (tmp *testMempool) ConsensusProposalAsync(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan []*isc.RequestRef {
 	tmp.lock.Lock()
 	defer tmp.lock.Unlock()
-	outputID := aliasOutput.OutputID()
+	outputID := accountOutput.OutputID()
 	resp := make(chan []*isc.RequestRef, 1)
 	tmp.qProposals[outputID] = resp
 	tmp.tryRespondProposalQueries()
@@ -273,7 +273,7 @@ func newTestStateMgr(t *testing.T, chainStore state.Store) *testStateMgr {
 	}
 }
 
-func (tsm *testStateMgr) addOriginState(originAO *isc.AliasOutputWithID) {
+func (tsm *testStateMgr) addOriginState(originAO *isc.AccountOutputWithID) {
 	originAOStateMetadata, err := transaction.StateMetadataFromBytes(originAO.GetStateMetadata())
 	require.NoError(tsm.t, err)
 	chainState, err := tsm.chainStore.StateByTrieRoot(
@@ -283,19 +283,19 @@ func (tsm *testStateMgr) addOriginState(originAO *isc.AliasOutputWithID) {
 	tsm.addState(originAO, chainState)
 }
 
-func (tsm *testStateMgr) addState(aliasOutput *isc.AliasOutputWithID, chainState state.State) { // TODO: Why is it not called from other places???
+func (tsm *testStateMgr) addState(accountOutput *isc.AccountOutputWithID, chainState state.State) { // TODO: Why is it not called from other places???
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
-	hash := commitmentHashFromAO(aliasOutput)
+	hash := commitmentHashFromAO(accountOutput)
 	tsm.states[hash] = chainState
 	tsm.tryRespond(hash)
 }
 
-func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan interface{} {
+func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan interface{} {
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	resp := make(chan interface{}, 1)
-	hash := commitmentHashFromAO(aliasOutput)
+	hash := commitmentHashFromAO(accountOutput)
 	tsm.qProposal[hash] = resp
 	tsm.tryRespond(hash)
 	return resp
@@ -303,11 +303,11 @@ func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, aliasOutput
 
 // State manager has to ensure all the data needed for the specified alias
 // output (presented as aliasOutputID+stateCommitment) is present in the DB.
-func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan state.State {
+func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan state.State {
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	resp := make(chan state.State, 1)
-	stateCommitment, err := transaction.L1CommitmentFromAliasOutput(aliasOutput.GetAliasOutput())
+	stateCommitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
 	if err != nil {
 		tsm.t.Fatal(err)
 	}
@@ -344,8 +344,8 @@ func (tsm *testStateMgr) tryRespond(hash hashing.HashValue) {
 	}
 }
 
-func commitmentHashFromAO(aliasOutput *isc.AliasOutputWithID) hashing.HashValue {
-	commitment, err := transaction.L1CommitmentFromAliasOutput(aliasOutput.GetAliasOutput())
+func commitmentHashFromAO(accountOutput *isc.AccountOutputWithID) hashing.HashValue {
+	commitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
 	if err != nil {
 		panic(err)
 	}

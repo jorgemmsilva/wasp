@@ -13,14 +13,14 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-const ChainIDLength = iotago.AliasIDLength
+const ChainIDLength = iotago.AccountIDLength
 
 var emptyChainID = ChainID{}
 
 // ChainID represents the global identifier of the chain
 // It is wrapped AccountAddress, an address without a private key behind
 type (
-	ChainID    iotago.AliasID
+	ChainID    iotago.AccountID
 	ChainIDKey string
 )
 
@@ -30,11 +30,11 @@ func EmptyChainID() ChainID {
 }
 
 func ChainIDFromAddress(addr *iotago.AccountAddress) ChainID {
-	return ChainIDFromAliasID(addr.AliasID())
+	return ChainIDFromAccountID(addr.AccountID())
 }
 
-// ChainIDFromAliasID creates new chain ID from account address
-func ChainIDFromAliasID(aliasID iotago.AliasID) ChainID {
+// ChainIDFromAccountID creates new chain ID from account address
+func ChainIDFromAccountID(aliasID iotago.AccountID) ChainID {
 	return ChainID(aliasID)
 }
 
@@ -49,7 +49,7 @@ func ChainIDFromString(bech32 string) (ChainID, error) {
 	if err != nil {
 		return ChainID{}, err
 	}
-	if addr.Type() != iotago.AddressAlias {
+	if addr.Type() != iotago.AddressAccount {
 		return ChainID{}, fmt.Errorf("chainID must be an account address (%s)", bech32)
 	}
 	return ChainIDFromAddress(addr.(*iotago.AccountAddress)), nil
@@ -87,8 +87,8 @@ func (id ChainID) AsAccountAddress() iotago.AccountAddress {
 	return iotago.AccountAddress(id)
 }
 
-func (id ChainID) AsAliasID() iotago.AliasID {
-	return iotago.AliasID(id)
+func (id ChainID) AsAccountID() iotago.AccountID {
+	return iotago.AccountID(id)
 }
 
 func (id ChainID) Bytes() []byte {
@@ -104,7 +104,7 @@ func (id ChainID) Equals(other ChainID) bool {
 }
 
 func (id ChainID) Key() ChainIDKey {
-	return ChainIDKey(id.AsAliasID().String())
+	return ChainIDKey(id.AsAccountID().String())
 }
 
 func (id ChainID) IsSameChain(agentID AgentID) bool {
@@ -121,7 +121,7 @@ func (id ChainID) ShortString() string {
 
 // String human-readable form (bech32)
 func (id ChainID) String() string {
-	return id.AsAddress().Bech32(parameters.L1().Protocol.Bech32HRP)
+	return id.AsAddress().Bech32(parameters.L1().Protocol.Bech32HRP())
 }
 
 func (id *ChainID) Read(r io.Reader) error {

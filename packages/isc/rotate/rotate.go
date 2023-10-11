@@ -29,11 +29,11 @@ func NewRotateRequestOffLedger(chainID isc.ChainID, newStateAddress iotago.Addre
 
 func MakeRotateStateControllerTransaction(
 	nextAddr iotago.Address,
-	chainInput *isc.AliasOutputWithID,
+	chainInput *isc.AccountOutputWithID,
 	ts time.Time,
 	accessPledge, consensusPledge identity.ID,
 ) (*iotago.TransactionEssence, error) {
-	output := chainInput.GetAliasOutput().Clone().(*iotago.AliasOutput)
+	output := chainInput.GetAliasOutput().Clone().(*iotago.AccountOutput)
 	for i := range output.Conditions {
 		if _, ok := output.Conditions[i].(*iotago.StateControllerAddressUnlockCondition); ok {
 			output.Conditions[i] = &iotago.StateControllerAddressUnlockCondition{Address: nextAddr}

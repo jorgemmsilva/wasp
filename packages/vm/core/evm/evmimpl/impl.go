@@ -211,7 +211,7 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 	tickerSymbol := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenTickerSymbol))
 	decimals := codec.MustDecodeUint8(ctx.Params().Get(evm.FieldTokenDecimals))
 	target := codec.MustDecodeAddress(ctx.Params().Get(evm.FieldTargetAddress))
-	if target.Type() != iotago.AddressAlias {
+	if target.Type() != iotago.AddressAccount {
 		panic(errTargetMustBeAlias)
 	}
 

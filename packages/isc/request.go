@@ -96,7 +96,7 @@ func RequestsInTransaction(tx *iotago.Transaction) (map[ChainID][]Request, error
 	}
 
 	ret := make(map[ChainID][]Request)
-	for i, output := range tx.Essence.Outputs {
+	for i, output := range tx.Outputs {
 		switch output.(type) {
 		case *iotago.BasicOutput, *iotago.NFTOutput:
 			// process it
@@ -112,11 +112,11 @@ func RequestsInTransaction(tx *iotago.Transaction) (map[ChainID][]Request, error
 		}
 
 		addr := odata.TargetAddress()
-		if addr.Type() != iotago.AddressAlias {
+		if addr.Type() != iotago.AddressAccount {
 			continue
 		}
 
-		chainID := ChainIDFromAliasID(addr.(*iotago.AccountAddress).AliasID())
+		chainID := ChainIDFromAccountID(addr.(*iotago.AccountAddress).AccountID())
 
 		if odata.IsInternalUTXO(chainID) {
 			continue
@@ -138,12 +138,9 @@ func RequestIsExpired(req OnLedgerRequest, currentTime time.Time) bool {
 	return !expiry.IsZero() && currentTime.After(expiry.Add(-RequestConsideredExpiredWindow))
 }
 
-func RequestIsUnlockable(req OnLedgerRequest, chainAddress iotago.Address, currentTime time.Time) bool {
+func RequestIsUnlockable(req OnLedgerRequest, chainAddress iotago.Address, pastBoundedSlotIndex, futureBoundedSlotIndex iotago.SlotIndex) bool {
 	output, _ := req.Output().(iotago.TransIndepIdentOutput)
-
-	return output.UnlockableBy(chainAddress, &iotago.ExternalUnlockParameters{
-		ConfUnix: uint32(currentTime.Unix()),
-	})
+	return output.UnlockableBy(chainAddress, pastBoundedSlotIndex, futureBoundedSlotIndex)
 }
 
 func RequestHash(req Request) hashing.HashValue {

@@ -164,7 +164,7 @@ func (reqctx *requestContext) checkReasonExpiry() error {
 	// General unlock validation
 	output, _ := reqctx.req.(isc.OnLedgerRequest).Output().(iotago.TransIndepIdentOutput)
 
-	unlockable := output.UnlockableBy(reqctx.vm.task.AnchorOutput.AliasID.ToAddress(), &iotago.ExternalUnlockParameters{
+	unlockable := output.UnlockableBy(reqctx.vm.task.AnchorOutput.AccountID.ToAddress(), &iotago.ExternalUnlockParameters{
 		ConfUnix: uint32(finalStateTimestamp.Unix()),
 	})
 

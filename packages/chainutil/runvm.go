@@ -16,7 +16,7 @@ import (
 
 func runISCTask(
 	ch chain.ChainCore,
-	aliasOutput *isc.AliasOutputWithID,
+	accountOutput *isc.AccountOutputWithID,
 	blockTime time.Time,
 	reqs []isc.Request,
 	estimateGasMode bool,
@@ -24,8 +24,8 @@ func runISCTask(
 ) ([]*vm.RequestResult, error) {
 	task := &vm.VMTask{
 		Processors:           ch.Processors(),
-		AnchorOutput:         aliasOutput.GetAliasOutput(),
-		AnchorOutputID:       aliasOutput.OutputID(),
+		AnchorOutput:         accountOutput.GetAliasOutput(),
+		AnchorOutputID:       accountOutput.OutputID(),
 		Store:                ch.Store(),
 		Requests:             reqs,
 		TimeAssumption:       blockTime,
@@ -45,14 +45,14 @@ func runISCTask(
 
 func runISCRequest(
 	ch chain.ChainCore,
-	aliasOutput *isc.AliasOutputWithID,
+	accountOutput *isc.AccountOutputWithID,
 	blockTime time.Time,
 	req isc.Request,
 	estimateGasMode bool,
 ) (*vm.RequestResult, error) {
 	results, err := runISCTask(
 		ch,
-		aliasOutput,
+		accountOutput,
 		blockTime,
 		[]isc.Request{req},
 		estimateGasMode,

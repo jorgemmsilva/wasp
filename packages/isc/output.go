@@ -36,66 +36,66 @@ func NewOutputInfo(outputID iotago.OutputID, output iotago.Output, transactionID
 	}
 }
 
-func (o *OutputInfo) AliasOutputWithID() *AliasOutputWithID {
-	return NewAliasOutputWithID(o.Output.(*iotago.AliasOutput), o.OutputID)
+func (o *OutputInfo) AccountOutputWithID() *AccountOutputWithID {
+	return NewAccountOutputWithID(o.Output.(*iotago.AccountOutput), o.OutputID)
 }
 
-type AliasOutputWithID struct {
-	outputID    iotago.OutputID
-	aliasOutput *iotago.AliasOutput
+type AccountOutputWithID struct {
+	outputID      iotago.OutputID
+	accountOutput *iotago.AccountOutput
 }
 
-func NewAliasOutputWithID(aliasOutput *iotago.AliasOutput, outputID iotago.OutputID) *AliasOutputWithID {
-	return &AliasOutputWithID{
-		outputID:    outputID,
-		aliasOutput: aliasOutput,
+func NewAccountOutputWithID(accountOutput *iotago.AccountOutput, outputID iotago.OutputID) *AccountOutputWithID {
+	return &AccountOutputWithID{
+		outputID:      outputID,
+		accountOutput: accountOutput,
 	}
 }
 
 // only for testing
-func RandomAliasOutputWithID() *AliasOutputWithID {
+func RandomAccountOutputWithID() *AccountOutputWithID {
 	outputID := testiotago.RandOutputID()
-	aliasOutput := &iotago.AliasOutput{}
-	return NewAliasOutputWithID(aliasOutput, outputID)
+	accountOutput := &iotago.AccountOutput{}
+	return NewAccountOutputWithID(accountOutput, outputID)
 }
 
-func AliasOutputWithIDFromBytes(data []byte) (*AliasOutputWithID, error) {
-	return rwutil.ReadFromBytes(data, new(AliasOutputWithID))
+func AccountOutputWithIDFromBytes(data []byte) (*AccountOutputWithID, error) {
+	return rwutil.ReadFromBytes(data, new(AccountOutputWithID))
 }
 
-func (a *AliasOutputWithID) Bytes() []byte {
+func (a *AccountOutputWithID) Bytes() []byte {
 	return rwutil.WriteToBytes(a)
 }
 
-func (a *AliasOutputWithID) GetAliasOutput() *iotago.AliasOutput {
-	return a.aliasOutput
+func (a *AccountOutputWithID) GetAccountOutput() *iotago.AccountOutput {
+	return a.accountOutput
 }
 
-func (a *AliasOutputWithID) OutputID() iotago.OutputID {
+func (a *AccountOutputWithID) OutputID() iotago.OutputID {
 	return a.outputID
 }
 
-func (a *AliasOutputWithID) TransactionID() iotago.TransactionID {
+func (a *AccountOutputWithID) TransactionID() iotago.TransactionID {
 	return a.outputID.TransactionID()
 }
 
-func (a *AliasOutputWithID) GetStateIndex() uint32 {
-	return a.aliasOutput.StateIndex
+func (a *AccountOutputWithID) GetStateIndex() uint32 {
+	return a.accountOutput.StateIndex
 }
 
-func (a *AliasOutputWithID) GetStateMetadata() []byte {
-	return a.aliasOutput.StateMetadata
+func (a *AccountOutputWithID) GetStateMetadata() []byte {
+	return a.accountOutput.StateMetadata
 }
 
-func (a *AliasOutputWithID) GetStateAddress() iotago.Address {
-	return a.aliasOutput.StateController()
+func (a *AccountOutputWithID) GetStateAddress() iotago.Address {
+	return a.accountOutput.StateController()
 }
 
-func (a *AliasOutputWithID) GetAliasID() iotago.AliasID {
-	return util.AliasIDFromAliasOutput(a.aliasOutput, a.outputID)
+func (a *AccountOutputWithID) GetAccountID() iotago.AccountID {
+	return util.AccountIDFromAccountOutput(a.accountOutput, a.outputID)
 }
 
-func (a *AliasOutputWithID) Equals(other *AliasOutputWithID) bool {
+func (a *AccountOutputWithID) Equals(other *AccountOutputWithID) bool {
 	if other == nil {
 		return false
 	}
@@ -103,35 +103,35 @@ func (a *AliasOutputWithID) Equals(other *AliasOutputWithID) bool {
 		return false
 	}
 	ww1 := rwutil.NewBytesWriter()
-	ww1.WriteSerialized(a.aliasOutput, math.MaxInt32)
+	ww1.WriteSerialized(a.accountOutput, math.MaxInt32)
 	ww2 := rwutil.NewBytesWriter()
-	ww2.WriteSerialized(other.aliasOutput, math.MaxInt32)
+	ww2.WriteSerialized(other.accountOutput, math.MaxInt32)
 	return bytes.Equal(ww1.Bytes(), ww2.Bytes())
 }
 
-func (a *AliasOutputWithID) Hash() hashing.HashValue {
+func (a *AccountOutputWithID) Hash() hashing.HashValue {
 	return hashing.HashDataBlake2b(a.Bytes())
 }
 
-func (a *AliasOutputWithID) String() string {
+func (a *AccountOutputWithID) String() string {
 	if a == nil {
 		return "nil"
 	}
 	return fmt.Sprintf("AO[si#%v]%v", a.GetStateIndex(), a.outputID.ToHex())
 }
 
-func (a *AliasOutputWithID) Read(r io.Reader) error {
+func (a *AccountOutputWithID) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadN(a.outputID[:])
-	a.aliasOutput = new(iotago.AliasOutput)
-	rr.ReadSerialized(a.aliasOutput, math.MaxInt32)
+	a.accountOutput = new(iotago.AccountOutput)
+	rr.ReadSerialized(a.accountOutput, math.MaxInt32)
 	return rr.Err
 }
 
-func (a *AliasOutputWithID) Write(w io.Writer) error {
+func (a *AccountOutputWithID) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteN(a.outputID[:])
-	ww.WriteSerialized(a.aliasOutput, math.MaxInt32)
+	ww.WriteSerialized(a.accountOutput, math.MaxInt32)
 	return ww.Err
 }
 
@@ -145,24 +145,24 @@ func OutputSetToOutputIDs(outputSet iotago.OutputSet) iotago.OutputIDs {
 	return outputIDs
 }
 
-func AliasOutputWithIDFromTx(tx *iotago.Transaction, aliasAddr iotago.Address) (*AliasOutputWithID, error) {
+func AccountOutputWithIDFromTx(tx *iotago.Transaction, aliasAddr iotago.Address) (*AccountOutputWithID, error) {
 	txID, err := tx.ID()
 	if err != nil {
 		return nil, err
 	}
 
-	for index, output := range tx.Essence.Outputs {
-		if aliasOutput, ok := output.(*iotago.AliasOutput); ok {
+	for index, output := range tx.Outputs {
+		if accountOutput, ok := output.(*iotago.AccountOutput); ok {
 			outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
 
-			aliasID := aliasOutput.AliasID
+			aliasID := accountOutput.AccountID
 			if aliasID.Empty() {
-				aliasID = iotago.AliasIDFromOutputID(outputID)
+				aliasID = iotago.AccountIDFromOutputID(outputID)
 			}
 
 			if aliasID.ToAddress().Equal(aliasAddr) {
 				// output found
-				return NewAliasOutputWithID(aliasOutput, outputID), nil
+				return NewAccountOutputWithID(accountOutput, outputID), nil
 			}
 		}
 	}

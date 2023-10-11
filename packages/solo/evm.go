@@ -40,16 +40,16 @@ func (b *jsonRPCSoloBackend) EVMSendTransaction(tx *types.Transaction) error {
 	return err
 }
 
-func (b *jsonRPCSoloBackend) EVMCall(aliasOutput *isc.AliasOutputWithID, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.Chain, aliasOutput, callMsg)
+func (b *jsonRPCSoloBackend) EVMCall(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) ([]byte, error) {
+	return chainutil.EVMCall(b.Chain, accountOutput, callMsg)
 }
 
-func (b *jsonRPCSoloBackend) EVMEstimateGas(aliasOutput *isc.AliasOutputWithID, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.Chain, aliasOutput, callMsg)
+func (b *jsonRPCSoloBackend) EVMEstimateGas(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) (uint64, error) {
+	return chainutil.EVMEstimateGas(b.Chain, accountOutput, callMsg)
 }
 
 func (b *jsonRPCSoloBackend) EVMTraceTransaction(
-	aliasOutput *isc.AliasOutputWithID,
+	accountOutput *isc.AccountOutputWithID,
 	blockTime time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
@@ -57,7 +57,7 @@ func (b *jsonRPCSoloBackend) EVMTraceTransaction(
 ) error {
 	return chainutil.EVMTraceTransaction(
 		b.Chain,
-		aliasOutput,
+		accountOutput,
 		blockTime,
 		iscRequestsInBlock,
 		txIndex,
@@ -69,10 +69,10 @@ func (b *jsonRPCSoloBackend) ISCCallView(chainState state.State, scName, funName
 	return b.Chain.CallViewAtState(chainState, scName, funName, args)
 }
 
-func (b *jsonRPCSoloBackend) ISCLatestAliasOutput() (*isc.AliasOutputWithID, error) {
+func (b *jsonRPCSoloBackend) ISCLatestAliasOutput() (*isc.AccountOutputWithID, error) {
 	latestAliasOutput, err := b.Chain.LatestAliasOutput(chain.ActiveOrCommittedState)
 	if err != nil {
-		return nil, fmt.Errorf("could not get latest AliasOutput: %w", err)
+		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
 	return latestAliasOutput, nil
 }

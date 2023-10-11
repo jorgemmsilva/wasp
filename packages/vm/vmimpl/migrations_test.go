@@ -56,7 +56,7 @@ func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 	stateDraft, err := cs.NewStateDraft(time.Now(), latest.L1Commitment())
 	require.NoError(t, err)
 	task := &vm.VMTask{
-		AnchorOutput: &iotago.AliasOutput{
+		AnchorOutput: &iotago.AccountOutput{
 			StateIndex: stateIndex,
 		},
 	}

@@ -27,8 +27,8 @@ import (
 )
 
 func GetStorageDeposit(tx *iotago.Transaction) []uint64 {
-	ret := make([]uint64, len(tx.Essence.Outputs))
-	for i, out := range tx.Essence.Outputs {
+	ret := make([]uint64, len(tx.Outputs))
+	for i, out := range tx.Outputs {
 		ret[i] = parameters.L1().Protocol.RentStructure.MinRent(out)
 	}
 	return ret
@@ -78,7 +78,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	// check if there's a single alias output on chain's address
 	aliasOutputs := env.L1Ledger().GetAliasOutputs(ch.ChainID.AsAddress())
 	require.EqualValues(t, 1, len(aliasOutputs))
-	var aliasOut *iotago.AliasOutput
+	var aliasOut *iotago.AccountOutput
 	for _, out := range aliasOutputs {
 		aliasOut = out
 	}
@@ -98,7 +98,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 
 	someUserWallet, _ := env.NewKeyPairWithFunds()
 	ch.DepositBaseTokensToL2(1*isc.Million, someUserWallet)
-	// AliasOutput minCommonAccountBalance changes from block #0 to block #1 because the "state metadata" part gets bigger
+	// AccountOutput minCommonAccountBalance changes from block #0 to block #1 because the "state metadata" part gets bigger
 	totalAccountedL2Tokens += originAOSD - parameters.L1().Protocol.RentStructure.MinRent(ch.GetAnchorOutputFromL1().GetAliasOutput())
 	ch.AssertL2TotalBaseTokens(totalAccountedL2Tokens + 1*isc.Million)
 	ch.AssertControlAddresses()

@@ -21,7 +21,7 @@ func SaveNextBlockInfo(partition kv.KVStore, blockInfo *BlockInfo) {
 }
 
 // UpdateLatestBlockInfo is called before producing the next block to save anchor tx id and commitment data of the previous one
-func UpdateLatestBlockInfo(partition kv.KVStore, anchorTxID iotago.TransactionID, aliasOutput *isc.AliasOutputWithID, l1commitment *state.L1Commitment) {
+func UpdateLatestBlockInfo(partition kv.KVStore, anchorTxID iotago.TransactionID, accountOutput *isc.AccountOutputWithID, l1commitment *state.L1Commitment) {
 	updateUnprocessableRequestsOutputID(partition, anchorTxID)
 }
 

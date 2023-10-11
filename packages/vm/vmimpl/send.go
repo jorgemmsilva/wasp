@@ -32,7 +32,7 @@ func (reqctx *requestContext) doSend(caller isc.ContractIdentity, par isc.Reques
 		// create NFT output
 		nft := reqctx.vm.getNFTData(reqctx.chainStateWithGasBurn(), par.Assets.NFTs[0])
 		out := transaction.NFTOutputFromPostData(
-			reqctx.vm.task.AnchorOutput.AliasID.ToAddress(),
+			reqctx.vm.task.AnchorOutput.AccountID.ToAddress(),
 			caller,
 			par,
 			nft,
@@ -43,7 +43,7 @@ func (reqctx *requestContext) doSend(caller isc.ContractIdentity, par isc.Reques
 	}
 	// create extended output
 	out := transaction.BasicOutputFromPostData(
-		reqctx.vm.task.AnchorOutput.AliasID.ToAddress(),
+		reqctx.vm.task.AnchorOutput.AccountID.ToAddress(),
 		caller,
 		par,
 	)

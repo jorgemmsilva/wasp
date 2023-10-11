@@ -193,7 +193,7 @@ func testMempoolBasic(t *testing.T, n, f int, reliable bool) {
 	}
 }
 
-func blockFn(te *testEnv, reqs []isc.Request, ao *isc.AliasOutputWithID, tangleTime time.Time) *isc.AliasOutputWithID {
+func blockFn(te *testEnv, reqs []isc.Request, ao *isc.AccountOutputWithID, tangleTime time.Time) *isc.AccountOutputWithID {
 	// sort reqs by nonce
 	slices.SortFunc(reqs, func(a, b isc.Request) int {
 		return int(a.(isc.OffLedgerRequest).Nonce() - b.(isc.OffLedgerRequest).Nonce())
@@ -511,7 +511,7 @@ func TestMempoolsNonceGaps(t *testing.T) {
 	}
 	time.Sleep(200 * time.Millisecond) // give some time for the requests to reach the pool
 
-	askProposalExpectReqs := func(ao *isc.AliasOutputWithID, reqs ...isc.Request) *isc.AliasOutputWithID {
+	askProposalExpectReqs := func(ao *isc.AccountOutputWithID, reqs ...isc.Request) *isc.AccountOutputWithID {
 		t.Log("Ask for proposals")
 		proposals := make([]<-chan []*isc.RequestRef, len(te.mempools))
 		for i, node := range te.mempools {
@@ -539,7 +539,7 @@ func TestMempoolsNonceGaps(t *testing.T) {
 		return blockFn(te, nodeDecidedReqs, ao, tangleTime)
 	}
 
-	emptyProposalFn := func(ao *isc.AliasOutputWithID) {
+	emptyProposalFn := func(ao *isc.AccountOutputWithID) {
 		// ask again, nothing to be proposed
 		//
 		// Ask proposals for the next
@@ -682,7 +682,7 @@ type testEnv struct {
 	tcl              *testchain.TestChainLedger
 	cmtAddress       iotago.Address
 	chainID          isc.ChainID
-	originAO         *isc.AliasOutputWithID
+	originAO         *isc.AccountOutputWithID
 	mempools         []mempool.Mempool
 	stores           []state.Store
 }
@@ -743,7 +743,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	return te
 }
 
-func (te *testEnv) stateForAO(i int, ao *isc.AliasOutputWithID) state.State {
+func (te *testEnv) stateForAO(i int, ao *isc.AccountOutputWithID) state.State {
 	l1Commitment, err := transaction.L1CommitmentFromAliasOutput(ao.GetAliasOutput())
 	require.NoError(te.t, err)
 	st, err := te.stores[i].StateByTrieRoot(l1Commitment.TrieRoot())

@@ -11,12 +11,12 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
-func getAliasID(outputID iotago.OutputID, aliasOutput *iotago.AliasOutput) iotago.AliasID {
-	if aliasOutput.AliasID.Empty() {
+func getAliasID(outputID iotago.OutputID, accountOutput *iotago.AccountOutput) iotago.AccountID {
+	if accountOutput.AccountID.Empty() {
 		return iotago.AliasIDFromOutputID(outputID)
 	}
 
-	return aliasOutput.AliasID
+	return accountOutput.AccountID
 }
 
 func outputInfoFromINXOutput(output *inx.LedgerOutput) (*isc.OutputInfo, error) {
@@ -100,8 +100,8 @@ func sortAliasOutputsOfChain(trackedChainAliasOutputsCreated []*isc.OutputInfo, 
 		outputInfo1 := trackedChainAliasOutputsCreated[i]
 		outputInfo2 := trackedChainAliasOutputsCreated[j]
 
-		aliasOutput1 := outputInfo1.Output.(*iotago.AliasOutput)
-		aliasOutput2 := outputInfo2.Output.(*iotago.AliasOutput)
+		aliasOutput1 := outputInfo1.Output.(*iotago.AccountOutput)
+		aliasOutput2 := outputInfo2.Output.(*iotago.AccountOutput)
 
 		// check if state indexes are equal.
 		if aliasOutput1.StateIndex != aliasOutput2.StateIndex {
@@ -115,7 +115,7 @@ func sortAliasOutputsOfChain(trackedChainAliasOutputsCreated []*isc.OutputInfo, 
 		if !outputInfo1.Consumed() {
 			if !outputInfo2.Consumed() {
 				// this should never happen because there can't be two alias outputs with the same alias ID that are unspent.
-				innerErr = fmt.Errorf("two unspent alias outputs with same AliasID found (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
+				innerErr = fmt.Errorf("two unspent alias outputs with same AccountID found (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
 			}
 			return false
 		}
@@ -134,22 +134,22 @@ func sortAliasOutputsOfChain(trackedChainAliasOutputsCreated []*isc.OutputInfo, 
 			return false
 		}
 
-		innerErr = fmt.Errorf("two consumed alias outputs with same AliasID found, but ordering is unclear (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
+		innerErr = fmt.Errorf("two consumed alias outputs with same AccountID found, but ordering is unclear (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
 		return false
 	})
 
 	return innerErr
 }
 
-func getAliasIDAliasOutput(outputInfo *isc.OutputInfo) iotago.AliasID {
+func getAliasIDAliasOutput(outputInfo *isc.OutputInfo) iotago.AccountID {
 	if outputInfo.Output.Type() != iotago.OutputAlias {
-		return iotago.AliasID{}
+		return iotago.AccountID{}
 	}
 
-	return getAliasID(outputInfo.OutputID, outputInfo.Output.(*iotago.AliasOutput))
+	return getAliasID(outputInfo.OutputID, outputInfo.Output.(*iotago.AccountOutput))
 }
 
-func getAliasIDOtherOutputs(output iotago.Output) iotago.AliasID {
+func getAliasIDOtherOutputs(output iotago.Output) iotago.AccountID {
 	var addressToCheck iotago.Address
 	switch output.Type() {
 	case iotago.OutputBasic:
@@ -157,7 +157,7 @@ func getAliasIDOtherOutputs(output iotago.Output) iotago.AliasID {
 
 	case iotago.OutputAlias:
 		// TODO: chains can't own other alias outputs for now
-		return iotago.AliasID{}
+		return iotago.AccountID{}
 
 	case iotago.OutputFoundry:
 		addressToCheck = output.(*iotago.FoundryOutput).Ident()
@@ -169,13 +169,13 @@ func getAliasIDOtherOutputs(output iotago.Output) iotago.AliasID {
 		panic(fmt.Errorf("%w: type %d", iotago.ErrUnknownOutputType, output.Type()))
 	}
 
-	if addressToCheck.Type() != iotago.AddressAlias {
+	if addressToCheck.Type() != iotago.AddressAccount {
 		// output is not owned by an account address => ignore it
 		// nested ownerships are also ignored (Chain owns NFT that owns NFT's etc).
-		return iotago.AliasID{}
+		return iotago.AccountID{}
 	}
 
-	return addressToCheck.(*iotago.AccountAddress).AliasID()
+	return addressToCheck.(*iotago.AccountAddress).AccountID()
 }
 
 // filterAndSortAliasOutputs filters and groups all alias outputs by chain ID and then sorts them,

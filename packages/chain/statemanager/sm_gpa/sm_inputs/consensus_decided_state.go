@@ -18,15 +18,15 @@ type ConsensusDecidedState struct {
 
 var _ gpa.Input = &ConsensusDecidedState{}
 
-func NewConsensusDecidedState(ctx context.Context, aliasOutput *isc.AliasOutputWithID) (*ConsensusDecidedState, <-chan state.State) {
-	commitment, err := transaction.L1CommitmentFromAliasOutput(aliasOutput.GetAliasOutput())
+func NewConsensusDecidedState(ctx context.Context, accountOutput *isc.AccountOutputWithID) (*ConsensusDecidedState, <-chan state.State) {
+	commitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
 	if err != nil {
 		panic("Cannot make L1 commitment from alias output")
 	}
 	resultChannel := make(chan state.State, 1)
 	return &ConsensusDecidedState{
 		context:      ctx,
-		stateIndex:   aliasOutput.GetStateIndex(),
+		stateIndex:   accountOutput.GetStateIndex(),
 		l1Commitment: commitment,
 		resultCh:     resultChannel,
 	}, resultChannel

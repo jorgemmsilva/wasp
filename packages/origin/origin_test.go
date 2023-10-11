@@ -198,10 +198,10 @@ func TestMismatchOriginCommitment(t *testing.T) {
 	require.NoError(t, err)
 
 	ao := isc.NewAliasOutputWithID(
-		&iotago.AliasOutput{
+		&iotago.AccountOutput{
 			Amount:         10000000,
 			NativeTokens:   []*iotago.NativeTokenFeature{},
-			AliasID:        chainAccountAddress.(*iotago.AccountAddress).AliasID(),
+			AccountID:        chainAccountAddress.(*iotago.AccountAddress).AccountID(),
 			StateIndex:     0,
 			StateMetadata:  aoStateMetadata,
 			FoundryCounter: 0,

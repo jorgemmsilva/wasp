@@ -11,21 +11,21 @@ import (
 )
 
 func NewRotateChainStateControllerTx(
-	aliasID iotago.AliasID,
+	aliasID iotago.AccountID,
 	newStateController iotago.Address,
 	chainOutputID iotago.OutputID,
 	chainOutput iotago.Output,
 	kp *cryptolib.KeyPair,
 ) (*iotago.Transaction, error) {
-	o, ok := chainOutput.(*iotago.AliasOutput)
+	o, ok := chainOutput.(*iotago.AccountOutput)
 	if !ok {
-		return nil, fmt.Errorf("provided output is not the correct one. Expected AliasOutput, received %T=%v", chainOutput, chainOutput)
+		return nil, fmt.Errorf("provided output is not the correct one. Expected AccountOutput, received %T=%v", chainOutput, chainOutput)
 	}
 	resolvedAliasID := util.AliasIDFromAliasOutput(o, chainOutputID)
 	if resolvedAliasID != aliasID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
 			aliasID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
-			chainOutput.(*iotago.AliasOutput).AliasID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
+			chainOutput.(*iotago.AccountOutput).AccountID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
 		)
 	}
 
@@ -35,8 +35,8 @@ func NewRotateChainStateControllerTx(
 	outSet[chainOutputID] = chainOutput
 	inputsCommitment := inputIDs.OrderedSet(outSet).MustCommitment()
 
-	newChainOutput := chainOutput.Clone().(*iotago.AliasOutput)
-	newChainOutput.AliasID = resolvedAliasID
+	newChainOutput := chainOutput.Clone().(*iotago.AccountOutput)
+	newChainOutput.AccountID = resolvedAliasID
 	oldUnlockConditions := newChainOutput.UnlockConditionSet()
 	newChainOutput.Conditions = make(iotago.UnlockConditions, len(oldUnlockConditions))
 

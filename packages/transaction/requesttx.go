@@ -159,8 +159,8 @@ func outputMatchesSendAsAddress(output iotago.Output, outputID iotago.OutputID, 
 		if address.Equal(util.NFTIDFromNFTOutput(o, outputID).ToAddress()) {
 			return true
 		}
-	case *iotago.AliasOutput:
-		if address.Equal(o.AliasID.ToAddress()) {
+	case *iotago.AccountOutput:
+		if address.Equal(o.AccountID.ToAddress()) {
 			return true
 		}
 	}

@@ -112,7 +112,7 @@ func (r *ChainRecord) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	if address.Type() != iotago.AddressAlias {
+	if address.Type() != iotago.AddressAccount {
 		return errors.New("chainID is not an account address")
 	}
 
@@ -132,7 +132,7 @@ func (r *ChainRecord) UnmarshalJSON(bytes []byte) error {
 	}
 
 	*r = ChainRecord{
-		id:          isc.ChainID(aliasAddress.AliasID()),
+		id:          isc.ChainID(aliasAddress.AccountID()),
 		Active:      j.Active,
 		AccessNodes: accessNodesPubKeys,
 	}

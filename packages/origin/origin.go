@@ -31,7 +31,7 @@ import (
 )
 
 // L1Commitment calculates the L1 commitment for the origin state
-// originDeposit must exclude the minSD for the AliasOutput
+// originDeposit must exclude the minSD for the AccountOutput
 func L1Commitment(initParams dict.Dict, originDeposit uint64) *state.L1Commitment {
 	block := InitChain(state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()), initParams, originDeposit)
 	return block.L1Commitment()
@@ -76,9 +76,9 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) st
 	return block
 }
 
-func InitChainByAliasOutput(chainStore state.Store, aliasOutput *isc.AliasOutputWithID) (state.Block, error) {
+func InitChainByAliasOutput(chainStore state.Store, accountOutput *isc.AccountOutputWithID) (state.Block, error) {
 	var initParams dict.Dict
-	if originMetadata := aliasOutput.GetAliasOutput().FeatureSet().MetadataFeature(); originMetadata != nil {
+	if originMetadata := accountOutput.GetAliasOutput().FeatureSet().MetadataFeature(); originMetadata != nil {
 		var err error
 		initParams, err = dict.FromBytes(originMetadata.Data)
 		if err != nil {
@@ -86,11 +86,11 @@ func InitChainByAliasOutput(chainStore state.Store, aliasOutput *isc.AliasOutput
 		}
 	}
 	l1params := parameters.L1()
-	aoMinSD := l1params.Protocol.RentStructure.MinRent(aliasOutput.GetAliasOutput())
-	commonAccountAmount := aliasOutput.GetAliasOutput().Amount - aoMinSD
+	aoMinSD := l1params.Protocol.RentStructure.MinRent(accountOutput.GetAliasOutput())
+	commonAccountAmount := accountOutput.GetAliasOutput().Amount - aoMinSD
 	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
 
-	originAOStateMetadata, err := transaction.StateMetadataFromBytes(aliasOutput.GetStateMetadata())
+	originAOStateMetadata, err := transaction.StateMetadataFromBytes(accountOutput.GetStateMetadata())
 	if err != nil {
 		return nil, fmt.Errorf("invalid state metadata on origin AO: %w", err)
 	}
@@ -134,7 +134,7 @@ func NewChainOriginTransaction(
 	unspentOutputs iotago.OutputSet,
 	unspentOutputIDs iotago.OutputIDs,
 	schemaVersion uint32,
-) (*iotago.Transaction, *iotago.AliasOutput, isc.ChainID, error) {
+) (*iotago.Transaction, *iotago.AccountOutput, isc.ChainID, error) {
 	if len(unspentOutputs) != len(unspentOutputIDs) {
 		panic("mismatched lengths of outputs and inputs slices")
 	}
@@ -149,7 +149,7 @@ func NewChainOriginTransaction(
 		initParams.Set(ParamChainOwner, isc.NewAgentID(governanceControllerAddress).Bytes())
 	}
 
-	aliasOutput := &iotago.AliasOutput{
+	accountOutput := &iotago.AccountOutput{
 		Amount:        deposit,
 		StateMetadata: calcStateMetadata(initParams, deposit, schemaVersion), // NOTE: Updated below.
 		Conditions: iotago.UnlockConditions{
@@ -161,26 +161,26 @@ func NewChainOriginTransaction(
 		},
 	}
 
-	minSD := parameters.L1().Protocol.RentStructure.MinRent(aliasOutput)
+	minSD := parameters.L1().Protocol.RentStructure.MinRent(accountOutput)
 	minAmount := minSD + governance.DefaultMinBaseTokensOnCommonAccount
-	if aliasOutput.Amount < minAmount {
-		aliasOutput.Amount = minAmount
+	if accountOutput.Amount < minAmount {
+		accountOutput.Amount = minAmount
 	}
 	// update the L1 commitment to not include the minimumSD
-	aliasOutput.StateMetadata = calcStateMetadata(initParams, aliasOutput.Amount-minSD, schemaVersion)
+	accountOutput.StateMetadata = calcStateMetadata(initParams, accountOutput.Amount-minSD, schemaVersion)
 
 	txInputs, remainderOutput, err := transaction.ComputeInputsAndRemainder(
 		walletAddr,
-		aliasOutput.Amount,
+		accountOutput.Amount,
 		nil,
 		nil,
 		unspentOutputs,
 		unspentOutputIDs,
 	)
 	if err != nil {
-		return nil, aliasOutput, isc.ChainID{}, err
+		return nil, accountOutput, isc.ChainID{}, err
 	}
-	outputs := iotago.Outputs{aliasOutput}
+	outputs := iotago.Outputs{accountOutput}
 	if remainderOutput != nil {
 		outputs = append(outputs, remainderOutput)
 	}
@@ -194,7 +194,7 @@ func NewChainOriginTransaction(
 		keyPair.GetPrivateKey().AddressKeysForEd25519Address(walletAddr),
 	)
 	if err != nil {
-		return nil, aliasOutput, isc.ChainID{}, err
+		return nil, accountOutput, isc.ChainID{}, err
 	}
 	tx := &iotago.Transaction{
 		Essence: essence,
@@ -202,8 +202,8 @@ func NewChainOriginTransaction(
 	}
 	txid, err := tx.ID()
 	if err != nil {
-		return nil, aliasOutput, isc.ChainID{}, err
+		return nil, accountOutput, isc.ChainID{}, err
 	}
 	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0)))
-	return tx, aliasOutput, chainID, nil
+	return tx, accountOutput, chainID, nil
 }

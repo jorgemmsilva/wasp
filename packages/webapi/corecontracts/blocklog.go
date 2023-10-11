@@ -16,12 +16,12 @@ func GetControlAddresses(ch chain.Chain) (*isc.ControlAddresses, error) {
 	if err != nil {
 		return nil, err
 	}
-	aliasOutput := aliasOutputID.GetAliasOutput()
+	accountOutput := aliasOutputID.GetAliasOutput()
 
 	controlAddresses := &isc.ControlAddresses{
 		StateAddress:     aliasOutputID.GetStateAddress(),
-		GoverningAddress: aliasOutput.GovernorAddress(),
-		SinceBlockIndex:  aliasOutput.StateIndex,
+		GoverningAddress: accountOutput.GovernorAddress(),
+		SinceBlockIndex:  accountOutput.StateIndex,
 	}
 
 	return controlAddresses, nil

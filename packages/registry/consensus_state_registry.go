@@ -243,7 +243,7 @@ func (p *ConsensusStateRegistry) loadConsensusStateJSONsFromFolder() error {
 			return fmt.Errorf("unable to parse consensus state bech32 address (%s), error: %w", chainAddressBech32, err)
 		}
 
-		if chainAddress.Type() != iotago.AddressAlias {
+		if chainAddress.Type() != iotago.AddressAccount {
 			return fmt.Errorf("chainID bech32 address is not an account address (%s), error: %w", chainAddressBech32, err)
 		}
 

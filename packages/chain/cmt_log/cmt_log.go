@@ -24,7 +24,7 @@
 // >     Let prevLI <- TRY restoring the last started LogIndex ELSE 0
 // >     MinLI <- prevLI + 1
 // >     LogIndex.Start(prevLI)
-// > UPON AliasOutput (AO) {Confirmed | Rejected} by L1:
+// > UPON AccountOutput (AO) {Confirmed | Rejected} by L1:
 // >     LocalView.Update(AO)
 // >     IF LocalView changed THEN
 // >         LogIndex.L1ReplacedBaseAliasOutput()
@@ -35,7 +35,7 @@
 // >     MinLI <- prevLI + 1
 // >     LogIndex.Start(prevLI)
 // >     TryProposeConsensus()
-// > UPON AliasOutput (AO) {Confirmed | Rejected} by L1:
+// > UPON AccountOutput (AO) {Confirmed | Rejected} by L1:
 // >     LocalView.Update(AO)
 // >     IF LocalView changed THEN
 // >         LogIndex.L1ReplacedBaseAliasOutput()
@@ -83,7 +83,7 @@
 //
 // Inputs expected:
 //   - Consensus: Start -> Done | Timeout.
-//   - AliasOutput: Confirmed | Rejected -> {}.
+//   - AccountOutput: Confirmed | Rejected -> {}.
 //   - Suspend.
 //
 // Messages exchanged:
@@ -128,10 +128,10 @@ var ErrCmtLogStateNotFound = errors.New("errCmtLogStateNotFound")
 // logIndex (there will be no different baseAliasOutputs for the same logIndex).
 type Output struct {
 	logIndex        LogIndex
-	baseAliasOutput *isc.AliasOutputWithID
+	baseAliasOutput *isc.AccountOutputWithID
 }
 
-func makeOutput(logIndex LogIndex, baseAliasOutput *isc.AliasOutputWithID) *Output {
+func makeOutput(logIndex LogIndex, baseAliasOutput *isc.AccountOutputWithID) *Output {
 	return &Output{logIndex: logIndex, baseAliasOutput: baseAliasOutput}
 }
 
@@ -139,7 +139,7 @@ func (o *Output) GetLogIndex() LogIndex {
 	return o.logIndex
 }
 
-func (o *Output) GetBaseAliasOutput() *isc.AliasOutputWithID {
+func (o *Output) GetBaseAliasOutput() *isc.AccountOutputWithID {
 	return o.baseAliasOutput
 }
 
@@ -276,10 +276,10 @@ func (cl *cmtLogImpl) Message(msg gpa.Message) gpa.OutMessages {
 	return cl.handleMsgNextLogIndex(msgNLI)
 }
 
-// > UPON AliasOutput (AO) {Confirmed | Rejected} by L1:
+// > UPON AccountOutput (AO) {Confirmed | Rejected} by L1:
 // >   ...
 func (cl *cmtLogImpl) handleInputAliasOutputConfirmed(input *inputAliasOutputConfirmed) gpa.OutMessages {
-	_, tipUpdated, cnfLogIndex := cl.varLocalView.AliasOutputConfirmed(input.aliasOutput)
+	_, tipUpdated, cnfLogIndex := cl.varLocalView.AliasOutputConfirmed(input.accountOutput)
 	if tipUpdated {
 		cl.varOutput.Suspended(false)
 		return cl.varLogIndex.L1ReplacedBaseAliasOutput()
@@ -299,7 +299,7 @@ func (cl *cmtLogImpl) handleInputConsensusOutputConfirmed(input *inputConsensusO
 func (cl *cmtLogImpl) handleInputConsensusOutputRejected(input *inputConsensusOutputRejected) gpa.OutMessages {
 	msgs := gpa.NoMessages()
 	msgs.AddAll(cl.varLogIndex.ConsensusOutputReceived(input.logIndex)) // This should be superfluous, always follows handleInputConsensusOutputDone.
-	if _, tipUpdated := cl.varLocalView.AliasOutputRejected(input.aliasOutput); tipUpdated {
+	if _, tipUpdated := cl.varLocalView.AliasOutputRejected(input.accountOutput); tipUpdated {
 		return msgs.AddAll(cl.varLogIndex.L1ReplacedBaseAliasOutput())
 	}
 	return msgs

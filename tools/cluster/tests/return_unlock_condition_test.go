@@ -49,7 +49,7 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 	}
 
 	// tweak the tx , so the request output has a StorageDepositReturn unlock condition
-	for i, out := range tx.Essence.Outputs {
+	for i, out := range tx.Outputs {
 		if out.FeatureSet().MetadataFeature() == nil {
 			// skip if not the request output
 			continue
@@ -60,11 +60,11 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 			Amount:        1 * isc.Million,
 		}
 		customOut.Conditions = append(customOut.Conditions, sendBackCondition)
-		tx.Essence.Outputs[i] = customOut
+		tx.Outputs[i] = customOut
 	}
 
 	inputsCommitment := outputIDs.OrderedSet(outputs).MustCommitment()
-	tx, err = transaction.CreateAndSignTx(outputIDs.UTXOInputs(), inputsCommitment, tx.Essence.Outputs, keyPair, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(outputIDs.UTXOInputs(), inputsCommitment, tx.Outputs, keyPair, parameters.L1().Protocol.NetworkID())
 	require.NoError(t, err)
 	return tx
 }

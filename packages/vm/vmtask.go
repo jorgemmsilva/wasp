@@ -19,7 +19,7 @@ import (
 // at timestamp = Timestamp + len(Requests) nanoseconds
 type VMTask struct {
 	Processors         *processors.Cache
-	AnchorOutput       *iotago.AliasOutput
+	AnchorOutput       *iotago.AccountOutput
 	AnchorOutputID     iotago.OutputID
 	Store              state.Store
 	Requests           []isc.Request

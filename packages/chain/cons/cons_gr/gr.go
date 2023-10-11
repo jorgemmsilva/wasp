@@ -36,24 +36,24 @@ const (
 // Interfaces required from other components (MP, SM)
 
 type Mempool interface {
-	ConsensusProposalAsync(ctx context.Context, aliasOutput *isc.AliasOutputWithID) <-chan []*isc.RequestRef
+	ConsensusProposalAsync(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan []*isc.RequestRef
 	ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc.RequestRef) <-chan []isc.Request
 }
 
 // State manager has to implement this interface.
 type StateMgr interface {
 	// State manager has to return a signal via the return channel when it
-	// ensures all the needed blocks for the specified AliasOutput is present
+	// ensures all the needed blocks for the specified AccountOutput is present
 	// in the database. Context is used to cancel a request.
 	ConsensusStateProposal(
 		ctx context.Context,
-		aliasOutput *isc.AliasOutputWithID,
+		accountOutput *isc.AccountOutputWithID,
 	) <-chan interface{}
 	// State manager has to ensure all the data needed for the specified alias
 	// output (presented as aliasOutputID+stateCommitment) is present in the DB.
 	ConsensusDecidedState(
 		ctx context.Context,
-		aliasOutput *isc.AliasOutputWithID,
+		accountOutput *isc.AccountOutputWithID,
 	) <-chan state.State
 	// State manager has to persistently store the block and respond only after
 	// the block was flushed to the disk. A WAL can be used for that as well.
@@ -80,7 +80,7 @@ func (o *Output) String() string {
 }
 
 type input struct {
-	baseAliasOutput *isc.AliasOutputWithID
+	baseAliasOutput *isc.AccountOutputWithID
 	outputCB        func(*Output)
 	recoverCB       func()
 }
@@ -198,7 +198,7 @@ func New(
 	return cgr
 }
 
-func (cgr *ConsGr) Input(baseAliasOutput *isc.AliasOutputWithID, outputCB func(*Output), recoverCB func()) {
+func (cgr *ConsGr) Input(baseAliasOutput *isc.AccountOutputWithID, outputCB func(*Output), recoverCB func()) {
 	wasReceivedBefore := cgr.inputReceived.Swap(true)
 	if wasReceivedBefore {
 		panic(fmt.Errorf("duplicate input: %v", baseAliasOutput))

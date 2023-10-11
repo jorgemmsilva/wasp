@@ -479,11 +479,11 @@ func (ch *Chain) GetControlAddresses() *isc.ControlAddresses {
 	if err != nil {
 		return nil
 	}
-	aliasOutput := aliasOutputID.GetAliasOutput()
+	accountOutput := aliasOutputID.GetAliasOutput()
 	controlAddr := &isc.ControlAddresses{
-		StateAddress:     aliasOutput.StateController(),
-		GoverningAddress: aliasOutput.GovernorAddress(),
-		SinceBlockIndex:  aliasOutput.StateIndex,
+		StateAddress:     accountOutput.StateController(),
+		GoverningAddress: accountOutput.GovernorAddress(),
+		SinceBlockIndex:  accountOutput.StateIndex,
 	}
 	return controlAddr
 }
@@ -641,7 +641,7 @@ func (*Chain) GetTimeData() time.Time {
 }
 
 // LatestAliasOutput implements chain.Chain
-func (ch *Chain) LatestAliasOutput(freshness chain.StateFreshness) (*isc.AliasOutputWithID, error) {
+func (ch *Chain) LatestAliasOutput(freshness chain.StateFreshness) (*isc.AccountOutputWithID, error) {
 	ao := ch.GetAnchorOutputFromL1()
 	if ao == nil {
 		return nil, fmt.Errorf("have no latest alias output")

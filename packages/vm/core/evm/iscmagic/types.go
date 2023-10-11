@@ -64,15 +64,15 @@ type NativeToken struct {
 	Amount *big.Int
 }
 
-func WrapNativeToken(nativeToken *iotago.NativeToken) NativeToken {
+func WrapNativeToken(nativeToken *iotago.NativeTokenFeature) NativeToken {
 	return NativeToken{
 		ID:     WrapNativeTokenID(nativeToken.ID),
 		Amount: nativeToken.Amount,
 	}
 }
 
-func (nt NativeToken) Unwrap() *iotago.NativeToken {
-	return &iotago.NativeToken{
+func (nt NativeToken) Unwrap() *iotago.NativeTokenFeature {
+	return &iotago.NativeTokenFeature{
 		ID:     nt.ID.Unwrap(),
 		Amount: nt.Amount,
 	}
@@ -262,7 +262,7 @@ func WrapISCAssets(a *isc.Assets) ISCAssets {
 }
 
 func (a ISCAssets) Unwrap() *isc.Assets {
-	tokens := make(iotago.NativeTokens, len(a.NativeTokens))
+	tokens := make([]*iotago.NativeTokenFeature, len(a.NativeTokens))
 	for i, nativeToken := range a.NativeTokens {
 		tokens[i] = nativeToken.Unwrap()
 	}

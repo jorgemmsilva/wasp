@@ -120,7 +120,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		req2, err := isc.OnLedgerFromUTXO(&iotago.NFTOutput{
 			Amount: 1 * isc.Million,
 			NFTID:  nftID,
-			NativeTokens: []*iotago.NativeToken{
+			NativeTokens: []*iotago.NativeTokenFeature{
 				{ID: nativeTokenID1, Amount: big.NewInt(1)},
 				{ID: nativeTokenID2, Amount: big.NewInt(2)},
 				{ID: nativeTokenID3, Amount: big.NewInt(3)},
@@ -186,7 +186,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			txb.anchorOutput.AliasID.ToAddress(),
 			nil,
 			&isc.Assets{
-				NativeTokens: iotago.NativeTokens{{ID: id, Amount: big.NewInt(int64(amountNative))}},
+				NativeTokens: []*iotago.NativeTokenFeature{{ID: id, Amount: big.NewInt(int64(amountNative))}},
 			},
 			nil,
 			isc.SendOptions{},
@@ -204,7 +204,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	addOutput := func(txb *AnchorTransactionBuilder, amount uint64, nativeTokenID iotago.NativeTokenID, mockedAccounts *mockAccountContractRead) {
 		outAssets := &isc.Assets{
 			BaseTokens: 1 * isc.Million,
-			NativeTokens: iotago.NativeTokens{{
+			NativeTokens: []*iotago.NativeTokenFeature{{
 				ID:     nativeTokenID,
 				Amount: new(big.Int).SetUint64(amount),
 			}},

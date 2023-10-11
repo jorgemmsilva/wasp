@@ -49,7 +49,7 @@ func TestNoSenderFeature(t *testing.T) {
 	).
 		AddBaseTokens(baseTokensToSend).
 		AddAllowanceBaseTokens(allowance).
-		AddAllowanceNativeTokensVect(&iotago.NativeToken{
+		AddAllowanceNativeTokensVect(&iotago.NativeTokenFeature{
 			ID:     nativeTokenID,
 			Amount: nativeTokenAmount,
 		}).
@@ -75,7 +75,7 @@ func TestNoSenderFeature(t *testing.T) {
 			TargetAddress: ch.ChainID.AsAddress(),
 			Assets: &isc.Assets{
 				BaseTokens:   5 * isc.Million,
-				NativeTokens: []*iotago.NativeToken{{ID: nativeTokenID, Amount: nativeTokenAmount}},
+				NativeTokens: []*iotago.NativeTokenFeature{{ID: nativeTokenID, Amount: nativeTokenAmount}},
 				NFTs:         []iotago.NFTID{nft.ID},
 			},
 			Metadata: &isc.SendMetadata{

@@ -77,7 +77,7 @@ func setAllowanceBaseTokens(ctx isc.Sandbox, from, to common.Address, numTokens 
 func setAllowanceNativeTokens(ctx isc.Sandbox, from, to common.Address, nativeTokenID iscmagic.NativeTokenID, numTokens *big.Int) {
 	withAllowance(ctx, from, to, func(allowance *isc.Assets) {
 		ntSet := allowance.NativeTokens.MustSet()
-		ntSet[nativeTokenID.MustUnwrap()] = &iotago.NativeToken{
+		ntSet[nativeTokenID.MustUnwrap()] = &iotago.NativeTokenFeature{
 			ID:     nativeTokenID.MustUnwrap(),
 			Amount: numTokens,
 		}

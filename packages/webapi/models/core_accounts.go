@@ -24,14 +24,14 @@ type AssetsResponse struct {
 	NativeTokens []*NativeToken `json:"nativeTokens" swagger:"required"`
 }
 
-func MapNativeToken(token *iotago.NativeToken) *NativeToken {
+func MapNativeToken(token *iotago.NativeTokenFeature) *NativeToken {
 	return &NativeToken{
 		ID:     token.ID.ToHex(),
 		Amount: token.Amount.String(),
 	}
 }
 
-func MapNativeTokens(tokens iotago.NativeTokens) []*NativeToken {
+func MapNativeTokens(tokens []*iotago.NativeTokenFeature) []*NativeToken {
 	nativeTokens := make([]*NativeToken, len(tokens))
 
 	for k, v := range tokens {

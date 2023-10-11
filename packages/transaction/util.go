@@ -184,13 +184,13 @@ func computeRemainderOutput(senderAddress iotago.Address, inBaseTokens, outBaseT
 	}
 	ret := &iotago.BasicOutput{
 		Amount:       remBaseTokens,
-		NativeTokens: iotago.NativeTokens{},
+		NativeTokens: []*iotago.NativeTokenFeature{},
 		Conditions: iotago.UnlockConditions{
 			&iotago.AddressUnlockCondition{Address: senderAddress},
 		},
 	}
 	for nativeTokenID, b := range remTokens {
-		ret.NativeTokens = append(ret.NativeTokens, &iotago.NativeToken{
+		ret.NativeTokens = append(ret.NativeTokens, &iotago.NativeTokenFeature{
 			ID:     nativeTokenID,
 			Amount: b,
 		})

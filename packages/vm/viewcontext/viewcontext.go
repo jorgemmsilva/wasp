@@ -111,7 +111,7 @@ func (ctx *ViewContext) Processors() *processors.Cache {
 	return ctx.processors
 }
 
-func (ctx *ViewContext) GetNativeTokens(agentID isc.AgentID) iotago.NativeTokens {
+func (ctx *ViewContext) GetNativeTokens(agentID isc.AgentID) []*iotago.NativeTokenFeature {
 	return accounts.GetNativeTokens(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID)
 }
 

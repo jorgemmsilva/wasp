@@ -311,7 +311,7 @@ func TestTransferNFTs(t *testing.T) {
 	}
 	CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
 		Amount:       0,
-		NativeTokens: []*iotago.NativeToken{},
+		NativeTokens: []*iotago.NativeTokenFeature{},
 		NFTID:        NFT1.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
@@ -326,7 +326,7 @@ func TestTransferNFTs(t *testing.T) {
 	// nft data is saved (accounts.SaveNFTOutput must be called)
 	SaveNFTOutput(state, &iotago.NFTOutput{
 		Amount:       0,
-		NativeTokens: []*iotago.NativeToken{},
+		NativeTokens: []*iotago.NativeTokenFeature{},
 		NFTID:        NFT1.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
@@ -386,7 +386,7 @@ func TestCreditDebitNFT1(t *testing.T) {
 	}
 	CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
 		Amount:       0,
-		NativeTokens: []*iotago.NativeToken{},
+		NativeTokens: []*iotago.NativeTokenFeature{},
 		NFTID:        nft.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: nft.Issuer},

@@ -57,7 +57,7 @@ func GetNativeTokenOutput(state kv.KVStoreReader, nativeTokenID iotago.NativeTok
 	tokenRec := mustNativeTokenOutputRecFromBytes(data)
 	ret := &iotago.BasicOutput{
 		Amount: tokenRec.StorageBaseTokens,
-		NativeTokens: iotago.NativeTokens{{
+		NativeTokens: []*iotago.NativeTokenFeature{{
 			ID:     nativeTokenID,
 			Amount: tokenRec.Amount,
 		}},

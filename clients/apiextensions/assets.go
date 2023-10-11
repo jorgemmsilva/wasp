@@ -33,7 +33,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 			return nil, err2
 		}
 
-		assets.NativeTokens = append(assets.NativeTokens, &iotago.NativeToken{
+		assets.NativeTokens = append(assets.NativeTokens, &iotago.NativeTokenFeature{
 			ID:     nativeTokenID,
 			Amount: amount,
 		})

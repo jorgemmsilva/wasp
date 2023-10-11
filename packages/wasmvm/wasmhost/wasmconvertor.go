@@ -38,7 +38,7 @@ func (cvt WasmConvertor) IscAgentID(scAgentID *wasmtypes.ScAgentID) isc.AgentID 
 func (cvt WasmConvertor) IscAllowance(assets *wasmlib.ScAssets) *isc.Assets {
 	iscAllowance := isc.NewAssetsBaseTokens(assets.BaseTokens)
 	for tokenID, amount := range assets.NativeTokens {
-		nativeToken := &iotago.NativeToken{
+		nativeToken := &iotago.NativeTokenFeature{
 			ID:     cvt.IscTokenID(&tokenID),
 			Amount: cvt.IscBigInt(amount),
 		}

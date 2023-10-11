@@ -93,7 +93,7 @@ type BalanceModel struct {
 	AddressIndex int                 `json:"AddressIndex"`
 	Address      string              `json:"Address"`
 	BaseTokens   uint64              `json:"BaseTokens"`
-	NativeTokens iotago.NativeTokens `json:"NativeTokens"`
+	NativeTokens []*iotago.NativeTokenFeature `json:"NativeTokens"`
 
 	OutputMap      iotago.OutputSet `json:"-"`
 	VerboseOutputs map[uint16]string

@@ -18,16 +18,16 @@ func TestAssetsSerialization(t *testing.T) {
 	maxVal.Exp(maxVal, e, nil)
 	maxVal.Sub(maxVal, big.NewInt(1))
 
-	tokens := iotago.NativeTokens{
-		&iotago.NativeToken{
+	tokens := []*iotago.NativeTokenFeature{
+		{
 			ID:     [iotago.NativeTokenIDLength]byte{1},
 			Amount: big.NewInt(100),
 		},
-		&iotago.NativeToken{
+		{
 			ID:     [iotago.NativeTokenIDLength]byte{2},
 			Amount: big.NewInt(200),
 		},
-		&iotago.NativeToken{
+		{
 			ID:     [iotago.NativeTokenIDLength]byte{3},
 			Amount: util.MaxUint256,
 		},
@@ -57,7 +57,7 @@ func TestAssetsSpendBudget(t *testing.T) {
 	require.True(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(&isc.Assets{
 		BaseTokens:   1,
-		NativeTokens: []*iotago.NativeToken{},
+		NativeTokens: []*iotago.NativeTokenFeature{},
 		NFTs:         []iotago.NFTID{},
 	}))
 
@@ -66,16 +66,16 @@ func TestAssetsSpendBudget(t *testing.T) {
 	require.False(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(&isc.Assets{
 		BaseTokens:   1,
-		NativeTokens: []*iotago.NativeToken{},
+		NativeTokens: []*iotago.NativeTokenFeature{},
 		NFTs:         []iotago.NFTID{},
 	}))
 
-	nativeTokenID1 := tpkg.RandNativeToken().ID
-	nativeTokenID2 := tpkg.RandNativeToken().ID
+	nativeTokenID1 := tpkg.RandNativeTokenFeature().ID
+	nativeTokenID2 := tpkg.RandNativeTokenFeature().ID
 
 	budget = &isc.Assets{
 		BaseTokens: 1,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID1, Amount: big.NewInt(5)},
 		},
 	}
@@ -85,14 +85,14 @@ func TestAssetsSpendBudget(t *testing.T) {
 
 	budget = &isc.Assets{
 		BaseTokens: 1,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID1, Amount: big.NewInt(5)},
 		},
 	}
 	cloneBudget := budget.Clone()
 	toSpend = &isc.Assets{
 		BaseTokens: 1,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID1, Amount: big.NewInt(10)},
 		},
 	}
@@ -101,20 +101,20 @@ func TestAssetsSpendBudget(t *testing.T) {
 
 	budget = &isc.Assets{
 		BaseTokens: 1,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID1, Amount: big.NewInt(5)},
 			{ID: nativeTokenID2, Amount: big.NewInt(1)},
 		},
 	}
 	toSpend = &isc.Assets{
 		BaseTokens: 1,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID1, Amount: big.NewInt(5)},
 		},
 	}
 	expected := &isc.Assets{
 		BaseTokens: 0,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID2, Amount: big.NewInt(1)},
 		},
 	}
@@ -123,13 +123,13 @@ func TestAssetsSpendBudget(t *testing.T) {
 
 	budget = &isc.Assets{
 		BaseTokens: 10,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID2, Amount: big.NewInt(1)},
 		},
 	}
 	toSpend = &isc.Assets{
 		BaseTokens: 1,
-		NativeTokens: iotago.NativeTokens{
+		NativeTokens: []*iotago.NativeTokenFeature{
 			{ID: nativeTokenID1, Amount: big.NewInt(5)},
 		},
 	}

@@ -34,8 +34,8 @@ func TestRequestDataSerialization(t *testing.T) {
 		}
 		basicOutput := &iotago.BasicOutput{
 			Amount: 123,
-			NativeTokens: iotago.NativeTokens{
-				&iotago.NativeToken{
+			NativeTokens: []*iotago.NativeTokenFeature{
+				&iotago.NativeTokenFeature{
 					ID:     [iotago.NativeTokenIDLength]byte{1},
 					Amount: big.NewInt(100),
 				},

@@ -72,7 +72,7 @@ type Balance interface {
 	// BalanceNativeToken returns number of native token or nil if it is empty
 	BalanceNativeToken(iotago.NativeTokenID) *big.Int
 	// BalanceNativeTokens returns all native tokens owned by the smart contract
-	BalanceNativeTokens() iotago.NativeTokens
+	BalanceNativeTokens() []*iotago.NativeTokenFeature
 	// OwnedNFTs returns the NFTIDs of NFTs owned by the smart contract
 	OwnedNFTs() []iotago.NFTID
 	// returns whether a given user owns a given amount of tokens
@@ -184,7 +184,7 @@ type StateAnchor struct {
 	StateIndex           uint32
 	StateData            []byte
 	Deposit              uint64
-	NativeTokens         iotago.NativeTokens
+	NativeTokens         []*iotago.NativeTokenFeature
 }
 
 type SendOptions struct {

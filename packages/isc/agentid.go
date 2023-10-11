@@ -61,11 +61,11 @@ func HnameFromAgentID(a AgentID) Hname {
 	return HnameNil
 }
 
-// NewAgentID creates an AddressAgentID if the address is not an AliasAddress;
+// NewAgentID creates an AddressAgentID if the address is not an AccountAddress;
 // otherwise a ContractAgentID with hname = HnameNil.
 func NewAgentID(addr iotago.Address) AgentID {
-	if addr.Type() == iotago.AddressAlias {
-		chainID := ChainIDFromAddress(addr.(*iotago.AliasAddress))
+	if addr.Type() == iotago.AddressAccount {
+		chainID := ChainIDFromAddress(addr.(*iotago.AccountAddress))
 		return NewContractAgentID(chainID, HnameNil)
 	}
 	return NewAddressAgentID(addr)
@@ -133,7 +133,7 @@ func AgentIDFromString(s string) (AgentID, error) {
 		}
 		return contractAgentIDFromString(contractPart, addrPart)
 	}
-	if strings.HasPrefix(addrPart, string(parameters.L1().Protocol.Bech32HRP)) {
+	if strings.HasPrefix(addrPart, string(parameters.L1().Protocol.Bech32HRP())) {
 		return addressAgentIDFromString(s)
 	}
 	return nil, errors.New("invalid AgentID string")

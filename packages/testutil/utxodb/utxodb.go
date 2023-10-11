@@ -17,8 +17,6 @@ import (
 )
 
 const (
-	DefaultBaseTokenSupply = tpkg.TestTokenSupply
-
 	// FundsFromFaucetAmount is how many base tokens are returned from the faucet.
 	FundsFromFaucetAmount = iotago.BaseToken(1_000_000_000)
 )
@@ -52,12 +50,9 @@ type InitParams struct {
 
 func DefaultInitParams() *InitParams {
 	return &InitParams{
-		initialTime: time.Unix(1, 0),
-		timestep:    1 * time.Millisecond,
-		protocolParameters: iotago.NewV3ProtocolParameters(
-			iotago.WithNetworkOptions("test", "test"),
-			iotago.WithSupplyOptions(DefaultBaseTokenSupply, 100, 1, 10, 100, 100, 100),
-		),
+		initialTime:        time.Unix(1, 0),
+		timestep:           1 * time.Millisecond,
+		protocolParameters: tpkg.TestAPI.ProtocolParameters(),
 	}
 }
 

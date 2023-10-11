@@ -5,16 +5,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 )
 
 // L1Params describes parameters coming from the L1Params node
 type L1Params struct {
-	MaxPayloadSize int                        `json:"maxPayloadSize" swagger:"required"`
-	Protocol       *iotago.ProtocolParameters `json:"protocol" swagger:"required"`
-	BaseToken      *BaseToken                 `json:"baseToken" swagger:"required"`
+	Protocol  iotago.ProtocolParameters `json:"protocol" swagger:"required"`
+	BaseToken *BaseToken                `json:"baseToken" swagger:"required"`
 }
 
 type BaseToken struct {
@@ -26,32 +24,12 @@ type BaseToken struct {
 	UseMetricPrefix bool   `json:"useMetricPrefix" swagger:"desc(Whether or not the token uses a metric prefix),required"`
 }
 
-const MaxPayloadSize = iotago.BlockBinSerializedMaxSize - // BlockSizeMax
-	serializer.OneByte - // ProtocolVersion
-	serializer.OneByte - // ParentCount
-	(iotago.BlockMaxParents * iotago.BlockIDLength) - // Parents
-	serializer.UInt32ByteSize - // PayloadLength
-	serializer.UInt64ByteSize // Nonce
-
 var (
 	l1ParamsMutex = &sync.RWMutex{}
 	l1Params      *L1Params
 
 	L1ForTesting = &L1Params{
-		// There are no limits on how big from a size perspective an essence can be, so it is just derived from 32KB - Message fields without payload = max size of the payload
-		MaxPayloadSize: MaxPayloadSize,
-		Protocol: &iotago.ProtocolParameters{
-			Version:     tpkg.TestProtoParas.Version,
-			NetworkName: tpkg.TestProtoParas.NetworkName,
-			Bech32HRP:   tpkg.TestProtoParas.Bech32HRP,
-			MinPoWScore: tpkg.TestProtoParas.MinPoWScore,
-			RentStructure: iotago.RentStructure{
-				VByteCost:    10,
-				VBFactorData: 1,
-				VBFactorKey:  1,
-			},
-			TokenSupply: tpkg.TestProtoParas.TokenSupply,
-		},
+		Protocol: tpkg.TestAPI.ProtocolParameters(),
 		BaseToken: &BaseToken{
 			Name:            "Iota",
 			TickerSymbol:    "MIOTA",
@@ -99,4 +77,8 @@ func InitL1Lazy(f func()) {
 
 func InitL1(l1 *L1Params) {
 	l1Params = l1
+}
+
+func L1API() iotago.API {
+	return iotago.V3API(L1().Protocol)
 }

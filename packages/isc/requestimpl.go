@@ -143,7 +143,7 @@ func RequestIDFromBytes(data []byte) (ret RequestID, err error) {
 }
 
 func RequestIDFromEVMTxHash(txHash common.Hash) RequestID {
-	return NewRequestID(iotago.TransactionID(txHash), 0)
+	return NewRequestID(iotago.TransactionIDRepresentingData(0, txHash[:]), 0)
 }
 
 func RequestIDFromString(s string) (ret RequestID, err error) {
@@ -217,7 +217,7 @@ type RequestMetadata struct {
 }
 
 func requestMetadataFromFeatureSet(set iotago.FeatureSet) (*RequestMetadata, error) {
-	metadataFeatBlock := set.MetadataFeature()
+	metadataFeatBlock := set.Metadata()
 	if metadataFeatBlock == nil {
 		// IMPORTANT: this cannot return an empty `&RequestMetadata{}` object because that could cause `isInternalUTXO` check to fail
 		return nil, nil

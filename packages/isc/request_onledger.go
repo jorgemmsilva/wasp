@@ -3,9 +3,7 @@ package isc
 import (
 	"fmt"
 	"io"
-	"time"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util"
@@ -65,14 +63,7 @@ func (req *onLedgerRequestData) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadKindAndVerify(rwutil.Kind(requestKindOnLedger))
 	rr.ReadN(req.outputID[:])
-	outputData := rr.ReadBytes()
-	if rr.Err != nil {
-		return rr.Err
-	}
-	req.output, rr.Err = util.OutputFromBytes(outputData)
-	if rr.Err != nil {
-		return rr.Err
-	}
+	rr.ReadSerialized(&req.output)
 	return req.readFromUTXO(req.output, req.outputID)
 }
 
@@ -83,9 +74,7 @@ func (req *onLedgerRequestData) Write(w io.Writer) error {
 	if ww.Err != nil {
 		return ww.Err
 	}
-	outputData, err := req.output.Serialize(serializer.DeSeriModePerformLexicalOrdering, nil)
-	ww.Err = err
-	ww.WriteBytes(outputData)
+	ww.WriteSerialized(req.output)
 	return ww.Err
 }
 
@@ -97,14 +86,7 @@ func (req *onLedgerRequestData) Allowance() *Assets {
 }
 
 func (req *onLedgerRequestData) Assets() *Assets {
-	amount := req.output.Deposit()
-	tokens := req.output.NativeTokenList()
-	ret := NewAssets(amount, tokens)
-	NFT := req.NFT()
-	if NFT != nil {
-		ret.AddNFTs(NFT.ID)
-	}
-	return ret
+	return AssetsFromOutput(req.output, req.outputID)
 }
 
 func (req *onLedgerRequestData) Bytes() []byte {
@@ -137,13 +119,12 @@ func (req *onLedgerRequestData) Clone() OnLedgerRequest {
 	return ret
 }
 
-func (req *onLedgerRequestData) Expiry() (time.Time, iotago.Address) {
+func (req *onLedgerRequestData) Expiry() (iotago.SlotIndex, iotago.Address, bool) {
 	expiration := req.unlockConditions.Expiration()
 	if expiration == nil {
-		return time.Time{}, nil
+		return 0, nil, false
 	}
-
-	return time.Unix(int64(expiration.UnixTime), 0), expiration.ReturnAddress
+	return expiration.SlotIndex, expiration.ReturnAddress, false
 }
 
 func (req *onLedgerRequestData) Features() Features {
@@ -219,7 +200,7 @@ func (req *onLedgerRequestData) Params() dict.Dict {
 	return req.requestMetadata.Params
 }
 
-func (req *onLedgerRequestData) ReturnAmount() (uint64, bool) {
+func (req *onLedgerRequestData) ReturnAmount() (iotago.BaseToken, bool) {
 	storageDepositReturn := req.unlockConditions.StorageDepositReturn()
 	if storageDepositReturn == nil {
 		return 0, false
@@ -279,12 +260,12 @@ func (req *onLedgerRequestData) TargetAddress() iotago.Address {
 	}
 }
 
-func (req *onLedgerRequestData) TimeLock() time.Time {
+func (req *onLedgerRequestData) TimeLock() (iotago.SlotIndex, bool) {
 	timelock := req.unlockConditions.Timelock()
 	if timelock == nil {
-		return time.Time{}
+		return 0, false
 	}
-	return time.Unix(int64(timelock.UnixTime), 0)
+	return timelock.SlotIndex, true
 }
 
 // region RetryOnLedgerRequest //////////////////////////////////////////////////////////////////

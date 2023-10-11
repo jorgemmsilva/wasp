@@ -10,7 +10,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -129,8 +128,8 @@ func (req *OffLedgerRequestData) EssenceBytes() []byte {
 	return ww.Bytes()
 }
 
-func (req *OffLedgerRequestData) Expiry() (time.Time, iotago.Address) {
-	return time.Time{}, nil
+func (req *OffLedgerRequestData) Expiry() (iotago.SlotIndex, iotago.Address, bool) {
+	return 0, nil, false
 }
 
 func (req *OffLedgerRequestData) GasBudget() (gasBudget uint64, isEVM bool) {
@@ -142,7 +141,7 @@ func (req *OffLedgerRequestData) GasBudget() (gasBudget uint64, isEVM bool) {
 // note that request needs to have been signed before this value is
 // considered valid
 func (req *OffLedgerRequestData) ID() (requestID RequestID) {
-	return NewRequestID(iotago.TransactionID(hashing.HashData(req.Bytes())), 0)
+	return NewRequestID(iotago.TransactionIDRepresentingData(0, req.Bytes()), 0)
 }
 
 func (req *OffLedgerRequestData) IsOffLedger() bool {
@@ -162,7 +161,7 @@ func (req *OffLedgerRequestData) Params() dict.Dict {
 	return req.params
 }
 
-func (req *OffLedgerRequestData) ReturnAmount() (uint64, bool) {
+func (req *OffLedgerRequestData) ReturnAmount() (iotago.BaseToken, bool) {
 	return 0, false
 }
 
@@ -194,8 +193,8 @@ func (req *OffLedgerRequestData) TargetAddress() iotago.Address {
 	return req.chainID.AsAddress()
 }
 
-func (req *OffLedgerRequestData) TimeLock() time.Time {
-	return time.Time{}
+func (req *OffLedgerRequestData) TimeLock() (iotago.SlotIndex, bool) {
+	return 0, false
 }
 
 func (req *OffLedgerRequestData) Timestamp() time.Time {

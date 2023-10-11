@@ -10,7 +10,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
-	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/evmnames"
@@ -83,7 +82,10 @@ func (req *evmOffLedgerCallRequest) GasBudget() (gas uint64, isEVM bool) {
 }
 
 func (req *evmOffLedgerCallRequest) ID() RequestID {
-	return NewRequestID(iotago.TransactionID(hashing.HashData(req.Bytes())), 0)
+	return NewRequestID(
+		iotago.TransactionIDRepresentingData(0, req.Bytes()),
+		0,
+	)
 }
 
 func (req *evmOffLedgerCallRequest) IsOffLedger() bool {

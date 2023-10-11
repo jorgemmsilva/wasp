@@ -3,7 +3,6 @@ package isc
 import (
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -38,11 +37,9 @@ type Calldata interface {
 }
 
 type Features interface {
-	// Expiry returns the expiry time and sender address, or a zero time if not present
-	Expiry() (time.Time, iotago.Address) // return expiry time data and sender address or nil, nil if does not exist
-	ReturnAmount() (uint64, bool)
-	// TimeLock returns the timelock feature, or a zero time if not present
-	TimeLock() time.Time
+	Expiry() (iotago.SlotIndex, iotago.Address, bool)
+	ReturnAmount() (iotago.BaseToken, bool)
+	TimeLock() (iotago.SlotIndex, bool)
 }
 
 type UnsignedOffLedgerRequest interface {
@@ -127,15 +124,12 @@ func RequestsInTransaction(tx *iotago.Transaction) (map[ChainID][]Request, error
 	return ret, nil
 }
 
-// don't process any request which deadline will expire within 1 minute
-const RequestConsideredExpiredWindow = time.Minute * 1
-
-func RequestIsExpired(req OnLedgerRequest, currentTime time.Time) bool {
-	expiry, _ := req.Features().Expiry()
-	if expiry.IsZero() {
+func RequestIsExpired(req OnLedgerRequest, currentSlotIndex iotago.SlotIndex) bool {
+	expiry, _, ok := req.Features().Expiry()
+	if !ok {
 		return false
 	}
-	return !expiry.IsZero() && currentTime.After(expiry.Add(-RequestConsideredExpiredWindow))
+	return currentSlotIndex >= expiry
 }
 
 func RequestIsUnlockable(req OnLedgerRequest, chainAddress iotago.Address, pastBoundedSlotIndex, futureBoundedSlotIndex iotago.SlotIndex) bool {

@@ -84,20 +84,23 @@ func AssetsFromNativeTokenSum(baseTokens iotago.BaseToken, tokens iotago.NativeT
 	return ret
 }
 
-func AssetsFromOutput(o iotago.Output) *Assets {
+func AssetsFromOutput(o iotago.Output, oid iotago.OutputID) *Assets {
 	ret := &Assets{
 		BaseTokens: o.BaseTokenAmount(),
 	}
 	if o.FeatureSet().HasNativeTokenFeature() {
 		ret.NativeTokens = []*iotago.NativeTokenFeature{o.FeatureSet().NativeToken()}
 	}
+	if o.Type() == iotago.OutputNFT {
+		ret.NFTs = []iotago.NFTID{util.NFTIDFromNFTOutput(o.(*iotago.NFTOutput), oid)}
+	}
 	return ret
 }
 
 func AssetsFromOutputMap(outs map[iotago.OutputID]iotago.Output) *Assets {
 	ret := NewEmptyAssets()
-	for _, out := range outs {
-		ret.Add(AssetsFromOutput(out))
+	for oid, out := range outs {
+		ret.Add(AssetsFromOutput(out, oid))
 	}
 	return ret
 }

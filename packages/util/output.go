@@ -1,19 +1,20 @@
 package util
 
 import (
-	"github.com/iotaledger/hive.go/serializer/v2"
+	"context"
+	"errors"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 )
 
-func OutputFromBytes(data []byte) (iotago.Output, error) {
-	outputType := data[0]
-	output, err := iotago.OutputSelector(uint32(outputType))
+func OutputFromBytes(data []byte) (ret iotago.Output, err error) {
+	var n int
+	n, err = iotago.CommonSerixAPI().Decode(context.Background(), data, &ret)
 	if err != nil {
 		return nil, err
 	}
-	_, err = output.Deserialize(data, serializer.DeSeriModeNoValidation, nil)
-	if err != nil {
-		return nil, err
+	if n != len(data) {
+		return nil, errors.New("unexpected deserialize size")
 	}
-	return output, nil
+	return
 }

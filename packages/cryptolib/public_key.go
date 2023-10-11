@@ -64,8 +64,7 @@ func (pkT *PublicKey) AsKey() PublicKeyKey {
 }
 
 func (pkT *PublicKey) AsEd25519Address() *iotago.Ed25519Address {
-	ret := iotago.Ed25519AddressFromPubKey(pkT.key)
-	return &ret
+	return iotago.Ed25519AddressFromPubKey(pkT.key)
 }
 
 func (pkT *PublicKey) AsKyberPoint() (kyber.Point, error) {

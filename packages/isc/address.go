@@ -15,7 +15,7 @@ func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
 		return nil
 	}
 	rr.PushBack().WriteKind(kind)
-	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
+	rr.ReadSerialized(&address, math.MaxUint16)
 	return address
 }
 
@@ -24,7 +24,7 @@ func AddressToWriter(ww *rwutil.Writer, address iotago.Address) {
 		ww.WriteKind(addressIsNil)
 		return
 	}
-	ww.WriteSerialized(address, math.MaxUint16, address.Size())
+	ww.WriteSerialized(address, math.MaxUint16)
 }
 
 func AddressFromBytes(data []byte) (iotago.Address, error) {

@@ -6,7 +6,7 @@ import (
 )
 
 func RandNativeTokenID() (ret iotago.NativeTokenID) {
-	return tpkg.RandNativeToken().ID
+	return tpkg.RandNativeTokenID()
 }
 
 func RandOutputID() iotago.OutputID {

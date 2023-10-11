@@ -4,6 +4,7 @@
 package rwutil
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -11,7 +12,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 type Writer struct {
@@ -176,16 +177,12 @@ func (ww *Writer) WriteKind(msgType Kind) *Writer {
 	return ww.WriteByte(byte(msgType))
 }
 
-type serializable interface {
-	Serialize(serializer.DeSerializationMode, interface{}) ([]byte, error)
-}
-
 // WriteSerialized writes the serializable object to the stream.
 // If no sizes are present a 16-bit size is written to the stream.
 // The first size indicates a different limit for the size written to the stream.
 // The second size indicates the expected size and does not write it to the stream,
 // but verifies that the serialized size is equal to the expected size..
-func (ww *Writer) WriteSerialized(obj serializable, sizes ...int) *Writer {
+func (ww *Writer) WriteSerialized(obj any, sizes ...int) *Writer {
 	if ww.Err != nil {
 		return ww
 	}
@@ -194,7 +191,7 @@ func (ww *Writer) WriteSerialized(obj serializable, sizes ...int) *Writer {
 	}
 
 	var buf []byte
-	buf, ww.Err = obj.Serialize(serializer.DeSeriModeNoValidation, nil)
+	buf, ww.Err = iotago.CommonSerixAPI().Encode(context.Background(), obj)
 	switch len(sizes) {
 	case 0:
 		ww.WriteSize16(len(buf))

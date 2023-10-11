@@ -4,6 +4,7 @@
 package rwutil
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -11,7 +12,7 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 type Reader struct {
@@ -217,15 +218,11 @@ func (rr *Reader) ReadKindAndVerify(expectedKind Kind) {
 	}
 }
 
-type deserializable interface {
-	Deserialize([]byte, serializer.DeSerializationMode, interface{}) (int, error)
-}
-
 // ReadSerialized reads the deserializable object from the stream.
 // If no sizes are present a 16-bit size is read from the stream.
 // The first size indicates a different limit for the size read from the stream.
 // The second size indicates the expected size and does not read it from the stream.
-func (rr *Reader) ReadSerialized(obj deserializable, sizes ...int) {
+func (rr *Reader) ReadSerialized(obj any, sizes ...int) {
 	if rr.Err != nil {
 		return
 	}
@@ -254,7 +251,7 @@ func (rr *Reader) ReadSerialized(obj deserializable, sizes ...int) {
 	rr.ReadN(data)
 	if rr.Err == nil {
 		var n int
-		n, rr.Err = obj.Deserialize(data, serializer.DeSeriModeNoValidation, nil)
+		n, rr.Err = iotago.CommonSerixAPI().Decode(context.Background(), data, obj)
 		if n != len(data) && rr.Err == nil {
 			rr.Err = errors.New("unexpected deserialize size")
 		}

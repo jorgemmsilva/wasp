@@ -12,7 +12,7 @@ import (
 
 func TestAddressSerialization(t *testing.T) {
 	{
-		data := make([]byte, iotago.Ed25519AddressBytesLength+1)
+		data := make([]byte, iotago.Ed25519AddressSerializedBytesSize)
 		data[0] = byte(iotago.AddressEd25519)
 		rand.Read(data[1:])
 
@@ -27,13 +27,13 @@ func TestAddressSerialization(t *testing.T) {
 		require.Equal(t, addr1, addr2)
 	}
 	{
-		data := make([]byte, iotago.AliasAddressBytesLength+1)
-		data[0] = byte(iotago.AddressAlias)
+		data := make([]byte, iotago.AccountAddressSerializedBytesSize)
+		data[0] = byte(iotago.AddressAccount)
 		rand.Read(data[1:])
 
 		addr1, err := isc.AddressFromBytes(data)
 		require.NoError(t, err)
-		require.IsType(t, &iotago.AliasAddress{}, addr1)
+		require.IsType(t, &iotago.AccountAddress{}, addr1)
 
 		data2 := isc.AddressToBytes(addr1)
 		require.Equal(t, data, data2)
@@ -42,7 +42,7 @@ func TestAddressSerialization(t *testing.T) {
 		require.Equal(t, addr1, addr2)
 	}
 	{
-		data := make([]byte, iotago.NFTAddressBytesLength+1)
+		data := make([]byte, iotago.NFTAddressSerializedBytesSize)
 		data[0] = byte(iotago.AddressNFT)
 		rand.Read(data[1:])
 

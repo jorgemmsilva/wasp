@@ -14,11 +14,8 @@ func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
 	if kind == addressIsNil {
 		return nil
 	}
-	if rr.Err == nil {
-		address, rr.Err = iotago.AddressSelector(uint32(kind))
-	}
 	rr.PushBack().WriteKind(kind)
-	rr.ReadSerialized(address, math.MaxUint16, address.Size())
+	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
 	return address
 }
 

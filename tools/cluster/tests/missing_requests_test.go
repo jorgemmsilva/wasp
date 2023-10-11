@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
@@ -54,7 +54,7 @@ func TestMissingRequests(t *testing.T) {
 
 	_, err = clu.WaspClient(0).RequestsApi.OffLedger(context.Background()).OffLedgerRequest(apiclient.OffLedgerRequest{
 		ChainId: chainID.String(),
-		Request: iotago.EncodeHex(req.Bytes()),
+		Request: hexutil.EncodeHex(req.Bytes()),
 	}).Execute()
 	require.NoError(t, err)
 
@@ -64,7 +64,7 @@ func TestMissingRequests(t *testing.T) {
 
 	_, err = clu.WaspClient(0).RequestsApi.OffLedger(context.Background()).OffLedgerRequest(apiclient.OffLedgerRequest{
 		ChainId: chainID.String(),
-		Request: iotago.EncodeHex(req2.Bytes()),
+		Request: hexutil.EncodeHex(req2.Bytes()),
 	}).Execute()
 	require.NoError(t, err)
 	//-------

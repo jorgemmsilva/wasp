@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -56,7 +57,7 @@ func DecodeAgentID(e echo.Context) (isc.AgentID, error) {
 }
 
 func DecodeNFTID(e echo.Context) (*iotago.NFTID, error) {
-	nftIDBytes, err := iotago.DecodeHex(e.Param(ParamNFTID))
+	nftIDBytes, err := hexutil.DecodeHex(e.Param(ParamNFTID))
 	if err != nil {
 		return nil, apierrors.InvalidPropertyError(ParamNFTID, err)
 	}

@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	chainpkg "github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -36,7 +36,7 @@ func CallView(ch chainpkg.Chain, contractName, functionName isc.Hname, params di
 			return nil, fmt.Errorf("error getting latest chain state: %w", err)
 		}
 	case strings.HasPrefix(blockIndexOrHash, "0x"):
-		hashBytes, err := iotago.DecodeHex(blockIndexOrHash)
+		hashBytes, err := hexutil.DecodeHex(blockIndexOrHash)
 		if err != nil {
 			return nil, fmt.Errorf("invalid block hash: %v", blockIndexOrHash)
 		}

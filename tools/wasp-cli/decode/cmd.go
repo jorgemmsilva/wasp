@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -150,7 +149,7 @@ func initDecodeGasFeePolicy() *cobra.Command {
 		Short: "Translates gas fee policy from Hex to a humanly-readable format",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			bytes, err := iotago.DecodeHex(args[0])
+			bytes, err := hexutil.DecodeHex(args[0])
 			log.Check(err)
 			log.Printf(gas.MustFeePolicyFromBytes(bytes).String())
 		},
@@ -187,7 +186,7 @@ func initEncodeGasFeePolicy() *cobra.Command {
 				feePolicy.ValidatorFeeShare = validatorFeeShare
 			}
 
-			log.Printf(iotago.EncodeHex(feePolicy.Bytes()))
+			log.Printf(hexutil.EncodeHex(feePolicy.Bytes()))
 		},
 	}
 

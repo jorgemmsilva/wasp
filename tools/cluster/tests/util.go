@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
@@ -140,7 +141,7 @@ func (e *ChainEnv) getAccountNFTs(agentID isc.AgentID) []iotago.NFTID {
 
 	ret := make([]iotago.NFTID, len(nftsResp.NftIds))
 	for i, nftIDStr := range nftsResp.NftIds {
-		nftIDBytes, err := iotago.DecodeHex(nftIDStr)
+		nftIDBytes, err := hexutil.DecodeHex(nftIDStr)
 		require.NoError(e.t, err)
 		ret[i] = iotago.NFTID{}
 		copy(ret[i][:], nftIDBytes)

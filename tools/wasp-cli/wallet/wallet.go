@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -21,7 +21,7 @@ func initInitCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
 			seed := cryptolib.NewSeed()
-			seedString := iotago.EncodeHex(seed[:])
+			seedString := hexutil.EncodeHex(seed[:])
 			viper.Set("wallet.seed", seedString)
 			log.Check(viper.WriteConfig())
 

@@ -2,6 +2,7 @@ package apiextensions
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -9,7 +10,7 @@ import (
 func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Assets, error) {
 	assets := isc.NewEmptyAssets()
 
-	baseTokens, err := iotago.DecodeUint64(assetsResponse.BaseTokens)
+	baseTokens, err := hexutil.DecodeUint64(assetsResponse.BaseTokens)
 	if err != nil {
 		return nil, err
 	}
@@ -17,7 +18,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 	assets.BaseTokens = baseTokens
 
 	for _, nativeToken := range assetsResponse.NativeTokens {
-		nativeTokenIDHex, err2 := iotago.DecodeHex(nativeToken.Id)
+		nativeTokenIDHex, err2 := hexutil.DecodeHex(nativeToken.Id)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -27,7 +28,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 			return nil, err2
 		}
 
-		amount, err2 := iotago.DecodeUint256(nativeToken.Amount)
+		amount, err2 := hexutil.DecodeUint256(nativeToken.Amount)
 		if err2 != nil {
 			return nil, err2
 		}

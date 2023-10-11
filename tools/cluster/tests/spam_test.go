@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -106,7 +107,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 	res, _, err := env.Chain.Cluster.WaspClient(0).CorecontractsApi.BlocklogGetEventsOfLatestBlock(context.Background(), env.Chain.ChainID.String()).Execute()
 	require.NoError(t, err)
 
-	eventBytes, err := iotago.DecodeHex(res.Events[len(res.Events)-1].Payload)
+	eventBytes, err := hexutil.DecodeHex(res.Events[len(res.Events)-1].Payload)
 	require.NoError(t, err)
 	lastEventCounterValue := codec.MustDecodeInt64(eventBytes)
 	require.EqualValues(t, lastEventCounterValue, numRequests)
@@ -188,7 +189,7 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 	res, _, err := env.Chain.Cluster.WaspClient(0).CorecontractsApi.BlocklogGetEventsOfLatestBlock(context.Background(), env.Chain.ChainID.String()).Execute()
 	require.NoError(t, err)
 
-	eventBytes, err := iotago.DecodeHex(res.Events[len(res.Events)-1].Payload)
+	eventBytes, err := hexutil.DecodeHex(res.Events[len(res.Events)-1].Payload)
 	require.NoError(t, err)
 	lastEventCounterValue := codec.MustDecodeInt64(eventBytes)
 	require.EqualValues(t, lastEventCounterValue, numRequests)

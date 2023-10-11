@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
@@ -29,7 +29,7 @@ func initTrustCmd() *cobra.Command {
 			peeringURL := args[2]
 			node = waspcmd.DefaultWaspNodeFallback(node)
 
-			_, err := iotago.DecodeHex(pubKey) // Assert it can be decoded.
+			_, err := hexutil.DecodeHex(pubKey) // Assert it can be decoded.
 			log.Check(err)
 			log.Check(peering.CheckPeeringURL(peeringURL))
 

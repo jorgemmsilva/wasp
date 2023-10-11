@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/iotaledger/hive.go/logger"
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 )
@@ -215,7 +215,7 @@ func PrintTree(node interface{}, tab, tabwidth int) {
 		for k, v := range node {
 			tree = append(tree, TreeItem{
 				K: fmt.Sprintf("%q", string(k)),
-				V: iotago.EncodeHex(v),
+				V: hexutil.EncodeHex(v),
 			})
 		}
 		PrintTree(tree, tab, tabwidth)

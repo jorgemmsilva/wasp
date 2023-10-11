@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -44,7 +45,7 @@ func ValueFromString(vtype, s string, chainID isc.ChainID) []byte {
 		log.Check(err)
 		return codec.EncodeBool(b)
 	case "bytes", "hex":
-		b, err := iotago.DecodeHex(s)
+		b, err := hexutil.DecodeHex(s)
 		log.Check(err)
 		return b
 	case "chainid":
@@ -83,7 +84,7 @@ func ValueFromString(vtype, s string, chainID isc.ChainID) []byte {
 		log.Check(err)
 		return codec.EncodeInt64(n)
 	case "nftid":
-		nid, err := iotago.DecodeHex(s)
+		nid, err := hexutil.DecodeHex(s)
 		log.Check(err)
 		if len(nid) != iotago.NFTIDLength {
 			log.Fatal("invalid nftid length")
@@ -96,7 +97,7 @@ func ValueFromString(vtype, s string, chainID isc.ChainID) []byte {
 	case "string":
 		return []byte(s)
 	case "tokenid":
-		tid, err := iotago.DecodeHex(s)
+		tid, err := hexutil.DecodeHex(s)
 		log.Check(err)
 		if len(tid) != iotago.FoundryIDLength {
 			log.Fatal("invalid tokenid length")
@@ -145,7 +146,7 @@ func ValueToString(vtype string, v []byte) string {
 		}
 		return "false"
 	case "bytes", "hex":
-		return iotago.EncodeHex(v)
+		return hexutil.EncodeHex(v)
 	case "chainid":
 		cid, err := codec.DecodeChainID(v)
 		log.Check(err)

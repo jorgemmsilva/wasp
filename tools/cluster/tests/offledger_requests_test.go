@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/clients/chainclient"
@@ -160,7 +161,7 @@ func testOffledgerRequest900KB(t *testing.T, e *ChainEnv) {
 		Execute()
 	require.NoError(t, err)
 
-	binaryData, err := iotago.DecodeHex(res.ValueData)
+	binaryData, err := hexutil.DecodeHex(res.ValueData)
 	require.NoError(t, err)
 	require.EqualValues(t, binaryData, randomData)
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/iotaledger/hive.go/crypto/bls"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -46,12 +47,12 @@ func (u utilImpl) BLS() isc.BLS {
 
 func (u utilImpl) Decode(s string) ([]byte, error) {
 	u.gas.Burn(gas.BurnCodeUtilsHexDecode)
-	return iotago.DecodeHex(s)
+	return hexutil.DecodeHex(s)
 }
 
 func (u utilImpl) Encode(data []byte) string {
 	u.gas.Burn(gas.BurnCodeUtilsHexEncode)
-	return iotago.EncodeHex(data)
+	return hexutil.EncodeHex(data)
 }
 
 // --- isc.Hashing interface

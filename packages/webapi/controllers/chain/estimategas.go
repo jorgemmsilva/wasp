@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
@@ -27,7 +28,7 @@ func (c *Controller) estimateGasOnLedger(e echo.Context) error {
 		return apierrors.InvalidPropertyError("body", err)
 	}
 
-	outputBytes, err := iotago.DecodeHex(estimateGasRequest.Output)
+	outputBytes, err := hexutil.DecodeHex(estimateGasRequest.Output)
 	if err != nil {
 		return apierrors.InvalidPropertyError("Request", err)
 	}
@@ -66,7 +67,7 @@ func (c *Controller) estimateGasOffLedger(e echo.Context) error {
 		return apierrors.InvalidPropertyError("body", err)
 	}
 
-	requestBytes, err := iotago.DecodeHex(estimateGasRequest.Request)
+	requestBytes, err := hexutil.DecodeHex(estimateGasRequest.Request)
 	if err != nil {
 		return apierrors.InvalidPropertyError("Request", err)
 	}

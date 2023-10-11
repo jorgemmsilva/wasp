@@ -2,6 +2,7 @@ package models
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -72,7 +73,7 @@ func MapNFTDataResponse(nft *isc.NFT) *NFTDataResponse {
 	return &NFTDataResponse{
 		ID:       nft.ID.ToHex(),
 		Issuer:   nft.Issuer.String(),
-		Metadata: iotago.EncodeHex(nft.Metadata),
+		Metadata: hexutil.EncodeHex(nft.Metadata),
 		Owner:    ownerString,
 	}
 }

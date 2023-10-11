@@ -7,6 +7,7 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/clients/chainclient"
@@ -186,7 +187,7 @@ func (ch *Chain) GetBlobFieldValue(blobHash hashing.HashValue, field string) ([]
 		return nil, err
 	}
 
-	decodedValue, err := iotago.DecodeHex(v.ValueData)
+	decodedValue, err := hexutil.DecodeHex(v.ValueData)
 	if err != nil {
 		return nil, err
 	}

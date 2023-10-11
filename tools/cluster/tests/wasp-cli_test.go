@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -205,7 +206,7 @@ func TestWaspCLIDeposit(t *testing.T) {
 		})
 		out := w.PostRequestGetReceipt(
 			"accounts", accounts.FuncFoundryCreateNew.Name,
-			"string", accounts.ParamTokenScheme, "bytes", iotago.EncodeHex(tokenScheme),
+			"string", accounts.ParamTokenScheme, "bytes", hexutil.EncodeHex(tokenScheme),
 			"-l", "base:1000000",
 			"-t", "base:100000000",
 			"--node=0",
@@ -286,7 +287,7 @@ func TestWaspCLIUnprocessableRequest(t *testing.T) {
 			// create foundry
 			out := w.PostRequestGetReceipt(
 				"accounts", accounts.FuncFoundryCreateNew.Name,
-				"string", accounts.ParamTokenScheme, "bytes", iotago.EncodeHex(tokenScheme),
+				"string", accounts.ParamTokenScheme, "bytes", hexutil.EncodeHex(tokenScheme),
 				"-l", "base:1000000",
 				"-t", "base:100000000",
 				"--node=0",
@@ -508,7 +509,7 @@ func TestWaspCLIBlockLog(t *testing.T) {
 	for _, line := range out {
 		if strings.Contains(line, "foo") {
 			found = true
-			require.Contains(t, line, iotago.EncodeHex([]byte("bar")))
+			require.Contains(t, line, hexutil.EncodeHex([]byte("bar")))
 			break
 		}
 	}

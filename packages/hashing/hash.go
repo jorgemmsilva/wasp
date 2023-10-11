@@ -10,7 +10,7 @@ import (
 	"golang.org/x/crypto/blake2b"
 	"golang.org/x/crypto/sha3"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -29,7 +29,7 @@ func (h HashValue) String() string {
 }
 
 func (h HashValue) Hex() string {
-	return iotago.EncodeHex(h[:])
+	return hexutil.EncodeHex(h[:])
 }
 
 func (h *HashValue) MarshalJSON() ([]byte, error) {
@@ -64,7 +64,7 @@ func MustHashValueFromHex(s string) HashValue {
 }
 
 func HashValueFromHex(s string) (HashValue, error) {
-	b, err := iotago.DecodeHex(s)
+	b, err := hexutil.DecodeHex(s)
 	if err != nil {
 		return NilHash, err
 	}

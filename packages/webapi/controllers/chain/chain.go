@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
@@ -124,7 +124,7 @@ func (c *Controller) getState(e echo.Context) error {
 		return err
 	}
 
-	stateKey, err := iotago.DecodeHex(e.Param(params.ParamStateKey))
+	stateKey, err := hexutil.DecodeHex(e.Param(params.ParamStateKey))
 	if err != nil {
 		return apierrors.InvalidPropertyError(params.ParamStateKey, err)
 	}
@@ -135,7 +135,7 @@ func (c *Controller) getState(e echo.Context) error {
 	}
 
 	response := models.StateResponse{
-		State: iotago.EncodeHex(state),
+		State: hexutil.EncodeHex(state),
 	}
 
 	return e.JSON(http.StatusOK, response)

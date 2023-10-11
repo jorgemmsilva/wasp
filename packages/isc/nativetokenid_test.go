@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -22,7 +23,7 @@ func TestNativeTokenIDSerialization(t *testing.T) {
 	require.Equal(t, data1, data2)
 
 	hex1 := obj1.ToHex()
-	data3, err := iotago.DecodeHex(hex1)
+	data3, err := hexutil.DecodeHex(hex1)
 	require.NoError(t, err)
 	require.Equal(t, data1, data3)
 	obj3 := isc.MustNativeTokenIDFromBytes(data3)

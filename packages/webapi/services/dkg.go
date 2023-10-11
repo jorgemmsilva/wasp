@@ -6,6 +6,7 @@ import (
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/dkg"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -84,7 +85,7 @@ func (d *DKGService) createDKModel(dkShare tcrypto.DKShare) (*models.DKSharesInf
 			return nil, err
 		}
 
-		pubKeySharesHex[i] = iotago.EncodeHex(publicKeyShare)
+		pubKeySharesHex[i] = hexutil.EncodeHex(publicKeyShare)
 	}
 
 	peerIdentities := dkShare.GetNodePubKeys()
@@ -97,7 +98,7 @@ func (d *DKGService) createDKModel(dkShare tcrypto.DKShare) (*models.DKSharesInf
 		Address:         dkShare.GetAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
 		PeerIdentities:  peerIdentitiesHex,
 		PeerIndex:       dkShare.GetIndex(),
-		PublicKey:       iotago.EncodeHex(publicKey),
+		PublicKey:       hexutil.EncodeHex(publicKey),
 		PublicKeyShares: pubKeySharesHex,
 		Threshold:       dkShare.GetT(),
 	}

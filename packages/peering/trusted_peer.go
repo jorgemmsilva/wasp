@@ -12,7 +12,7 @@ package peering
 import (
 	"encoding/json"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/onchangemap"
 )
@@ -32,11 +32,11 @@ func (c *ComparablePubKey) PubKey() *cryptolib.PublicKey {
 }
 
 func (c *ComparablePubKey) Key() string {
-	return iotago.EncodeHex(c.pubKey.AsBytes())
+	return hexutil.EncodeHex(c.pubKey.AsBytes())
 }
 
 func (c *ComparablePubKey) String() string {
-	return iotago.EncodeHex(c.pubKey.AsBytes())
+	return hexutil.EncodeHex(c.pubKey.AsBytes())
 }
 
 // TrustedPeer carries a peer information we use to trust it.

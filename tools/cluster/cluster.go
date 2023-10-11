@@ -25,6 +25,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/clients/chainclient"
@@ -413,7 +414,7 @@ func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Tr
 		return nil, err
 	}
 
-	decodedCert, err := iotago.DecodeHex(cert.Certificate)
+	decodedCert, err := hexutil.DecodeHex(cert.Certificate)
 	if err != nil {
 		return nil, err
 	}

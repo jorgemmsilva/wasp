@@ -5,6 +5,7 @@ import (
 	"math"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -188,7 +189,7 @@ func (c *Client) PostOffLedgerRequest(ctx context.Context,
 	req.WithNonce(par.Nonce)
 	signed := req.Sign(c.KeyPair)
 
-	request := iotago.EncodeHex(signed.Bytes())
+	request := hexutil.EncodeHex(signed.Bytes())
 
 	offLedgerRequest := apiclient.OffLedgerRequest{
 		ChainId: c.ChainID.String(),

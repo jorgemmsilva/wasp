@@ -10,6 +10,7 @@ import (
 	"go.dedis.ch/kyber/v3/util/key"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -50,7 +51,7 @@ func (pkT *PrivateKey) AsBytes() []byte {
 }
 
 func (pkT *PrivateKey) String() string {
-	return iotago.EncodeHex(pkT.key)
+	return hexutil.EncodeHex(pkT.key)
 }
 
 func (pkT *PrivateKey) AsStdKey() ed25519.PrivateKey {

@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
@@ -73,7 +74,7 @@ const RequestRefKeyLen = iotago.OutputIDLength + 32
 type RequestRefKey [RequestRefKeyLen]byte
 
 func (rrk RequestRefKey) String() string {
-	return iotago.EncodeHex(rrk[:])
+	return hexutil.EncodeHex(rrk[:])
 }
 
 func RequestRefFromBytes(data []byte) (*RequestRef, error) {
@@ -146,7 +147,7 @@ func RequestIDFromEVMTxHash(txHash common.Hash) RequestID {
 }
 
 func RequestIDFromString(s string) (ret RequestID, err error) {
-	data, err := iotago.DecodeHex(s)
+	data, err := hexutil.DecodeHex(s)
 	if err != nil {
 		return RequestID{}, err
 	}
@@ -181,7 +182,7 @@ func (rid RequestID) Equals(other RequestID) bool {
 }
 
 func (rid RequestID) String() string {
-	return iotago.EncodeHex(rid[:])
+	return hexutil.EncodeHex(rid[:])
 }
 
 func (rid RequestID) Short() string {

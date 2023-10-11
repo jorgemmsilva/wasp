@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -24,7 +24,7 @@ func NewEthereumAddressAgentID(chainID ChainID, eth common.Address) *EthereumAdd
 }
 
 func ethAgentIDFromString(contractPart, chainIDPart string) (*EthereumAddressAgentID, error) {
-	data, err := iotago.DecodeHex(contractPart)
+	data, err := hexutil.DecodeHex(contractPart)
 	if err != nil {
 		return nil, err
 	}

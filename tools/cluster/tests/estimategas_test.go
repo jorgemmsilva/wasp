@@ -11,6 +11,7 @@ import (
 
 	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/chainclient"
@@ -47,7 +48,7 @@ func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOnledger(context.Background(),
 		env.Chain.ChainID.String(),
 	).Request(apiclient.EstimateGasRequestOnledger{
-		OutputBytes: iotago.EncodeHex(outputBytes),
+		OutputBytes: hexutil.EncodeHex(outputBytes),
 	}).Execute()
 	require.NoError(t, err)
 	require.Empty(t, estimatedReceipt.ErrorMessage)
@@ -85,7 +86,7 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 	keyPair, addr, err := env.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	metadata, err := iotago.DecodeHex("0x7b227374616e64617264223a224952433237222c2276657273696f6e223a2276312e30222c226e616d65223a2254657374416761696e4e667432222c2274797065223a22696d6167652f6a706567222c22757269223a2268747470733a2f2f696d616765732e756e73706c6173682e636f6d2f70686f746f2d313639353539373737383238392d6663316635633731353935383f69786c69623d72622d342e302e3326697869643d4d3377784d6a4133664442384d48787761473930627931775957646c664878386647567566444238664878386641253344253344266175746f3d666f726d6174266669743d63726f7026773d3335343226713d3830227d")
+	metadata, err := hexutil.DecodeHex("0x7b227374616e64617264223a224952433237222c2276657273696f6e223a2276312e30222c226e616d65223a2254657374416761696e4e667432222c2274797065223a22696d6167652f6a706567222c22757269223a2268747470733a2f2f696d616765732e756e73706c6173682e636f6d2f70686f746f2d313639353539373737383238392d6663316635633731353935383f69786c69623d72622d342e302e3326697869643d4d3377784d6a4133664442384d48787761473930627931775957646c664878386647567566444238664878386641253344253344266175746f3d666f726d6174266669743d63726f7026773d3335343226713d3830227d")
 	require.NoError(t, err)
 
 	nftID, _, err := env.Clu.MintL1NFT(metadata, addr, keyPair)
@@ -130,7 +131,7 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOnledger(context.Background(),
 		env.Chain.ChainID.String(),
 	).Request(apiclient.EstimateGasRequestOnledger{
-		OutputBytes: iotago.EncodeHex(outputBytes),
+		OutputBytes: hexutil.EncodeHex(outputBytes),
 	}).Execute()
 	require.NoError(t, err)
 	require.Empty(t, estimatedReceipt.ErrorMessage)
@@ -178,7 +179,7 @@ func testEstimateGasOffLedger(t *testing.T, env *ChainEnv) {
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOffledger(context.Background(),
 		env.Chain.ChainID.String(),
 	).Request(apiclient.EstimateGasRequestOffledger{
-		RequestBytes: iotago.EncodeHex(estimationReq.Bytes()),
+		RequestBytes: hexutil.EncodeHex(estimationReq.Bytes()),
 	}).Execute()
 	require.NoError(t, err)
 	require.Empty(t, estimatedReceipt.ErrorMessage)

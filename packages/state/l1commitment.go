@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
@@ -32,7 +32,7 @@ func newL1Commitment(c trie.Hash, blockHash BlockHash) *L1Commitment {
 }
 
 func BlockHashFromString(hash string) (BlockHash, error) {
-	byteSlice, err := iotago.DecodeHex(hash)
+	byteSlice, err := hexutil.DecodeHex(hash)
 	if err != nil {
 		return BlockHash{}, err
 	}
@@ -42,7 +42,7 @@ func BlockHashFromString(hash string) (BlockHash, error) {
 }
 
 func (bh BlockHash) String() string {
-	return iotago.EncodeHex(bh[:])
+	return hexutil.EncodeHex(bh[:])
 }
 
 func (bh BlockHash) Equals(other BlockHash) bool {

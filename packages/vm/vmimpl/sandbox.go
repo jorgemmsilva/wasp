@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -44,7 +45,7 @@ func (s *contractSandbox) DeployContract(programHash hashing.HashValue, name str
 func (s *contractSandbox) Event(topic string, payload []byte) {
 	s.Ctx.GasBurn(gas.BurnCodeEmitEvent1P, uint64(len(topic)+len(payload)))
 	hContract := s.reqctx.CurrentContractHname()
-	hex := iotago.EncodeHex(payload)
+	hex := hexutil.EncodeHex(payload)
 	if len(hex) > 80 {
 		hex = hex[:40] + "..."
 	}

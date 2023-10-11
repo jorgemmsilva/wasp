@@ -10,6 +10,7 @@ import (
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -32,7 +33,7 @@ func NewEmptyPublicKey() *PublicKey {
 }
 
 func PublicKeyFromString(s string) (publicKey *PublicKey, err error) {
-	bytes, err := iotago.DecodeHex(s)
+	bytes, err := hexutil.DecodeHex(s)
 	if err != nil {
 		return publicKey, fmt.Errorf("failed to parse public key %s from hex string: %w", s, err)
 	}
@@ -88,7 +89,7 @@ func (pkT *PublicKey) Verify(message, sig []byte) bool {
 }
 
 func (pkT *PublicKey) String() string {
-	return iotago.EncodeHex(pkT.key)
+	return hexutil.EncodeHex(pkT.key)
 }
 
 func (pkT *PublicKey) Read(r io.Reader) error {

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
@@ -30,7 +31,7 @@ func MapBlockInfoResponse(info *blocklog.BlockInfo) *BlockInfoResponse {
 	prevAOStr := ""
 	if info.PreviousAliasOutput != nil {
 		blockindex = info.PreviousAliasOutput.GetAliasOutput().StateIndex + 1
-		prevAOStr = iotago.EncodeHex(info.PreviousAliasOutput.Bytes())
+		prevAOStr = hexutil.EncodeHex(info.PreviousAliasOutput.Bytes())
 	}
 	return &BlockInfoResponse{
 		BlockIndex:            blockindex,

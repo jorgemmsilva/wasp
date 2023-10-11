@@ -6,7 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/params"
@@ -69,7 +69,7 @@ func (c *Controller) getBlobValue(e echo.Context) error {
 	}
 
 	blobValueResponse := &BlobValueResponse{
-		ValueData: iotago.EncodeHex(blobValueBytes),
+		ValueData: hexutil.EncodeHex(blobValueBytes),
 	}
 
 	return e.JSON(http.StatusOK, blobValueResponse)

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -153,7 +154,7 @@ func reqIDFromString(s string) isc.RequestID {
 		log.Check(err)
 		return reqID
 	case hexLenFromByteLen(common.HashLength):
-		bytes, err := iotago.DecodeHex(s)
+		bytes, err := hexutil.DecodeHex(s)
 		log.Check(err)
 		var txHash common.Hash
 		copy(txHash[:], bytes)

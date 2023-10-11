@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/viper"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
@@ -21,7 +22,7 @@ func Load() *Wallet {
 		log.Fatal("call `init` first")
 	}
 
-	seedBytes, err := iotago.DecodeHex(seedHex)
+	seedBytes, err := hexutil.DecodeHex(seedHex)
 	log.Check(err)
 
 	seed := cryptolib.SeedFromBytes(seedBytes)

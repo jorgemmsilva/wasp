@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/iotaledger/hive.go/lo"
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
@@ -234,8 +234,8 @@ type Item struct {
 func (d Dict) JSONDict() JSONDict {
 	j := JSONDict{Items: make([]Item, len(d))}
 	for i, k := range d.KeysSorted() {
-		j.Items[i].Key = iotago.EncodeHex([]byte(k))
-		j.Items[i].Value = iotago.EncodeHex(d[k])
+		j.Items[i].Key = hexutil.EncodeHex([]byte(k))
+		j.Items[i].Value = hexutil.EncodeHex(d[k])
 	}
 	return j
 }
@@ -246,12 +246,12 @@ func FromJSONDict(jsonDict JSONDict) (Dict, error) {
 
 	if jsonDict.Items != nil {
 		for _, k := range jsonDict.Items {
-			key, err := iotago.DecodeHex(k.Key)
+			key, err := hexutil.DecodeHex(k.Key)
 			if err != nil {
 				return nil, err
 			}
 
-			value, err := iotago.DecodeHex(k.Value)
+			value, err := hexutil.DecodeHex(k.Value)
 			if err != nil {
 				return nil, err
 			}
@@ -274,11 +274,11 @@ func (d *Dict) UnmarshalJSON(b []byte) error {
 	}
 	*d = make(Dict)
 	for _, item := range j.Items {
-		k, err := iotago.DecodeHex(item.Key)
+		k, err := hexutil.DecodeHex(item.Key)
 		if err != nil {
 			return err
 		}
-		v, err := iotago.DecodeHex(item.Value)
+		v, err := hexutil.DecodeHex(item.Value)
 		if err != nil {
 			return err
 		}

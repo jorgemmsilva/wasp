@@ -923,7 +923,7 @@ func TestMintedTokensBurn(t *testing.T) {
 	const OneMi = 1_000_000
 
 	_, ident1, ident1AddrKeys := tpkg.RandEd25519Identity()
-	aliasIdent1 := tpkg.RandAliasAddress()
+	aliasIdent1 := tpkg.RandAccountAddress()
 
 	inputIDs := tpkg.RandOutputIDs(3)
 	inputs := iotago.OutputSet{

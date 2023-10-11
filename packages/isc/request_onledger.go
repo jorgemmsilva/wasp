@@ -234,7 +234,7 @@ func (req *onLedgerRequestData) SenderAccount() AgentID {
 	}
 	if req.requestMetadata != nil && !req.requestMetadata.SenderContract.Empty() {
 		if sender.Type() == iotago.AddressAlias {
-			chainID := ChainIDFromAddress(sender.(*iotago.AliasAddress))
+			chainID := ChainIDFromAddress(sender.(*iotago.AccountAddress))
 			return req.requestMetadata.SenderContract.AgentID(chainID)
 		}
 	}

@@ -321,10 +321,10 @@ func TestWasmTypes(t *testing.T) {
 	require.EqualValues(t, scChainID.Bytes(), chainID.Bytes())
 	require.EqualValues(t, scChainID.String(), chainID.String())
 
-	// check alias address
-	scAliasAddress := scChainID.Address()
+	// check account address
+	scAccountAddress := scChainID.Address()
 	aliasAddress := chainID.AsAddress()
-	checkAddress(t, ctx, scAliasAddress, aliasAddress)
+	checkAddress(t, ctx, scAccountAddress, aliasAddress)
 
 	// check ed25519 address
 	scEd25519Address := ctx.Originator().ScAgentID().Address()
@@ -332,8 +332,8 @@ func TestWasmTypes(t *testing.T) {
 	checkAddress(t, ctx, scEd25519Address, ed25519Address)
 
 	// check nft address (currently simply use
-	// serialized alias address and overwrite the kind byte)
-	nftBytes := scAliasAddress.Bytes()
+	// serialized account address and overwrite the kind byte)
+	nftBytes := scAccountAddress.Bytes()
 	nftBytes[0] = wasmtypes.ScAddressNFT
 	scNftAddress := wasmtypes.AddressFromBytes(nftBytes)
 	nftBytes[0] = byte(iotago.AddressNFT)
@@ -341,8 +341,8 @@ func TestWasmTypes(t *testing.T) {
 	require.NoError(t, err)
 	checkAddress(t, ctx, scNftAddress, nftAddress)
 
-	// check agent id of alias address (hname zero)
-	scAgentID := wasmtypes.ScAgentIDFromAddress(scAliasAddress)
+	// check agent id of account address (hname zero)
+	scAgentID := wasmtypes.ScAgentIDFromAddress(scAccountAddress)
 	agentID := isc.NewAgentID(aliasAddress)
 	checkAgentID(t, ctx, scAgentID, agentID)
 
@@ -357,7 +357,7 @@ func TestWasmTypes(t *testing.T) {
 	checkAgentID(t, ctx, scAgentID, agentID)
 
 	// check agent id of contract (hname non-zero)
-	scAgentID = wasmtypes.NewScAgentID(scAliasAddress, testwasmlib.HScName)
+	scAgentID = wasmtypes.NewScAgentID(scAccountAddress, testwasmlib.HScName)
 	agentID = isc.NewContractAgentID(chainID, isc.Hname(testwasmlib.HScName))
 	checkAgentID(t, ctx, scAgentID, agentID)
 

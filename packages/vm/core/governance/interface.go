@@ -12,7 +12,7 @@ import (
 var Contract = coreutil.NewContract(coreutil.CoreContractGovernance)
 
 var (
-	// state controller (entity that owns the state output via AliasAddress)
+	// state controller (entity that owns the state output via AccountAddress)
 	FuncRotateStateController               = coreutil.Func(coreutil.CoreEPRotateStateController)
 	FuncAddAllowedStateControllerAddress    = coreutil.Func("addAllowedStateControllerAddress")
 	FuncRemoveAllowedStateControllerAddress = coreutil.Func("removeAllowedStateControllerAddress")

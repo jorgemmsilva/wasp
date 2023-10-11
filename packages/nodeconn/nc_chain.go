@@ -559,7 +559,7 @@ func (ncc *ncChain) queryChainOutputIDs(ctx context.Context) ([]iotago.OutputID,
 		&nodeclient.BasicOutputsQuery{AddressBech32: bech32Addr, IndexerStorageDepositParas: nodeclient.IndexerStorageDepositParas{
 			HasStorageDepositReturn: &falseCondition,
 		}},
-		&nodeclient.FoundriesQuery{AliasAddressBech32: bech32Addr},
+		&nodeclient.FoundriesQuery{AccountAddressBech32: bech32Addr},
 		&nodeclient.NFTsQuery{AddressBech32: bech32Addr, IndexerStorageDepositParas: nodeclient.IndexerStorageDepositParas{
 			HasStorageDepositReturn: &falseCondition,
 		}},

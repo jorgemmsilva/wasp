@@ -20,7 +20,7 @@ func TestConsumeRequest(t *testing.T) {
 	aliasOutput1ID := tpkg.RandOutputID(0)
 	aliasOutput1 := &iotago.AliasOutput{
 		Amount:     1337,
-		AliasID:    tpkg.RandAliasAddress().AliasID(),
+		AliasID:    tpkg.RandAccountAddress().AliasID(),
 		StateIndex: 1,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddr},

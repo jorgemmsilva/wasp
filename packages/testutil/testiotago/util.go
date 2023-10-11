@@ -14,5 +14,5 @@ func RandOutputID() iotago.OutputID {
 }
 
 func RandAliasID() (ret iotago.AliasID) {
-	return tpkg.RandAliasAddress().AliasID()
+	return tpkg.RandAccountAddress().AliasID()
 }

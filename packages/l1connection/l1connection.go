@@ -94,7 +94,7 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	bech32Addr := myAddress.Bech32(parameters.L1().Protocol.Bech32HRP)
 	queries := []nodeclient.IndexerQuery{
 		&nodeclient.BasicOutputsQuery{AddressBech32: bech32Addr},
-		&nodeclient.FoundriesQuery{AliasAddressBech32: bech32Addr},
+		&nodeclient.FoundriesQuery{AccountAddressBech32: bech32Addr},
 		&nodeclient.NFTsQuery{AddressBech32: bech32Addr},
 		&nodeclient.AliasesQuery{StateControllerBech32: bech32Addr},
 	}

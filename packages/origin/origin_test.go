@@ -194,14 +194,14 @@ func TestMismatchOriginCommitment(t *testing.T) {
 	require.NoError(t, err)
 	_, govController, err := iotago.ParseBech32("rms1qqjw6tke6d5ze8ztsqwaz5gr7u73l6rhyfxt28yt8hhklydk0agxwgerk65")
 	require.NoError(t, err)
-	_, chainAliasAddress, err := iotago.ParseBech32("rms1pr27d4mr9wgesv8je5j6zkequhw0ysx55ftxt04z55dm9hc9yxkauqtukfl")
+	_, chainAccountAddress, err := iotago.ParseBech32("rms1pr27d4mr9wgesv8je5j6zkequhw0ysx55ftxt04z55dm9hc9yxkauqtukfl")
 	require.NoError(t, err)
 
 	ao := isc.NewAliasOutputWithID(
 		&iotago.AliasOutput{
 			Amount:         10000000,
 			NativeTokens:   []*iotago.NativeToken{},
-			AliasID:        chainAliasAddress.(*iotago.AliasAddress).AliasID(),
+			AliasID:        chainAccountAddress.(*iotago.AccountAddress).AliasID(),
 			StateIndex:     0,
 			StateMetadata:  aoStateMetadata,
 			FoundryCounter: 0,

@@ -77,10 +77,10 @@ func createOnLedgerRequest() isc.OnLedgerRequest {
 		},
 		Features: iotago.Features{
 			&iotago.MetadataFeature{Data: requestMetadata.Bytes()},
-			&iotago.SenderFeature{Address: tpkg.RandAliasAddress()},
+			&iotago.SenderFeature{Address: tpkg.RandAccountAddress()},
 		},
 		Conditions: iotago.UnlockConditions{
-			&iotago.AddressUnlockCondition{Address: tpkg.RandAliasAddress()},
+			&iotago.AddressUnlockCondition{Address: tpkg.RandAccountAddress()},
 		},
 	}
 

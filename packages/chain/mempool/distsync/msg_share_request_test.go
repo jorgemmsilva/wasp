@@ -32,7 +32,7 @@ func TestMsgShareRequestSerialization(t *testing.T) {
 		rwutil.ReadWriteTest(t, msg, new(msgShareRequest))
 	}
 	{
-		sender := tpkg.RandAliasAddress()
+		sender := tpkg.RandAccountAddress()
 		requestMetadata := &isc.RequestMetadata{
 			SenderContract: isc.ContractIdentityFromHname(isc.Hn("sender_contract")),
 			TargetContract: isc.Hn("target_contract"),

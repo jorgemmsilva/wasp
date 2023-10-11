@@ -113,12 +113,12 @@ func (r *ChainRecord) UnmarshalJSON(bytes []byte) error {
 	}
 
 	if address.Type() != iotago.AddressAlias {
-		return errors.New("chainID is not an alias address")
+		return errors.New("chainID is not an account address")
 	}
 
-	aliasAddress, ok := address.(*iotago.AliasAddress)
+	aliasAddress, ok := address.(*iotago.AccountAddress)
 	if !ok {
-		return errors.New("chainID is not an alias address")
+		return errors.New("chainID is not an account address")
 	}
 
 	accessNodesPubKeys := make([]*cryptolib.PublicKey, len(j.AccessNodes))

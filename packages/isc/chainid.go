@@ -18,7 +18,7 @@ const ChainIDLength = iotago.AliasIDLength
 var emptyChainID = ChainID{}
 
 // ChainID represents the global identifier of the chain
-// It is wrapped AliasAddress, an address without a private key behind
+// It is wrapped AccountAddress, an address without a private key behind
 type (
 	ChainID    iotago.AliasID
 	ChainIDKey string
@@ -29,11 +29,11 @@ func EmptyChainID() ChainID {
 	return emptyChainID
 }
 
-func ChainIDFromAddress(addr *iotago.AliasAddress) ChainID {
+func ChainIDFromAddress(addr *iotago.AccountAddress) ChainID {
 	return ChainIDFromAliasID(addr.AliasID())
 }
 
-// ChainIDFromAliasID creates new chain ID from alias address
+// ChainIDFromAliasID creates new chain ID from account address
 func ChainIDFromAliasID(aliasID iotago.AliasID) ChainID {
 	return ChainID(aliasID)
 }
@@ -50,9 +50,9 @@ func ChainIDFromString(bech32 string) (ChainID, error) {
 		return ChainID{}, err
 	}
 	if addr.Type() != iotago.AddressAlias {
-		return ChainID{}, fmt.Errorf("chainID must be an alias address (%s)", bech32)
+		return ChainID{}, fmt.Errorf("chainID must be an account address (%s)", bech32)
 	}
-	return ChainIDFromAddress(addr.(*iotago.AliasAddress)), nil
+	return ChainIDFromAddress(addr.(*iotago.AccountAddress)), nil
 }
 
 func ChainIDFromKey(key ChainIDKey) ChainID {
@@ -79,12 +79,12 @@ func RandomChainID(seed ...[]byte) ChainID {
 }
 
 func (id ChainID) AsAddress() iotago.Address {
-	addr := iotago.AliasAddress(id)
+	addr := iotago.AccountAddress(id)
 	return &addr
 }
 
-func (id ChainID) AsAliasAddress() iotago.AliasAddress {
-	return iotago.AliasAddress(id)
+func (id ChainID) AsAccountAddress() iotago.AccountAddress {
+	return iotago.AccountAddress(id)
 }
 
 func (id ChainID) AsAliasID() iotago.AliasID {

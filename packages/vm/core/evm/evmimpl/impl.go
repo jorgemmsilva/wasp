@@ -201,7 +201,7 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 }
 
 var (
-	errTargetMustBeAlias   = coreerrors.Register("target must be alias address")
+	errTargetMustBeAlias   = coreerrors.Register("target must be account address")
 	errOutputMustBeFoundry = coreerrors.Register("expected foundry output")
 )
 
@@ -264,7 +264,7 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 }
 
 var (
-	errSenderMustBeAlias            = coreerrors.Register("sender must be alias address").Create()
+	errSenderMustBeAlias            = coreerrors.Register("sender must be account address").Create()
 	errFoundryMustBeOffChain        = coreerrors.Register("foundry must be off-chain").Create()
 	errNativeTokenAlreadyRegistered = coreerrors.Register("native token already registered").Create()
 )
@@ -277,7 +277,7 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	if ctx.ChainID().Equals(caller.ChainID()) {
 		panic(errFoundryMustBeOffChain)
 	}
-	alias := caller.ChainID().AsAliasAddress()
+	alias := caller.ChainID().AsAccountAddress()
 
 	name := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenName))
 	tickerSymbol := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenTickerSymbol))

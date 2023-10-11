@@ -170,12 +170,12 @@ func getAliasIDOtherOutputs(output iotago.Output) iotago.AliasID {
 	}
 
 	if addressToCheck.Type() != iotago.AddressAlias {
-		// output is not owned by an alias address => ignore it
+		// output is not owned by an account address => ignore it
 		// nested ownerships are also ignored (Chain owns NFT that owns NFT's etc).
 		return iotago.AliasID{}
 	}
 
-	return addressToCheck.(*iotago.AliasAddress).AliasID()
+	return addressToCheck.(*iotago.AccountAddress).AliasID()
 }
 
 // filterAndSortAliasOutputs filters and groups all alias outputs by chain ID and then sorts them,

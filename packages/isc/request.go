@@ -116,7 +116,7 @@ func RequestsInTransaction(tx *iotago.Transaction) (map[ChainID][]Request, error
 			continue
 		}
 
-		chainID := ChainIDFromAliasID(addr.(*iotago.AliasAddress).AliasID())
+		chainID := ChainIDFromAliasID(addr.(*iotago.AccountAddress).AliasID())
 
 		if odata.IsInternalUTXO(chainID) {
 			continue

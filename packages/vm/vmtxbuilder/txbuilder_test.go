@@ -479,7 +479,7 @@ func TestSerDe(t *testing.T) {
 	t.Run("serde FoundryOutput", func(t *testing.T) {
 		out := &iotago.FoundryOutput{
 			Conditions: iotago.UnlockConditions{
-				&iotago.ImmutableAliasUnlockCondition{Address: tpkg.RandAliasAddress()},
+				&iotago.ImmutableAliasUnlockCondition{Address: tpkg.RandAccountAddress()},
 			},
 			Amount:       1337,
 			NativeTokens: nil,

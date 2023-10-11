@@ -73,7 +73,7 @@ func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainID isc.ChainID) (*
 		SerialNumber: sn,
 		TokenScheme:  rec.TokenScheme,
 		Conditions: iotago.UnlockConditions{
-			&iotago.ImmutableAliasUnlockCondition{Address: chainID.AsAddress().(*iotago.AliasAddress)},
+			&iotago.ImmutableAliasUnlockCondition{Address: chainID.AsAddress().(*iotago.AccountAddress)},
 		},
 		Features: nil,
 	}

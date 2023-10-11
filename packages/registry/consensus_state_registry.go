@@ -244,10 +244,10 @@ func (p *ConsensusStateRegistry) loadConsensusStateJSONsFromFolder() error {
 		}
 
 		if chainAddress.Type() != iotago.AddressAlias {
-			return fmt.Errorf("chainID bech32 address is not an alias address (%s), error: %w", chainAddressBech32, err)
+			return fmt.Errorf("chainID bech32 address is not an account address (%s), error: %w", chainAddressBech32, err)
 		}
 
-		chainID := isc.ChainIDFromAddress(chainAddress.(*iotago.AliasAddress))
+		chainID := isc.ChainIDFromAddress(chainAddress.(*iotago.AccountAddress))
 
 		subFolderPath := path.Join(p.folderPath, rootFolderFile.Name())
 

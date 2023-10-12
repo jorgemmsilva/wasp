@@ -17,6 +17,11 @@ func TestAccountOutputWithIDSerialization(t *testing.T) {
 	output := iotago.AccountOutput{
 		Amount:     iotago.BaseToken(mathrand.Uint64()),
 		StateIndex: mathrand.Uint32(),
+		// serix deserializes with empty slices instead of nil
+		StateMetadata:     make([]byte, 0),
+		Conditions:        make(iotago.AccountOutputUnlockConditions, 0),
+		Features:          make(iotago.AccountOutputFeatures, 0),
+		ImmutableFeatures: make(iotago.AccountOutputImmFeatures, 0),
 	}
 	rand.Read(output.AccountID[:])
 	outputID := iotago.OutputID{}

@@ -62,7 +62,7 @@ func TestCreditDebit1(t *testing.T) {
 
 	userAssets := GetAccountFungibleTokens(state, agentID1, isc.ChainID{})
 	require.EqualValues(t, 43, userAssets.BaseTokens)
-	require.Zero(t, userAssets.NativeTokens.MustSet()[dummyAssetID].Amount.Cmp(big.NewInt(4)))
+	require.Zero(t, userAssets.NativeTokenSum()[dummyAssetID].Cmp(big.NewInt(4)))
 	checkLedgerT(t, state, "cp2")
 
 	DebitFromAccount(state, agentID1, expected, isc.ChainID{})
@@ -310,9 +310,8 @@ func TestTransferNFTs(t *testing.T) {
 		Metadata: []byte("foobar"),
 	}
 	CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
-		Amount:       0,
-		NativeTokens: []*iotago.NativeTokenFeature{},
-		NFTID:        NFT1.ID,
+		Amount: 0,
+		NFTID:  NFT1.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
 			&iotago.MetadataFeature{Data: NFT1.Metadata},
@@ -325,9 +324,8 @@ func TestTransferNFTs(t *testing.T) {
 
 	// nft data is saved (accounts.SaveNFTOutput must be called)
 	SaveNFTOutput(state, &iotago.NFTOutput{
-		Amount:       0,
-		NativeTokens: []*iotago.NativeTokenFeature{},
-		NFTID:        NFT1.ID,
+		Amount: 0,
+		NFTID:  NFT1.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
 			&iotago.MetadataFeature{Data: NFT1.Metadata},
@@ -385,9 +383,8 @@ func TestCreditDebitNFT1(t *testing.T) {
 		Metadata: []byte("foobar"),
 	}
 	CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
-		Amount:       0,
-		NativeTokens: []*iotago.NativeTokenFeature{},
-		NFTID:        nft.ID,
+		Amount: 0,
+		NFTID:  nft.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: nft.Issuer},
 			&iotago.MetadataFeature{Data: nft.Metadata},

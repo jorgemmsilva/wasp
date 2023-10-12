@@ -26,10 +26,10 @@ func SaveNativeTokenOutput(state kv.KVStore, out *iotago.BasicOutput, outputInde
 		// TransactionID is unknown yet, will be filled next block
 		OutputID:          iotago.OutputIDFromTransactionIDAndIndex(iotago.TransactionID{}, outputIndex),
 		StorageBaseTokens: out.Amount,
-		Amount:            out.NativeTokens[0].Amount,
+		Amount:            out.FeatureSet().NativeToken().Amount,
 	}
-	NativeTokenOutputMap(state).SetAt(out.NativeTokens[0].ID[:], tokenRec.Bytes())
-	newNativeTokensArray(state).Push(out.NativeTokens[0].ID[:])
+	NativeTokenOutputMap(state).SetAt(out.FeatureSet().NativeToken().ID[:], tokenRec.Bytes())
+	newNativeTokensArray(state).Push(out.FeatureSet().NativeToken().ID[:])
 }
 
 func updateNativeTokenOutputIDs(state kv.KVStore, anchorTxID iotago.TransactionID) {
@@ -57,14 +57,14 @@ func GetNativeTokenOutput(state kv.KVStoreReader, nativeTokenID iotago.NativeTok
 	tokenRec := mustNativeTokenOutputRecFromBytes(data)
 	ret := &iotago.BasicOutput{
 		Amount: tokenRec.StorageBaseTokens,
-		NativeTokens: []*iotago.NativeTokenFeature{{
-			ID:     nativeTokenID,
-			Amount: tokenRec.Amount,
-		}},
-		Conditions: iotago.UnlockConditions{
+		Conditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: chainID.AsAddress()},
 		},
-		Features: iotago.Features{
+		Features: iotago.BasicOutputFeatures{
+			&iotago.NativeTokenFeature{
+				ID:     nativeTokenID,
+				Amount: tokenRec.Amount,
+			},
 			&iotago.SenderFeature{
 				Address: chainID.AsAddress(),
 			},

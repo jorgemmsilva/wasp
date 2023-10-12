@@ -198,7 +198,7 @@ func updateNewlyMintedNFTOutputIDs(state kv.KVStore, anchorTxID iotago.Transacti
 			// save the updated data in the NFT map
 			nftMap.SetAt(nftID[:], outputRec.Bytes())
 			// credit the NFT to the target owner
-			creditNFTToAccount(state, mintedRec.owner, nftID, mintedRec.output.ImmutableFeatureSet().IssuerFeature().Address)
+			creditNFTToAccount(state, mintedRec.owner, nftID, mintedRec.output.ImmutableFeatureSet().Issuer().Address)
 		}
 		// save the mapping of [mintID => NFTID]
 		mintIDMap(state).SetAt(mintID(blockIndex, mintedRec.positionInMintedList), nftID[:])

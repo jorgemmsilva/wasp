@@ -133,8 +133,8 @@ type Sandbox interface {
 // Privileged is a sub-interface for core contracts. Should not be called by VM plugins
 type Privileged interface {
 	TryLoadContract(programHash hashing.HashValue) error
-	CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, uint64)
-	DestroyFoundry(uint32) uint64
+	CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, iotago.BaseToken)
+	DestroyFoundry(uint32) iotago.BaseToken
 	ModifyFoundrySupply(serNum uint32, delta *big.Int) int64
 	MintNFT(addr iotago.Address, immutableMetadata []byte, issuer iotago.Address) (uint16, *iotago.NFTOutput)
 	GasBurnEnable(enable bool)
@@ -203,7 +203,7 @@ type SendMetadata struct {
 	EntryPoint     Hname
 	Params         dict.Dict
 	Allowance      *Assets
-	GasBudget      uint64
+	GasBudget      iotago.BaseToken
 }
 
 // Utils implement various utilities which are faster on host side than on wasm VM

@@ -101,8 +101,8 @@ func GetNFTData(state kv.KVStoreReader, nftID iotago.NFTID) *isc.NFT {
 	}
 	return &isc.NFT{
 		ID:       util.NFTIDFromNFTOutput(o, oID),
-		Issuer:   o.ImmutableFeatureSet().IssuerFeature().Address,
-		Metadata: o.ImmutableFeatureSet().MetadataFeature().Data,
+		Issuer:   o.ImmutableFeatureSet().Issuer().Address,
+		Metadata: o.ImmutableFeatureSet().Metadata().Data,
 		Owner:    owner,
 	}
 }
@@ -113,7 +113,7 @@ func CreditNFTToAccount(state kv.KVStore, agentID isc.AgentID, nftOutput *iotago
 		panic("empty NFTID")
 	}
 
-	creditNFTToAccount(state, agentID, nftOutput.NFTID, nftOutput.ImmutableFeatureSet().IssuerFeature().Address)
+	creditNFTToAccount(state, agentID, nftOutput.NFTID, nftOutput.ImmutableFeatureSet().Issuer().Address)
 	touchAccount(state, agentID, chainID)
 
 	// save the NFTOutput with a temporary outputIndex so the NFTData is readily available (it will be updated upon block closing)

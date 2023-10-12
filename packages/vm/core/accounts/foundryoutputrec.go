@@ -11,7 +11,7 @@ import (
 // foundryOutputRec contains information to reconstruct output
 type foundryOutputRec struct {
 	OutputID    iotago.OutputID
-	Amount      uint64 // always storage deposit
+	Amount      iotago.BaseToken // always storage deposit
 	TokenScheme iotago.TokenScheme
 	Metadata    []byte
 }
@@ -35,7 +35,7 @@ func mustFoundryOutputRecFromBytes(data []byte) *foundryOutputRec {
 func (rec *foundryOutputRec) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadN(rec.OutputID[:])
-	rec.Amount = rr.ReadUint64()
+	rec.Amount = iotago.BaseToken(rr.ReadUint64())
 	tokenScheme := rr.ReadBytes()
 	if rr.Err == nil {
 		rec.TokenScheme, rr.Err = codec.DecodeTokenScheme(tokenScheme)
@@ -47,7 +47,7 @@ func (rec *foundryOutputRec) Read(r io.Reader) error {
 func (rec *foundryOutputRec) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteN(rec.OutputID[:])
-	ww.WriteUint64(rec.Amount)
+	ww.WriteUint64(uint64(rec.Amount))
 	if ww.Err == nil {
 		tokenScheme := codec.EncodeTokenScheme(rec.TokenScheme)
 		ww.WriteBytes(tokenScheme)

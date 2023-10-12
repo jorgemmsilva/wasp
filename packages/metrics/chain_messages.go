@@ -7,7 +7,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -25,17 +24,18 @@ type ChainMessageMetricsProvider struct {
 	messagesL1Chain        *prometheus.CounterVec // TODO: Outdated and should be removed?
 	lastL1MessageTimeChain *prometheus.GaugeVec   // TODO: Outdated and should be removed?
 
-	inMilestone                     *MessageMetric[*nodeclient.MilestoneInfo] // TODO: Outdated and should be removed?
-	inStateOutput                   *MessageMetric[*InStateOutput]            // TODO: Outdated and should be removed?
-	inAccountOutput                   *MessageMetric[*iotago.AccountOutput]       // TODO: Outdated and should be removed?
-	inOutput                        *MessageMetric[*InOutput]                 // TODO: Outdated and should be removed?
-	inOnLedgerRequest               *MessageMetric[isc.OnLedgerRequest]       // TODO: Outdated and should be removed?
-	inTxInclusionState              *MessageMetric[*TxInclusionStateMsg]      // TODO: Outdated and should be removed?
-	outPublishStateTransaction      *MessageMetric[*StateTransaction]         // TODO: Outdated and should be removed?
-	outPublishGovernanceTransaction *MessageMetric[*iotago.Transaction]       // TODO: Outdated and should be removed?
-	outPullLatestOutput             *MessageMetric[interface{}]               // TODO: Outdated and should be removed?
-	outPullTxInclusionState         *MessageMetric[iotago.TransactionID]      // TODO: Outdated and should be removed?
-	outPullOutputByID               *MessageMetric[iotago.OutputID]           // TODO: Outdated and should be removed?
+	// TODO: adapt to iota 2.0 or remove
+	// inMilestone                     *MessageMetric[*nodeclient.MilestoneInfo] // TODO: Outdated and should be removed?
+	inStateOutput                   *MessageMetric[*InStateOutput]        // TODO: Outdated and should be removed?
+	inAccountOutput                 *MessageMetric[*iotago.AccountOutput] // TODO: Outdated and should be removed?
+	inOutput                        *MessageMetric[*InOutput]             // TODO: Outdated and should be removed?
+	inOnLedgerRequest               *MessageMetric[isc.OnLedgerRequest]   // TODO: Outdated and should be removed?
+	inTxInclusionState              *MessageMetric[*TxInclusionStateMsg]  // TODO: Outdated and should be removed?
+	outPublishStateTransaction      *MessageMetric[*StateTransaction]     // TODO: Outdated and should be removed?
+	outPublishGovernanceTransaction *MessageMetric[*iotago.Transaction]   // TODO: Outdated and should be removed?
+	outPullLatestOutput             *MessageMetric[interface{}]           // TODO: Outdated and should be removed?
+	outPullTxInclusionState         *MessageMetric[iotago.TransactionID]  // TODO: Outdated and should be removed?
+	outPullOutputByID               *MessageMetric[iotago.OutputID]       // TODO: Outdated and should be removed?
 }
 
 func newChainMessageMetricsProvider() *ChainMessageMetricsProvider {
@@ -66,7 +66,7 @@ func newChainMessageMetricsProvider() *ChainMessageMetricsProvider {
 		}, []string{labelNameChain, labelNameMessageType}),
 	}
 
-	p.inMilestone = newMessageMetric[*nodeclient.MilestoneInfo](p, labelNameInMilestone)
+	// p.inMilestone = newMessageMetric[*nodeclient.MilestoneInfo](p, labelNameInMilestone)
 	p.inStateOutput = newMessageMetric[*InStateOutput](p, labelNameInStateOutputMetrics)
 	p.inAccountOutput = newMessageMetric[*iotago.AccountOutput](p, labelNameInAccountOutputMetrics)
 	p.inOutput = newMessageMetric[*InOutput](p, labelNameInOutputMetrics)
@@ -93,7 +93,7 @@ func (p *ChainMessageMetricsProvider) register(reg prometheus.Registerer) {
 func (p *ChainMessageMetricsProvider) createForChain(chainID isc.ChainID) *ChainMessageMetrics {
 	return &ChainMessageMetrics{
 		inStateOutput:                   createChainMessageMetric(p, chainID, labelNameInStateOutputMetrics, p.inStateOutput),
-		inAccountOutput:                   createChainMessageMetric(p, chainID, labelNameInAccountOutputMetrics, p.inAccountOutput),
+		inAccountOutput:                 createChainMessageMetric(p, chainID, labelNameInAccountOutputMetrics, p.inAccountOutput),
 		inOutput:                        createChainMessageMetric(p, chainID, labelNameInOutputMetrics, p.inOutput),
 		inOnLedgerRequest:               createChainMessageMetric(p, chainID, labelNameInOnLedgerRequestMetrics, p.inOnLedgerRequest),
 		inTxInclusionState:              createChainMessageMetric(p, chainID, labelNameInTxInclusionStateMetrics, p.inTxInclusionState),
@@ -105,9 +105,9 @@ func (p *ChainMessageMetricsProvider) createForChain(chainID isc.ChainID) *Chain
 	}
 }
 
-func (p *ChainMessageMetricsProvider) InMilestone() IMessageMetric[*nodeclient.MilestoneInfo] {
-	return p.inMilestone
-}
+// func (p *ChainMessageMetricsProvider) InMilestone() IMessageMetric[*nodeclient.MilestoneInfo] {
+//	return p.inMilestone
+// }
 
 func (p *ChainMessageMetricsProvider) InStateOutput() IMessageMetric[*InStateOutput] {
 	return p.inStateOutput
@@ -271,7 +271,7 @@ func (m *ChainMessageMetric[T]) LastMessage() T {
 
 type ChainMessageMetrics struct {
 	inStateOutput      *ChainMessageMetric[*InStateOutput]
-	inAccountOutput      *ChainMessageMetric[*iotago.AccountOutput]
+	inAccountOutput    *ChainMessageMetric[*iotago.AccountOutput]
 	inOutput           *ChainMessageMetric[*InOutput]
 	inOnLedgerRequest  *ChainMessageMetric[isc.OnLedgerRequest]
 	inTxInclusionState *ChainMessageMetric[*TxInclusionStateMsg]

@@ -50,7 +50,7 @@ var Processor = Contract.Processor(nil,
 )
 
 // this expects the origin amount minus SD
-func SetInitialState(state kv.KVStore, baseTokensOnAnchor uint64) {
+func SetInitialState(state kv.KVStore, baseTokensOnAnchor iotago.BaseToken) {
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
 	CreditToAccount(state, CommonAccount(), isc.NewAssetsBaseTokens(baseTokensOnAnchor), isc.ChainID{})
 }
@@ -178,7 +178,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 	assets := allowance.Clone()
 
 	// deduct the gas reserve GAS2 from the allowance, if possible
-	gasReserve := ctx.Params().MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest)
+	gasReserve := iotago.BaseToken(ctx.Params().MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest))
 	if allowance.BaseTokens < gasReserve {
 		panic(ErrNotEnoughAllowance)
 	}
@@ -301,7 +301,7 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 		accountID := ctx.AccountID()
 		ctx.TransferAllowedFunds(accountID,
 			isc.NewAssets(0, []*iotago.NativeTokenFeature{
-				&iotago.NativeTokenFeature{
+				{
 					ID:     nativeTokenID,
 					Amount: delta,
 				},
@@ -318,10 +318,10 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 	switch {
 	case storageDepositAdjustment < 0:
 		// storage deposit is taken from the allowance of the caller
-		debitBaseTokensFromAllowance(ctx, uint64(-storageDepositAdjustment), ctx.ChainID())
+		debitBaseTokensFromAllowance(ctx, iotago.BaseToken(-storageDepositAdjustment), ctx.ChainID())
 	case storageDepositAdjustment > 0:
 		// storage deposit is returned to the caller account
-		CreditToAccount(state, caller, isc.NewAssetsBaseTokens(uint64(storageDepositAdjustment)), ctx.ChainID())
+		CreditToAccount(state, caller, isc.NewAssetsBaseTokens(iotago.BaseToken(storageDepositAdjustment)), ctx.ChainID())
 	}
 	eventFoundryModified(ctx, sn)
 	return nil

@@ -12,7 +12,7 @@ import (
 type nativeTokenOutputRec struct {
 	OutputID          iotago.OutputID
 	Amount            *big.Int
-	StorageBaseTokens uint64 // always storage deposit
+	StorageBaseTokens iotago.BaseToken // always storage deposit
 }
 
 func nativeTokenOutputRecFromBytes(data []byte) (*nativeTokenOutputRec, error) {
@@ -40,7 +40,7 @@ func (rec *nativeTokenOutputRec) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadN(rec.OutputID[:])
 	rec.Amount = rr.ReadUint256()
-	rec.StorageBaseTokens = rr.ReadAmount64()
+	rec.StorageBaseTokens = iotago.BaseToken(rr.ReadAmount64())
 	return rr.Err
 }
 
@@ -48,6 +48,6 @@ func (rec *nativeTokenOutputRec) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteN(rec.OutputID[:])
 	ww.WriteUint256(rec.Amount)
-	ww.WriteAmount64(rec.StorageBaseTokens)
+	ww.WriteAmount64(uint64(rec.StorageBaseTokens))
 	return ww.Err
 }

@@ -32,7 +32,7 @@ func viewBalanceBaseToken(ctx isc.SandboxView) dict.Dict {
 			ctx.ChainID(),
 		),
 	)
-	return dict.Dict{ParamBalance: codec.EncodeUint64(nTokens)}
+	return dict.Dict{ParamBalance: codec.EncodeUint64(uint64(nTokens))}
 }
 
 // viewBalanceNativeToken returns the native token balance of the account belonging to the AgentID

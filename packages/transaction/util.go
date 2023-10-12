@@ -51,7 +51,7 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 // Returned reminder is nil if not needed
 func ComputeInputsAndRemainder(
 	senderAddress iotago.Address,
-	baseTokenOut uint64,
+	baseTokenOut iotago.BaseToken,
 	tokensOut map[iotago.NativeTokenID]*big.Int,
 	nftsOut map[iotago.NFTID]bool,
 	unspentOutputs iotago.OutputSet,

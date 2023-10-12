@@ -45,13 +45,16 @@ func NewTransferTransaction(params NewTransferTransactionParams) (*iotago.Transa
 		output = AdjustToMinimumStorageDeposit(output)
 	}
 
-	storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(output)
-	if output.Deposit() < storageDeposit {
+	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(output)
+	if err != nil {
+		return nil, err
+	}
+	if output.BaseTokenAmount() < storageDeposit {
 		return nil, fmt.Errorf("%v: available %d < required %d base tokens",
-			ErrNotEnoughBaseTokensForStorageDeposit, output.Deposit(), storageDeposit)
+			ErrNotEnoughBaseTokensForStorageDeposit, output.BaseTokenAmount(), storageDeposit)
 	}
 
-	sumBaseTokensOut := output.Deposit()
+	sumBaseTokensOut := output.BaseTokenAmount()
 	sumTokensOut := make(map[iotago.NativeTokenID]*big.Int)
 	sumTokensOut = addNativeTokens(sumTokensOut, output)
 
@@ -77,7 +80,7 @@ func NewTransferTransaction(params NewTransferTransactionParams) (*iotago.Transa
 		outputs = append(outputs, remainder)
 	}
 
-	inputsCommitment := inputIDs.OrderedSet(params.UnspentOutputs).MustCommitment()
+	inputsCommitment := inputIDs.OrderedSet(params.UnspentOutputs).MustCommitment(parameters.L1API())
 
 	return CreateAndSignTx(inputIDs.UTXOInputs(), inputsCommitment, outputs, params.SenderKeyPair, parameters.L1().Protocol.NetworkID())
 }
@@ -87,8 +90,8 @@ func NewTransferTransaction(params NewTransferTransactionParams) (*iotago.Transa
 // Assumes all UnspentOutputs and corresponding UnspentOutputIDs can be used as inputs, i.e. are
 // unlockable for the sender address
 func NewRequestTransaction(par NewRequestTransactionParams) (*iotago.Transaction, error) {
-	outputs := iotago.Outputs{}
-	sumBaseTokensOut := uint64(0)
+	outputs := iotago.TxEssenceOutputs{}
+	sumBaseTokensOut := iotago.BaseToken(0)
 	sumTokensOut := make(map[iotago.NativeTokenID]*big.Int)
 	sumNFTsOut := make(map[iotago.NFTID]bool)
 
@@ -97,13 +100,16 @@ func NewRequestTransaction(par NewRequestTransactionParams) (*iotago.Transaction
 		out = AdjustToMinimumStorageDeposit(out)
 	}
 
-	storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(out)
-	if out.Deposit() < storageDeposit {
+	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(out)
+	if err != nil {
+		return nil, err
+	}
+	if out.BaseTokenAmount() < storageDeposit {
 		return nil, fmt.Errorf("%v: available %d < required %d base tokens",
-			ErrNotEnoughBaseTokensForStorageDeposit, out.Deposit(), storageDeposit)
+			ErrNotEnoughBaseTokensForStorageDeposit, out.BaseTokenAmount(), storageDeposit)
 	}
 	outputs = append(outputs, out)
-	sumBaseTokensOut += out.Deposit()
+	sumBaseTokensOut += out.BaseTokenAmount()
 	sumTokensOut = addNativeTokens(sumTokensOut, out)
 	if par.NFT != nil {
 		sumNFTsOut[par.NFT.ID] = true
@@ -120,7 +126,7 @@ func NewRequestTransaction(par NewRequestTransactionParams) (*iotago.Transaction
 		outputs = append(outputs, remainder)
 	}
 
-	inputsCommitment := inputIDs.OrderedSet(par.UnspentOutputs).MustCommitment()
+	inputsCommitment := inputIDs.OrderedSet(par.UnspentOutputs).MustCommitment(parameters.L1API())
 	return CreateAndSignTx(inputIDs.UTXOInputs(), inputsCommitment, outputs, par.SenderKeyPair, parameters.L1().Protocol.NetworkID())
 }
 
@@ -181,13 +187,13 @@ func addNativeTokens(sumTokensOut map[iotago.NativeTokenID]*big.Int, out iotago.
 
 func updateOutputsWhenSendingOnBehalfOf(
 	par NewRequestTransactionParams,
-	outputs iotago.Outputs,
-	sumBaseTokensOut uint64,
+	outputs iotago.TxEssenceOutputs,
+	sumBaseTokensOut iotago.BaseToken,
 	sumTokensOut map[iotago.NativeTokenID]*big.Int,
 	sumNFTsOut map[iotago.NFTID]bool,
 ) (
-	iotago.Outputs,
-	uint64,
+	iotago.TxEssenceOutputs,
+	iotago.BaseToken,
 	map[iotago.NativeTokenID]*big.Int,
 	map[iotago.NFTID]bool,
 ) {
@@ -216,7 +222,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 		}
 		// found the needed output
 		outputs = append(outputs, out)
-		sumBaseTokensOut += out.Deposit()
+		sumBaseTokensOut += out.BaseTokenAmount()
 		sumTokensOut = addNativeTokens(sumTokensOut, out)
 		return outputs, sumBaseTokensOut, sumTokensOut, sumNFTsOut
 	}

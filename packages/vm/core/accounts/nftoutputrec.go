@@ -31,7 +31,7 @@ func (rec *NFTOutputRec) Bytes() []byte {
 
 func (rec *NFTOutputRec) String() string {
 	return fmt.Sprintf("NFT Record: base tokens: %d, ID: %s, outID: %s",
-		rec.Output.Deposit(), rec.Output.NFTID, rec.OutputID)
+		rec.Output.BaseTokenAmount(), rec.Output.NFTID, rec.OutputID)
 }
 
 func (rec *NFTOutputRec) Read(r io.Reader) error {

@@ -4,7 +4,6 @@
 package rwutil
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -12,7 +11,7 @@ import (
 	"math/big"
 	"time"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type Writer struct {
@@ -191,7 +190,7 @@ func (ww *Writer) WriteSerialized(obj any, sizes ...int) *Writer {
 	}
 
 	var buf []byte
-	buf, ww.Err = iotago.CommonSerixAPI().Encode(context.Background(), obj)
+	buf, ww.Err = parameters.L1API().Encode(obj)
 	switch len(sizes) {
 	case 0:
 		ww.WriteSize16(len(buf))

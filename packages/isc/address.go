@@ -1,6 +1,7 @@
 package isc
 
 import (
+	"fmt"
 	"math"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -9,13 +10,34 @@ import (
 
 const addressIsNil rwutil.Kind = 0x80
 
+// TODO: copied from iota.go/address.go -- should be made public
+func newAddress(addressType iotago.AddressType) (address iotago.Address, err error) {
+	switch addressType {
+	case iotago.AddressEd25519:
+		return &iotago.Ed25519Address{}, nil
+	case iotago.AddressAccount:
+		return &iotago.AccountAddress{}, nil
+	case iotago.AddressNFT:
+		return &iotago.NFTAddress{}, nil
+	case iotago.AddressImplicitAccountCreation:
+		return &iotago.ImplicitAccountCreationAddress{}, nil
+	case iotago.AddressMulti:
+		return &iotago.MultiAddress{}, nil
+	case iotago.AddressRestricted:
+		return &iotago.RestrictedAddress{}, nil
+	default:
+		return nil, fmt.Errorf("no handler for address type %d", addressType)
+	}
+}
+
 func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
 	kind := rr.ReadKind()
 	if kind == addressIsNil {
 		return nil
 	}
 	rr.PushBack().WriteKind(kind)
-	rr.ReadSerialized(&address, math.MaxUint16)
+	address, rr.Err = newAddress(iotago.AddressType(kind))
+	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
 	return address
 }
 
@@ -24,7 +46,7 @@ func AddressToWriter(ww *rwutil.Writer, address iotago.Address) {
 		ww.WriteKind(addressIsNil)
 		return
 	}
-	ww.WriteSerialized(address, math.MaxUint16)
+	ww.WriteSerialized(address, math.MaxUint16, address.Size())
 }
 
 func AddressFromBytes(data []byte) (iotago.Address, error) {

@@ -79,6 +79,6 @@ func InitL1(l1 *L1Params) {
 	l1Params = l1
 }
 
-func L1API() iotago.API {
+var L1API = sync.OnceValue(func() iotago.API {
 	return iotago.V3API(L1().Protocol)
-}
+})

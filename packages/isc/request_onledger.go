@@ -63,7 +63,9 @@ func (req *onLedgerRequestData) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadKindAndVerify(rwutil.Kind(requestKindOnLedger))
 	rr.ReadN(req.outputID[:])
-	rr.ReadSerialized(&req.output)
+	out := iotago.TxEssenceOutput(req.output) // ReadSerialized does not work without this
+	rr.ReadSerialized(&out)
+	req.output = out
 	return req.readFromUTXO(req.output, req.outputID)
 }
 

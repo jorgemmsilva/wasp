@@ -4,7 +4,6 @@
 package rwutil
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -12,7 +11,7 @@ import (
 	"math/big"
 	"time"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type Reader struct {
@@ -251,7 +250,7 @@ func (rr *Reader) ReadSerialized(obj any, sizes ...int) {
 	rr.ReadN(data)
 	if rr.Err == nil {
 		var n int
-		n, rr.Err = iotago.CommonSerixAPI().Decode(context.Background(), data, obj)
+		n, rr.Err = parameters.L1API().Decode(data, obj)
 		if n != len(data) && rr.Err == nil {
 			rr.Err = errors.New("unexpected deserialize size")
 		}

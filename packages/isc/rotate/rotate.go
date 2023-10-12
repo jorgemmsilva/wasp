@@ -32,8 +32,8 @@ func MakeRotateStateControllerTransaction(
 	chainInput *isc.AccountOutputWithID,
 	ts time.Time,
 	accessPledge, consensusPledge identity.ID,
-) (*iotago.TransactionEssence, error) {
-	output := chainInput.GetAliasOutput().Clone().(*iotago.AccountOutput)
+) (*iotago.Transaction, error) {
+	output := chainInput.GetAccountOutput().Clone().(*iotago.AccountOutput)
 	for i := range output.Conditions {
 		if _, ok := output.Conditions[i].(*iotago.StateControllerAddressUnlockCondition); ok {
 			output.Conditions[i] = &iotago.StateControllerAddressUnlockCondition{Address: nextAddr}
@@ -45,21 +45,24 @@ func MakeRotateStateControllerTransaction(
 	}
 
 	// remove any "sender feature"
-	var newFeatures iotago.Features
-	for t, feature := range chainInput.GetAliasOutput().FeatureSet() {
+	var newFeatures iotago.AccountOutputFeatures
+	for t, feature := range chainInput.GetAccountOutput().FeatureSet() {
 		if t != iotago.FeatureSender {
 			newFeatures = append(newFeatures, feature)
 		}
 	}
 	output.Features = newFeatures
 
-	result := &iotago.TransactionEssence{
-		NetworkID: parameters.L1().Protocol.NetworkID(),
-		Inputs:    iotago.Inputs{chainInput.OutputID().UTXOInput()},
-		Outputs:   iotago.Outputs{output},
-		Payload:   nil,
+	result := &iotago.Transaction{
+		API: parameters.L1API(),
+		TransactionEssence: &iotago.TransactionEssence{
+			Inputs:  iotago.TxEssenceInputs{chainInput.OutputID().UTXOInput()},
+			Payload: nil,
+		},
+		Outputs: iotago.TxEssenceOutputs{output},
 	}
-	inputsCommitment := iotago.Outputs{chainInput.GetAliasOutput()}.MustCommitment()
+	inputsCommitment := iotago.TxEssenceOutputs{chainInput.GetAccountOutput()}.
+		MustCommitment(parameters.L1API())
 	copy(result.InputsCommitment[:], inputsCommitment)
 	return result, nil
 }

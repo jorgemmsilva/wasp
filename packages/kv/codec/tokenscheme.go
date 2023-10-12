@@ -3,26 +3,25 @@ package codec
 import (
 	"errors"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/parameters"
 )
 
-func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (iotago.TokenScheme, error) {
+func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenScheme, err error) {
 	if len(b) == 0 {
 		if len(def) > 0 {
 			return def[0], nil
 		}
 		return nil, errors.New("wrong data length")
 	}
-	ts, err := iotago.TokenSchemeSelector(uint32(b[0]))
+	n, err := parameters.L1API().Decode(b, &ts)
 	if err != nil {
 		return nil, err
 	}
-	_, err = ts.Deserialize(b, serializer.DeSeriModeNoValidation, nil)
-	if err != nil {
-		return nil, err
+	if n != len(b) {
+		return nil, errors.New("incomplete read")
 	}
-	return ts, nil
+	return
 }
 
 func MustDecodeTokenScheme(b []byte, def ...iotago.TokenScheme) iotago.TokenScheme {
@@ -34,9 +33,9 @@ func MustDecodeTokenScheme(b []byte, def ...iotago.TokenScheme) iotago.TokenSche
 }
 
 func EncodeTokenScheme(value iotago.TokenScheme) []byte {
-	ret, err := value.Serialize(serializer.DeSeriModeNoValidation, nil)
+	b, err := parameters.L1API().Encode(value)
 	if err != nil {
 		panic(err)
 	}
-	return ret
+	return b
 }

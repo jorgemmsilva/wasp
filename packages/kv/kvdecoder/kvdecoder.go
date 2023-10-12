@@ -5,7 +5,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -230,16 +229,8 @@ func (p *kvdecoder) MustGetBytes(key kv.Key, def ...[]byte) []byte {
 
 func (p *kvdecoder) GetTokenScheme(key kv.Key, def ...iotago.TokenScheme) (iotago.TokenScheme, error) {
 	v := p.Get(key)
-	if len(v) > 1 {
-		ts, err := iotago.TokenSchemeSelector(uint32(v[0]))
-		if err != nil {
-			return nil, err
-		}
-		_, err = ts.Deserialize(v, serializer.DeSeriModeNoValidation, nil)
-		if err != nil {
-			return nil, err
-		}
-		return ts, nil
+	if len(v) > 0 {
+		return codec.DecodeTokenScheme(v, def...)
 	}
 	if len(def) == 0 {
 		return nil, fmt.Errorf("GetTokenScheme: mandatory parameter '%s' does not exist", key)

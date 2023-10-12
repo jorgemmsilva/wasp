@@ -114,7 +114,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)
 		require.NoError(t, err)
 		chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err = origin.InitChainByAliasOutput(chainStore, originAO)
+		_, err = origin.InitChainByAccountOutput(chainStore, originAO)
 		require.NoError(t, err)
 		mempools[i] = newTestMempool(t)
 		stateMgrs[i] = newTestStateMgr(t, chainStore)
@@ -190,10 +190,10 @@ func newTestMempool(t *testing.T) *testMempool {
 	}
 }
 
-func (tmp *testMempool) addRequests(aliasOutputID iotago.OutputID, requests []isc.Request) {
+func (tmp *testMempool) addRequests(accountOutputID iotago.OutputID, requests []isc.Request) {
 	tmp.lock.Lock()
 	defer tmp.lock.Unlock()
-	tmp.reqsByAO[aliasOutputID] = requests
+	tmp.reqsByAO[accountOutputID] = requests
 	tmp.allReqs = append(tmp.allReqs, requests...)
 	tmp.tryRespondProposalQueries()
 	tmp.tryRespondRequestQueries()
@@ -302,12 +302,12 @@ func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, accountOutp
 }
 
 // State manager has to ensure all the data needed for the specified alias
-// output (presented as aliasOutputID+stateCommitment) is present in the DB.
+// output (presented as accountOutputID+stateCommitment) is present in the DB.
 func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan state.State {
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	resp := make(chan state.State, 1)
-	stateCommitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
+	stateCommitment, err := transaction.L1CommitmentFromAccountOutput(accountOutput.GetAccountOutput())
 	if err != nil {
 		tsm.t.Fatal(err)
 	}
@@ -345,7 +345,7 @@ func (tsm *testStateMgr) tryRespond(hash hashing.HashValue) {
 }
 
 func commitmentHashFromAO(accountOutput *isc.AccountOutputWithID) hashing.HashValue {
-	commitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
+	commitment, err := transaction.L1CommitmentFromAccountOutput(accountOutput.GetAccountOutput())
 	if err != nil {
 		panic(err)
 	}

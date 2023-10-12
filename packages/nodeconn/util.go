@@ -93,19 +93,19 @@ func wasOutputIDConsumedBefore(consumedOutputsMapByTransactionID map[iotago.Tran
 	return false
 }
 
-func sortAliasOutputsOfChain(trackedChainAliasOutputsCreated []*isc.OutputInfo, trackedAliasOutputsConsumedMapByTransactionID map[iotago.TransactionID]map[iotago.OutputID]struct{}) error {
+func sortAccountOutputsOfChain(trackedChainAccountOutputsCreated []*isc.OutputInfo, trackedAccountOutputsConsumedMapByTransactionID map[iotago.TransactionID]map[iotago.OutputID]struct{}) error {
 	var innerErr error
 
-	sort.SliceStable(trackedChainAliasOutputsCreated, func(i, j int) bool {
-		outputInfo1 := trackedChainAliasOutputsCreated[i]
-		outputInfo2 := trackedChainAliasOutputsCreated[j]
+	sort.SliceStable(trackedChainAccountOutputsCreated, func(i, j int) bool {
+		outputInfo1 := trackedChainAccountOutputsCreated[i]
+		outputInfo2 := trackedChainAccountOutputsCreated[j]
 
-		aliasOutput1 := outputInfo1.Output.(*iotago.AccountOutput)
-		aliasOutput2 := outputInfo2.Output.(*iotago.AccountOutput)
+		accountOutput1 := outputInfo1.Output.(*iotago.AccountOutput)
+		accountOutput2 := outputInfo2.Output.(*iotago.AccountOutput)
 
 		// check if state indexes are equal.
-		if aliasOutput1.StateIndex != aliasOutput2.StateIndex {
-			return aliasOutput1.StateIndex < aliasOutput2.StateIndex
+		if accountOutput1.StateIndex != accountOutput2.StateIndex {
+			return accountOutput1.StateIndex < accountOutput2.StateIndex
 		}
 
 		outputID1 := outputInfo1.OutputID
@@ -126,11 +126,11 @@ func sortAliasOutputsOfChain(trackedChainAliasOutputsCreated []*isc.OutputInfo, 
 		}
 
 		// we need to figure out the order in which they were consumed (recursive).
-		if wasOutputIDConsumedBefore(trackedAliasOutputsConsumedMapByTransactionID, outputID1, outputID2) {
+		if wasOutputIDConsumedBefore(trackedAccountOutputsConsumedMapByTransactionID, outputID1, outputID2) {
 			return true
 		}
 
-		if wasOutputIDConsumedBefore(trackedAliasOutputsConsumedMapByTransactionID, outputID2, outputID1) {
+		if wasOutputIDConsumedBefore(trackedAccountOutputsConsumedMapByTransactionID, outputID2, outputID1) {
 			return false
 		}
 
@@ -141,7 +141,7 @@ func sortAliasOutputsOfChain(trackedChainAliasOutputsCreated []*isc.OutputInfo, 
 	return innerErr
 }
 
-func getAliasIDAliasOutput(outputInfo *isc.OutputInfo) iotago.AccountID {
+func getAliasIDAccountOutput(outputInfo *isc.OutputInfo) iotago.AccountID {
 	if outputInfo.Output.Type() != iotago.OutputAlias {
 		return iotago.AccountID{}
 	}
@@ -178,18 +178,18 @@ func getAliasIDOtherOutputs(output iotago.Output) iotago.AccountID {
 	return addressToCheck.(*iotago.AccountAddress).AccountID()
 }
 
-// filterAndSortAliasOutputs filters and groups all alias outputs by chain ID and then sorts them,
+// filterAndSortAccountOutputs filters and groups all alias outputs by chain ID and then sorts them,
 // because they could have been transitioned several times in the same milestone. applying the alias outputs to the consensus
 // we need to apply them in correct order.
 // chainsLock needs to be read locked outside
-func filterAndSortAliasOutputs(chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID, *ncChain], ledgerUpdate *ledgerUpdate) (map[isc.ChainID][]*isc.OutputInfo, map[iotago.OutputID]struct{}, error) {
+func filterAndSortAccountOutputs(chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID, *ncChain], ledgerUpdate *ledgerUpdate) (map[isc.ChainID][]*isc.OutputInfo, map[iotago.OutputID]struct{}, error) {
 	// filter and group "created alias outputs" by chain ID and also remember the tracked outputs
-	trackedAliasOutputsCreatedMapByOutputID := make(map[iotago.OutputID]struct{})
-	trackedAliasOutputsCreatedMapByChainID := make(map[isc.ChainID][]*isc.OutputInfo)
+	trackedAccountOutputsCreatedMapByOutputID := make(map[iotago.OutputID]struct{})
+	trackedAccountOutputsCreatedMapByChainID := make(map[isc.ChainID][]*isc.OutputInfo)
 	for outputID := range ledgerUpdate.outputsCreatedMap {
 		outputInfo := ledgerUpdate.outputsCreatedMap[outputID]
 
-		aliasID := getAliasIDAliasOutput(outputInfo)
+		aliasID := getAliasIDAccountOutput(outputInfo)
 		if aliasID.Empty() {
 			continue
 		}
@@ -201,22 +201,22 @@ func filterAndSortAliasOutputs(chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID,
 			continue
 		}
 
-		trackedAliasOutputsCreatedMapByOutputID[outputInfo.OutputID] = struct{}{}
+		trackedAccountOutputsCreatedMapByOutputID[outputInfo.OutputID] = struct{}{}
 
-		if _, exists := trackedAliasOutputsCreatedMapByChainID[chainID]; !exists {
-			trackedAliasOutputsCreatedMapByChainID[chainID] = make([]*isc.OutputInfo, 0)
+		if _, exists := trackedAccountOutputsCreatedMapByChainID[chainID]; !exists {
+			trackedAccountOutputsCreatedMapByChainID[chainID] = make([]*isc.OutputInfo, 0)
 		}
 
-		trackedAliasOutputsCreatedMapByChainID[chainID] = append(trackedAliasOutputsCreatedMapByChainID[chainID], outputInfo)
+		trackedAccountOutputsCreatedMapByChainID[chainID] = append(trackedAccountOutputsCreatedMapByChainID[chainID], outputInfo)
 	}
 
 	// create a map for faster lookups of output IDs that were spent by a transaction ID.
 	// this is needed to figure out the correct ordering of alias outputs in case of governance transitions.
-	trackedAliasOutputsConsumedMapByTransactionID := make(map[iotago.TransactionID]map[iotago.OutputID]struct{})
+	trackedAccountOutputsConsumedMapByTransactionID := make(map[iotago.TransactionID]map[iotago.OutputID]struct{})
 	for outputID := range ledgerUpdate.outputsConsumedMap {
 		outputInfo := ledgerUpdate.outputsConsumedMap[outputID]
 
-		aliasID := getAliasIDAliasOutput(outputInfo)
+		aliasID := getAliasIDAccountOutput(outputInfo)
 		if aliasID.Empty() {
 			continue
 		}
@@ -228,32 +228,32 @@ func filterAndSortAliasOutputs(chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID,
 			continue
 		}
 
-		if _, exists := trackedAliasOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent]; !exists {
-			trackedAliasOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent] = make(map[iotago.OutputID]struct{})
+		if _, exists := trackedAccountOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent]; !exists {
+			trackedAccountOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent] = make(map[iotago.OutputID]struct{})
 		}
 
-		if _, exists := trackedAliasOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent][outputInfo.OutputID]; !exists {
-			trackedAliasOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent][outputInfo.OutputID] = struct{}{}
+		if _, exists := trackedAccountOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent][outputInfo.OutputID]; !exists {
+			trackedAccountOutputsConsumedMapByTransactionID[outputInfo.TransactionIDSpent][outputInfo.OutputID] = struct{}{}
 		}
 	}
 
-	for chainID := range trackedAliasOutputsCreatedMapByChainID {
-		if err := sortAliasOutputsOfChain(
-			trackedAliasOutputsCreatedMapByChainID[chainID],
-			trackedAliasOutputsConsumedMapByTransactionID,
+	for chainID := range trackedAccountOutputsCreatedMapByChainID {
+		if err := sortAccountOutputsOfChain(
+			trackedAccountOutputsCreatedMapByChainID[chainID],
+			trackedAccountOutputsConsumedMapByTransactionID,
 		); err != nil {
 			return nil, nil, err
 		}
 	}
 
-	return trackedAliasOutputsCreatedMapByChainID, trackedAliasOutputsCreatedMapByOutputID, nil
+	return trackedAccountOutputsCreatedMapByChainID, trackedAccountOutputsCreatedMapByOutputID, nil
 }
 
 // chainsLock needs to be read locked
 func filterOtherOutputs(
 	chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID, *ncChain],
 	outputsCreatedMap map[iotago.OutputID]*isc.OutputInfo,
-	trackedAliasOutputsCreatedMapByOutputID map[iotago.OutputID]struct{},
+	trackedAccountOutputsCreatedMapByOutputID map[iotago.OutputID]struct{},
 ) map[isc.ChainID][]*isc.OutputInfo {
 	otherOutputsCreatedByChainID := make(map[isc.ChainID][]*isc.OutputInfo)
 
@@ -261,7 +261,7 @@ func filterOtherOutputs(
 	for outputID := range outputsCreatedMap {
 		outputInfo := outputsCreatedMap[outputID]
 
-		if _, exists := trackedAliasOutputsCreatedMapByOutputID[outputInfo.OutputID]; exists {
+		if _, exists := trackedAccountOutputsCreatedMapByOutputID[outputInfo.OutputID]; exists {
 			// output will already be applied
 			continue
 		}

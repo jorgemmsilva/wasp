@@ -48,7 +48,7 @@ type Chains struct {
 	offledgerBroadcastUpToNPeers     int
 	offledgerBroadcastInterval       time.Duration
 	pullMissingRequestsFromCommittee bool
-	deriveAliasOutputByQuorum        bool
+	deriveAccountOutputByQuorum        bool
 	pipeliningLimit                  int
 	consensusDelay                   time.Duration
 	recoveryTimeout                  time.Duration
@@ -107,7 +107,7 @@ func New(
 	offledgerBroadcastUpToNPeers int, // TODO: Unused for now.
 	offledgerBroadcastInterval time.Duration, // TODO: Unused for now.
 	pullMissingRequestsFromCommittee bool, // TODO: Unused for now.
-	deriveAliasOutputByQuorum bool,
+	deriveAccountOutputByQuorum bool,
 	pipeliningLimit int,
 	consensusDelay time.Duration,
 	recoveryTimeout time.Duration,
@@ -158,7 +158,7 @@ func New(
 		offledgerBroadcastUpToNPeers:        offledgerBroadcastUpToNPeers,
 		offledgerBroadcastInterval:          offledgerBroadcastInterval,
 		pullMissingRequestsFromCommittee:    pullMissingRequestsFromCommittee,
-		deriveAliasOutputByQuorum:           deriveAliasOutputByQuorum,
+		deriveAccountOutputByQuorum:           deriveAccountOutputByQuorum,
 		pipeliningLimit:                     pipeliningLimit,
 		consensusDelay:                      consensusDelay,
 		recoveryTimeout:                     recoveryTimeout,
@@ -409,7 +409,7 @@ func (c *Chains) activateWithoutLocking(chainID isc.ChainID) error { //nolint:fu
 		chainShutdownCoordinator,
 		func() { c.chainMetricsProvider.RegisterChain(chainID) },
 		func() { c.chainMetricsProvider.UnregisterChain(chainID) },
-		c.deriveAliasOutputByQuorum,
+		c.deriveAccountOutputByQuorum,
 		c.pipeliningLimit,
 		c.consensusDelay,
 		c.recoveryTimeout,

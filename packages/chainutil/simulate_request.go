@@ -14,7 +14,7 @@ func SimulateRequest(
 	req isc.Request,
 	estimateGas bool,
 ) (*blocklog.RequestReceipt, error) {
-	accountOutput, err := ch.LatestAliasOutput(chain.ActiveOrCommittedState)
+	accountOutput, err := ch.LatestAccountOutput(chain.ActiveOrCommittedState)
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}

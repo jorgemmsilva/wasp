@@ -197,7 +197,7 @@ func TestMismatchOriginCommitment(t *testing.T) {
 	_, chainAccountAddress, err := iotago.ParseBech32("rms1pr27d4mr9wgesv8je5j6zkequhw0ysx55ftxt04z55dm9hc9yxkauqtukfl")
 	require.NoError(t, err)
 
-	ao := isc.NewAliasOutputWithID(
+	ao := isc.NewAccountOutputWithID(
 		&iotago.AccountOutput{
 			Amount:         10000000,
 			NativeTokens:   []*iotago.NativeTokenFeature{},
@@ -219,6 +219,6 @@ func TestMismatchOriginCommitment(t *testing.T) {
 		oid,
 	)
 
-	_, err = origin.InitChainByAliasOutput(store, ao)
+	_, err = origin.InitChainByAccountOutput(store, ao)
 	testmisc.RequireErrorToBe(t, err, "l1Commitment mismatch between originAO / originBlock")
 }

@@ -76,9 +76,9 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) st
 	return block
 }
 
-func InitChainByAliasOutput(chainStore state.Store, accountOutput *isc.AccountOutputWithID) (state.Block, error) {
+func InitChainByAccountOutput(chainStore state.Store, accountOutput *isc.AccountOutputWithID) (state.Block, error) {
 	var initParams dict.Dict
-	if originMetadata := accountOutput.GetAliasOutput().FeatureSet().MetadataFeature(); originMetadata != nil {
+	if originMetadata := accountOutput.GetAccountOutput().FeatureSet().MetadataFeature(); originMetadata != nil {
 		var err error
 		initParams, err = dict.FromBytes(originMetadata.Data)
 		if err != nil {
@@ -86,8 +86,8 @@ func InitChainByAliasOutput(chainStore state.Store, accountOutput *isc.AccountOu
 		}
 	}
 	l1params := parameters.L1()
-	aoMinSD := l1params.Protocol.RentStructure.MinRent(accountOutput.GetAliasOutput())
-	commonAccountAmount := accountOutput.GetAliasOutput().Amount - aoMinSD
+	aoMinSD := l1params.Protocol.RentStructure.MinRent(accountOutput.GetAccountOutput())
+	commonAccountAmount := accountOutput.GetAccountOutput().Amount - aoMinSD
 	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
 
 	originAOStateMetadata, err := transaction.StateMetadataFromBytes(accountOutput.GetStateMetadata())

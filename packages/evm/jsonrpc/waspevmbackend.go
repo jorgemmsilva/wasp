@@ -107,12 +107,12 @@ func (b *WaspEVMBackend) BaseToken() *parameters.BaseToken {
 	return b.baseToken
 }
 
-func (b *WaspEVMBackend) ISCLatestAliasOutput() (*isc.AccountOutputWithID, error) {
-	latestAliasOutput, err := b.chain.LatestAliasOutput(chain.ActiveOrCommittedState)
+func (b *WaspEVMBackend) ISCLatestAccountOutput() (*isc.AccountOutputWithID, error) {
+	latestAccountOutput, err := b.chain.LatestAccountOutput(chain.ActiveOrCommittedState)
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
-	return latestAliasOutput, nil
+	return latestAccountOutput, nil
 }
 
 func (b *WaspEVMBackend) ISCLatestState() state.State {

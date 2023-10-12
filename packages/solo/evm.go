@@ -69,12 +69,12 @@ func (b *jsonRPCSoloBackend) ISCCallView(chainState state.State, scName, funName
 	return b.Chain.CallViewAtState(chainState, scName, funName, args)
 }
 
-func (b *jsonRPCSoloBackend) ISCLatestAliasOutput() (*isc.AccountOutputWithID, error) {
-	latestAliasOutput, err := b.Chain.LatestAliasOutput(chain.ActiveOrCommittedState)
+func (b *jsonRPCSoloBackend) ISCLatestAccountOutput() (*isc.AccountOutputWithID, error) {
+	latestAccountOutput, err := b.Chain.LatestAccountOutput(chain.ActiveOrCommittedState)
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
-	return latestAliasOutput, nil
+	return latestAccountOutput, nil
 }
 
 func (b *jsonRPCSoloBackend) ISCLatestState() state.State {

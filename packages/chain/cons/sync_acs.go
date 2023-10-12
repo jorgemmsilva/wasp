@@ -14,7 +14,7 @@ import (
 )
 
 type SyncACS interface {
-	StateProposalReceived(proposedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages
+	StateProposalReceived(proposedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
 	MempoolRequestsReceived(requestRefs []*isc.RequestRef) gpa.OutMessages
 	DSSIndexProposalReceived(dssIndexProposal []int) gpa.OutMessages
 	TimeDataReceived(timeData time.Time) gpa.OutMessages
@@ -26,12 +26,12 @@ type SyncACS interface {
 // >     Produce a batch proposal.
 // >     Start the ACS.
 type syncACSImpl struct {
-	BaseAliasOutput  *isc.AccountOutputWithID
+	BaseAccountOutput  *isc.AccountOutputWithID
 	RequestRefs      []*isc.RequestRef
 	DSSIndexProposal []int
 	TimeData         time.Time
 	inputsReady      bool
-	inputsReadyCB    func(baseAliasOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages
+	inputsReadyCB    func(baseAccountOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages
 	outputReady      bool
 	outputReadyCB    func(output map[gpa.NodeID][]byte) gpa.OutMessages
 	terminated       bool
@@ -39,7 +39,7 @@ type syncACSImpl struct {
 }
 
 func NewSyncACS(
-	inputsReadyCB func(baseAliasOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages,
+	inputsReadyCB func(baseAccountOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages,
 	outputReadyCB func(output map[gpa.NodeID][]byte) gpa.OutMessages,
 	terminatedCB func(),
 ) SyncACS {
@@ -50,11 +50,11 @@ func NewSyncACS(
 	}
 }
 
-func (sub *syncACSImpl) StateProposalReceived(proposedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	if sub.BaseAliasOutput != nil {
+func (sub *syncACSImpl) StateProposalReceived(proposedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
+	if sub.BaseAccountOutput != nil {
 		return nil
 	}
-	sub.BaseAliasOutput = proposedBaseAliasOutput
+	sub.BaseAccountOutput = proposedBaseAccountOutput
 	return sub.tryCompleteInput()
 }
 
@@ -83,11 +83,11 @@ func (sub *syncACSImpl) TimeDataReceived(timeData time.Time) gpa.OutMessages {
 }
 
 func (sub *syncACSImpl) tryCompleteInput() gpa.OutMessages {
-	if sub.inputsReady || sub.BaseAliasOutput == nil || sub.RequestRefs == nil || sub.DSSIndexProposal == nil || sub.TimeData.IsZero() {
+	if sub.inputsReady || sub.BaseAccountOutput == nil || sub.RequestRefs == nil || sub.DSSIndexProposal == nil || sub.TimeData.IsZero() {
 		return nil
 	}
 	sub.inputsReady = true
-	return sub.inputsReadyCB(sub.BaseAliasOutput, sub.RequestRefs, sub.DSSIndexProposal, sub.TimeData)
+	return sub.inputsReadyCB(sub.BaseAccountOutput, sub.RequestRefs, sub.DSSIndexProposal, sub.TimeData)
 }
 
 func (sub *syncACSImpl) ACSOutputReceived(output gpa.Output) gpa.OutMessages {
@@ -118,8 +118,8 @@ func (sub *syncACSImpl) String() string {
 		str += "/WAIT[ACS to complete]"
 	} else {
 		wait := []string{}
-		if sub.BaseAliasOutput == nil {
-			wait = append(wait, "BaseAliasOutput")
+		if sub.BaseAccountOutput == nil {
+			wait = append(wait, "BaseAccountOutput")
 		}
 		if sub.RequestRefs == nil {
 			wait = append(wait, "RequestRefs")

@@ -15,38 +15,38 @@ import (
 	"time"
 )
 
-// checks if the AliasOutputMetricItem type satisfies the MappedNullable interface at compile time
-var _ MappedNullable = &AliasOutputMetricItem{}
+// checks if the AccountOutputMetricItem type satisfies the MappedNullable interface at compile time
+var _ MappedNullable = &AccountOutputMetricItem{}
 
-// AliasOutputMetricItem struct for AliasOutputMetricItem
-type AliasOutputMetricItem struct {
+// AccountOutputMetricItem struct for AccountOutputMetricItem
+type AccountOutputMetricItem struct {
 	LastMessage Output `json:"lastMessage"`
 	Messages uint32 `json:"messages"`
 	Timestamp time.Time `json:"timestamp"`
 }
 
-// NewAliasOutputMetricItem instantiates a new AliasOutputMetricItem object
+// NewAccountOutputMetricItem instantiates a new AccountOutputMetricItem object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewAliasOutputMetricItem(lastMessage Output, messages uint32, timestamp time.Time) *AliasOutputMetricItem {
-	this := AliasOutputMetricItem{}
+func NewAccountOutputMetricItem(lastMessage Output, messages uint32, timestamp time.Time) *AccountOutputMetricItem {
+	this := AccountOutputMetricItem{}
 	this.LastMessage = lastMessage
 	this.Messages = messages
 	this.Timestamp = timestamp
 	return &this
 }
 
-// NewAliasOutputMetricItemWithDefaults instantiates a new AliasOutputMetricItem object
+// NewAccountOutputMetricItemWithDefaults instantiates a new AccountOutputMetricItem object
 // This constructor will only assign default values to properties that have it defined,
 // but it doesn't guarantee that properties required by API are set
-func NewAliasOutputMetricItemWithDefaults() *AliasOutputMetricItem {
-	this := AliasOutputMetricItem{}
+func NewAccountOutputMetricItemWithDefaults() *AccountOutputMetricItem {
+	this := AccountOutputMetricItem{}
 	return &this
 }
 
 // GetLastMessage returns the LastMessage field value
-func (o *AliasOutputMetricItem) GetLastMessage() Output {
+func (o *AccountOutputMetricItem) GetLastMessage() Output {
 	if o == nil {
 		var ret Output
 		return ret
@@ -57,7 +57,7 @@ func (o *AliasOutputMetricItem) GetLastMessage() Output {
 
 // GetLastMessageOk returns a tuple with the LastMessage field value
 // and a boolean to check if the value has been set.
-func (o *AliasOutputMetricItem) GetLastMessageOk() (*Output, bool) {
+func (o *AccountOutputMetricItem) GetLastMessageOk() (*Output, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -65,12 +65,12 @@ func (o *AliasOutputMetricItem) GetLastMessageOk() (*Output, bool) {
 }
 
 // SetLastMessage sets field value
-func (o *AliasOutputMetricItem) SetLastMessage(v Output) {
+func (o *AccountOutputMetricItem) SetLastMessage(v Output) {
 	o.LastMessage = v
 }
 
 // GetMessages returns the Messages field value
-func (o *AliasOutputMetricItem) GetMessages() uint32 {
+func (o *AccountOutputMetricItem) GetMessages() uint32 {
 	if o == nil {
 		var ret uint32
 		return ret
@@ -81,7 +81,7 @@ func (o *AliasOutputMetricItem) GetMessages() uint32 {
 
 // GetMessagesOk returns a tuple with the Messages field value
 // and a boolean to check if the value has been set.
-func (o *AliasOutputMetricItem) GetMessagesOk() (*uint32, bool) {
+func (o *AccountOutputMetricItem) GetMessagesOk() (*uint32, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -89,12 +89,12 @@ func (o *AliasOutputMetricItem) GetMessagesOk() (*uint32, bool) {
 }
 
 // SetMessages sets field value
-func (o *AliasOutputMetricItem) SetMessages(v uint32) {
+func (o *AccountOutputMetricItem) SetMessages(v uint32) {
 	o.Messages = v
 }
 
 // GetTimestamp returns the Timestamp field value
-func (o *AliasOutputMetricItem) GetTimestamp() time.Time {
+func (o *AccountOutputMetricItem) GetTimestamp() time.Time {
 	if o == nil {
 		var ret time.Time
 		return ret
@@ -105,7 +105,7 @@ func (o *AliasOutputMetricItem) GetTimestamp() time.Time {
 
 // GetTimestampOk returns a tuple with the Timestamp field value
 // and a boolean to check if the value has been set.
-func (o *AliasOutputMetricItem) GetTimestampOk() (*time.Time, bool) {
+func (o *AccountOutputMetricItem) GetTimestampOk() (*time.Time, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -113,11 +113,11 @@ func (o *AliasOutputMetricItem) GetTimestampOk() (*time.Time, bool) {
 }
 
 // SetTimestamp sets field value
-func (o *AliasOutputMetricItem) SetTimestamp(v time.Time) {
+func (o *AccountOutputMetricItem) SetTimestamp(v time.Time) {
 	o.Timestamp = v
 }
 
-func (o AliasOutputMetricItem) MarshalJSON() ([]byte, error) {
+func (o AccountOutputMetricItem) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
@@ -125,7 +125,7 @@ func (o AliasOutputMetricItem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(toSerialize)
 }
 
-func (o AliasOutputMetricItem) ToMap() (map[string]interface{}, error) {
+func (o AccountOutputMetricItem) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["lastMessage"] = o.LastMessage
 	toSerialize["messages"] = o.Messages
@@ -133,38 +133,38 @@ func (o AliasOutputMetricItem) ToMap() (map[string]interface{}, error) {
 	return toSerialize, nil
 }
 
-type NullableAliasOutputMetricItem struct {
-	value *AliasOutputMetricItem
+type NullableAccountOutputMetricItem struct {
+	value *AccountOutputMetricItem
 	isSet bool
 }
 
-func (v NullableAliasOutputMetricItem) Get() *AliasOutputMetricItem {
+func (v NullableAccountOutputMetricItem) Get() *AccountOutputMetricItem {
 	return v.value
 }
 
-func (v *NullableAliasOutputMetricItem) Set(val *AliasOutputMetricItem) {
+func (v *NullableAccountOutputMetricItem) Set(val *AccountOutputMetricItem) {
 	v.value = val
 	v.isSet = true
 }
 
-func (v NullableAliasOutputMetricItem) IsSet() bool {
+func (v NullableAccountOutputMetricItem) IsSet() bool {
 	return v.isSet
 }
 
-func (v *NullableAliasOutputMetricItem) Unset() {
+func (v *NullableAccountOutputMetricItem) Unset() {
 	v.value = nil
 	v.isSet = false
 }
 
-func NewNullableAliasOutputMetricItem(val *AliasOutputMetricItem) *NullableAliasOutputMetricItem {
-	return &NullableAliasOutputMetricItem{value: val, isSet: true}
+func NewNullableAccountOutputMetricItem(val *AccountOutputMetricItem) *NullableAccountOutputMetricItem {
+	return &NullableAccountOutputMetricItem{value: val, isSet: true}
 }
 
-func (v NullableAliasOutputMetricItem) MarshalJSON() ([]byte, error) {
+func (v NullableAccountOutputMetricItem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(v.value)
 }
 
-func (v *NullableAliasOutputMetricItem) UnmarshalJSON(src []byte) error {
+func (v *NullableAccountOutputMetricItem) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }

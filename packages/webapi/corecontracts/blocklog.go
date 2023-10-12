@@ -12,14 +12,14 @@ import (
 )
 
 func GetControlAddresses(ch chain.Chain) (*isc.ControlAddresses, error) {
-	aliasOutputID, err := ch.LatestAliasOutput(chain.ConfirmedState)
+	accountOutputID, err := ch.LatestAccountOutput(chain.ConfirmedState)
 	if err != nil {
 		return nil, err
 	}
-	accountOutput := aliasOutputID.GetAliasOutput()
+	accountOutput := accountOutputID.GetAccountOutput()
 
 	controlAddresses := &isc.ControlAddresses{
-		StateAddress:     aliasOutputID.GetStateAddress(),
+		StateAddress:     accountOutputID.GetStateAddress(),
 		GoverningAddress: accountOutput.GovernorAddress(),
 		SinceBlockIndex:  accountOutput.StateIndex,
 	}

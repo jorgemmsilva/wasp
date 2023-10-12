@@ -48,7 +48,7 @@ func TestGetBlockInfo(t *testing.T) {
 		require.Equal(t, expectBlockInfo.TotalRequests, blockinfo.TotalRequests)
 		require.Equal(t, expectBlockInfo.NumSuccessfulRequests, blockinfo.NumSuccessfulRequests)
 		require.Equal(t, expectBlockInfo.NumOffLedgerRequests, blockinfo.NumOffLedgerRequests)
-		require.Equal(t, expectBlockInfo.PreviousAliasOutput, blockinfo.PreviousAliasOutput)
+		require.Equal(t, expectBlockInfo.PreviousAccountOutput, blockinfo.PreviousAccountOutput)
 		require.Equal(t, expectBlockInfo.GasBurned, blockinfo.GasBurned)
 		require.Equal(t, expectBlockInfo.GasFeeCharged, blockinfo.GasFeeCharged)
 	}
@@ -74,7 +74,7 @@ func TestGetLatestBlockInfo(t *testing.T) {
 	require.Equal(t, expectBlockInfo.TotalRequests, blockinfo.TotalRequests)
 	require.Equal(t, expectBlockInfo.NumSuccessfulRequests, blockinfo.NumSuccessfulRequests)
 	require.Equal(t, expectBlockInfo.NumOffLedgerRequests, blockinfo.NumOffLedgerRequests)
-	require.Equal(t, expectBlockInfo.PreviousAliasOutput, blockinfo.PreviousAliasOutput)
+	require.Equal(t, expectBlockInfo.PreviousAccountOutput, blockinfo.PreviousAccountOutput)
 	require.Equal(t, expectBlockInfo.GasBurned, blockinfo.GasBurned)
 	require.Equal(t, expectBlockInfo.GasFeeCharged, blockinfo.GasFeeCharged)
 }

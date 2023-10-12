@@ -254,9 +254,9 @@ func (e *EVMChain) iscStateFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.Block
 	return e.iscStateFromEVMBlockNumber(block.Number())
 }
 
-func (e *EVMChain) iscAliasOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.AccountOutputWithID, error) {
+func (e *EVMChain) iscAccountOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.AccountOutputWithID, error) {
 	if blockNumber == nil || blockNumber.Cmp(big.NewInt(int64(e.backend.ISCLatestState().BlockIndex()))) == 0 {
-		return e.backend.ISCLatestAliasOutput()
+		return e.backend.ISCLatestAccountOutput()
 	}
 	iscBlockIndex, err := iscBlockIndexByEVMBlockNumber(blockNumber)
 	if err != nil {
@@ -267,7 +267,7 @@ func (e *EVMChain) iscAliasOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.
 		return nil, fmt.Errorf("no EVM block with number %s", blockNumber)
 	}
 	if iscBlockIndex == latestBlockIndex {
-		return e.backend.ISCLatestAliasOutput()
+		return e.backend.ISCLatestAccountOutput()
 	}
 	nextISCBlockIndex := iscBlockIndex + 1
 	nextISCState, err := e.backend.ISCStateByBlockIndex(nextISCBlockIndex)
@@ -279,22 +279,22 @@ func (e *EVMChain) iscAliasOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.
 	if !ok {
 		return nil, fmt.Errorf("block not found: %d", nextISCBlockIndex)
 	}
-	return nextBlock.PreviousAliasOutput, nil
+	return nextBlock.PreviousAccountOutput, nil
 }
 
-func (e *EVMChain) iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.BlockNumberOrHash) (*isc.AccountOutputWithID, error) {
+func (e *EVMChain) iscAccountOutputFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.BlockNumberOrHash) (*isc.AccountOutputWithID, error) {
 	if blockNumberOrHash == nil {
-		return e.backend.ISCLatestAliasOutput()
+		return e.backend.ISCLatestAccountOutput()
 	}
 	if blockNumber, ok := blockNumberOrHash.Number(); ok {
-		return e.iscAliasOutputFromEVMBlockNumber(parseBlockNumber(blockNumber))
+		return e.iscAccountOutputFromEVMBlockNumber(parseBlockNumber(blockNumber))
 	}
 	blockHash, _ := blockNumberOrHash.Hash()
 	block := e.BlockByHash(blockHash)
 	if block == nil {
 		return nil, fmt.Errorf("block with hash %s not found", blockHash)
 	}
-	return e.iscAliasOutputFromEVMBlockNumber(block.Number())
+	return e.iscAccountOutputFromEVMBlockNumber(block.Number())
 }
 
 func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockNumberOrHash) (*big.Int, error) {
@@ -433,7 +433,7 @@ func (e *EVMChain) TransactionCount(address common.Address, blockNumberOrHash *r
 
 func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {
 	e.log.Debugf("CallContract(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
-	accountOutput, err := e.iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
+	accountOutput, err := e.iscAccountOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return nil, err
 	}
@@ -442,7 +442,7 @@ func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc
 
 func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) (uint64, error) {
 	e.log.Debugf("EstimateGas(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
-	accountOutput, err := e.iscAliasOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
+	accountOutput, err := e.iscAccountOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return 0, err
 	}
@@ -641,7 +641,7 @@ func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceCon
 	}
 
 	err = e.backend.EVMTraceTransaction(
-		iscBlock.PreviousAliasOutput,
+		iscBlock.PreviousAccountOutput,
 		iscBlock.Timestamp,
 		iscRequestsInBlock,
 		txIndex,

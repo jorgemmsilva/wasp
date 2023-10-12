@@ -10,7 +10,7 @@ import (
 
 type ChainNodeConnMetricsProvider struct {
 	l1RequestReceived     *prometheus.CounterVec
-	l1AliasOutputReceived *prometheus.CounterVec
+	l1AccountOutputReceived *prometheus.CounterVec
 	txPublishStarted      *prometheus.CounterVec
 	txPublishResult       *prometheus.HistogramVec
 }
@@ -23,7 +23,7 @@ func newChainNodeConnMetricsProvider() *ChainNodeConnMetricsProvider {
 			Name:      "l1_request_received",
 			Help:      "A number of confirmed requests received from L1.",
 		}, []string{labelNameChain}),
-		l1AliasOutputReceived: prometheus.NewCounterVec(prometheus.CounterOpts{
+		l1AccountOutputReceived: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "iota_wasp",
 			Subsystem: "node_conn",
 			Name:      "l1_alias_output_received",
@@ -48,7 +48,7 @@ func newChainNodeConnMetricsProvider() *ChainNodeConnMetricsProvider {
 func (p *ChainNodeConnMetricsProvider) register(reg prometheus.Registerer) {
 	reg.MustRegister(
 		p.l1RequestReceived,
-		p.l1AliasOutputReceived,
+		p.l1AccountOutputReceived,
 		p.txPublishStarted,
 		p.txPublishResult,
 	)
@@ -60,7 +60,7 @@ func (p *ChainNodeConnMetricsProvider) createForChain(chainID isc.ChainID) *Chai
 
 type ChainNodeConnMetrics struct {
 	ncL1RequestReceived     prometheus.Counter
-	ncL1AliasOutputReceived prometheus.Counter
+	ncL1AccountOutputReceived prometheus.Counter
 	ncTXPublishStarted      prometheus.Counter
 	ncTXPublishResult       map[bool]prometheus.Observer
 }
@@ -69,7 +69,7 @@ func newChainNodeConnMetrics(collectors *ChainNodeConnMetricsProvider, chainID i
 	labels := getChainLabels(chainID)
 	return &ChainNodeConnMetrics{
 		ncL1RequestReceived:     collectors.l1RequestReceived.With(labels),
-		ncL1AliasOutputReceived: collectors.l1AliasOutputReceived.With(labels),
+		ncL1AccountOutputReceived: collectors.l1AccountOutputReceived.With(labels),
 		ncTXPublishStarted:      collectors.txPublishStarted.With(labels),
 		ncTXPublishResult: map[bool]prometheus.Observer{
 			true:  collectors.txPublishResult.MustCurryWith(labels).With(prometheus.Labels{labelTxPublishResult: "confirmed"}),
@@ -82,8 +82,8 @@ func (m *ChainNodeConnMetrics) L1RequestReceived() {
 	m.ncL1RequestReceived.Inc()
 }
 
-func (m *ChainNodeConnMetrics) L1AliasOutputReceived() {
-	m.ncL1AliasOutputReceived.Inc()
+func (m *ChainNodeConnMetrics) L1AccountOutputReceived() {
+	m.ncL1AccountOutputReceived.Inc()
 }
 
 func (m *ChainNodeConnMetrics) TXPublishStarted() {

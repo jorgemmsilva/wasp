@@ -91,7 +91,7 @@ var WaspConfig = `
     "broadcastInterval": "5s",
     "apiCacheTTL": "5m",
     "pullMissingRequestsFromCommittee": true,
-    "deriveAliasOutputByQuorum": true,
+    "deriveAccountOutputByQuorum": true,
     "pipeliningLimit": -1,
     "consensusDelay": "50ms"
   },

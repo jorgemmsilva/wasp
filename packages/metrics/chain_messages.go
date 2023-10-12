@@ -27,7 +27,7 @@ type ChainMessageMetricsProvider struct {
 
 	inMilestone                     *MessageMetric[*nodeclient.MilestoneInfo] // TODO: Outdated and should be removed?
 	inStateOutput                   *MessageMetric[*InStateOutput]            // TODO: Outdated and should be removed?
-	inAliasOutput                   *MessageMetric[*iotago.AccountOutput]       // TODO: Outdated and should be removed?
+	inAccountOutput                   *MessageMetric[*iotago.AccountOutput]       // TODO: Outdated and should be removed?
 	inOutput                        *MessageMetric[*InOutput]                 // TODO: Outdated and should be removed?
 	inOnLedgerRequest               *MessageMetric[isc.OnLedgerRequest]       // TODO: Outdated and should be removed?
 	inTxInclusionState              *MessageMetric[*TxInclusionStateMsg]      // TODO: Outdated and should be removed?
@@ -68,7 +68,7 @@ func newChainMessageMetricsProvider() *ChainMessageMetricsProvider {
 
 	p.inMilestone = newMessageMetric[*nodeclient.MilestoneInfo](p, labelNameInMilestone)
 	p.inStateOutput = newMessageMetric[*InStateOutput](p, labelNameInStateOutputMetrics)
-	p.inAliasOutput = newMessageMetric[*iotago.AccountOutput](p, labelNameInAliasOutputMetrics)
+	p.inAccountOutput = newMessageMetric[*iotago.AccountOutput](p, labelNameInAccountOutputMetrics)
 	p.inOutput = newMessageMetric[*InOutput](p, labelNameInOutputMetrics)
 	p.inOnLedgerRequest = newMessageMetric[isc.OnLedgerRequest](p, labelNameInOnLedgerRequestMetrics)
 	p.inTxInclusionState = newMessageMetric[*TxInclusionStateMsg](p, labelNameInTxInclusionStateMetrics)
@@ -93,7 +93,7 @@ func (p *ChainMessageMetricsProvider) register(reg prometheus.Registerer) {
 func (p *ChainMessageMetricsProvider) createForChain(chainID isc.ChainID) *ChainMessageMetrics {
 	return &ChainMessageMetrics{
 		inStateOutput:                   createChainMessageMetric(p, chainID, labelNameInStateOutputMetrics, p.inStateOutput),
-		inAliasOutput:                   createChainMessageMetric(p, chainID, labelNameInAliasOutputMetrics, p.inAliasOutput),
+		inAccountOutput:                   createChainMessageMetric(p, chainID, labelNameInAccountOutputMetrics, p.inAccountOutput),
 		inOutput:                        createChainMessageMetric(p, chainID, labelNameInOutputMetrics, p.inOutput),
 		inOnLedgerRequest:               createChainMessageMetric(p, chainID, labelNameInOnLedgerRequestMetrics, p.inOnLedgerRequest),
 		inTxInclusionState:              createChainMessageMetric(p, chainID, labelNameInTxInclusionStateMetrics, p.inTxInclusionState),
@@ -113,8 +113,8 @@ func (p *ChainMessageMetricsProvider) InStateOutput() IMessageMetric[*InStateOut
 	return p.inStateOutput
 }
 
-func (p *ChainMessageMetricsProvider) InAliasOutput() IMessageMetric[*iotago.AccountOutput] {
-	return p.inAliasOutput
+func (p *ChainMessageMetricsProvider) InAccountOutput() IMessageMetric[*iotago.AccountOutput] {
+	return p.inAccountOutput
 }
 
 func (p *ChainMessageMetricsProvider) InOutput() IMessageMetric[*InOutput] {
@@ -271,7 +271,7 @@ func (m *ChainMessageMetric[T]) LastMessage() T {
 
 type ChainMessageMetrics struct {
 	inStateOutput      *ChainMessageMetric[*InStateOutput]
-	inAliasOutput      *ChainMessageMetric[*iotago.AccountOutput]
+	inAccountOutput      *ChainMessageMetric[*iotago.AccountOutput]
 	inOutput           *ChainMessageMetric[*InOutput]
 	inOnLedgerRequest  *ChainMessageMetric[isc.OnLedgerRequest]
 	inTxInclusionState *ChainMessageMetric[*TxInclusionStateMsg]
@@ -287,8 +287,8 @@ func (m *ChainMessageMetrics) InStateOutput() IMessageMetric[*InStateOutput] {
 	return m.inStateOutput
 }
 
-func (m *ChainMessageMetrics) InAliasOutput() IMessageMetric[*iotago.AccountOutput] {
-	return m.inAliasOutput
+func (m *ChainMessageMetrics) InAccountOutput() IMessageMetric[*iotago.AccountOutput] {
+	return m.inAccountOutput
 }
 
 func (m *ChainMessageMetrics) InOutput() IMessageMetric[*InOutput] {

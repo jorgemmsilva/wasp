@@ -27,14 +27,14 @@ func (bps batchProposalSet) decidedDSSIndexProposals() map[gpa.NodeID][]int {
 
 // Decided Base Alias Output is the one, that was proposed by F+1 nodes or more.
 // If there is more that 1 such ID, we refuse to use all of them.
-func (bps batchProposalSet) decidedBaseAliasOutput(f int) *isc.AccountOutputWithID {
+func (bps batchProposalSet) decidedBaseAccountOutput(f int) *isc.AccountOutputWithID {
 	counts := map[hashing.HashValue]int{}
 	values := map[hashing.HashValue]*isc.AccountOutputWithID{}
 	for _, bp := range bps {
-		h := bp.baseAliasOutput.Hash()
+		h := bp.baseAccountOutput.Hash()
 		counts[h]++
 		if _, ok := values[h]; !ok {
-			values[h] = bp.baseAliasOutput
+			values[h] = bp.baseAccountOutput
 		}
 	}
 
@@ -69,7 +69,7 @@ func (bps batchProposalSet) decidedRequestRefs(f int, ao *isc.AccountOutputWithI
 	// Count number of nodes proposing a request.
 	maxLen := 0
 	for _, bp := range bps {
-		if !bp.baseAliasOutput.Equals(ao) {
+		if !bp.baseAccountOutput.Equals(ao) {
 			continue
 		}
 		for _, reqRef := range bp.requestRefs {

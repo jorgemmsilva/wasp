@@ -88,7 +88,7 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 	myWallet := wallet.Load()
 	aliasID := config.GetChain(chain).AsAliasID()
 
-	chainOutputID, chainOutput, err := l1Client.GetAliasOutput(aliasID)
+	chainOutputID, chainOutput, err := l1Client.GetAccountOutput(aliasID)
 	log.Check(err)
 
 	tx, err := transaction.NewRotateChainStateControllerTx(

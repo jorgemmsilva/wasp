@@ -19,7 +19,7 @@ func TestVarLocalView(t *testing.T) {
 	defer log.Sync()
 	j := cmt_log.NewVarLocalView(-1, func(ao *isc.AccountOutputWithID) {}, log)
 	require.Nil(t, j.Value())
-	tipAO, ok, _ := j.AliasOutputConfirmed(isc.NewAliasOutputWithID(&iotago.AccountOutput{}, iotago.OutputID{}))
+	tipAO, ok, _ := j.AccountOutputConfirmed(isc.NewAccountOutputWithID(&iotago.AccountOutput{}, iotago.OutputID{}))
 	require.True(t, ok)
 	require.NotNil(t, tipAO)
 	require.NotNil(t, j.Value())

@@ -81,7 +81,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	for i, nid := range nodeIDs {
 		consensusStateRegistry := testutil.NewConsensusStateRegistry()
 		stores[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAliasOutput(stores[nid], originAO)
+		_, err := origin.InitChainByAccountOutput(stores[nid], originAO)
 		require.NoError(t, err)
 		activeAccessNodesCB := func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey) {
 			return []*cryptolib.PublicKey{}, []*cryptolib.PublicKey{}
@@ -109,7 +109,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	// Provide initial AO.
 	initAOInputs := map[gpa.NodeID]gpa.Input{}
 	for nid := range nodes {
-		initAOInputs[nid] = chainmanager.NewInputAliasOutputConfirmed(originAO)
+		initAOInputs[nid] = chainmanager.NewInputAccountOutputConfirmed(originAO)
 	}
 	tc.WithInputs(initAOInputs)
 	tc.RunAll()
@@ -118,7 +118,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		out := n.Output().(*chainmanager.Output)
 		require.Equal(t, 0, out.NeedPublishTX().Size())
 		require.NotNil(t, out.NeedConsensus())
-		require.Equal(t, originAO, out.NeedConsensus().BaseAliasOutput)
+		require.Equal(t, originAO, out.NeedConsensus().BaseAccountOutput)
 		require.Equal(t, uint32(1), out.NeedConsensus().LogIndex.AsUint32())
 		require.Equal(t, cmtAddrA, &out.NeedConsensus().CommitteeAddr)
 	}
@@ -134,12 +134,12 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		// TODO: Commit a block to the store, if needed.
 		tc.WithInput(nid, chainmanager.NewInputConsensusOutputDone( // TODO: Consider the SKIP cases as well.
 			*cmtAddrA.(*iotago.Ed25519Address),
-			consReq.LogIndex, consReq.BaseAliasOutput.OutputID(),
+			consReq.LogIndex, consReq.BaseAccountOutput.OutputID(),
 			&cons.Result{
 				Transaction:     step2TX,
 				Block:           block0,
-				BaseAliasOutput: consReq.BaseAliasOutput.OutputID(),
-				NextAliasOutput: step2AO,
+				BaseAccountOutput: consReq.BaseAccountOutput.OutputID(),
+				NextAccountOutput: step2AO,
 			},
 		))
 	}
@@ -152,14 +152,14 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		require.Equal(t, step2TX, func() *iotago.Transaction { tx, _ := out.NeedPublishTX().Get(step2AO.TransactionID()); return tx.Tx }())
 		require.Equal(t, originAO.OutputID(), func() iotago.OutputID {
 			tx, _ := out.NeedPublishTX().Get(step2AO.TransactionID())
-			return tx.BaseAliasOutputID
+			return tx.BaseAccountOutputID
 		}())
 		require.Equal(t, cmtAddrA, func() iotago.Address {
 			tx, _ := out.NeedPublishTX().Get(step2AO.TransactionID())
 			return &tx.CommitteeAddr
 		}())
 		require.NotNil(t, out.NeedConsensus())
-		require.Equal(t, step2AO, out.NeedConsensus().BaseAliasOutput)
+		require.Equal(t, step2AO, out.NeedConsensus().BaseAccountOutput)
 		require.Equal(t, uint32(2), out.NeedConsensus().LogIndex.AsUint32())
 		require.Equal(t, cmtAddrA, &out.NeedConsensus().CommitteeAddr)
 	}
@@ -167,7 +167,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	// Say TX is published
 	for nid := range nodes {
 		consReq, _ := nodes[nid].Output().(*chainmanager.Output).NeedPublishTX().Get(step2AO.TransactionID())
-		tc.WithInput(nid, chainmanager.NewInputChainTxPublishResult(consReq.CommitteeAddr, consReq.LogIndex, consReq.TxID, consReq.NextAliasOutput, true))
+		tc.WithInput(nid, chainmanager.NewInputChainTxPublishResult(consReq.CommitteeAddr, consReq.LogIndex, consReq.TxID, consReq.NextAccountOutput, true))
 	}
 	tc.RunAll()
 	tc.PrintAllStatusStrings("TX Published", t.Logf)
@@ -175,14 +175,14 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		out := n.Output().(*chainmanager.Output)
 		require.Equal(t, 0, out.NeedPublishTX().Size())
 		require.NotNil(t, out.NeedConsensus())
-		require.Equal(t, step2AO, out.NeedConsensus().BaseAliasOutput)
+		require.Equal(t, step2AO, out.NeedConsensus().BaseAccountOutput)
 		require.Equal(t, uint32(2), out.NeedConsensus().LogIndex.AsUint32())
 		require.Equal(t, cmtAddrA, &out.NeedConsensus().CommitteeAddr)
 	}
 	//
 	// Say TX is confirmed.
 	for nid := range nodes {
-		tc.WithInput(nid, chainmanager.NewInputAliasOutputConfirmed(step2AO))
+		tc.WithInput(nid, chainmanager.NewInputAccountOutputConfirmed(step2AO))
 	}
 	tc.RunAll()
 	tc.PrintAllStatusStrings("TX Published and Confirmed", t.Logf)
@@ -190,7 +190,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		out := n.Output().(*chainmanager.Output)
 		require.Equal(t, 0, out.NeedPublishTX().Size())
 		require.NotNil(t, out.NeedConsensus())
-		require.Equal(t, step2AO, out.NeedConsensus().BaseAliasOutput)
+		require.Equal(t, step2AO, out.NeedConsensus().BaseAccountOutput)
 		require.Equal(t, uint32(2), out.NeedConsensus().LogIndex.AsUint32())
 		require.Equal(t, cmtAddrA, &out.NeedConsensus().CommitteeAddr)
 	}
@@ -198,7 +198,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	// Make external committee rotation.
 	rotateAO, _ := tcl.FakeRotationTX(step2AO, cmtAddrB)
 	for nid := range nodes {
-		tc.WithInput(nid, chainmanager.NewInputAliasOutputConfirmed(rotateAO))
+		tc.WithInput(nid, chainmanager.NewInputAccountOutputConfirmed(rotateAO))
 	}
 	tc.RunAll()
 	tc.PrintAllStatusStrings("After external rotation", t.Logf)
@@ -206,7 +206,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		out := n.Output().(*chainmanager.Output)
 		require.Equal(t, 0, out.NeedPublishTX().Size())
 		require.NotNil(t, out.NeedConsensus())
-		require.Equal(t, rotateAO, out.NeedConsensus().BaseAliasOutput)
+		require.Equal(t, rotateAO, out.NeedConsensus().BaseAccountOutput)
 		require.Equal(t, uint32(1), out.NeedConsensus().LogIndex.AsUint32())
 		require.Equal(t, cmtAddrB, &out.NeedConsensus().CommitteeAddr)
 	}

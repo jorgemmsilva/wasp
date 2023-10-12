@@ -202,7 +202,7 @@ func blockFn(te *testEnv, reqs []isc.Request, ao *isc.AccountOutputWithID, tangl
 	store := te.stores[0]
 	vmTask := &vm.VMTask{
 		Processors:           processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
-		AnchorOutput:         ao.GetAliasOutput(),
+		AnchorOutput:         ao.GetAccountOutput(),
 		AnchorOutputID:       ao.OutputID(),
 		Store:                store,
 		Requests:             reqs,
@@ -726,7 +726,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.stores = make([]state.Store, len(te.peerIdentities))
 	for i := range te.peerIdentities {
 		te.stores[i] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAliasOutput(te.stores[i], te.originAO)
+		_, err := origin.InitChainByAccountOutput(te.stores[i], te.originAO)
 		require.NoError(t, err)
 		chainMetrics := metrics.NewChainMetricsProvider().GetChainMetrics(isc.EmptyChainID())
 		te.mempools[i] = mempool.New(
@@ -744,7 +744,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 }
 
 func (te *testEnv) stateForAO(i int, ao *isc.AccountOutputWithID) state.State {
-	l1Commitment, err := transaction.L1CommitmentFromAliasOutput(ao.GetAliasOutput())
+	l1Commitment, err := transaction.L1CommitmentFromAccountOutput(ao.GetAccountOutput())
 	require.NoError(te.t, err)
 	st, err := te.stores[i].StateByTrieRoot(l1Commitment.TrieRoot())
 	require.NoError(te.t, err)

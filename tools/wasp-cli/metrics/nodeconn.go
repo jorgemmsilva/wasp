@@ -67,7 +67,7 @@ func printNodeMessagesMetrics(msgsMetrics *apiclient.NodeMessageMetrics) {
 
 	inMilestone := mapMetricItem(msgsMetrics.InMilestone.Messages, msgsMetrics.InMilestone.Timestamp, milestoneMsg)
 	inStateOutput := mapMetricItem(msgsMetrics.InStateOutput.Messages, msgsMetrics.InStateOutput.Timestamp, msgsMetrics.InStateOutput.LastMessage.OutputId)
-	inAliasOutput := mapMetricItem(msgsMetrics.InAliasOutput.Messages, msgsMetrics.InAliasOutput.Timestamp, msgsMetrics.InAliasOutput.LastMessage.Raw)
+	inAccountOutput := mapMetricItem(msgsMetrics.InAccountOutput.Messages, msgsMetrics.InAccountOutput.Timestamp, msgsMetrics.InAccountOutput.LastMessage.Raw)
 	inOutput := mapMetricItem(msgsMetrics.InOutput.Messages, msgsMetrics.InOutput.Timestamp, msgsMetrics.InOutput.LastMessage.OutputId)
 	inOnLedgerRequest := mapMetricItem(msgsMetrics.InOnLedgerRequest.Messages, msgsMetrics.InOnLedgerRequest.Timestamp, msgsMetrics.InOnLedgerRequest.LastMessage.OutputId)
 	inTxInclusionState := mapMetricItem(msgsMetrics.InTxInclusionState.Messages, msgsMetrics.InTxInclusionState.Timestamp, msgsMetrics.InTxInclusionState.LastMessage.TxId)
@@ -80,7 +80,7 @@ func printNodeMessagesMetrics(msgsMetrics *apiclient.NodeMessageMetrics) {
 	table := [][]string{
 		makeMessagesMetricsTableRow("Milestone", true, inMilestone),
 		makeMessagesMetricsTableRow("State output", true, inStateOutput),
-		makeMessagesMetricsTableRow("Alias output", true, inAliasOutput),
+		makeMessagesMetricsTableRow("Alias output", true, inAccountOutput),
 		makeMessagesMetricsTableRow("Output", true, inOutput),
 		makeMessagesMetricsTableRow("On ledger request", true, inOnLedgerRequest),
 		makeMessagesMetricsTableRow("Tx inclusion state", true, inTxInclusionState),
@@ -97,7 +97,7 @@ func printChainMessagesMetrics(msgsMetrics *apiclient.ChainMessageMetrics) {
 	header := []string{"Message name", "", "Total", "Last time", "Last message"}
 
 	inStateOutput := mapMetricItem(msgsMetrics.InStateOutput.Messages, msgsMetrics.InStateOutput.Timestamp, msgsMetrics.InStateOutput.LastMessage.OutputId)
-	inAliasOutput := mapMetricItem(msgsMetrics.InAliasOutput.Messages, msgsMetrics.InAliasOutput.Timestamp, msgsMetrics.InAliasOutput.LastMessage.Raw)
+	inAccountOutput := mapMetricItem(msgsMetrics.InAccountOutput.Messages, msgsMetrics.InAccountOutput.Timestamp, msgsMetrics.InAccountOutput.LastMessage.Raw)
 	inOutput := mapMetricItem(msgsMetrics.InOutput.Messages, msgsMetrics.InOutput.Timestamp, msgsMetrics.InOutput.LastMessage.OutputId)
 	inOnLedgerRequest := mapMetricItem(msgsMetrics.InOnLedgerRequest.Messages, msgsMetrics.InOnLedgerRequest.Timestamp, msgsMetrics.InOnLedgerRequest.LastMessage.OutputId)
 	inTxInclusionState := mapMetricItem(msgsMetrics.InTxInclusionState.Messages, msgsMetrics.InTxInclusionState.Timestamp, msgsMetrics.InTxInclusionState.LastMessage.TxId)
@@ -109,7 +109,7 @@ func printChainMessagesMetrics(msgsMetrics *apiclient.ChainMessageMetrics) {
 
 	table := [][]string{
 		makeMessagesMetricsTableRow("State output", true, inStateOutput),
-		makeMessagesMetricsTableRow("Alias output", true, inAliasOutput),
+		makeMessagesMetricsTableRow("Alias output", true, inAccountOutput),
 		makeMessagesMetricsTableRow("Output", true, inOutput),
 		makeMessagesMetricsTableRow("On ledger request", true, inOnLedgerRequest),
 		makeMessagesMetricsTableRow("Tx inclusion state", true, inTxInclusionState),

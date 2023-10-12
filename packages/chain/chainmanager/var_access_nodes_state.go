@@ -76,7 +76,7 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.A
 	if !ok {
 		entries = []*varAccessNodeStateEntry{}
 	}
-	publishedL1Commitment, err := transaction.L1CommitmentFromAliasOutput(published.GetAliasOutput())
+	publishedL1Commitment, err := transaction.L1CommitmentFromAccountOutput(published.GetAccountOutput())
 	if err != nil {
 		vas.log.Warnf("Cannot extract L1Commitment from the published AO: %v", err)
 		publishedL1Commitment = nil // Will ignore it.
@@ -105,7 +105,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AccountOutputWi
 	vas.log.Debugf("BlockConfirmed: confirmed=%v", confirmed)
 	stateIndex := confirmed.GetStateIndex()
 	vas.confirmed = confirmed
-	if vas.isAliasOutputPending(confirmed) {
+	if vas.isAccountOutputPending(confirmed) {
 		vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 			if si <= stateIndex {
 				for _, e := range es {
@@ -150,7 +150,7 @@ func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.AccountOutputWith
 	return vas.tipAO, true
 }
 
-func (vas *varAccessNodeStateImpl) isAliasOutputPending(ao *isc.AccountOutputWithID) bool {
+func (vas *varAccessNodeStateImpl) isAccountOutputPending(ao *isc.AccountOutputWithID) bool {
 	found := false
 	vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 		found = lo.ContainsBy(es, func(e *varAccessNodeStateEntry) bool {
@@ -198,7 +198,7 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 	// Validate the TX:
 	//   - Signature is valid and is by the latest known confirmed state controller.
 	//   - Previous known AO is among the TX inputs.
-	published, err = isc.AliasOutputWithIDFromTx(tx, vas.chainID.AsAddress())
+	published, err = isc.AccountOutputWithIDFromTx(tx, vas.chainID.AsAddress())
 	if err != nil {
 		return consumed, nil, fmt.Errorf("cannot extract alias output from the block: %v", err)
 	}

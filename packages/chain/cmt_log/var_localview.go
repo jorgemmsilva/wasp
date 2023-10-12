@@ -86,17 +86,17 @@ type VarLocalView interface {
 	Value() *isc.AccountOutputWithID
 	//
 	// Corresponds to the `tx_posted` event in the specification.
-	// Returns true, if the proposed BaseAliasOutput has changed.
+	// Returns true, if the proposed BaseAccountOutput has changed.
 	ConsensusOutputDone(logIndex LogIndex, consumed iotago.OutputID, published *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) // TODO: Recheck, if consumed AO is the decided one.
 	//
 	// Corresponds to the `ao_received` event in the specification.
-	// Returns true, if the proposed BaseAliasOutput has changed.
+	// Returns true, if the proposed BaseAccountOutput has changed.
 	// Also it returns confirmed log index, if a received AO confirms it, or NIL otherwise.
-	AliasOutputConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool, LogIndex)
+	AccountOutputConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool, LogIndex)
 	//
 	// Corresponds to the `tx_rejected` event in the specification.
-	// Returns true, if the proposed BaseAliasOutput has changed.
-	AliasOutputRejected(rejected *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool)
+	// Returns true, if the proposed BaseAccountOutput has changed.
+	AccountOutputRejected(rejected *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool)
 	//
 	// Support functions.
 	StatusString() string
@@ -192,13 +192,13 @@ func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iot
 // A confirmed AO is received from L1. Base on that, we either truncate our local
 // history until the received AO (if we know it was posted before), or we replace
 // the entire history with an unseen AO (probably produced not by this chain×cmt).
-func (lvi *varLocalViewImpl) AliasOutputConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool, LogIndex) {
-	lvi.log.Debugf("AliasOutputConfirmed: confirmed=%v", confirmed)
+func (lvi *varLocalViewImpl) AccountOutputConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool, LogIndex) {
+	lvi.log.Debugf("AccountOutputConfirmed: confirmed=%v", confirmed)
 	cnfLogIndex := NilLogIndex()
 	stateIndex := confirmed.GetStateIndex()
 	oldTip := lvi.findLatestPending()
 	lvi.confirmed = confirmed
-	if lvi.isAliasOutputPending(confirmed) {
+	if lvi.isAccountOutputPending(confirmed) {
 		lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 			if si <= stateIndex {
 				for _, e := range es {
@@ -227,8 +227,8 @@ func (lvi *varLocalViewImpl) AliasOutputConfirmed(confirmed *isc.AccountOutputWi
 
 // Mark the specified AO as rejected.
 // Trim the suffix of rejected AOs.
-func (lvi *varLocalViewImpl) AliasOutputRejected(rejected *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
-	lvi.log.Debugf("AliasOutputRejected: rejected=%v", rejected)
+func (lvi *varLocalViewImpl) AccountOutputRejected(rejected *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
+	lvi.log.Debugf("AccountOutputRejected: rejected=%v", rejected)
 	stateIndex := rejected.GetStateIndex()
 	oldTip := lvi.findLatestPending()
 	//
@@ -337,7 +337,7 @@ func (lvi *varLocalViewImpl) findLatestPending() *isc.AccountOutputWithID {
 	return latest
 }
 
-func (lvi *varLocalViewImpl) isAliasOutputPending(ao *isc.AccountOutputWithID) bool {
+func (lvi *varLocalViewImpl) isAccountOutputPending(ao *isc.AccountOutputWithID) bool {
 	found := false
 	lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 		found = lo.ContainsBy(es, func(e *varLocalViewEntry) bool {

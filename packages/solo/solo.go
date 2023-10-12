@@ -439,10 +439,10 @@ func (env *Solo) EnqueueRequests(tx *iotago.Transaction) {
 }
 
 func (ch *Chain) GetAnchorOutputFromL1() *isc.AccountOutputWithID {
-	outputs := ch.Env.utxoDB.GetAliasOutputs(ch.ChainID.AsAddress())
+	outputs := ch.Env.utxoDB.GetAccountOutputs(ch.ChainID.AsAddress())
 	require.EqualValues(ch.Env.T, 1, len(outputs))
 	for outputID, accountOutput := range outputs {
-		return isc.NewAliasOutputWithID(accountOutput, outputID)
+		return isc.NewAccountOutputWithID(accountOutput, outputID)
 	}
 	panic("unreachable")
 }
@@ -511,7 +511,7 @@ func (ch *Chain) EnqueueDismissChain(_ string) {
 	panic("unimplemented")
 }
 
-func (ch *Chain) EnqueueAliasOutput(_ *isc.AccountOutputWithID) {
+func (ch *Chain) EnqueueAccountOutput(_ *isc.AccountOutputWithID) {
 	panic("unimplemented")
 }
 

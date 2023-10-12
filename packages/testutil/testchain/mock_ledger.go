@@ -106,10 +106,10 @@ func (mlT *MockedLedger) PublishTransaction(tx *iotago.Transaction) error {
 			if ok {
 				mlT.log.Debugf("Publishing transaction: outputs[%v] is alias output", index)
 				mlT.outputs[outputID] = accountOutput
-				currentLatestAliasOutput := mlT.getAliasOutput(mlT.latestOutputID)
-				if currentLatestAliasOutput == nil || currentLatestAliasOutput.StateIndex < accountOutput.StateIndex {
+				currentLatestAccountOutput := mlT.getAccountOutput(mlT.latestOutputID)
+				if currentLatestAccountOutput == nil || currentLatestAccountOutput.StateIndex < accountOutput.StateIndex {
 					mlT.log.Debugf("Publishing transaction: outputs[%v] is newer than current newest output (%v -> %v)",
-						index, currentLatestAliasOutput.StateIndex, accountOutput.StateIndex)
+						index, currentLatestAccountOutput.StateIndex, accountOutput.StateIndex)
 					mlT.latestOutputID = outputID
 				}
 			}
@@ -183,7 +183,7 @@ func (mlT *MockedLedger) PullStateOutputByID(nodeID string, outputID iotago.Outp
 	mlT.log.Debugf("Pulling output by id %v", outputIDHex)
 	if mlT.pullOutputByIDAllowedFun(outputID) {
 		mlT.log.Debugf("Pulling output by id %v allowed", outputIDHex)
-		accountOutput := mlT.getAliasOutput(outputID)
+		accountOutput := mlT.getAccountOutput(outputID)
 		if accountOutput == nil {
 			mlT.log.Warnf("Pulling output by id %v failed: output not found", outputIDHex)
 			return
@@ -205,26 +205,26 @@ func (mlT *MockedLedger) GetLatestOutput() *isc.AccountOutputWithID {
 	defer mlT.mutex.RUnlock()
 
 	mlT.log.Debugf("Getting latest output")
-	return isc.NewAliasOutputWithID(mlT.getLatestOutput(), mlT.latestOutputID)
+	return isc.NewAccountOutputWithID(mlT.getLatestOutput(), mlT.latestOutputID)
 }
 
 func (mlT *MockedLedger) getLatestOutput() *iotago.AccountOutput {
-	accountOutput := mlT.getAliasOutput(mlT.latestOutputID)
+	accountOutput := mlT.getAccountOutput(mlT.latestOutputID)
 	if accountOutput == nil {
 		mlT.log.Panicf("Latest output with id %v not found", mlT.latestOutputID.ToHex())
 	}
 	return accountOutput
 }
 
-func (mlT *MockedLedger) GetAliasOutputByID(outputID iotago.OutputID) *iotago.AccountOutput {
+func (mlT *MockedLedger) GetAccountOutputByID(outputID iotago.OutputID) *iotago.AccountOutput {
 	mlT.mutex.RLock()
 	defer mlT.mutex.RUnlock()
 
 	mlT.log.Debugf("Getting alias output by ID %v", outputID.ToHex())
-	return mlT.getAliasOutput(outputID)
+	return mlT.getAccountOutput(outputID)
 }
 
-func (mlT *MockedLedger) getAliasOutput(outputID iotago.OutputID) *iotago.AccountOutput {
+func (mlT *MockedLedger) getAccountOutput(outputID iotago.OutputID) *iotago.AccountOutput {
 	output, ok := mlT.outputs[outputID]
 	if ok {
 		return output
@@ -303,9 +303,9 @@ func (mlT *MockedLedger) GetOriginOutput() *isc.AccountOutputWithID {
 	defer mlT.mutex.RUnlock()
 
 	outputID := getOriginOutputID()
-	accountOutput := mlT.getAliasOutput(outputID)
+	accountOutput := mlT.getAccountOutput(outputID)
 	if accountOutput == nil {
 		return nil
 	}
-	return isc.NewAliasOutputWithID(accountOutput, outputID)
+	return isc.NewAccountOutputWithID(accountOutput, outputID)
 }

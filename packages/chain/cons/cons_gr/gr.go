@@ -50,7 +50,7 @@ type StateMgr interface {
 		accountOutput *isc.AccountOutputWithID,
 	) <-chan interface{}
 	// State manager has to ensure all the data needed for the specified alias
-	// output (presented as aliasOutputID+stateCommitment) is present in the DB.
+	// output (presented as accountOutputID+stateCommitment) is present in the DB.
 	ConsensusDecidedState(
 		ctx context.Context,
 		accountOutput *isc.AccountOutputWithID,
@@ -80,7 +80,7 @@ func (o *Output) String() string {
 }
 
 type input struct {
-	baseAliasOutput *isc.AccountOutputWithID
+	baseAccountOutput *isc.AccountOutputWithID
 	outputCB        func(*Output)
 	recoverCB       func()
 }
@@ -198,13 +198,13 @@ func New(
 	return cgr
 }
 
-func (cgr *ConsGr) Input(baseAliasOutput *isc.AccountOutputWithID, outputCB func(*Output), recoverCB func()) {
+func (cgr *ConsGr) Input(baseAccountOutput *isc.AccountOutputWithID, outputCB func(*Output), recoverCB func()) {
 	wasReceivedBefore := cgr.inputReceived.Swap(true)
 	if wasReceivedBefore {
-		panic(fmt.Errorf("duplicate input: %v", baseAliasOutput))
+		panic(fmt.Errorf("duplicate input: %v", baseAccountOutput))
 	}
 	inp := &input{
-		baseAliasOutput: baseAliasOutput,
+		baseAccountOutput: baseAccountOutput,
 		outputCB:        outputCB,
 		recoverCB:       recoverCB,
 	}
@@ -250,7 +250,7 @@ func (cgr *ConsGr) run() { //nolint:gocyclo,funlen
 			printStatusCh = time.After(cgr.printStatusPeriod)
 			cgr.outputCB = inp.outputCB
 			cgr.recoverCB = inp.recoverCB
-			cgr.handleConsInput(cons.NewInputProposal(inp.baseAliasOutput))
+			cgr.handleConsInput(cons.NewInputProposal(inp.baseAccountOutput))
 		case t, ok := <-cgr.inputTimeCh:
 			if !ok {
 				cgr.inputTimeCh = nil

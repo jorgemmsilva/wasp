@@ -10,16 +10,16 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
-type inputAliasOutputConfirmed struct {
+type inputAccountOutputConfirmed struct {
 	accountOutput *isc.AccountOutputWithID
 }
 
-func NewInputAliasOutputConfirmed(accountOutput *isc.AccountOutputWithID) gpa.Input {
-	return &inputAliasOutputConfirmed{
+func NewInputAccountOutputConfirmed(accountOutput *isc.AccountOutputWithID) gpa.Input {
+	return &inputAccountOutputConfirmed{
 		accountOutput: accountOutput,
 	}
 }
 
-func (inp *inputAliasOutputConfirmed) String() string {
-	return fmt.Sprintf("{chainMgr.inputAliasOutputConfirmed, %v}", inp.accountOutput)
+func (inp *inputAccountOutputConfirmed) String() string {
+	return fmt.Sprintf("{chainMgr.inputAccountOutputConfirmed, %v}", inp.accountOutput)
 }

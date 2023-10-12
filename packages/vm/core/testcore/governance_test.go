@@ -582,7 +582,7 @@ func TestL1Metadata(t *testing.T) {
 	require.Equal(t, publicURLMetadata, string(resMetadata))
 
 	// assert metadata is correct on L1 alias output
-	ao, err := ch.LatestAliasOutput(chain.ActiveOrCommittedState)
+	ao, err := ch.LatestAccountOutput(chain.ActiveOrCommittedState)
 	require.NoError(t, err)
 	sm, err := transaction.StateMetadataFromBytes(ao.GetStateMetadata())
 	require.NoError(t, err)
@@ -613,7 +613,7 @@ func TestL1Metadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert gas policy changed on L1 metadata
-	ao, err = ch.LatestAliasOutput(chain.ActiveOrCommittedState)
+	ao, err = ch.LatestAccountOutput(chain.ActiveOrCommittedState)
 	require.NoError(t, err)
 	sm, err = transaction.StateMetadataFromBytes(ao.GetStateMetadata())
 	require.NoError(t, err)

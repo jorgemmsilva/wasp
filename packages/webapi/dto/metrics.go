@@ -17,7 +17,7 @@ type MetricItem[T interface{}] struct {
 
 type ChainMessageMetrics struct {
 	InStateOutput      *MetricItem[*metrics.InStateOutput]
-	InAliasOutput      *MetricItem[*iotago.AccountOutput]
+	InAccountOutput      *MetricItem[*iotago.AccountOutput]
 	InOutput           *MetricItem[*metrics.InOutput]
 	InOnLedgerRequest  *MetricItem[isc.OnLedgerRequest]
 	InTxInclusionState *MetricItem[*metrics.TxInclusionStateMsg]
@@ -34,7 +34,7 @@ type NodeMessageMetrics struct {
 
 	InMilestone        *MetricItem[*nodeclient.MilestoneInfo]
 	InStateOutput      *MetricItem[*metrics.InStateOutput]
-	InAliasOutput      *MetricItem[*iotago.AccountOutput]
+	InAccountOutput      *MetricItem[*iotago.AccountOutput]
 	InOutput           *MetricItem[*metrics.InOutput]
 	InOnLedgerRequest  *MetricItem[isc.OnLedgerRequest]
 	InTxInclusionState *MetricItem[*metrics.TxInclusionStateMsg]

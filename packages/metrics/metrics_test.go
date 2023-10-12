@@ -108,17 +108,17 @@ func TestMessageMetrics(t *testing.T) {
 	checkMetricsValues(t, 3, outputID3, ncm.InStateOutput())
 
 	// IN Alias output
-	aliasOutput1 := &iotago.AccountOutput{StateIndex: 1}
-	aliasOutput2 := &iotago.AccountOutput{StateIndex: 2}
-	aliasOutput3 := &iotago.AccountOutput{StateIndex: 3}
+	accountOutput1 := &iotago.AccountOutput{StateIndex: 1}
+	accountOutput2 := &iotago.AccountOutput{StateIndex: 2}
+	accountOutput3 := &iotago.AccountOutput{StateIndex: 3}
 
-	ncm.InAliasOutput().IncMessages(aliasOutput1)
-	cncm1.InAliasOutput().IncMessages(aliasOutput2)
-	cncm1.InAliasOutput().IncMessages(aliasOutput3)
+	ncm.InAccountOutput().IncMessages(accountOutput1)
+	cncm1.InAccountOutput().IncMessages(accountOutput2)
+	cncm1.InAccountOutput().IncMessages(accountOutput3)
 
-	checkMetricsValues(t, 2, aliasOutput3, cncm1.InAliasOutput())
-	checkMetricsValues(t, 0, new(iotago.AccountOutput), cncm2.InAliasOutput())
-	checkMetricsValues(t, 3, aliasOutput3, ncm.InAliasOutput())
+	checkMetricsValues(t, 2, accountOutput3, cncm1.InAccountOutput())
+	checkMetricsValues(t, 0, new(iotago.AccountOutput), cncm2.InAccountOutput())
+	checkMetricsValues(t, 3, accountOutput3, ncm.InAccountOutput())
 
 	// IN Output
 	inOutput1 := &InOutput{OutputID: iotago.OutputID{1}}

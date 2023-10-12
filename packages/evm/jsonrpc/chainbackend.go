@@ -25,7 +25,7 @@ type ChainBackend interface {
 	EVMTraceTransaction(accountOutput *isc.AccountOutputWithID, blockTime time.Time, iscRequestsInBlock []isc.Request, txIndex uint64, tracer tracers.Tracer) error
 	ISCChainID() *isc.ChainID
 	ISCCallView(chainState state.State, scName string, funName string, args dict.Dict) (dict.Dict, error)
-	ISCLatestAliasOutput() (*isc.AccountOutputWithID, error)
+	ISCLatestAccountOutput() (*isc.AccountOutputWithID, error)
 	ISCLatestState() state.State
 	ISCStateByBlockIndex(blockIndex uint32) (state.State, error)
 	ISCStateByTrieRoot(trieRoot trie.Hash) (state.State, error)

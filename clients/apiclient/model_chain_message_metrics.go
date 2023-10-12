@@ -19,7 +19,7 @@ var _ MappedNullable = &ChainMessageMetrics{}
 
 // ChainMessageMetrics struct for ChainMessageMetrics
 type ChainMessageMetrics struct {
-	InAliasOutput AliasOutputMetricItem `json:"inAliasOutput"`
+	InAccountOutput AccountOutputMetricItem `json:"inAccountOutput"`
 	InOnLedgerRequest OnLedgerRequestMetricItem `json:"inOnLedgerRequest"`
 	InOutput InOutputMetricItem `json:"inOutput"`
 	InStateOutput InStateOutputMetricItem `json:"inStateOutput"`
@@ -35,9 +35,9 @@ type ChainMessageMetrics struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewChainMessageMetrics(inAliasOutput AliasOutputMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem) *ChainMessageMetrics {
+func NewChainMessageMetrics(inAccountOutput AccountOutputMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem) *ChainMessageMetrics {
 	this := ChainMessageMetrics{}
-	this.InAliasOutput = inAliasOutput
+	this.InAccountOutput = inAccountOutput
 	this.InOnLedgerRequest = inOnLedgerRequest
 	this.InOutput = inOutput
 	this.InStateOutput = inStateOutput
@@ -58,28 +58,28 @@ func NewChainMessageMetricsWithDefaults() *ChainMessageMetrics {
 	return &this
 }
 
-// GetInAliasOutput returns the InAliasOutput field value
-func (o *ChainMessageMetrics) GetInAliasOutput() AliasOutputMetricItem {
+// GetInAccountOutput returns the InAccountOutput field value
+func (o *ChainMessageMetrics) GetInAccountOutput() AccountOutputMetricItem {
 	if o == nil {
-		var ret AliasOutputMetricItem
+		var ret AccountOutputMetricItem
 		return ret
 	}
 
-	return o.InAliasOutput
+	return o.InAccountOutput
 }
 
-// GetInAliasOutputOk returns a tuple with the InAliasOutput field value
+// GetInAccountOutputOk returns a tuple with the InAccountOutput field value
 // and a boolean to check if the value has been set.
-func (o *ChainMessageMetrics) GetInAliasOutputOk() (*AliasOutputMetricItem, bool) {
+func (o *ChainMessageMetrics) GetInAccountOutputOk() (*AccountOutputMetricItem, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.InAliasOutput, true
+	return &o.InAccountOutput, true
 }
 
-// SetInAliasOutput sets field value
-func (o *ChainMessageMetrics) SetInAliasOutput(v AliasOutputMetricItem) {
-	o.InAliasOutput = v
+// SetInAccountOutput sets field value
+func (o *ChainMessageMetrics) SetInAccountOutput(v AccountOutputMetricItem) {
+	o.InAccountOutput = v
 }
 
 // GetInOnLedgerRequest returns the InOnLedgerRequest field value
@@ -308,7 +308,7 @@ func (o ChainMessageMetrics) MarshalJSON() ([]byte, error) {
 
 func (o ChainMessageMetrics) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["inAliasOutput"] = o.InAliasOutput
+	toSerialize["inAccountOutput"] = o.InAccountOutput
 	toSerialize["inOnLedgerRequest"] = o.InOnLedgerRequest
 	toSerialize["inOutput"] = o.InOutput
 	toSerialize["inStateOutput"] = o.InStateOutput

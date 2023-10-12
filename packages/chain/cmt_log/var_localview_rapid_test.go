@@ -54,7 +54,7 @@ func (sm *varLocalViewSM) L1ExternalAOConfirmed(t *rapid.T) {
 	//
 	// The AO from L1 is always respected as the correct one.
 	newAO := sm.nextAO()
-	tipAO, tipChanged, _ := sm.lv.AliasOutputConfirmed(newAO)
+	tipAO, tipChanged, _ := sm.lv.AccountOutputConfirmed(newAO)
 	require.True(t, tipChanged)            // BaseAO is replaced or set.
 	require.Equal(t, newAO, tipAO)         // BaseAO is replaced or set.
 	require.Equal(t, newAO, sm.lv.Value()) // BaseAO is replaced or set.
@@ -79,7 +79,7 @@ func (sm *varLocalViewSM) L1PendingApproved(t *rapid.T) {
 	// Notify the LocalView on the CNF.
 	cnfAO := sm.pending[0]
 	prevAO := sm.lv.Value()
-	_, tipChanged, _ := sm.lv.AliasOutputConfirmed(cnfAO)
+	_, tipChanged, _ := sm.lv.AccountOutputConfirmed(cnfAO)
 	//
 	// Update the model.
 	sm.confirmed = append(sm.confirmed, cnfAO)
@@ -105,7 +105,7 @@ func (sm *varLocalViewSM) L1PendingRejected(t *rapid.T) {
 	//
 	// Notify the LocalView on the rejection.
 	rejectFrom := rapid.IntRange(0, len(sm.pending)-1).Draw(t, "reject.idx")
-	newTip, _ := sm.lv.AliasOutputRejected(sm.pending[rejectFrom])
+	newTip, _ := sm.lv.AccountOutputRejected(sm.pending[rejectFrom])
 	require.Equal(t, rejectFrom != 0, newTip == nil, "If that't not the first of the pending, then there are pending left, so the new tip is undefined.")
 	require.Equal(t, rejectFrom == 0, newTip != nil, "In this case, all the pending are marked as rejected, so we have the tip (the confirmed one).")
 	//
@@ -126,7 +126,7 @@ func (sm *varLocalViewSM) OutdatedRejectHandled(t *rapid.T) {
 	selectedAO := sm.rejected[selectedIdx]
 	//
 	// Perform the action.
-	_, tipChanged := sm.lv.AliasOutputRejected(selectedAO)
+	_, tipChanged := sm.lv.AccountOutputRejected(selectedAO)
 	require.False(t, tipChanged)
 	//
 	// Update the model.
@@ -178,7 +178,7 @@ func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AccountOutputWithID) *isc.Accoun
 	} else {
 		stateIndex = uint32(sm.utxoIDCounter)
 	}
-	return isc.NewAliasOutputWithID(&iotago.AccountOutput{StateIndex: stateIndex}, utxoInput.ID())
+	return isc.NewAccountOutputWithID(&iotago.AccountOutput{StateIndex: stateIndex}, utxoInput.ID())
 }
 
 // Alias output can be proposed, if there is at least one AO confirmed and there is no

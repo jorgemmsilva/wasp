@@ -100,7 +100,7 @@ func provide(c *dig.Container) error {
 				ParamsChains.BroadcastUpToNPeers,
 				ParamsChains.BroadcastInterval,
 				ParamsChains.PullMissingRequestsFromCommittee,
-				ParamsChains.DeriveAliasOutputByQuorum,
+				ParamsChains.DeriveAccountOutputByQuorum,
 				ParamsChains.PipeliningLimit,
 				ParamsChains.ConsensusDelay,
 				ParamsChains.RecoveryTimeout,

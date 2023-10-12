@@ -21,7 +21,7 @@ type BlockInfoResponse struct {
 	TotalRequests         uint16    `json:"totalRequests" swagger:"required,min(1)"`
 	NumSuccessfulRequests uint16    `json:"numSuccessfulRequests" swagger:"required,min(1)"`
 	NumOffLedgerRequests  uint16    `json:"numOffLedgerRequests" swagger:"required,min(1)"`
-	PreviousAliasOutput   string    `json:"previousAliasOutput" swagger:"required,min(1)"`
+	PreviousAccountOutput   string    `json:"previousAccountOutput" swagger:"required,min(1)"`
 	GasBurned             string    `json:"gasBurned" swagger:"required,desc(The burned gas (uint64 as string))"`
 	GasFeeCharged         string    `json:"gasFeeCharged" swagger:"required,desc(The charged gas fee (uint64 as string))"`
 }
@@ -29,13 +29,13 @@ type BlockInfoResponse struct {
 func MapBlockInfoResponse(info *blocklog.BlockInfo) *BlockInfoResponse {
 	blockindex := uint32(0)
 	prevAOStr := ""
-	if info.PreviousAliasOutput != nil {
-		blockindex = info.PreviousAliasOutput.GetAliasOutput().StateIndex + 1
-		prevAOStr = hexutil.EncodeHex(info.PreviousAliasOutput.Bytes())
+	if info.PreviousAccountOutput != nil {
+		blockindex = info.PreviousAccountOutput.GetAccountOutput().StateIndex + 1
+		prevAOStr = hexutil.EncodeHex(info.PreviousAccountOutput.Bytes())
 	}
 	return &BlockInfoResponse{
 		BlockIndex:            blockindex,
-		PreviousAliasOutput:   prevAOStr,
+		PreviousAccountOutput:   prevAOStr,
 		Timestamp:             info.Timestamp,
 		TotalRequests:         info.TotalRequests,
 		NumSuccessfulRequests: info.NumSuccessfulRequests,

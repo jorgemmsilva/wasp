@@ -26,7 +26,7 @@ func TestAccountOutputWithIDSerialization(t *testing.T) {
 	rand.Read(output.AccountID[:])
 	outputID := iotago.OutputID{}
 	rand.Read(outputID[:])
-	aliasOutputWithID := isc.NewAccountOutputWithID(&output, outputID)
-	rwutil.ReadWriteTest(t, aliasOutputWithID, new(isc.AccountOutputWithID))
-	rwutil.BytesTest(t, aliasOutputWithID, isc.AccountOutputWithIDFromBytes)
+	accountOutputWithID := isc.NewAccountOutputWithID(&output, outputID)
+	rwutil.ReadWriteTest(t, accountOutputWithID, new(isc.AccountOutputWithID))
+	rwutil.BytesTest(t, accountOutputWithID, isc.AccountOutputWithIDFromBytes)
 }

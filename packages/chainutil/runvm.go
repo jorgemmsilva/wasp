@@ -24,7 +24,7 @@ func runISCTask(
 ) ([]*vm.RequestResult, error) {
 	task := &vm.VMTask{
 		Processors:           ch.Processors(),
-		AnchorOutput:         accountOutput.GetAliasOutput(),
+		AnchorOutput:         accountOutput.GetAccountOutput(),
 		AnchorOutputID:       accountOutput.OutputID(),
 		Store:                ch.Store(),
 		Requests:             reqs,

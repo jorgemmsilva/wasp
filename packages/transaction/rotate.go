@@ -21,7 +21,7 @@ func NewRotateChainStateControllerTx(
 	if !ok {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected AccountOutput, received %T=%v", chainOutput, chainOutput)
 	}
-	resolvedAliasID := util.AliasIDFromAliasOutput(o, chainOutputID)
+	resolvedAliasID := util.AliasIDFromAccountOutput(o, chainOutputID)
 	if resolvedAliasID != aliasID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
 			aliasID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP),

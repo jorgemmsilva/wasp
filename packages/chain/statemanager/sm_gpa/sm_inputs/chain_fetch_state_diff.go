@@ -26,11 +26,11 @@ func NewChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.AccountOutp
 		// Only the current state is needed, if prevAO is unknown.
 		prevAO = nextAO
 	}
-	oldCommitment, err := transaction.L1CommitmentFromAliasOutput(prevAO.GetAliasOutput())
+	oldCommitment, err := transaction.L1CommitmentFromAccountOutput(prevAO.GetAccountOutput())
 	if err != nil {
 		panic(fmt.Errorf("Cannot make L1 commitment from previous alias output, error: %w", err))
 	}
-	newCommitment, err := transaction.L1CommitmentFromAliasOutput(nextAO.GetAliasOutput())
+	newCommitment, err := transaction.L1CommitmentFromAccountOutput(nextAO.GetAccountOutput())
 	if err != nil {
 		panic(fmt.Errorf("Cannot make L1 commitment from next alias output, error: %w", err))
 	}

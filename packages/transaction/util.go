@@ -13,13 +13,13 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
-var ErrNoAliasOutputAtIndex0 = errors.New("origin AccountOutput not found at index 0")
+var ErrNoAccountOutputAtIndex0 = errors.New("origin AccountOutput not found at index 0")
 
 // GetAnchorFromTransaction analyzes the output at index 0 and extracts anchor information. Otherwise error
 func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago.AccountOutput, error) {
 	anchorOutput, ok := tx.Outputs[0].(*iotago.AccountOutput)
 	if !ok {
-		return nil, nil, ErrNoAliasOutputAtIndex0
+		return nil, nil, ErrNoAccountOutputAtIndex0
 	}
 	txid, err := tx.ID()
 	if err != nil {

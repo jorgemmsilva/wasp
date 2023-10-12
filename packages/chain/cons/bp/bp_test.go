@@ -46,7 +46,7 @@ func TestOffLedgerOrdering(t *testing.T) {
 	require.NoError(t, err)
 	stateAnchor, accountOutput, err := transaction.GetAnchorFromTransaction(originTX)
 	require.NoError(t, err)
-	ao0 := isc.NewAliasOutputWithID(accountOutput, stateAnchor.OutputID)
+	ao0 := isc.NewAccountOutputWithID(accountOutput, stateAnchor.OutputID)
 	//
 	// Create some requests.
 	senderKP := cryptolib.NewKeyPair()

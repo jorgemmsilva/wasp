@@ -17,8 +17,8 @@ func TestConsumeRequest(t *testing.T) {
 	stateControllerAddr := stateControllerKeyPair.GetPublicKey().AsEd25519Address()
 	addrKeys := stateController.AddressKeysForEd25519Address(stateControllerAddr)
 
-	aliasOutput1ID := tpkg.RandOutputID(0)
-	aliasOutput1 := &iotago.AccountOutput{
+	accountOutput1ID := tpkg.RandOutputID(0)
+	accountOutput1 := &iotago.AccountOutput{
 		Amount:     1337,
 		AccountID:    tpkg.RandAccountAddress().AccountID(),
 		StateIndex: 1,
@@ -27,20 +27,20 @@ func TestConsumeRequest(t *testing.T) {
 			&iotago.GovernorAddressUnlockCondition{Address: stateControllerAddr},
 		},
 	}
-	aliasOutput1UTXOInput := tpkg.RandUTXOInput()
+	accountOutput1UTXOInput := tpkg.RandUTXOInput()
 
 	reqID := tpkg.RandOutputID(1)
 	request := &iotago.BasicOutput{
 		Amount: 1337,
 		Conditions: iotago.UnlockConditions{
-			&iotago.AddressUnlockCondition{Address: aliasOutput1.AccountID.ToAddress()},
+			&iotago.AddressUnlockCondition{Address: accountOutput1.AccountID.ToAddress()},
 		},
 	}
 	requestUTXOInput := tpkg.RandUTXOInput()
 
 	aliasOut2 := &iotago.AccountOutput{
 		Amount:     1337 * 2,
-		AccountID:    aliasOutput1.AccountID,
+		AccountID:    accountOutput1.AccountID,
 		StateIndex: 2,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddr},
@@ -49,12 +49,12 @@ func TestConsumeRequest(t *testing.T) {
 	}
 	essence := &iotago.TransactionEssence{
 		NetworkID: tpkg.TestNetworkID,
-		Inputs:    iotago.Inputs{aliasOutput1UTXOInput, requestUTXOInput},
+		Inputs:    iotago.Inputs{accountOutput1UTXOInput, requestUTXOInput},
 		Outputs:   iotago.Outputs{aliasOut2},
 	}
 	sigs, err := essence.Sign(
-		iotago.OutputIDs{aliasOutput1ID, reqID}.
-			OrderedSet(iotago.OutputSet{aliasOutput1ID: aliasOutput1, reqID: request}).
+		iotago.OutputIDs{accountOutput1ID, reqID}.
+			OrderedSet(iotago.OutputSet{accountOutput1ID: accountOutput1, reqID: request}).
 			MustCommitment(),
 		addrKeys,
 	)
@@ -73,7 +73,7 @@ func TestConsumeRequest(t *testing.T) {
 		},
 	}
 	outset := iotago.OutputSet{
-		aliasOutput1UTXOInput.ID(): aliasOutput1,
+		accountOutput1UTXOInput.ID(): accountOutput1,
 		requestUTXOInput.ID():      request,
 	}
 

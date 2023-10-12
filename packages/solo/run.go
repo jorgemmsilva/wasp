@@ -58,7 +58,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 	anchorOutput := ch.GetAnchorOutputFromL1()
 	task := &vm.VMTask{
 		Processors:         ch.proc,
-		AnchorOutput:       anchorOutput.GetAliasOutput(),
+		AnchorOutput:       anchorOutput.GetAccountOutput(),
 		AnchorOutputID:     anchorOutput.OutputID(),
 		Requests:           reqs,
 		TimeAssumption:     ch.Env.GlobalTime(),
@@ -91,7 +91,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 		var err error
 		essence, err = rotate.MakeRotateStateControllerTransaction(
 			res.RotationAddress,
-			isc.NewAliasOutputWithID(res.Task.AnchorOutput, res.Task.AnchorOutputID),
+			isc.NewAccountOutputWithID(res.Task.AnchorOutput, res.Task.AnchorOutputID),
 			res.Task.TimeAssumption.Add(2*time.Nanosecond),
 			identity.ID{},
 			identity.ID{},

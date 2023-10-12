@@ -12,11 +12,11 @@
 //   - StateMgr
 //   - VM
 //
-// > INPUT: baseAliasOutputID
+// > INPUT: baseAccountOutputID
 // > ON Startup:
 // >     Start a DSS.
-// >     Ask Mempool for backlog (based on baseAliasOutputID).
-// >     Ask StateMgr for a virtual state (based on baseAliasOutputID).
+// >     Ask Mempool for backlog (based on baseAccountOutputID).
+// >     Ask StateMgr for a virtual state (based on baseAccountOutputID).
 // > UPON Reception of responses from Mempool, StateMgr and DSS NonceIndexes:
 // >     Produce a batch proposal.
 // >     Start the ACS.
@@ -125,8 +125,8 @@ type Output struct {
 
 type Result struct {
 	Transaction     *iotago.Transaction    // The TX for committing the block.
-	BaseAliasOutput iotago.OutputID        // AO consumed in the TX.
-	NextAliasOutput *isc.AccountOutputWithID // AO produced in the TX.
+	BaseAccountOutput iotago.OutputID        // AO consumed in the TX.
+	NextAccountOutput *isc.AccountOutputWithID // AO produced in the TX.
 	Block           state.Block            // The state diff produced.
 }
 
@@ -135,7 +135,7 @@ func (r *Result) String() string {
 	if err != nil {
 		txID = iotago.TransactionID{}
 	}
-	return fmt.Sprintf("{cons.Result, txID=%v, baseAO=%v, nextAO=%v}", txID, r.BaseAliasOutput.ToHex(), r.NextAliasOutput)
+	return fmt.Sprintf("{cons.Result, txID=%v, baseAO=%v, nextAO=%v}", txID, r.BaseAccountOutput.ToHex(), r.NextAccountOutput)
 }
 
 type consImpl struct {
@@ -310,8 +310,8 @@ func (c *consImpl) Input(input gpa.Input) gpa.OutMessages {
 	case *inputProposal:
 		c.log.Infof("Consensus started, received %v", input.String())
 		return gpa.NoMessages().
-			AddAll(c.subMP.BaseAliasOutputReceived(input.baseAliasOutput)).
-			AddAll(c.subSM.ProposedBaseAliasOutputReceived(input.baseAliasOutput)).
+			AddAll(c.subMP.BaseAccountOutputReceived(input.baseAccountOutput)).
+			AddAll(c.subSM.ProposedBaseAccountOutputReceived(input.baseAccountOutput)).
 			AddAll(c.subDSS.InitialInputReceived())
 	case *inputMempoolProposal:
 		return c.subMP.ProposalReceived(input.requestRefs)
@@ -377,8 +377,8 @@ func (c *consImpl) StatusString() string {
 ////////////////////////////////////////////////////////////////////////////////
 // MP -- MemPool
 
-func (c *consImpl) uponMPProposalInputsReady(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	c.output.NeedMempoolProposal = baseAliasOutput
+func (c *consImpl) uponMPProposalInputsReady(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
+	c.output.NeedMempoolProposal = baseAccountOutput
 	return nil
 }
 
@@ -400,18 +400,18 @@ func (c *consImpl) uponMPRequestsReceived(requests []isc.Request) gpa.OutMessage
 ////////////////////////////////////////////////////////////////////////////////
 // SM -- StateManager
 
-func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	c.output.NeedStateMgrStateProposal = baseAliasOutput
+func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
+	c.output.NeedStateMgrStateProposal = baseAccountOutput
 	return nil
 }
 
-func (c *consImpl) uponSMStateProposalReceived(proposedAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMStateProposalReceived(proposedAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
 	c.output.NeedStateMgrStateProposal = nil
-	return c.subACS.StateProposalReceived(proposedAliasOutput)
+	return c.subACS.StateProposalReceived(proposedAccountOutput)
 }
 
-func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAliasOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	c.output.NeedStateMgrDecidedState = decidedBaseAliasOutput
+func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
+	c.output.NeedStateMgrDecidedState = decidedBaseAccountOutput
 	return nil
 }
 
@@ -474,10 +474,10 @@ func (c *consImpl) uponDSSOutputReady(signature []byte) gpa.OutMessages {
 ////////////////////////////////////////////////////////////////////////////////
 // ACS
 
-func (c *consImpl) uponACSInputsReceived(baseAliasOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
+func (c *consImpl) uponACSInputsReceived(baseAccountOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
 	batchProposal := bp.NewBatchProposal(
 		*c.dkShare.GetIndex(),
-		baseAliasOutput,
+		baseAccountOutput,
 		util.NewFixedSizeBitVector(c.dkShare.GetN()).SetBits(dssIndexProposal),
 		timeData,
 		c.validatorAgentID,
@@ -502,7 +502,7 @@ func (c *consImpl) uponACSOutputReceived(outputValues map[gpa.NodeID][]byte) gpa
 		c.term.haveOutputProduced()
 		return nil
 	}
-	bao := aggr.DecidedBaseAliasOutput()
+	bao := aggr.DecidedBaseAccountOutput()
 	baoID := bao.OutputID()
 	reqs := aggr.DecidedRequestRefs()
 	c.log.Debugf("ACS decision: baseAO=%v, requests=%v", bao, reqs)
@@ -552,11 +552,11 @@ func (c *consImpl) uponRNDSigSharesReady(dataToSign []byte, partialSigs map[gpa.
 func (c *consImpl) uponVMInputsReceived(aggregatedProposals *bp.AggregatedBatchProposals, chainState state.State, randomness *hashing.HashValue, requests []isc.Request) gpa.OutMessages {
 	// TODO: chainState state.State is not used for now. That's because VM takes it form the store by itself.
 	// The decided base alias output can be different from that we have proposed!
-	decidedBaseAliasOutput := aggregatedProposals.DecidedBaseAliasOutput()
+	decidedBaseAccountOutput := aggregatedProposals.DecidedBaseAccountOutput()
 	c.output.NeedVMResult = &vm.VMTask{
 		Processors:           c.processorCache,
-		AnchorOutput:         decidedBaseAliasOutput.GetAliasOutput(),
-		AnchorOutputID:       decidedBaseAliasOutput.OutputID(),
+		AnchorOutput:         decidedBaseAccountOutput.GetAccountOutput(),
+		AnchorOutputID:       decidedBaseAccountOutput.OutputID(),
 		Store:                c.chainStore,
 		Requests:             aggregatedProposals.OrderedRequests(requests, *randomness),
 		TimeAssumption:       aggregatedProposals.AggregatedTime(),
@@ -584,7 +584,7 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 		// Rotation by the Self-Governed Committee.
 		essence, err := rotate.MakeRotateStateControllerTransaction(
 			vmResult.RotationAddress,
-			isc.NewAliasOutputWithID(vmResult.Task.AnchorOutput, vmResult.Task.AnchorOutputID),
+			isc.NewAccountOutputWithID(vmResult.Task.AnchorOutput, vmResult.Task.AnchorOutputID),
 			vmResult.Task.TimeAssumption,
 			identity.ID{},
 			identity.ID{},
@@ -630,14 +630,14 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 	if err != nil {
 		panic(fmt.Errorf("cannot get ID from the produced TX: %w", err))
 	}
-	chained, err := isc.AliasOutputWithIDFromTx(tx, c.chainID.AsAddress())
+	chained, err := isc.AccountOutputWithIDFromTx(tx, c.chainID.AsAddress())
 	if err != nil {
 		panic(fmt.Errorf("cannot get AccountOutput from produced TX: %w", err))
 	}
 	c.output.Result = &Result{
 		Transaction:     tx,
-		BaseAliasOutput: vmResult.Task.AnchorOutputID,
-		NextAliasOutput: chained,
+		BaseAccountOutput: vmResult.Task.AnchorOutputID,
+		NextAccountOutput: chained,
 		Block:           block,
 	}
 	c.output.Status = Completed

@@ -475,11 +475,11 @@ func (ch *Chain) GetRequestReceiptsForBlockRangeAsStrings(fromBlockIndex, toBloc
 }
 
 func (ch *Chain) GetControlAddresses() *isc.ControlAddresses {
-	aliasOutputID, err := ch.LatestAliasOutput(chain.ConfirmedState)
+	accountOutputID, err := ch.LatestAccountOutput(chain.ConfirmedState)
 	if err != nil {
 		return nil
 	}
-	accountOutput := aliasOutputID.GetAliasOutput()
+	accountOutput := accountOutputID.GetAccountOutput()
 	controlAddr := &isc.ControlAddresses{
 		StateAddress:     accountOutput.StateController(),
 		GoverningAddress: accountOutput.GovernorAddress(),
@@ -640,8 +640,8 @@ func (*Chain) GetTimeData() time.Time {
 	panic("unimplemented")
 }
 
-// LatestAliasOutput implements chain.Chain
-func (ch *Chain) LatestAliasOutput(freshness chain.StateFreshness) (*isc.AccountOutputWithID, error) {
+// LatestAccountOutput implements chain.Chain
+func (ch *Chain) LatestAccountOutput(freshness chain.StateFreshness) (*isc.AccountOutputWithID, error) {
 	ao := ch.GetAnchorOutputFromL1()
 	if ao == nil {
 		return nil, fmt.Errorf("have no latest alias output")
@@ -658,7 +658,7 @@ func (ch *Chain) LatestState(freshness chain.StateFreshness) (state.State, error
 	if ao == nil {
 		return nil, errors.New("no AO for this chain in L1")
 	}
-	l1c, err := transaction.L1CommitmentFromAliasOutput(ao.GetAliasOutput())
+	l1c, err := transaction.L1CommitmentFromAccountOutput(ao.GetAccountOutput())
 	if err != nil {
 		panic(err)
 	}

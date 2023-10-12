@@ -40,7 +40,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 		panic("invalid params: must be at least 1 request")
 	}
 
-	prevL1Commitment, err := transaction.L1CommitmentFromAliasOutput(task.AnchorOutput)
+	prevL1Commitment, err := transaction.L1CommitmentFromAccountOutput(task.AnchorOutput)
 	if err != nil {
 		panic(err)
 	}
@@ -116,7 +116,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 			blocklog.UpdateLatestBlockInfo(
 				s,
 				vmctx.task.AnchorOutputID.TransactionID(),
-				isc.NewAliasOutputWithID(vmctx.task.AnchorOutput, vmctx.task.AnchorOutputID),
+				isc.NewAccountOutputWithID(vmctx.task.AnchorOutput, vmctx.task.AnchorOutputID),
 				prevL1Commitment,
 			)
 		})

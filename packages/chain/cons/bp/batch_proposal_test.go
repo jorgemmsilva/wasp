@@ -27,13 +27,13 @@ func TestBatchProposal1Serialization(t *testing.T) {
 		})
 	}
 
-	batchProposal1 := NewBatchProposal(10, isc.RandomAliasOutputWithID(), util.NewFixedSizeBitVector(11), time.Now(), isc.NewRandomAgentID(), reqRefs)
+	batchProposal1 := NewBatchProposal(10, isc.RandomAccountOutputWithID(), util.NewFixedSizeBitVector(11), time.Now(), isc.NewRandomAgentID(), reqRefs)
 
 	b := rwutil.WriteToBytes(batchProposal1)
 	batchProposal2, err := rwutil.ReadFromBytes(b, new(BatchProposal))
 	require.NoError(t, err)
 	require.Equal(t, batchProposal1.nodeIndex, batchProposal2.nodeIndex)
-	require.Equal(t, batchProposal1.baseAliasOutput, batchProposal2.baseAliasOutput)
+	require.Equal(t, batchProposal1.baseAccountOutput, batchProposal2.baseAccountOutput)
 	require.Equal(t, batchProposal1.dssIndexProposal, batchProposal2.dssIndexProposal)
 	require.Equal(t, batchProposal1.timeData.UnixNano(), batchProposal2.timeData.UnixNano())
 	require.Equal(t, batchProposal1.validatorFeeDestination, batchProposal2.validatorFeeDestination)

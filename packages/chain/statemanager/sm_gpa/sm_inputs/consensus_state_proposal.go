@@ -19,7 +19,7 @@ type ConsensusStateProposal struct {
 var _ gpa.Input = &ConsensusStateProposal{}
 
 func NewConsensusStateProposal(ctx context.Context, accountOutput *isc.AccountOutputWithID) (*ConsensusStateProposal, <-chan interface{}) {
-	commitment, err := transaction.L1CommitmentFromAliasOutput(accountOutput.GetAliasOutput())
+	commitment, err := transaction.L1CommitmentFromAccountOutput(accountOutput.GetAccountOutput())
 	if err != nil {
 		panic("Cannot make L1 commitment from alias output")
 	}

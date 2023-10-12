@@ -32,7 +32,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 		TokenScheme:  scheme,
 		Conditions: iotago.UnlockConditions{
 			&iotago.ImmutableAliasUnlockCondition{
-				Address: util.AliasIDFromAliasOutput(txb.anchorOutput, txb.anchorOutputID).ToAddress().(*iotago.AccountAddress),
+				Address: util.AliasIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID).ToAddress().(*iotago.AccountAddress),
 			},
 		},
 		Features: nil,

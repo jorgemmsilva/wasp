@@ -6,6 +6,7 @@
 package tcrypto
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -19,11 +20,14 @@ import (
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 
+	"github.com/iancoleman/orderedmap"
+
 	"github.com/iotaledger/hive.go/crypto/bls"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/onchangemap"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -141,7 +145,7 @@ func NewDKShare(
 	//
 	// Construct the DKShare.
 	dkShare := dkShareImpl{
-		address:          util.NewComparableAddress(&sharedAddress),
+		address:          util.NewComparableAddress(sharedAddress),
 		index:            &index,
 		n:                n,
 		t:                t,
@@ -597,14 +601,14 @@ type jsonKeyShares struct {
 }
 
 type jsonDKShares struct {
-	Address      *json.RawMessage `json:"address"`
-	Index        uint16           `json:"index"`
-	N            uint16           `json:"n"`
-	T            uint16           `json:"t"`
-	NodePubKeys  []string         `json:"nodePubKeys"`
-	Ed25519      *jsonKeyShares   `json:"ed25519"`
-	BlsThreshold uint16           `json:"blsThreshold"`
-	BLS          *jsonKeyShares   `json:"bls"`
+	Address      *orderedmap.OrderedMap `json:"address"`
+	Index        uint16                 `json:"index"`
+	N            uint16                 `json:"n"`
+	T            uint16                 `json:"t"`
+	NodePubKeys  []string               `json:"nodePubKeys"`
+	Ed25519      *jsonKeyShares         `json:"ed25519"`
+	BlsThreshold uint16                 `json:"blsThreshold"`
+	BLS          *jsonKeyShares         `json:"bls"`
 }
 
 func DecodeHexKyberPoint(group kyber.Group, dataHex string) (kyber.Point, error) {
@@ -640,7 +644,7 @@ func DecodeHexKyberPoints(group kyber.Group, dataHex []string) ([]kyber.Point, e
 }
 
 func (s *dkShareImpl) MarshalJSON() ([]byte, error) {
-	jAddressRaw, err := iotago.AddressToJSONRawMsg(s.address.Address())
+	jAddressRaw, err := parameters.L1API().Underlying().MapEncode(context.Background(), s.address.Address())
 	if err != nil {
 		return nil, err
 	}
@@ -720,7 +724,8 @@ func (s *dkShareImpl) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	address, err := iotago.AddressFromJSONRawMsg(j.Address)
+	var address iotago.Address
+	err := parameters.L1API().Underlying().MapDecode(context.Background(), j.Address.Values(), &address)
 	if err != nil {
 		return err
 	}

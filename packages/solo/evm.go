@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
@@ -162,7 +163,7 @@ func NewEthereumAccount() (*ecdsa.PrivateKey, common.Address) {
 	return key, crypto.PubkeyToAddress(key.PublicKey)
 }
 
-func (ch *Chain) NewEthereumAccountWithL2Funds(baseTokens ...uint64) (*ecdsa.PrivateKey, common.Address) {
+func (ch *Chain) NewEthereumAccountWithL2Funds(baseTokens ...iotago.BaseToken) (*ecdsa.PrivateKey, common.Address) {
 	key, addr := NewEthereumAccount()
 	ch.GetL2FundsFromFaucet(isc.NewEthereumAddressAgentID(ch.ChainID, addr), baseTokens...)
 	return key, addr

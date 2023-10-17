@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -124,8 +125,8 @@ func (*emulatorContext) BaseTokensDecimals() uint32 {
 	return parameters.L1().BaseToken.Decimals
 }
 
-func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) uint64 {
-	ret := uint64(0)
+func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.BaseToken {
+	ret := iotago.BaseToken(0)
 	// do not charge gas for this, internal checks of the emulator require this function to run before executing the request
 	ctx.WithoutGasBurn(func() {
 		res := ctx.sandbox.CallView(
@@ -133,19 +134,19 @@ func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) uint64 {
 			accounts.ViewBalanceBaseToken.Hname(),
 			dict.Dict{accounts.ParamAgentID: isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr).Bytes()},
 		)
-		ret = codec.MustDecodeUint64(res.Get(accounts.ParamBalance), 0)
+		ret = iotago.BaseToken(codec.MustDecodeUint64(res.Get(accounts.ParamBalance), 0))
 	})
 	return ret
 }
 
-func (ctx *emulatorContext) AddBaseTokensBalance(addr common.Address, amount uint64) {
+func (ctx *emulatorContext) AddBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
 	ctx.sandbox.Privileged().CreditToAccount(
 		isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
 		isc.NewAssetsBaseTokens(amount),
 	)
 }
 
-func (ctx *emulatorContext) SubBaseTokensBalance(addr common.Address, amount uint64) {
+func (ctx *emulatorContext) SubBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
 	ctx.sandbox.Privileged().DebitFromAccount(
 		isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
 		isc.NewAssetsBaseTokens(amount),

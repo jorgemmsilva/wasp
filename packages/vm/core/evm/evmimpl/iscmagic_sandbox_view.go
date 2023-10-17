@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -87,7 +86,7 @@ func (h *magicContractHandler) GetBaseTokenProperties() iscmagic.ISCTokenPropert
 		Name:         l1.BaseToken.Name,
 		TickerSymbol: l1.BaseToken.TickerSymbol,
 		Decimals:     uint8(l1.BaseToken.Decimals),
-		TotalSupply:  big.NewInt(int64(l1.Protocol.TokenSupply)),
+		TotalSupply:  big.NewInt(int64(l1.Protocol.TokenSupply())),
 	}
 }
 
@@ -114,7 +113,7 @@ func (h *magicContractHandler) GetNativeTokenID(foundrySN uint32) iscmagic.Nativ
 		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
-	_, err := out.Deserialize(r.Get(accounts.ParamFoundryOutputBin), serializer.DeSeriModeNoValidation, nil)
+	_, err := parameters.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
 	h.ctx.RequireNoError(err)
 	nativeTokenID := out.MustNativeTokenID()
 	return iscmagic.WrapNativeTokenID(nativeTokenID)
@@ -128,7 +127,7 @@ func (h *magicContractHandler) GetNativeTokenScheme(foundrySN uint32) iotago.Sim
 		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
-	_, err := out.Deserialize(r.Get(accounts.ParamFoundryOutputBin), serializer.DeSeriModeNoValidation, nil)
+	_, err := parameters.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
 	h.ctx.RequireNoError(err)
 	s, ok := out.TokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {

@@ -178,11 +178,14 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 	assets := allowance.Clone()
 
 	// deduct the gas reserve GAS2 from the allowance, if possible
-	gasReserve := iotago.BaseToken(ctx.Params().MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest))
-	if allowance.BaseTokens < gasReserve {
-		panic(ErrNotEnoughAllowance)
-	}
-	allowance.BaseTokens -= gasReserve
+	gasReserve := ctx.Params().MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest)
+	// FIXME: add a solo test for FuncTransferAccountToChain and fix the ParamGasReserve logic
+	/*
+		if allowance.BaseTokens < gasReserve {
+			panic(ErrNotEnoughAllowance)
+		}
+		allowance.BaseTokens -= gasReserve
+	*/
 
 	// Warning: this will transfer all assets into the accounts core contract's L2 account.
 	// Be sure everything transfers out again, or assets will be stuck forever.

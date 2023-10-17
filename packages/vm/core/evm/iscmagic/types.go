@@ -237,7 +237,7 @@ type IRC27NFT struct {
 
 // ISCAssets matches the struct definition in ISCTypes.sol
 type ISCAssets struct {
-	BaseTokens   uint64
+	BaseTokens   iotago.BaseToken
 	NativeTokens []NativeToken
 	Nfts         []NFTID
 }

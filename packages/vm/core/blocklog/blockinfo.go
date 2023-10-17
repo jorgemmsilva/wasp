@@ -7,8 +7,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/collections"
-	"github.com/iotaledger/wasp/packages/state"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -22,7 +20,7 @@ type BlockInfo struct {
 	TotalRequests         uint16
 	NumSuccessfulRequests uint16 // which didn't panic
 	NumOffLedgerRequests  uint16
-	PreviousAccountOutput   *isc.AccountOutputWithID // nil for block #0
+	PreviousAccountOutput *isc.AccountOutputWithID // nil for block #0
 	GasBurned             uint64
 	GasFeeCharged         uint64
 }
@@ -32,17 +30,6 @@ type BlockInfo struct {
 // is equal to the timestamp pof the block
 func (bi *BlockInfo) RequestTimestamp(requestIndex uint16) time.Time {
 	return bi.Timestamp.Add(time.Duration(-(bi.TotalRequests - requestIndex - 1)) * time.Nanosecond)
-}
-
-func (bi *BlockInfo) PreviousL1Commitment() *state.L1Commitment {
-	if bi.PreviousAccountOutput == nil {
-		return nil
-	}
-	l1c, err := transaction.L1CommitmentFromAccountOutput(bi.PreviousAccountOutput.GetAccountOutput())
-	if err != nil {
-		panic(err)
-	}
-	return l1c
 }
 
 func (bi *BlockInfo) String() string {

@@ -364,6 +364,7 @@ func (e *soloChainEnv) registerERC20ExternalNativeToken(
 	tokenName, tokenTickerSymbol string,
 	tokenDecimals uint8,
 ) (ret common.Address, err error) {
+	// FIXME: properly calculate allowance and gas budget
 	_, err = fromChain.PostRequestOffLedger(solo.NewCallParams(evm.Contract.Name, evm.FuncRegisterERC20NativeTokenOnRemoteChain.Name, dict.Dict{
 		evm.FieldFoundrySN:         codec.EncodeUint32(foundrySN),
 		evm.FieldTokenName:         codec.EncodeString(tokenName),
@@ -372,7 +373,7 @@ func (e *soloChainEnv) registerERC20ExternalNativeToken(
 		evm.FieldTargetAddress:     codec.EncodeAddress(e.soloChain.ChainID.AsAddress()),
 	}).
 		// to cover sd and gas fee for the 'FuncRegisterERC20ExternalNativeToken' func call in 'FuncRegisterERC20NativeTokenOnRemoteChain'
-		WithAllowance(isc.NewAssetsBaseTokens(20*gas.LimitsDefault.MinGasPerRequest)).
+		WithAllowance(isc.NewAssetsBaseTokens(iotago.BaseToken(20*gas.LimitsDefault.MinGasPerRequest))).
 		WithGasBudget(10*gas.LimitsDefault.MinGasPerRequest),
 		fromChain.OriginatorPrivateKey)
 	if err != nil {
@@ -381,8 +382,7 @@ func (e *soloChainEnv) registerERC20ExternalNativeToken(
 
 	foundryOutput, err := fromChain.GetFoundryOutput(foundrySN)
 	require.NoError(e.t, err)
-	nativeTokenID, err := foundryOutput.ID()
-	require.NoError(e.t, err)
+	nativeTokenID := foundryOutput.MustFoundryID()
 
 	if !e.soloChain.WaitUntil(func() bool {
 		res, err2 := e.soloChain.CallView(evm.Contract.Name, evm.FuncGetERC20ExternalNativeTokenAddress.Name,

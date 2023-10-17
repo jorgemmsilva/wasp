@@ -133,6 +133,7 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 		[]error{err, tryGetRevertError(result), burnGasErr},
 		func(err error) bool { return err != nil },
 	)
+
 	if revertErr != nil {
 		// mark receipt as failed
 		receipt.Status = types.ReceiptStatusFailed
@@ -201,7 +202,7 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 }
 
 var (
-	errTargetMustBeAlias   = coreerrors.Register("target must be account address")
+	errTargetMustBeAccount = coreerrors.Register("target must be account address")
 	errOutputMustBeFoundry = coreerrors.Register("expected foundry output")
 )
 
@@ -212,7 +213,7 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 	decimals := codec.MustDecodeUint8(ctx.Params().Get(evm.FieldTokenDecimals))
 	target := codec.MustDecodeAddress(ctx.Params().Get(evm.FieldTargetAddress))
 	if target.Type() != iotago.AddressAccount {
-		panic(errTargetMustBeAlias)
+		panic(errTargetMustBeAccount)
 	}
 
 	{
@@ -236,9 +237,14 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 		return foundryOutput.TokenScheme
 	}()
 
+	// FIXME: gas budget and assets for gas fee should be calculated independently or passed as parameters,
+	// since they are for the target chain
+	gasBudget := 50 * gas.LimitsDefault.MinGasPerRequest
+	tokensForGasFee := 10 * iotago.BaseToken(gas.LimitsDefault.MinGasPerRequest)
+
 	req := isc.RequestParameters{
 		TargetAddress: target,
-		Assets:        isc.NewEmptyAssets(),
+		Assets:        isc.NewAssetsBaseTokens(tokensForGasFee),
 		Metadata: &isc.SendMetadata{
 			TargetContract: evm.Contract.Hname(),
 			EntryPoint:     evm.FuncRegisterERC20ExternalNativeToken.Hname(),
@@ -249,22 +255,19 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 				evm.FieldTokenDecimals:      codec.EncodeUint8(decimals),
 				evm.FieldFoundryTokenScheme: codec.EncodeTokenScheme(tokenScheme),
 			},
-			// FIXME why does this gas budget is higher than the allowance below
-			GasBudget: 50 * gas.LimitsDefault.MinGasPerRequest,
+			GasBudget: gasBudget,
 		},
 	}
 	sd := ctx.EstimateRequiredStorageDeposit(req)
-	// this request is sent by contract account,
-	// so we move enough allowance for the gas fee below in the req.Assets.AddBaseTokens() function call
-	ctx.TransferAllowedFunds(ctx.AccountID(), isc.NewAssetsBaseTokens(sd+10*gas.LimitsDefault.MinGasPerRequest))
-	req.Assets.AddBaseTokens(sd + 10*gas.LimitsDefault.MinGasPerRequest)
+	ctx.TransferAllowedFunds(ctx.AccountID(), isc.NewAssetsBaseTokens(sd))
+	req.Assets.AddBaseTokens(sd)
 	ctx.Send(req)
 
 	return nil
 }
 
 var (
-	errSenderMustBeAlias            = coreerrors.Register("sender must be account address").Create()
+	errSenderMustBeAccount          = coreerrors.Register("sender must be account address").Create()
 	errFoundryMustBeOffChain        = coreerrors.Register("foundry must be off-chain").Create()
 	errNativeTokenAlreadyRegistered = coreerrors.Register("native token already registered").Create()
 )
@@ -272,12 +275,12 @@ var (
 func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	caller, ok := ctx.Caller().(*isc.ContractAgentID)
 	if !ok {
-		panic(errSenderMustBeAlias)
+		panic(errSenderMustBeAccount)
 	}
 	if ctx.ChainID().Equals(caller.ChainID()) {
 		panic(errFoundryMustBeOffChain)
 	}
-	alias := caller.ChainID().AsAccountAddress()
+	account := caller.ChainID().AsAccountAddress()
 
 	name := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenName))
 	tickerSymbol := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenTickerSymbol))
@@ -295,12 +298,11 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	f := &iotago.FoundryOutput{
 		SerialNumber: foundrySN,
 		TokenScheme:  tokenScheme,
-		Conditions: []iotago.UnlockCondition{&iotago.ImmutableAliasUnlockCondition{
-			Address: &alias,
+		Conditions: iotago.FoundryOutputUnlockConditions{&iotago.ImmutableAccountUnlockCondition{
+			Address: &account,
 		}},
 	}
-	nativeTokenID, err := f.ID()
-	ctx.RequireNoError(err)
+	nativeTokenID := f.MustNativeTokenID()
 
 	_, ok = getERC20ExternalNativeTokensAddress(ctx, nativeTokenID)
 	if ok {

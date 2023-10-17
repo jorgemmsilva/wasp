@@ -83,11 +83,11 @@ func (ch *Chain) L2AssetsAtStateIndex(agentID isc.AgentID, stateIndex uint32) *i
 	return assets
 }
 
-func (ch *Chain) L2BaseTokens(agentID isc.AgentID) uint64 {
+func (ch *Chain) L2BaseTokens(agentID isc.AgentID) iotago.BaseToken {
 	return ch.L2Assets(agentID).BaseTokens
 }
 
-func (ch *Chain) L2BaseTokensAtStateIndex(agentID isc.AgentID, stateIndex uint32) uint64 {
+func (ch *Chain) L2BaseTokensAtStateIndex(agentID isc.AgentID, stateIndex uint32) iotago.BaseToken {
 	return ch.L2AssetsAtStateIndex(agentID, stateIndex).BaseTokens
 }
 
@@ -278,7 +278,7 @@ func (ch *Chain) DestroyTokensOnL2(nativeTokenID iotago.NativeTokenID, amount in
 		accounts.ParamDestroyTokens, true,
 	).WithAllowance(
 		isc.NewAssets(0, []*iotago.NativeTokenFeature{
-			&iotago.NativeTokenFeature{
+			{
 				ID:     nativeTokenID,
 				Amount: util.ToBigInt(amount),
 			},
@@ -395,7 +395,7 @@ func (ch *Chain) SendFromL1ToL2Account(totalBaseTokens uint64, toSend *isc.Asset
 	return err
 }
 
-func (ch *Chain) SendFromL1ToL2AccountBaseTokens(totalBaseTokens, baseTokensSend uint64, target isc.AgentID, user *cryptolib.KeyPair) error {
+func (ch *Chain) SendFromL1ToL2AccountBaseTokens(totalBaseTokens, baseTokensSend iotago.BaseToken, target isc.AgentID, user *cryptolib.KeyPair) error {
 	return ch.SendFromL1ToL2Account(totalBaseTokens, isc.NewAssetsBaseTokens(baseTokensSend), target, user)
 }
 

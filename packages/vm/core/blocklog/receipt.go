@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -22,8 +23,8 @@ type RequestReceipt struct {
 	Error         *isc.UnresolvedVMError `json:"error"`
 	GasBudget     uint64                 `json:"gasBudget"`
 	GasBurned     uint64                 `json:"gasBurned"`
-	GasFeeCharged uint64                 `json:"gasFeeCharged"`
-	SDCharged     uint64                 `json:"storageDepositCharged"`
+	GasFeeCharged iotago.BaseToken       `json:"gasFeeCharged"`
+	SDCharged     iotago.BaseToken       `json:"storageDepositCharged"`
 	// not persistent
 	BlockIndex   uint32       `json:"blockIndex"`
 	RequestIndex uint16       `json:"requestIndex"`
@@ -70,8 +71,8 @@ func (rec *RequestReceipt) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rec.GasBudget = rr.ReadGas64()
 	rec.GasBurned = rr.ReadGas64()
-	rec.GasFeeCharged = rr.ReadGas64()
-	rec.SDCharged = rr.ReadAmount64()
+	rec.GasFeeCharged = iotago.BaseToken(rr.ReadAmount64())
+	rec.SDCharged = iotago.BaseToken(rr.ReadAmount64())
 	rec.Request = isc.RequestFromReader(rr)
 	hasError := rr.ReadBool()
 	if hasError {
@@ -90,8 +91,8 @@ func (rec *RequestReceipt) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteGas64(rec.GasBudget)
 	ww.WriteGas64(rec.GasBurned)
-	ww.WriteGas64(rec.GasFeeCharged)
-	ww.WriteAmount64(rec.SDCharged)
+	ww.WriteAmount64(uint64(rec.GasFeeCharged))
+	ww.WriteAmount64(uint64(rec.SDCharged))
 	ww.Write(rec.Request)
 	ww.WriteBool(rec.Error != nil)
 	if rec.Error != nil {

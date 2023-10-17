@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/emulator"
@@ -75,7 +76,7 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 	}
 
 	// start in the active state of the block to cache
-	activeStateToCache, err := c.stateByTrieRoot(nextBlockInfo.PreviousL1Commitment().TrieRoot())
+	activeStateToCache, err := c.stateByTrieRoot(transaction.MustL1CommitmentFromAccountOutput(nextBlockInfo.PreviousAccountOutput.GetAccountOutput()).TrieRoot())
 	if err != nil {
 		panic(err)
 	}
@@ -104,10 +105,7 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 			// nothing more to cache, don't try to walk back further
 			break
 		}
-		activeStateToCache, err = c.stateByTrieRoot(blockinfo.PreviousL1Commitment().TrieRoot())
-		if err != nil {
-			panic(err)
-		}
+		activeStateToCache, err = c.stateByTrieRoot(transaction.MustL1CommitmentFromAccountOutput(blockinfo.PreviousAccountOutput.GetAccountOutput()).TrieRoot())
 	}
 	c.setLastBlockIndexed(blockIndexToCache)
 	c.store.Flush()

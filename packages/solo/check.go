@@ -36,7 +36,7 @@ func (ch *Chain) AssertL2NativeTokens(agentID isc.AgentID, nativeTokenID iotago.
 	)
 }
 
-func (ch *Chain) AssertL2BaseTokens(agentID isc.AgentID, bal uint64) {
+func (ch *Chain) AssertL2BaseTokens(agentID isc.AgentID, bal iotago.BaseToken) {
 	if h, ok := ch.Env.T.(tHelper); ok {
 		h.Helper()
 	}

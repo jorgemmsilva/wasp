@@ -268,11 +268,10 @@ func TestLoop(t *testing.T) {
 	env := initEVM(t)
 	ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
 	loop := env.deployLoopContract(ethKey)
-
-	gasRatio := env.getEVMGasRatio()
+	feePolicy := env.soloChain.GetGasFeePolicy()
 
 	for _, gasLimit := range []uint64{200000, 400000} {
-		baseTokensSent := gas.EVMGasToISC(gasLimit, &gasRatio)
+		baseTokensSent := feePolicy.FeeFromGas(gas.EVMGasToISC(gasLimit, &feePolicy.EVMGasRatio))
 		ethKey2, ethAddr2 := env.soloChain.NewEthereumAccountWithL2Funds(baseTokensSent)
 		require.EqualValues(t,
 			env.soloChain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.soloChain.ChainID, ethAddr2)),
@@ -294,11 +293,11 @@ func TestLoopWithGasLeft(t *testing.T) {
 	env := initEVM(t)
 	ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
 	iscTest := env.deployISCTestContract(ethKey)
+	feePolicy := env.soloChain.GetGasFeePolicy()
 
-	gasRatio := env.getEVMGasRatio()
 	var usedGas []uint64
 	for _, gasLimit := range []uint64{50000, 200000} {
-		baseTokensSent := gas.EVMGasToISC(gasLimit, &gasRatio)
+		baseTokensSent := feePolicy.FeeFromGas(gas.EVMGasToISC(gasLimit, &feePolicy.EVMGasRatio))
 		ethKey2, _ := env.soloChain.NewEthereumAccountWithL2Funds(baseTokensSent)
 		res, err := iscTest.callFn([]ethCallOptions{{
 			sender:   ethKey2,
@@ -344,8 +343,8 @@ func TestLoopWithGasLeftEstimateGas(t *testing.T) {
 	require.NotZero(t, estimatedGas)
 	t.Log(estimatedGas)
 
-	gasRatio := env.getEVMGasRatio()
-	baseTokensSent := gas.EVMGasToISC(estimatedGas, &gasRatio)
+	feePolicy := env.soloChain.GetGasFeePolicy()
+	baseTokensSent := feePolicy.FeeFromGas(gas.EVMGasToISC(estimatedGas, &feePolicy.EVMGasRatio))
 	ethKey2, _ := env.soloChain.NewEthereumAccountWithL2Funds(baseTokensSent)
 	res, err := iscTest.callFn([]ethCallOptions{{
 		sender:   ethKey2,
@@ -730,7 +729,7 @@ func TestSendNFT(t *testing.T) {
 	require.NoError(t, err)
 	env.soloChain.MustDepositNFT(nft, ethAgentID, env.soloChain.OriginatorPrivateKey)
 
-	const storageDeposit uint64 = 10_000
+	const storageDeposit iotago.BaseToken = 10_000
 
 	// allow ISCTest to take the NFT
 	_, err = env.ISCMagicSandbox(ethKey).callFn(
@@ -1013,7 +1012,7 @@ func TestEVMContractOwnsFundsL2Transfer(t *testing.T) {
 
 	randAgentID := isc.NewAgentID(tpkg.RandEd25519Address())
 
-	nBaseTokens := uint64(100)
+	nBaseTokens := iotago.BaseToken(100)
 	allowance := isc.NewAssetsBaseTokens(nBaseTokens)
 
 	_, err := iscTest.callFn(
@@ -1227,7 +1226,7 @@ func TestERC20NativeTokens(t *testing.T) {
 	ethAgentID := isc.NewEthereumAddressAgentID(env.soloChain.ChainID, ethAddr)
 
 	err = env.soloChain.SendFromL2ToL2Account(isc.NewAssets(0, []*iotago.NativeTokenFeature{
-		&iotago.NativeTokenFeature{ID: nativeTokenID, Amount: supply},
+		{ID: nativeTokenID, Amount: supply},
 	}), ethAgentID, foundryOwner)
 	require.NoError(t, err)
 
@@ -1282,7 +1281,7 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 
 	{
 		assets := isc.NewAssets(0, []*iotago.NativeTokenFeature{
-			&iotago.NativeTokenFeature{ID: nativeTokenID, Amount: supply},
+			{ID: nativeTokenID, Amount: supply},
 		})
 		err = foundryChain.Withdraw(assets, foundryOwner)
 		require.NoError(t, err)
@@ -1360,7 +1359,7 @@ func testERC20NativeTokens(
 		require.NoError(t, err)
 		require.EqualValues(t,
 			l2Balance(ethAgentID),
-			initialBalance-1*isc.Million,
+			initialBalance-uint64(1*isc.Million),
 		)
 		require.EqualValues(t,
 			1*isc.Million,
@@ -1377,7 +1376,7 @@ func testERC20NativeTokens(
 			require.NoError(t, err)
 			require.Greater(t,
 				l2Balance(ethAgentID),
-				initialBalance-1*isc.Million,
+				initialBalance-uint64(1*isc.Million),
 			)
 			require.EqualValues(t,
 				initialBalance2,
@@ -1400,7 +1399,7 @@ func testERC20NativeTokens(
 			_, err := erc20.callFn([]ethCallOptions{{sender: ethKey2}}, "transferFrom", ethAddr, ethAddr3, big.NewInt(int64(amount)))
 			require.NoError(t, err)
 			require.Less(t,
-				initialBalance-1*isc.Million,
+				initialBalance-uint64(1*isc.Million),
 				l2Balance(ethAgentID),
 			)
 			require.EqualValues(t,
@@ -1681,7 +1680,7 @@ func TestSendEntireBalance(t *testing.T) {
 	require.NoError(t, err)
 
 	feePolicy := env.soloChain.GetGasFeePolicy()
-	tokensForGasBudget := feePolicy.FeeFromGas(estimatedGas)
+	tokensForGasBudget := feePolicy.FeeFromGas(gas.EVMGasToISC(estimatedGas, &feePolicy.EVMGasRatio))
 
 	gasLimit := feePolicy.GasBudgetFromTokens(tokensForGasBudget)
 
@@ -1820,7 +1819,7 @@ func TestChangeGasLimit(t *testing.T) {
 func TestChangeGasPerToken(t *testing.T) {
 	env := initEVM(t)
 
-	var fee uint64
+	var fee iotago.BaseToken
 	{
 		ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
 		storage := env.deployStorageContract(ethKey)
@@ -1836,7 +1835,7 @@ func TestChangeGasPerToken(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	var fee2 uint64
+	var fee2 iotago.BaseToken
 	{
 		ethKey, _ := env.soloChain.NewEthereumAccountWithL2Funds()
 		storage := env.deployStorageContract(ethKey)

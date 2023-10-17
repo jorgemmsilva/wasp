@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -13,8 +14,8 @@ type Receipt struct {
 	Error         *UnresolvedVMError `json:"error"`
 	GasBudget     uint64             `json:"gasBudget"`
 	GasBurned     uint64             `json:"gasBurned"`
-	GasFeeCharged uint64             `json:"gasFeeCharged"`
-	SDCharged     uint64             `json:"storageDepositCharged"`
+	GasFeeCharged iotago.BaseToken   `json:"gasFeeCharged"`
+	SDCharged     iotago.BaseToken   `json:"storageDepositCharged"`
 	BlockIndex    uint32             `json:"blockIndex"`
 	RequestIndex  uint16             `json:"requestIndex"`
 	ResolvedError string             `json:"resolvedError"`

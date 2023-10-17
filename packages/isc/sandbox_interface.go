@@ -113,7 +113,7 @@ type Sandbox interface {
 	// Send sends an on-ledger request (or a regular transaction to any L1 Address)
 	Send(metadata RequestParameters)
 	// EstimateRequiredStorageDeposit returns the amount of base tokens needed to cover for a given request's storage deposit
-	EstimateRequiredStorageDeposit(r RequestParameters) uint64
+	EstimateRequiredStorageDeposit(r RequestParameters) iotago.BaseToken
 	// StateAnchor properties of the anchor output
 	StateAnchor() *StateAnchor
 
@@ -203,7 +203,7 @@ type SendMetadata struct {
 	EntryPoint     Hname
 	Params         dict.Dict
 	Allowance      *Assets
-	GasBudget      iotago.BaseToken
+	GasBudget      uint64
 }
 
 // Utils implement various utilities which are faster on host side than on wasm VM

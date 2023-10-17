@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -144,14 +145,14 @@ func sendTransaction(
 
 type context struct {
 	state     dict.Dict
-	bal       map[common.Address]uint64
+	bal       map[common.Address]iotago.BaseToken
 	snapshots []*context
 	timestamp uint64
 }
 
 var _ Context = &context{}
 
-func newContext(supply map[common.Address]uint64) *context {
+func newContext(supply map[common.Address]iotago.BaseToken) *context {
 	return &context{
 		state: dict.Dict{},
 		bal:   supply,
@@ -190,15 +191,15 @@ func (ctx *context) Timestamp() uint64 {
 	return ctx.timestamp
 }
 
-func (ctx *context) GetBaseTokensBalance(addr common.Address) uint64 {
+func (ctx *context) GetBaseTokensBalance(addr common.Address) iotago.BaseToken {
 	return ctx.bal[addr]
 }
 
-func (ctx *context) AddBaseTokensBalance(addr common.Address, amount uint64) {
+func (ctx *context) AddBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
 	ctx.bal[addr] += ctx.bal[addr]
 }
 
-func (ctx *context) SubBaseTokensBalance(addr common.Address, amount uint64) {
+func (ctx *context) SubBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
 	ctx.bal[addr] -= amount
 }
 
@@ -224,10 +225,10 @@ func TestBlockchain(t *testing.T) {
 	faucet, err := crypto.GenerateKey()
 	require.NoError(t, err)
 	faucetAddress := crypto.PubkeyToAddress(faucet.PublicKey)
-	faucetSupply := uint64(math.MaxUint64)
+	faucetSupply := iotago.BaseToken(math.MaxUint64)
 
 	genesisAlloc := map[common.Address]core.GenesisAccount{}
-	ctx := newContext(map[common.Address]uint64{
+	ctx := newContext(map[common.Address]iotago.BaseToken{
 		faucetAddress: faucetSupply,
 	})
 
@@ -303,7 +304,7 @@ func TestBlockchainPersistence(t *testing.T) {
 	require.NoError(t, err)
 
 	genesisAlloc := map[common.Address]core.GenesisAccount{}
-	ctx := newContext(map[common.Address]uint64{})
+	ctx := newContext(map[common.Address]iotago.BaseToken{})
 
 	Init(ctx.State(), evm.DefaultChainID, ctx.GasLimits(), ctx.Timestamp(), genesisAlloc)
 	ctx.timestamp++
@@ -432,7 +433,7 @@ func TestStorageContract(t *testing.T) {
 	require.NoError(t, err)
 
 	genesisAlloc := map[common.Address]core.GenesisAccount{}
-	ctx := newContext(map[common.Address]uint64{})
+	ctx := newContext(map[common.Address]iotago.BaseToken{})
 
 	Init(ctx.State(), evm.DefaultChainID, ctx.GasLimits(), ctx.Timestamp(), genesisAlloc)
 	ctx.timestamp++
@@ -501,7 +502,7 @@ func TestStorageContract(t *testing.T) {
 
 func TestERC20Contract(t *testing.T) {
 	genesisAlloc := map[common.Address]core.GenesisAccount{}
-	ctx := newContext(map[common.Address]uint64{})
+	ctx := newContext(map[common.Address]iotago.BaseToken{})
 
 	Init(ctx.State(), evm.DefaultChainID, ctx.GasLimits(), ctx.Timestamp(), genesisAlloc)
 	ctx.timestamp++
@@ -628,7 +629,7 @@ func initBenchmark(b *testing.B) (*EVMEmulator, []*types.Transaction, *context) 
 	require.NoError(b, err)
 
 	genesisAlloc := map[common.Address]core.GenesisAccount{}
-	ctx := newContext(map[common.Address]uint64{})
+	ctx := newContext(map[common.Address]iotago.BaseToken{})
 
 	Init(ctx.State(), evm.DefaultChainID, ctx.GasLimits(), ctx.Timestamp(), genesisAlloc)
 	ctx.timestamp++

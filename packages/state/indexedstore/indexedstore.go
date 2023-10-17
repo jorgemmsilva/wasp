@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
@@ -85,7 +86,7 @@ func (s *istore) findTrieRootByIndex(index uint32) (trie.Hash, error) {
 		if !ok {
 			return trie.Hash{}, fmt.Errorf("iterating the chain: blocklog missing block index %d on active state %d", earliestAvailableBlockIndex, state.BlockIndex())
 		}
-		state, err = s.StateByTrieRoot(bi.PreviousL1Commitment().TrieRoot())
+		state, err = s.StateByTrieRoot(transaction.MustL1CommitmentFromAccountOutput(bi.PreviousAccountOutput.GetAccountOutput()).TrieRoot())
 		if err != nil {
 			return trie.Hash{}, err
 		}
@@ -94,7 +95,7 @@ func (s *istore) findTrieRootByIndex(index uint32) (trie.Hash, error) {
 	if !ok {
 		return trie.Hash{}, fmt.Errorf("blocklog missing block index %d on active state %d", targetBlockIndex, state.BlockIndex())
 	}
-	return nextBlockInfo.PreviousL1Commitment().TrieRoot(), nil
+	return transaction.MustL1CommitmentFromAccountOutput(nextBlockInfo.PreviousAccountOutput.GetAccountOutput()).TrieRoot(), nil
 }
 
 // TODO this can probably be removed, since we do the search on the "regular" impl

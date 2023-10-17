@@ -4,7 +4,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 )
 
-const Million = uint64(1_000_000)
+const Million = iotago.BaseToken(1_000_000)
 
 var emptyOutputID = iotago.OutputID{}
 

@@ -20,6 +20,7 @@ import (
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/runtime/event"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc/jsonrpcindex"
@@ -209,7 +210,7 @@ func (e *EVMChain) checkEnoughL2FundsForGasBudget(sender common.Address, evmGas 
 
 	gasLimits := e.gasLimits()
 
-	iscGasBudgetAffordable := gasFeePolicy.GasBudgetFromTokens(balance.Uint64(), gasLimits)
+	iscGasBudgetAffordable := gasFeePolicy.GasBudgetFromTokens(iotago.BaseToken(balance.Uint64()), gasLimits)
 
 	iscGasBudgetTx := gas.EVMGasToISC(evmGas, &gasRatio)
 

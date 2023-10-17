@@ -70,18 +70,17 @@ func setAllowanceBaseTokens(ctx isc.Sandbox, from, to common.Address, numTokens 
 				panic(errBaseTokensMustBeUint64)
 			}
 		}
-		allowance.BaseTokens = numTokens.Uint64()
+		allowance.BaseTokens = iotago.BaseToken(numTokens.Uint64())
 	})
 }
 
 func setAllowanceNativeTokens(ctx isc.Sandbox, from, to common.Address, nativeTokenID iscmagic.NativeTokenID, numTokens *big.Int) {
 	withAllowance(ctx, from, to, func(allowance *isc.Assets) {
-		ntSet := allowance.NativeTokens.MustSet()
-		ntSet[nativeTokenID.MustUnwrap()] = &iotago.NativeTokenFeature{
-			ID:     nativeTokenID.MustUnwrap(),
-			Amount: numTokens,
-		}
-		allowance.NativeTokens = lo.Values(ntSet)
+		ntSet := allowance.NativeTokenSum()
+		ntSet[nativeTokenID.MustUnwrap()] = numTokens
+		allowance.NativeTokens = lo.MapToSlice(ntSet, func(id iotago.FoundryID, v *big.Int) *iotago.NativeTokenFeature {
+			return &iotago.NativeTokenFeature{ID: id, Amount: v}
+		})
 	})
 }
 

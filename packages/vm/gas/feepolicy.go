@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/iotaledger/hive.go/serializer/v2"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -32,8 +33,8 @@ type FeePolicy struct {
 
 // FeeFromGasBurned calculates the how many tokens to take and where
 // to deposit them.
-func (p *FeePolicy) FeeFromGasBurned(gasUnits, availableTokens uint64) (sendToOwner, sendToValidator uint64) {
-	var fee uint64
+func (p *FeePolicy) FeeFromGasBurned(gasUnits uint64, availableTokens iotago.BaseToken) (sendToOwner, sendToValidator iotago.BaseToken) {
+	var fee iotago.BaseToken
 
 	// round up
 	fee = p.FeeFromGas(gasUnits)
@@ -45,38 +46,38 @@ func (p *FeePolicy) FeeFromGasBurned(gasUnits, availableTokens uint64) (sendToOw
 	}
 	// safe arithmetics
 	if fee >= 100 {
-		sendToValidator = (fee / 100) * uint64(validatorPercentage)
+		sendToValidator = (fee / 100) * iotago.BaseToken(validatorPercentage)
 	} else {
-		sendToValidator = (fee * uint64(validatorPercentage)) / 100
+		sendToValidator = (fee * iotago.BaseToken(validatorPercentage)) / 100
 	}
 	return fee - sendToValidator, sendToValidator
 }
 
-func FeeFromGas(gasUnits uint64, gasPerToken util.Ratio32) uint64 {
-	return gasPerToken.YCeil64(gasUnits)
+func FeeFromGas(gasUnits uint64, gasPerToken util.Ratio32) iotago.BaseToken {
+	return iotago.BaseToken(gasPerToken.YCeil64(gasUnits))
 }
 
-func (p *FeePolicy) FeeFromGas(gasUnits uint64) uint64 {
+func (p *FeePolicy) FeeFromGas(gasUnits uint64) iotago.BaseToken {
 	return FeeFromGas(gasUnits, p.GasPerToken)
 }
 
-func (p *FeePolicy) MinFee() uint64 {
+func (p *FeePolicy) MinFee() iotago.BaseToken {
 	if p.GasPerToken.A == 0 {
 		return 0
 	}
 	return p.FeeFromGas(BurnCodeMinimumGasPerRequest1P.Cost())
 }
 
-func (p *FeePolicy) IsEnoughForMinimumFee(availableTokens uint64) bool {
+func (p *FeePolicy) IsEnoughForMinimumFee(availableTokens iotago.BaseToken) bool {
 	return availableTokens >= p.MinFee()
 }
 
 // if GasPerToken is '0:0' then set the GasBudget to MaxGasPerRequest
-func (p *FeePolicy) GasBudgetFromTokens(availableTokens uint64, limits ...*Limits) uint64 {
+func (p *FeePolicy) GasBudgetFromTokens(availableTokens iotago.BaseToken, limits ...*Limits) uint64 {
 	if p.GasPerToken.IsZero() {
 		return limits[0].MaxGasPerRequest
 	}
-	return p.GasPerToken.XFloor64(availableTokens)
+	return p.GasPerToken.XFloor64(uint64(availableTokens))
 }
 
 func DefaultFeePolicy() *FeePolicy {

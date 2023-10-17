@@ -5,11 +5,13 @@ package mempool
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/codec"
 )
 
 type typedPool[V isc.Request] struct {
@@ -82,6 +84,29 @@ func (olp *typedPool[V]) Filter(predicate func(request V, ts time.Time) bool) {
 	olp.sizeMetric(olp.requests.Size())
 }
 
+func (olp *typedPool[V]) Iterate(f func(e *typedPoolEntry[V])) {
+	olp.requests.ForEach(func(refKey isc.RequestRefKey, entry *typedPoolEntry[V]) bool {
+		f(entry)
+		return true
+	})
+	olp.sizeMetric(olp.requests.Size())
+}
+
 func (olp *typedPool[V]) StatusString() string {
 	return fmt.Sprintf("{|req|=%d}", olp.requests.Size())
+}
+
+func (olp *typedPool[V]) WriteContent(w io.Writer) {
+	olp.requests.ForEach(func(_ isc.RequestRefKey, entry *typedPoolEntry[V]) bool {
+		jsonData, err := isc.RequestToJSON(entry.req)
+		if err != nil {
+			return false // stop iteration
+		}
+		_, err = w.Write(codec.EncodeUint32(uint32(len(jsonData))))
+		if err != nil {
+			return false // stop iteration
+		}
+		_, err = w.Write(jsonData)
+		return err == nil
+	})
 }

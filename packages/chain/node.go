@@ -19,6 +19,7 @@ package chain
 import (
 	"context"
 	"fmt"
+	"io"
 	"slices"
 	"sync"
 	"time"
@@ -84,6 +85,7 @@ type Chain interface {
 	GetChainMetrics() *metrics.ChainMetrics
 	GetConsensusPipeMetrics() ConsensusPipeMetrics // TODO: Review this.
 	GetConsensusWorkflowStatus() ConsensusWorkflowStatus
+	GetMempoolContents() io.Reader
 }
 
 type CommitteeInfo struct {
@@ -280,6 +282,7 @@ func New(
 	recoveryTimeout time.Duration,
 	validatorAgentID isc.AgentID,
 	smParameters sm_gpa.StateManagerParameters,
+	mempoolTTL time.Duration,
 ) (Chain, error) {
 	log.Debugf("Starting the chain, chainID=%v", chainID)
 	if listener == nil {
@@ -427,6 +430,7 @@ func New(
 		chainMetrics.Mempool,
 		chainMetrics.Pipe,
 		cni.listener,
+		mempoolTTL,
 	)
 	cni.chainMgr = gpa.NewAckHandler(cni.me, chainMgr.AsGPA(), RedeliveryPeriod)
 	cni.stateMgr = stateMgr
@@ -751,7 +755,6 @@ func (cni *chainNodeImpl) handleNetMessage(ctx context.Context, recv *peering.Pe
 func (cni *chainNodeImpl) handleChainMgrOutput(ctx context.Context, outputUntyped gpa.Output) {
 	cni.log.Debugf("handleChainMgrOutput: %v", outputUntyped)
 	if outputUntyped == nil { // TODO: Will never be nil, fix it.
-		// TODO: Cleanup consensus instances for all the committees after some time.
 		// Not sure, if it is OK to terminate them immediately at this point.
 		// This is for the case, if the current node is not in a committee of a chain anymore.
 		cni.cleanupPublishingTXes(nil)
@@ -893,6 +896,20 @@ func (cni *chainNodeImpl) ensureConsensusInst(ctx context.Context, needConsensus
 	}
 
 	consensusInstance, _ := consensusInstances.Get(logIndex)
+
+	// collect all active consensusIDs
+	activeConsensusInstances := []consGR.ConsensusID{}
+	cni.consensusInsts.ForEach(func(cAddr iotago.Ed25519Address, consMap *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]) bool {
+		consMap.ForEach(func(li cmt_log.LogIndex, _ *consensusInst) bool {
+			activeConsensusInstances = append(activeConsensusInstances, consGR.NewConsensusID(&cAddr, &li))
+			return true
+		})
+		return true
+	})
+	// update the mempool with the list of active consensus instances
+	cni.mempool.ConsensusInstancesUpdated(activeConsensusInstances)
+	// ----
+
 	return consensusInstance
 }
 
@@ -1230,6 +1247,10 @@ func (cni *chainNodeImpl) GetConsensusPipeMetrics() ConsensusPipeMetrics {
 
 func (cni *chainNodeImpl) GetConsensusWorkflowStatus() ConsensusWorkflowStatus {
 	return &consensusWorkflowStatusImpl{}
+}
+
+func (cni *chainNodeImpl) GetMempoolContents() io.Reader {
+	return cni.mempool.GetContents()
 }
 
 func (cni *chainNodeImpl) recoverStoreFromWAL(chainStore indexedstore.IndexedStore, chainWAL sm_gpa_utils.BlockWAL) {

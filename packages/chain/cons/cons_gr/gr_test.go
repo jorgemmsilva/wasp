@@ -231,7 +231,7 @@ func (tmp *testMempool) tryRespondRequestQueries() {
 	tmp.qRequests = remaining
 }
 
-func (tmp *testMempool) ConsensusProposalAsync(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan []*isc.RequestRef {
+func (tmp *testMempool) ConsensusProposalAsync(ctx context.Context, accountOutput *isc.AccountOutputWithID, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
 	tmp.lock.Lock()
 	defer tmp.lock.Unlock()
 	outputID := accountOutput.OutputID()

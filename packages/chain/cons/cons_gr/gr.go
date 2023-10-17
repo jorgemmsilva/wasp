@@ -13,7 +13,7 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/iotaledger/hive.go/logger"
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
 	"github.com/iotaledger/wasp/packages/chain/cons"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -92,8 +92,8 @@ func (o *Output) String() string {
 
 type input struct {
 	baseAccountOutput *isc.AccountOutputWithID
-	outputCB        func(*Output)
-	recoverCB       func()
+	outputCB          func(*Output)
+	recoverCB         func()
 }
 
 type ConsGr struct {
@@ -218,8 +218,8 @@ func (cgr *ConsGr) Input(baseAccountOutput *isc.AccountOutputWithID, outputCB fu
 	}
 	inp := &input{
 		baseAccountOutput: baseAccountOutput,
-		outputCB:        outputCB,
-		recoverCB:       recoverCB,
+		outputCB:          outputCB,
+		recoverCB:         recoverCB,
 	}
 	cgr.inputCh <- inp
 	close(cgr.inputCh)

@@ -213,7 +213,7 @@ type RequestMetadata struct {
 	// Allowance intended to the target contract to take. Nil means zero allowance
 	Allowance *Assets `json:"allowance"`
 	// gas budget
-	GasBudget iotago.BaseToken `json:"gasBudget"`
+	GasBudget uint64 `json:"gasBudget"`
 }
 
 func requestMetadataFromFeatureSet(set iotago.FeatureSet) (*RequestMetadata, error) {

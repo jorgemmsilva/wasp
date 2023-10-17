@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"strconv"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
 )
@@ -37,7 +38,7 @@ func RequestToJSONObject(request Request) RequestJSON {
 		Params:        request.Params().JSONDict(),
 		RequestID:     request.ID().String(),
 		SenderAccount: request.SenderAccount().String(),
-		TargetAddress: request.TargetAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
+		TargetAddress: request.TargetAddress().Bech32(parameters.L1().Protocol.Bech32HRP()),
 	}
 }
 
@@ -59,7 +60,7 @@ func assetsToJSONObject(assets *Assets) *AssetsJSON {
 	}
 
 	ret := &AssetsJSON{
-		BaseTokens:   strconv.FormatUint(assets.BaseTokens, 10),
+		BaseTokens:   strconv.FormatUint(uint64(assets.BaseTokens), 10),
 		NativeTokens: NativeTokensToJSONObject(assets.NativeTokens),
 		NFTs:         make([]string, len(assets.NFTs)),
 	}
@@ -92,7 +93,7 @@ func NFTToJSONObject(nft *NFT) *NFTJSON {
 	return &NFTJSON{
 		ID:       nft.ID.ToHex(),
 		Issuer:   nft.Issuer.String(),
-		Metadata: iotago.EncodeHex(nft.Metadata),
+		Metadata: hexutil.EncodeHex(nft.Metadata),
 		Owner:    ownerString,
 	}
 }
@@ -104,14 +105,14 @@ type NativeTokenJSON struct {
 	Amount string `json:"amount" swagger:"required"`
 }
 
-func NativeTokenToJSONObject(token *iotago.NativeToken) *NativeTokenJSON {
+func NativeTokenToJSONObject(token *iotago.NativeTokenFeature) *NativeTokenJSON {
 	return &NativeTokenJSON{
 		ID:     token.ID.ToHex(),
 		Amount: token.Amount.String(),
 	}
 }
 
-func NativeTokensToJSONObject(tokens iotago.NativeTokens) []*NativeTokenJSON {
+func NativeTokensToJSONObject(tokens []*iotago.NativeTokenFeature) []*NativeTokenJSON {
 	nativeTokens := make([]*NativeTokenJSON, len(tokens))
 
 	for k, v := range tokens {

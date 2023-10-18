@@ -128,7 +128,6 @@ func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToke
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
 // returns the transaction and newly minted chain ID
 func NewChainOriginTransaction(
-	creationSlot iotago.SlotIndex,
 	keyPair *cryptolib.KeyPair,
 	stateControllerAddress iotago.Address,
 	governanceControllerAddress iotago.Address,
@@ -136,6 +135,7 @@ func NewChainOriginTransaction(
 	initParams dict.Dict,
 	unspentOutputs iotago.OutputSet,
 	unspentOutputIDs iotago.OutputIDs,
+	creationSlot iotago.SlotIndex,
 	schemaVersion uint32,
 ) (*iotago.SignedTransaction, *iotago.AccountOutput, isc.ChainID, error) {
 	if len(unspentOutputs) != len(unspentOutputIDs) {
@@ -175,7 +175,7 @@ func NewChainOriginTransaction(
 	// update the L1 commitment to not include the minimumSD
 	accountOutput.StateMetadata = calcStateMetadata(initParams, accountOutput.Amount-minSD, schemaVersion)
 
-	txInputs, remainderOutput, err := transaction.ComputeInputsAndRemainder(
+	txInputs, remainder, err := transaction.ComputeInputsAndRemainder(
 		walletAddr,
 		accountOutput.Amount,
 		nil,
@@ -187,9 +187,7 @@ func NewChainOriginTransaction(
 		return nil, accountOutput, isc.ChainID{}, err
 	}
 	outputs := iotago.TxEssenceOutputs{accountOutput}
-	if remainderOutput != nil {
-		outputs = append(outputs, remainderOutput)
-	}
+	outputs = append(outputs, remainder...)
 	tx := &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{

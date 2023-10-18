@@ -5,7 +5,6 @@ package iscmagic
 
 import (
 	"math/big"
-	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -333,47 +332,14 @@ func (i ISCSendMetadata) Unwrap() *isc.SendMetadata {
 }
 
 type ISCExpiration struct {
-	Time          int64
+	Time          int64 // should be uint32 (slotindex), kept for backward compatibility
 	ReturnAddress L1Address
 }
 
-func (i *ISCExpiration) Unwrap() *isc.Expiration {
-	if i == nil {
-		return nil
-	}
-
-	if i.Time == 0 {
-		return nil
-	}
-
-	address := i.ReturnAddress.MustUnwrap()
-
-	ret := isc.Expiration{
-		ReturnAddress: address,
-		Time:          time.UnixMilli(i.Time),
-	}
-
-	return &ret
-}
-
+// kept for backward compatibility
 type ISCSendOptions struct {
-	Timelock   int64
+	Timelock   int64 // should be uint32 (slotindex), kept for backward compatibility
 	Expiration ISCExpiration
-}
-
-func (i *ISCSendOptions) Unwrap() isc.SendOptions {
-	var timeLock time.Time
-
-	if i.Timelock > 0 {
-		timeLock = time.UnixMilli(i.Timelock)
-	}
-
-	ret := isc.SendOptions{
-		Timelock:   timeLock,
-		Expiration: i.Expiration.Unwrap(),
-	}
-
-	return ret
 }
 
 type ISCTokenProperties struct {

@@ -6,6 +6,7 @@ package evmimpl
 import (
 	"github.com/ethereum/go-ethereum/common"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -66,7 +67,17 @@ func (h *magicContractHandler) Send(
 		Assets:                        assets.Unwrap(),
 		AdjustToMinimumStorageDeposit: adjustMinimumStorageDeposit,
 		Metadata:                      metadata.Unwrap(),
-		Options:                       sendOptions.Unwrap(),
+	}
+	if sendOptions.Timelock > 0 {
+		req.UnlockConditions = append(req.UnlockConditions, &iotago.TimelockUnlockCondition{
+			SlotIndex: iotago.SlotIndex(sendOptions.Timelock),
+		})
+	}
+	if sendOptions.Expiration.Time > 0 {
+		req.UnlockConditions = append(req.UnlockConditions, &iotago.ExpirationUnlockCondition{
+			SlotIndex:     iotago.SlotIndex(sendOptions.Expiration.Time),
+			ReturnAddress: sendOptions.Expiration.ReturnAddress.MustUnwrap(),
+		})
 	}
 	// 	id := nftID.Unwrap()
 	h.adjustStorageDeposit(req)

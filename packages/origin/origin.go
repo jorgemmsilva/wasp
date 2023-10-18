@@ -128,6 +128,7 @@ func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToke
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
 // returns the transaction and newly minted chain ID
 func NewChainOriginTransaction(
+	creationSlot iotago.SlotIndex,
 	keyPair *cryptolib.KeyPair,
 	stateControllerAddress iotago.Address,
 	governanceControllerAddress iotago.Address,
@@ -194,7 +195,7 @@ func NewChainOriginTransaction(
 		TransactionEssence: &iotago.TransactionEssence{
 			NetworkID:    parameters.L1().Protocol.NetworkID(),
 			Inputs:       txInputs.UTXOInputs(),
-			CreationSlot: 8,
+			CreationSlot: creationSlot,
 		},
 		Outputs: outputs,
 	}

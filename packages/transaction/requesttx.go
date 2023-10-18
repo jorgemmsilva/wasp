@@ -11,37 +11,26 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
-type NewRequestTransactionParams struct {
-	SenderKeyPair                   *cryptolib.KeyPair
-	SenderAddress                   iotago.Address // might be different from the senderKP address (when sending as NFT or alias)
-	UnspentOutputs                  iotago.OutputSet
-	UnspentOutputIDs                iotago.OutputIDs
-	Request                         *isc.RequestParameters
-	NFT                             *isc.NFT
-	DisableAutoAdjustStorageDeposit bool // if true, the minimal storage deposit won't be adjusted automatically
-}
-
-type NewTransferTransactionParams struct {
-	DisableAutoAdjustStorageDeposit bool // if true, the minimal storage deposit won't be adjusted automatically
-	FungibleTokens                  *isc.Assets
-	SendOptions                     isc.SendOptions
-	SenderAddress                   iotago.Address
-	SenderKeyPair                   *cryptolib.KeyPair
-	TargetAddress                   iotago.Address
-	UnspentOutputs                  iotago.OutputSet
-	UnspentOutputIDs                iotago.OutputIDs
-}
-
 // NewTransferTransaction creates a basic output transaction that sends L1 Token to another L1 address
-func NewTransferTransaction(params NewTransferTransactionParams) (*iotago.Transaction, error) {
+func NewTransferTransaction(
+	fungibleTokens *isc.Assets,
+	senderAddress iotago.Address,
+	senderKeyPair *cryptolib.KeyPair,
+	targetAddress iotago.Address,
+	unspentOutputs iotago.OutputSet,
+	unspentOutputIDs iotago.OutputIDs,
+	unlockConditions []iotago.UnlockCondition,
+	creationSlot iotago.SlotIndex,
+	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
+) (*iotago.SignedTransaction, error) {
 	output := MakeBasicOutput(
-		params.TargetAddress,
-		params.SenderAddress,
-		params.FungibleTokens,
+		targetAddress,
+		senderAddress,
+		fungibleTokens,
 		nil,
-		params.SendOptions,
+		unlockConditions,
 	)
-	if !params.DisableAutoAdjustStorageDeposit {
+	if !disableAutoAdjustStorageDeposit {
 		output = AdjustToMinimumStorageDeposit(output)
 	}
 
@@ -55,48 +44,59 @@ func NewTransferTransaction(params NewTransferTransactionParams) (*iotago.Transa
 	}
 
 	sumBaseTokensOut := output.BaseTokenAmount()
-	sumTokensOut := make(map[iotago.NativeTokenID]*big.Int)
-	sumTokensOut = addNativeTokens(sumTokensOut, output)
+	sumTokensOut := make(iotago.NativeTokenSum)
+	addNativeTokens(sumTokensOut, output)
 
-	tokenMap := map[iotago.NativeTokenID]*big.Int{}
-	for _, nativeToken := range params.FungibleTokens.NativeTokens {
+	tokenMap := iotago.NativeTokenSum{}
+	for _, nativeToken := range fungibleTokens.NativeTokens {
 		tokenMap[nativeToken.ID] = nativeToken.Amount
 	}
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(params.SenderAddress,
+	inputIDs, remainder, err := ComputeInputsAndRemainder(senderAddress,
 		sumBaseTokensOut,
 		sumTokensOut,
 		map[iotago.NFTID]bool{},
-		params.UnspentOutputs,
-		params.UnspentOutputIDs,
+		unspentOutputs,
+		unspentOutputIDs,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	outputs := []iotago.Output{output}
+	outputs := append(iotago.TxEssenceOutputs{output}, remainder...)
 
-	if remainder != nil {
-		outputs = append(outputs, remainder)
-	}
+	inputsCommitment := inputIDs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API())
 
-	inputsCommitment := inputIDs.OrderedSet(params.UnspentOutputs).MustCommitment(parameters.L1API())
-
-	return CreateAndSignTx(inputIDs.UTXOInputs(), inputsCommitment, outputs, params.SenderKeyPair, parameters.L1().Protocol.NetworkID())
+	return CreateAndSignTx(
+		senderKeyPair,
+		inputIDs.UTXOInputs(),
+		inputsCommitment,
+		outputs,
+		creationSlot,
+	)
 }
 
 // NewRequestTransaction creates a transaction including one or more requests to a chain.
 // Empty assets in the request data defaults to 1 base token, which later is adjusted to the minimum storage deposit
-// Assumes all UnspentOutputs and corresponding UnspentOutputIDs can be used as inputs, i.e. are
+// Assumes all unspentOutputs and corresponding unspentOutputIDs can be used as inputs, i.e. are
 // unlockable for the sender address
-func NewRequestTransaction(par NewRequestTransactionParams) (*iotago.Transaction, error) {
+func NewRequestTransaction(
+	senderKeyPair *cryptolib.KeyPair,
+	senderAddress iotago.Address, // might be different from the senderKP address (when sending as NFT or alias)
+	unspentOutputs iotago.OutputSet,
+	unspentOutputIDs iotago.OutputIDs,
+	request *isc.RequestParameters,
+	nft *isc.NFT,
+	creationSlot iotago.SlotIndex,
+	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
+) (*iotago.SignedTransaction, error) {
 	outputs := iotago.TxEssenceOutputs{}
 	sumBaseTokensOut := iotago.BaseToken(0)
-	sumTokensOut := make(map[iotago.NativeTokenID]*big.Int)
+	sumTokensOut := make(iotago.NativeTokenSum)
 	sumNFTsOut := make(map[iotago.NFTID]bool)
 
-	out := MakeRequestTransactionOutput(par)
-	if !par.DisableAutoAdjustStorageDeposit {
+	out := MakeRequestTransactionOutput(senderAddress, request, nft)
+	if !disableAutoAdjustStorageDeposit {
 		out = AdjustToMinimumStorageDeposit(out)
 	}
 
@@ -110,29 +110,43 @@ func NewRequestTransaction(par NewRequestTransactionParams) (*iotago.Transaction
 	}
 	outputs = append(outputs, out)
 	sumBaseTokensOut += out.BaseTokenAmount()
-	sumTokensOut = addNativeTokens(sumTokensOut, out)
-	if par.NFT != nil {
-		sumNFTsOut[par.NFT.ID] = true
+	addNativeTokens(sumTokensOut, out)
+	if nft != nil {
+		sumNFTsOut[nft.ID] = true
 	}
 
-	outputs, sumBaseTokensOut, sumTokensOut, sumNFTsOut = updateOutputsWhenSendingOnBehalfOf(par, outputs, sumBaseTokensOut, sumTokensOut, sumNFTsOut)
+	outputs, sumBaseTokensOut = updateOutputsWhenSendingOnBehalfOf(
+		senderKeyPair,
+		senderAddress,
+		unspentOutputs,
+		outputs,
+		sumBaseTokensOut,
+		sumTokensOut,
+		sumNFTsOut,
+	)
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(par.SenderKeyPair.Address(), sumBaseTokensOut, sumTokensOut, sumNFTsOut, par.UnspentOutputs, par.UnspentOutputIDs)
+	inputIDs, remainder, err := ComputeInputsAndRemainder(senderKeyPair.Address(), sumBaseTokensOut, sumTokensOut, sumNFTsOut, unspentOutputs, unspentOutputIDs)
 	if err != nil {
 		return nil, err
 	}
 
-	if remainder != nil {
-		outputs = append(outputs, remainder)
-	}
+	outputs = append(outputs, remainder...)
 
-	inputsCommitment := inputIDs.OrderedSet(par.UnspentOutputs).MustCommitment(parameters.L1API())
-	return CreateAndSignTx(inputIDs.UTXOInputs(), inputsCommitment, outputs, par.SenderKeyPair, parameters.L1().Protocol.NetworkID())
+	inputsCommitment := inputIDs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API())
+	return CreateAndSignTx(
+		senderKeyPair,
+		inputIDs.UTXOInputs(),
+		inputsCommitment,
+		outputs,
+		creationSlot,
+	)
 }
 
-func MakeRequestTransactionOutput(par NewRequestTransactionParams) iotago.Output {
-	req := par.Request
-
+func MakeRequestTransactionOutput(
+	senderAddress iotago.Address,
+	req *isc.RequestParameters,
+	nft *isc.NFT,
+) iotago.Output {
 	assets := req.Assets
 	if assets == nil {
 		assets = isc.NewEmptyAssets()
@@ -141,7 +155,7 @@ func MakeRequestTransactionOutput(par NewRequestTransactionParams) iotago.Output
 	var out iotago.Output
 	out = MakeBasicOutput(
 		req.TargetAddress,
-		par.SenderAddress,
+		senderAddress,
 		assets,
 		&isc.RequestMetadata{
 			SenderContract: isc.EmptyContractIdentity(),
@@ -151,10 +165,10 @@ func MakeRequestTransactionOutput(par NewRequestTransactionParams) iotago.Output
 			Allowance:      req.Metadata.Allowance,
 			GasBudget:      req.Metadata.GasBudget,
 		},
-		req.Options,
+		req.UnlockConditions,
 	)
-	if par.NFT != nil {
-		out = NftOutputFromBasicOutput(out.(*iotago.BasicOutput), par.NFT)
+	if nft != nil {
+		out = NFTOutputFromBasicOutput(out.(*iotago.BasicOutput), nft)
 	}
 	return out
 }
@@ -173,8 +187,8 @@ func outputMatchesSendAsAddress(output iotago.Output, outputID iotago.OutputID, 
 	return false
 }
 
-func addNativeTokens(sumTokensOut map[iotago.NativeTokenID]*big.Int, out iotago.Output) map[iotago.NativeTokenID]*big.Int {
-	for _, nt := range out.NativeTokenList() {
+func addNativeTokens(sumTokensOut iotago.NativeTokenSum, out iotago.Output) {
+	if nt := out.FeatureSet().NativeToken(); nt != nil {
 		s, ok := sumTokensOut[nt.ID]
 		if !ok {
 			s = new(big.Int)
@@ -182,35 +196,34 @@ func addNativeTokens(sumTokensOut map[iotago.NativeTokenID]*big.Int, out iotago.
 		s.Add(s, nt.Amount)
 		sumTokensOut[nt.ID] = s
 	}
-	return sumTokensOut
 }
 
 func updateOutputsWhenSendingOnBehalfOf(
-	par NewRequestTransactionParams,
+	senderKeyPair *cryptolib.KeyPair,
+	senderAddress iotago.Address,
+	unspentOutputs iotago.OutputSet,
 	outputs iotago.TxEssenceOutputs,
 	sumBaseTokensOut iotago.BaseToken,
-	sumTokensOut map[iotago.NativeTokenID]*big.Int,
+	sumTokensOut iotago.NativeTokenSum,
 	sumNFTsOut map[iotago.NFTID]bool,
 ) (
 	iotago.TxEssenceOutputs,
 	iotago.BaseToken,
-	map[iotago.NativeTokenID]*big.Int,
-	map[iotago.NFTID]bool,
 ) {
-	if par.SenderAddress.Equal(par.SenderKeyPair.Address()) {
-		return outputs, sumBaseTokensOut, sumTokensOut, sumNFTsOut
+	if senderAddress.Equal(senderKeyPair.Address()) {
+		return outputs, sumBaseTokensOut
 	}
 	// sending request "on behalf of" (need NFT or alias output as input/output)
 
 	for _, output := range outputs {
-		if outputMatchesSendAsAddress(output, iotago.OutputID{}, par.SenderAddress) {
+		if outputMatchesSendAsAddress(output, iotago.OutputID{}, senderAddress) {
 			// if already present in the outputs, no need to do anything
-			return outputs, sumBaseTokensOut, sumTokensOut, sumNFTsOut
+			return outputs, sumBaseTokensOut
 		}
 	}
-	for outID, out := range par.UnspentOutputs {
+	for outID, out := range unspentOutputs {
 		// find the output that matches the "send as" address
-		if !outputMatchesSendAsAddress(out, outID, par.SenderAddress) {
+		if !outputMatchesSendAsAddress(out, outID, senderAddress) {
 			continue
 		}
 		if nftOut, ok := out.(*iotago.NFTOutput); ok {
@@ -223,8 +236,8 @@ func updateOutputsWhenSendingOnBehalfOf(
 		// found the needed output
 		outputs = append(outputs, out)
 		sumBaseTokensOut += out.BaseTokenAmount()
-		sumTokensOut = addNativeTokens(sumTokensOut, out)
-		return outputs, sumBaseTokensOut, sumTokensOut, sumNFTsOut
+		addNativeTokens(sumTokensOut, out)
+		return outputs, sumBaseTokensOut
 	}
 	panic("unable to build tx, 'sendAs' output not found")
 }

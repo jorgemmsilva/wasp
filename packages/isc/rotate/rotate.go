@@ -30,7 +30,7 @@ func NewRotateRequestOffLedger(chainID isc.ChainID, newStateAddress iotago.Addre
 func MakeRotateStateControllerTransaction(
 	nextAddr iotago.Address,
 	chainInput *isc.AccountOutputWithID,
-	ts time.Time,
+	creationSlot iotago.SlotIndex,
 	accessPledge, consensusPledge identity.ID,
 ) (*iotago.Transaction, error) {
 	output := chainInput.GetAccountOutput().Clone().(*iotago.AccountOutput)
@@ -56,8 +56,9 @@ func MakeRotateStateControllerTransaction(
 	result := &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
-			Inputs:  iotago.TxEssenceInputs{chainInput.OutputID().UTXOInput()},
-			Payload: nil,
+			NetworkID:    parameters.L1().Protocol.NetworkID(),
+			Inputs:       iotago.TxEssenceInputs{chainInput.OutputID().UTXOInput()},
+			CreationSlot: creationSlot,
 		},
 		Outputs: iotago.TxEssenceOutputs{output},
 	}

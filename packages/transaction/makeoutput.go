@@ -2,10 +2,12 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 // BasicOutputFromPostData creates extended output object from parameters.
@@ -33,7 +35,7 @@ func BasicOutputFromPostData(
 			Allowance:      metadata.Allowance,
 			GasBudget:      metadata.GasBudget,
 		},
-		par.Options,
+		par.UnlockConditions,
 	)
 	if par.AdjustToMinimumStorageDeposit {
 		return AdjustToMinimumStorageDeposit(ret)
@@ -47,18 +49,25 @@ func MakeBasicOutput(
 	senderAddress iotago.Address,
 	assets *isc.Assets,
 	metadata *isc.RequestMetadata,
-	options isc.SendOptions,
+	unlockConditions []iotago.UnlockCondition,
 ) *iotago.BasicOutput {
 	if assets == nil {
 		assets = &isc.Assets{}
 	}
 	out := &iotago.BasicOutput{
-		Amount:       assets.BaseTokens,
-		NativeTokens: assets.NativeTokens,
-		Conditions: iotago.UnlockConditions{
+		Amount: assets.BaseTokens,
+		Conditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: targetAddress},
 		},
 	}
+	if len(assets.NativeTokens) > 1 {
+		panic("at most 1 native token is supported")
+	}
+	if len(assets.NativeTokens) > 0 && assets.NativeTokens[0].Amount.Cmp(util.Big0) > 0 {
+		nt := assets.NativeTokens[0]
+		out.Features = append(out.Features, nt.Clone())
+	}
+
 	if senderAddress != nil {
 		out.Features = append(out.Features, &iotago.SenderFeature{
 			Address: senderAddress,
@@ -69,20 +78,8 @@ func MakeBasicOutput(
 			Data: metadata.Bytes(),
 		})
 	}
-	if !options.Timelock.IsZero() {
-		cond := &iotago.TimelockUnlockCondition{
-			UnixTime: uint32(options.Timelock.Unix()),
-		}
-		out.Conditions = append(out.Conditions, cond)
-	}
-	if options.Expiration != nil {
-		cond := &iotago.ExpirationUnlockCondition{
-			ReturnAddress: options.Expiration.ReturnAddress,
-		}
-		if !options.Expiration.Time.IsZero() {
-			cond.UnixTime = uint32(options.Expiration.Time.Unix())
-		}
-		out.Conditions = append(out.Conditions, cond)
+	for _, c := range unlockConditions {
+		out.Conditions = append(out.Conditions, c)
 	}
 	return out
 }
@@ -94,43 +91,62 @@ func NFTOutputFromPostData(
 	nft *isc.NFT,
 ) *iotago.NFTOutput {
 	basicOutput := BasicOutputFromPostData(senderAddress, senderContract, par)
-	out := NftOutputFromBasicOutput(basicOutput, nft)
+	out := NFTOutputFromBasicOutput(basicOutput, nft)
 
 	if !par.AdjustToMinimumStorageDeposit {
 		return out
 	}
-	storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(out)
-	if out.Deposit() < storageDeposit {
+	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(out)
+	if err != nil {
+		panic(err)
+	}
+	if out.Amount < storageDeposit {
 		// adjust the amount to the minimum required
 		out.Amount = storageDeposit
 	}
 	return out
 }
 
-func NftOutputFromBasicOutput(o *iotago.BasicOutput, nft *isc.NFT) *iotago.NFTOutput {
-	return &iotago.NFTOutput{
-		Amount:       o.Amount,
-		NativeTokens: o.NativeTokens,
-		Features:     o.Features,
-		Conditions:   o.Conditions,
-		NFTID:        nft.ID,
-		ImmutableFeatures: iotago.Features{
+func NFTOutputFromBasicOutput(o *iotago.BasicOutput, nft *isc.NFT) *iotago.NFTOutput {
+	out := &iotago.NFTOutput{
+		Amount: o.Amount,
+		NFTID:  nft.ID,
+		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.IssuerFeature{Address: nft.Issuer},
 			&iotago.MetadataFeature{Data: nft.Metadata},
 		},
 	}
+	for _, f := range o.Features {
+		out.Features = append(out.Features, f)
+	}
+	for _, c := range o.Conditions {
+		out.Conditions = append(out.Conditions, c)
+	}
+	return out
 }
 
 func AssetsFromOutput(o iotago.Output) *isc.Assets {
-	return &isc.Assets{
-		BaseTokens:   o.Deposit(),
-		NativeTokens: o.NativeTokenList(),
+	assets := &isc.Assets{
+		BaseTokens: o.BaseTokenAmount(),
 	}
+	if nt := o.FeatureSet().NativeToken(); nt != nil {
+		assets.NativeTokens = append(assets.NativeTokens, &iotago.NativeTokenFeature{
+			ID:     nt.ID,
+			Amount: new(big.Int).Set(nt.Amount),
+		})
+	}
+	if o, ok := o.(*iotago.NFTOutput); ok {
+		assets.NFTs = append(assets.NFTs, o.NFTID)
+	}
+	return assets
 }
 
 func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
-	storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(out)
-	if out.Deposit() >= storageDeposit {
+	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(out)
+	if err != nil {
+		panic(err)
+	}
+	if out.BaseTokenAmount() >= storageDeposit {
 		return out
 	}
 	switch out := iotago.Output(out).(type) {

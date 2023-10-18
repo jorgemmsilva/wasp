@@ -162,8 +162,8 @@ type RequestParameters struct {
 	AdjustToMinimumStorageDeposit bool
 	// Metadata is a request metadata. It may be nil if the output is just sending assets to L1 address
 	Metadata *SendMetadata
-	// SendOptions includes options of the output, such as time lock or expiry parameters
-	Options SendOptions
+	// UnlockConditions includes options of the output, such as time lock or expiry parameters
+	UnlockConditions []iotago.UnlockCondition
 }
 
 type Gas interface {
@@ -183,18 +183,8 @@ type StateAnchor struct {
 	GovernanceController iotago.Address
 	StateIndex           uint32
 	StateData            []byte
-	Deposit              uint64
+	Deposit              iotago.BaseToken
 	NativeTokens         []*iotago.NativeTokenFeature
-}
-
-type SendOptions struct {
-	Timelock   time.Time
-	Expiration *Expiration
-}
-
-type Expiration struct {
-	Time          time.Time
-	ReturnAddress iotago.Address
 }
 
 // SendMetadata represents content of the data payload of the output

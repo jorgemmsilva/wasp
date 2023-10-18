@@ -18,21 +18,21 @@ type TransactionTotals struct {
 	// internal storage deposit
 	TotalBaseTokensInStorageDeposit uint64
 	// balances of native tokens (in all inputs/outputs). In the tx builder only loaded those which are needed
-	NativeTokenBalances map[iotago.NativeTokenID]*big.Int
+	NativeTokenBalances iotago.NativeTokenSum
 	// token supplies in foundries
-	TokenCirculatingSupplies map[iotago.NativeTokenID]*big.Int
+	TokenCirculatingSupplies iotago.NativeTokenSum
 	// base tokens sent out by the transaction
 	SentOutBaseTokens uint64
 	// Sent out native tokens by the transaction
-	SentOutTokenBalances map[iotago.NativeTokenID]*big.Int
+	SentOutTokenBalances iotago.NativeTokenSum
 }
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 	anchorInputSD := parameters.L1().Protocol.RentStructure.MinRent(txb.anchorOutput)
 	totals := &TransactionTotals{
-		NativeTokenBalances:             make(map[iotago.NativeTokenID]*big.Int),
-		TokenCirculatingSupplies:        make(map[iotago.NativeTokenID]*big.Int),
+		NativeTokenBalances:             make(iotago.NativeTokenSum),
+		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
 		TotalBaseTokensInL2Accounts:     txb.anchorOutput.Deposit() - anchorInputSD,
 		TotalBaseTokensInStorageDeposit: anchorInputSD,
 	}
@@ -86,12 +86,12 @@ func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
 	anchorOutputSD := parameters.L1().Protocol.RentStructure.MinRent(txb.resultAnchorOutput)
 
 	totals := &TransactionTotals{
-		NativeTokenBalances:             make(map[iotago.NativeTokenID]*big.Int),
-		TokenCirculatingSupplies:        make(map[iotago.NativeTokenID]*big.Int),
+		NativeTokenBalances:             make(iotago.NativeTokenSum),
+		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
 		TotalBaseTokensInL2Accounts:     txb.resultAnchorOutput.Amount - anchorOutputSD,
 		TotalBaseTokensInStorageDeposit: anchorOutputSD,
 		SentOutBaseTokens:               0,
-		SentOutTokenBalances:            make(map[iotago.NativeTokenID]*big.Int),
+		SentOutTokenBalances:            make(iotago.NativeTokenSum),
 	}
 	// sum over native tokens which produce outputs
 	for id, ntb := range txb.balanceNativeTokens {
@@ -201,7 +201,7 @@ func (t *TransactionTotals) BalancedWith(another *TransactionTotals) error {
 		nativeTokenIDs[id] = true
 	}
 
-	tokenSupplyDeltas := make(map[iotago.NativeTokenID]*big.Int)
+	tokenSupplyDeltas := make(iotago.NativeTokenSum)
 	for nativeTokenID := range nativeTokenIDs {
 		inSupply, ok := t.TokenCirculatingSupplies[nativeTokenID]
 		if !ok {

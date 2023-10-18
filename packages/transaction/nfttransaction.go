@@ -7,35 +7,37 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
-type MintNFTsTransactionParams struct {
-	IssuerKeyPair      *cryptolib.KeyPair
-	CollectionOutputID *iotago.OutputID
-	Target             iotago.Address
-	ImmutableMetadata  [][]byte
-	UnspentOutputs     iotago.OutputSet
-	UnspentOutputIDs   iotago.OutputIDs
-}
+func NewMintNFTsTransaction(
+	issuerKeyPair *cryptolib.KeyPair,
+	collectionOutputID *iotago.OutputID,
+	target iotago.Address,
+	immutableMetadata [][]byte,
+	unspentOutputs iotago.OutputSet,
+	unspentOutputIDs iotago.OutputIDs,
+	creationSlot iotago.SlotIndex,
+) (*iotago.SignedTransaction, error) {
+	senderAddress := issuerKeyPair.Address()
 
-func NewMintNFTsTransaction(par MintNFTsTransactionParams) (*iotago.Transaction, error) {
-	senderAddress := par.IssuerKeyPair.Address()
-
-	storageDeposit := uint64(0)
-	var outputs iotago.Outputs
+	storageDeposit := iotago.BaseToken(0)
+	var outputs iotago.TxEssenceOutputs
 
 	var issuerAddress iotago.Address = senderAddress
 	nftsOut := make(map[iotago.NFTID]bool)
 
 	addOutput := func(out *iotago.NFTOutput) {
-		d := parameters.L1().Protocol.RentStructure.MinRent(out)
+		d, err := parameters.L1API().RentStructure().MinDeposit(out)
+		if err != nil {
+			panic(err)
+		}
 		out.Amount = d
 		storageDeposit += d
 
 		outputs = append(outputs, out)
 	}
 
-	if par.CollectionOutputID != nil {
-		collectionOutputID := *par.CollectionOutputID
-		collectionOutput := par.UnspentOutputs[*par.CollectionOutputID].(*iotago.NFTOutput)
+	if collectionOutputID != nil {
+		collectionOutputID := *collectionOutputID
+		collectionOutput := unspentOutputs[collectionOutputID].(*iotago.NFTOutput)
 		collectionID := util.NFTIDFromNFTOutput(collectionOutput, collectionOutputID)
 		issuerAddress = collectionID.ToAddress()
 		nftsOut[collectionID] = true
@@ -45,27 +47,31 @@ func NewMintNFTsTransaction(par MintNFTsTransactionParams) (*iotago.Transaction,
 		addOutput(out)
 	}
 
-	for _, immutableMetadata := range par.ImmutableMetadata {
+	for _, immutableMetadata := range immutableMetadata {
 		addOutput(&iotago.NFTOutput{
 			NFTID: iotago.NFTID{},
-			Conditions: iotago.UnlockConditions{
-				&iotago.AddressUnlockCondition{Address: par.Target},
+			Conditions: iotago.NFTOutputUnlockConditions{
+				&iotago.AddressUnlockCondition{Address: target},
 			},
-			ImmutableFeatures: iotago.Features{
+			ImmutableFeatures: iotago.NFTOutputImmFeatures{
 				&iotago.IssuerFeature{Address: issuerAddress},
 				&iotago.MetadataFeature{Data: immutableMetadata},
 			},
 		})
 	}
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(senderAddress, storageDeposit, nil, nftsOut, par.UnspentOutputs, par.UnspentOutputIDs)
+	inputIDs, remainder, err := ComputeInputsAndRemainder(senderAddress, storageDeposit, nil, nftsOut, unspentOutputs, unspentOutputIDs)
 	if err != nil {
 		return nil, err
 	}
-	if remainder != nil {
-		outputs = append(outputs, remainder)
-	}
+	outputs = append(outputs, remainder...)
 
-	inputsCommitment := inputIDs.OrderedSet(par.UnspentOutputs).MustCommitment()
-	return CreateAndSignTx(inputIDs.UTXOInputs(), inputsCommitment, outputs, par.IssuerKeyPair, parameters.L1().Protocol.NetworkID())
+	inputsCommitment := inputIDs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API())
+	return CreateAndSignTx(
+		issuerKeyPair,
+		inputIDs.UTXOInputs(),
+		inputsCommitment,
+		outputs,
+		creationSlot,
+	)
 }

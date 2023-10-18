@@ -15,17 +15,18 @@ func NewRotateChainStateControllerTx(
 	newStateController iotago.Address,
 	chainOutputID iotago.OutputID,
 	chainOutput iotago.Output,
+	creationSlot iotago.SlotIndex,
 	kp *cryptolib.KeyPair,
-) (*iotago.Transaction, error) {
+) (*iotago.SignedTransaction, error) {
 	o, ok := chainOutput.(*iotago.AccountOutput)
 	if !ok {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected AccountOutput, received %T=%v", chainOutput, chainOutput)
 	}
-	resolvedAliasID := util.AliasIDFromAccountOutput(o, chainOutputID)
-	if resolvedAliasID != aliasID {
+	resolvedAccountID := util.AccountIDFromAccountOutput(o, chainOutputID)
+	if resolvedAccountID != aliasID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
-			aliasID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
-			chainOutput.(*iotago.AccountOutput).AccountID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP),
+			aliasID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP()),
+			chainOutput.(*iotago.AccountOutput).AccountID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP()),
 		)
 	}
 
@@ -33,12 +34,12 @@ func NewRotateChainStateControllerTx(
 	inputIDs := iotago.OutputIDs{chainOutputID}
 	outSet := iotago.OutputSet{}
 	outSet[chainOutputID] = chainOutput
-	inputsCommitment := inputIDs.OrderedSet(outSet).MustCommitment()
+	inputsCommitment := inputIDs.OrderedSet(outSet).MustCommitment(parameters.L1API())
 
 	newChainOutput := chainOutput.Clone().(*iotago.AccountOutput)
-	newChainOutput.AccountID = resolvedAliasID
+	newChainOutput.AccountID = resolvedAccountID
 	oldUnlockConditions := newChainOutput.UnlockConditionSet()
-	newChainOutput.Conditions = make(iotago.UnlockConditions, len(oldUnlockConditions))
+	newChainOutput.Conditions = make(iotago.AccountOutputUnlockConditions, len(oldUnlockConditions))
 
 	// update the unlock conditions to the new state controller
 	i := 0
@@ -57,7 +58,7 @@ func NewRotateChainStateControllerTx(
 	}
 
 	// remove any "sender feature"
-	var newFeatures iotago.Features
+	var newFeatures iotago.AccountOutputFeatures
 	for t, feature := range chainOutput.FeatureSet() {
 		if t != iotago.FeatureSender {
 			newFeatures = append(newFeatures, feature)
@@ -65,6 +66,12 @@ func NewRotateChainStateControllerTx(
 	}
 	newChainOutput.Features = newFeatures
 
-	outputs := iotago.Outputs{newChainOutput}
-	return CreateAndSignTx(inputIDs.UTXOInputs(), inputsCommitment, outputs, kp, parameters.L1().Protocol.NetworkID())
+	outputs := iotago.TxEssenceOutputs{newChainOutput}
+	return CreateAndSignTx(
+		kp,
+		inputIDs.UTXOInputs(),
+		inputsCommitment,
+		outputs,
+		creationSlot,
+	)
 }

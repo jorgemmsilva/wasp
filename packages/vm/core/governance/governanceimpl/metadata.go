@@ -1,18 +1,11 @@
 package governanceimpl
 
 import (
-	"github.com/iotaledger/hive.go/serializer/v2"
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
-	"github.com/iotaledger/wasp/packages/vm/gas"
-)
-
-const (
-	MaxCustomMetadataLength = iotago.MaxMetadataLength - serializer.OneByte - serializer.UInt32ByteSize - state.L1CommitmentSize - gas.FeePolicyByteSize - serializer.UInt16ByteSize
 )
 
 func setMetadata(ctx isc.Sandbox) dict.Dict {
@@ -22,9 +15,8 @@ func setMetadata(ctx isc.Sandbox) dict.Dict {
 	var metadataBytes []byte
 
 	publicURLBytes = ctx.Params().Get(governance.ParamPublicURL)
+	ctx.Requiref(len(publicURLBytes) <= transaction.MaxPublicURLLength, "supplied publicUrl is too long (%d>%d)", len(publicURLBytes), transaction.MaxPublicURLLength)
 	metadataBytes = ctx.Params().Get(governance.ParamMetadata)
-
-	ctx.Requiref(len(publicURLBytes)+len(metadataBytes) <= MaxCustomMetadataLength, "supplied publicUrl and metadata is too big (%d>%d)", len(publicURLBytes)+len(metadataBytes), MaxCustomMetadataLength)
 
 	if publicURLBytes != nil {
 		publicURL, err := codec.DecodeString(publicURLBytes, "")

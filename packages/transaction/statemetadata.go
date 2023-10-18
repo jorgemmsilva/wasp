@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
@@ -16,6 +17,10 @@ const (
 	// refers to an empty state, and in V1 refers to the first initialized
 	// state.
 	StateMetadataSupportedVersion byte = 1
+
+	MaxStateMetadataSize   = iotago.MaxPayloadSize
+	StateMetadataFixedSize = serializer.OneByte + serializer.UInt32ByteSize + state.L1CommitmentSize + gas.FeePolicyByteSize + serializer.UInt16ByteSize + serializer.UInt32ByteSize
+	MaxPublicURLLength     = MaxStateMetadataSize - StateMetadataFixedSize
 )
 
 type StateMetadata struct {

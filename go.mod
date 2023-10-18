@@ -18,6 +18,7 @@ require (
 	github.com/ethereum/go-ethereum v1.13.2
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/iancoleman/orderedmap v0.3.0
 	github.com/iotaledger/hive.go/app v0.0.0-20231010133617-cdbd5387e2af
 	github.com/iotaledger/hive.go/constraints v0.0.0-20231010133617-cdbd5387e2af
 	github.com/iotaledger/hive.go/crypto v0.0.0-20231010133617-cdbd5387e2af
@@ -110,7 +111,6 @@ require (
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/huin/goupnp v1.2.0 // indirect
-	github.com/iancoleman/orderedmap v0.3.0 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
 	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231005142627-86973b2edb3b // indirect
 	github.com/iotaledger/hive.go/ierrors v0.0.0-20231005142627-86973b2edb3b // indirect

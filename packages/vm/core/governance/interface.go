@@ -6,6 +6,7 @@
 package governance
 
 import (
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 )
 
@@ -138,7 +139,7 @@ const (
 // contract constants
 const (
 	// DefaultMinBaseTokensOnCommonAccount can't harvest the minimum
-	DefaultMinBaseTokensOnCommonAccount = uint64(3000)
+	DefaultMinBaseTokensOnCommonAccount = iotago.BaseToken(3000)
 
 	BlockKeepAll           = -1
 	DefaultBlockKeepAmount = 10_000

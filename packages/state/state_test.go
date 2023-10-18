@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	iotago "github.com/iotaledger/iota.go/v4"
+
 	"github.com/stretchr/testify/require"
 	"pgregory.net/rapid"
 
@@ -141,7 +143,7 @@ func TestOriginBlock(t *testing.T) {
 
 func TestOriginBlockDeterminism(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		deposit := rapid.Uint64().Draw(t, "deposit")
+		deposit := iotago.BaseToken(rapid.Uint64().Draw(t, "deposit"))
 		db := mapdb.NewMapDB()
 		st := state.NewStoreWithUniqueWriteMutex(db)
 		require.True(t, st.IsEmpty())

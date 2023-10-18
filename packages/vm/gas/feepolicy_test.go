@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -34,7 +35,7 @@ func TestFeePolicyAffordableGas(t *testing.T) {
 	feePolicy.GasPerToken = util.Ratio32{A: 1, B: 110}
 
 	// map of [n tokens] expected gas
-	cases := map[uint64]int{
+	cases := map[iotago.BaseToken]int{
 		109: 0,
 		200: 1,
 		219: 1,
@@ -46,7 +47,7 @@ func TestFeePolicyAffordableGas(t *testing.T) {
 
 	// tokens charged for max gas
 	// map of [n tokens] expected tokens charged
-	cases2 := map[uint64]uint64{
+	cases2 := map[iotago.BaseToken]uint64{
 		109: 0,
 		110: 110,
 		111: 110,

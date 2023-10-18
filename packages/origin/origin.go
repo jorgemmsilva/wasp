@@ -32,7 +32,7 @@ import (
 
 // L1Commitment calculates the L1 commitment for the origin state
 // originDeposit must exclude the minSD for the AccountOutput
-func L1Commitment(initParams dict.Dict, originDeposit uint64) *state.L1Commitment {
+func L1Commitment(initParams dict.Dict, originDeposit iotago.BaseToken) *state.L1Commitment {
 	block := InitChain(state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()), initParams, originDeposit)
 	return block.L1Commitment()
 }
@@ -44,7 +44,7 @@ const (
 	ParamWaspVersion     = "d"
 )
 
-func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) state.Block {
+func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.BaseToken) state.Block {
 	if initParams == nil {
 		initParams = dict.New()
 	}
@@ -78,15 +78,17 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit uint64) st
 
 func InitChainByAccountOutput(chainStore state.Store, accountOutput *isc.AccountOutputWithID) (state.Block, error) {
 	var initParams dict.Dict
-	if originMetadata := accountOutput.GetAccountOutput().FeatureSet().MetadataFeature(); originMetadata != nil {
+	if originMetadata := accountOutput.GetAccountOutput().FeatureSet().Metadata(); originMetadata != nil {
 		var err error
 		initParams, err = dict.FromBytes(originMetadata.Data)
 		if err != nil {
 			return nil, fmt.Errorf("invalid parameters on origin AO, %w", err)
 		}
 	}
-	l1params := parameters.L1()
-	aoMinSD := l1params.Protocol.RentStructure.MinRent(accountOutput.GetAccountOutput())
+	aoMinSD, err := parameters.L1API().RentStructure().MinDeposit(accountOutput.GetAccountOutput())
+	if err != nil {
+		return nil, err
+	}
 	commonAccountAmount := accountOutput.GetAccountOutput().Amount - aoMinSD
 	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
 
@@ -98,7 +100,7 @@ func InitChainByAccountOutput(chainStore state.Store, accountOutput *isc.Account
 		return nil, fmt.Errorf("unsupported StateMetadata Version: %v, expect %v", originAOStateMetadata.Version, transaction.StateMetadataSupportedVersion)
 	}
 	if !originBlock.L1Commitment().Equals(originAOStateMetadata.L1Commitment) {
-		l1paramsJSON, err := json.Marshal(l1params)
+		l1paramsJSON, err := json.Marshal(parameters.L1())
 		if err != nil {
 			l1paramsJSON = []byte(fmt.Sprintf("unable to marshalJson l1params: %s", err.Error()))
 		}
@@ -113,7 +115,7 @@ func InitChainByAccountOutput(chainStore state.Store, accountOutput *isc.Account
 	return originBlock, nil
 }
 
-func calcStateMetadata(initParams dict.Dict, commonAccountAmount uint64, schemaVersion uint32) []byte {
+func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToken, schemaVersion uint32) []byte {
 	s := transaction.NewStateMetadata(
 		L1Commitment(initParams, commonAccountAmount),
 		gas.DefaultFeePolicy(),
@@ -129,12 +131,12 @@ func NewChainOriginTransaction(
 	keyPair *cryptolib.KeyPair,
 	stateControllerAddress iotago.Address,
 	governanceControllerAddress iotago.Address,
-	deposit uint64,
+	deposit iotago.BaseToken,
 	initParams dict.Dict,
 	unspentOutputs iotago.OutputSet,
 	unspentOutputIDs iotago.OutputIDs,
 	schemaVersion uint32,
-) (*iotago.Transaction, *iotago.AccountOutput, isc.ChainID, error) {
+) (*iotago.SignedTransaction, *iotago.AccountOutput, isc.ChainID, error) {
 	if len(unspentOutputs) != len(unspentOutputIDs) {
 		panic("mismatched lengths of outputs and inputs slices")
 	}
@@ -152,16 +154,19 @@ func NewChainOriginTransaction(
 	accountOutput := &iotago.AccountOutput{
 		Amount:        deposit,
 		StateMetadata: calcStateMetadata(initParams, deposit, schemaVersion), // NOTE: Updated below.
-		Conditions: iotago.UnlockConditions{
+		Conditions: iotago.AccountOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governanceControllerAddress},
 		},
-		Features: iotago.Features{
+		Features: iotago.AccountOutputFeatures{
 			&iotago.MetadataFeature{Data: initParams.Bytes()},
 		},
 	}
 
-	minSD := parameters.L1().Protocol.RentStructure.MinRent(accountOutput)
+	minSD, err := parameters.L1API().RentStructure().MinDeposit(accountOutput)
+	if err != nil {
+		return nil, accountOutput, isc.ChainID{}, err
+	}
 	minAmount := minSD + governance.DefaultMinBaseTokensOnCommonAccount
 	if accountOutput.Amount < minAmount {
 		accountOutput.Amount = minAmount
@@ -180,30 +185,36 @@ func NewChainOriginTransaction(
 	if err != nil {
 		return nil, accountOutput, isc.ChainID{}, err
 	}
-	outputs := iotago.Outputs{accountOutput}
+	outputs := iotago.TxEssenceOutputs{accountOutput}
 	if remainderOutput != nil {
 		outputs = append(outputs, remainderOutput)
 	}
-	essence := &iotago.TransactionEssence{
-		NetworkID: parameters.L1().Protocol.NetworkID(),
-		Inputs:    txInputs.UTXOInputs(),
-		Outputs:   outputs,
+	tx := &iotago.Transaction{
+		API: parameters.L1API(),
+		TransactionEssence: &iotago.TransactionEssence{
+			NetworkID:    parameters.L1().Protocol.NetworkID(),
+			Inputs:       txInputs.UTXOInputs(),
+			CreationSlot: 8,
+		},
+		Outputs: outputs,
 	}
-	sigs, err := essence.Sign(
-		txInputs.OrderedSet(unspentOutputs).MustCommitment(),
+	sigs, err := tx.Sign(
+		txInputs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API()),
 		keyPair.GetPrivateKey().AddressKeysForEd25519Address(walletAddr),
 	)
 	if err != nil {
 		return nil, accountOutput, isc.ChainID{}, err
 	}
-	tx := &iotago.Transaction{
-		Essence: essence,
-		Unlocks: transaction.MakeSignatureAndReferenceUnlocks(len(txInputs), sigs[0]),
-	}
+
 	txid, err := tx.ID()
 	if err != nil {
 		return nil, accountOutput, isc.ChainID{}, err
 	}
-	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0)))
-	return tx, accountOutput, chainID, nil
+	chainID := isc.ChainIDFromAccountID(iotago.AccountIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0)))
+
+	return &iotago.SignedTransaction{
+		API:         parameters.L1API(),
+		Transaction: tx,
+		Unlocks:     transaction.MakeSignatureAndReferenceUnlocks(len(txInputs), sigs[0]),
+	}, accountOutput, chainID, nil
 }

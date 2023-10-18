@@ -5,10 +5,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 func TestBaseTokensDecimalsToEthereumDecimals(t *testing.T) {
-	value := uint64(12345678)
+	value := iotago.BaseToken(12345678)
 	tests := []struct {
 		decimals uint32
 		expected string

@@ -36,7 +36,7 @@ func TestOrigin(t *testing.T) {
 
 func TestCreateOrigin(t *testing.T) {
 	var u *utxodb.UtxoDB
-	var originTx *iotago.Transaction
+	var originTx *iotago.SignedTransaction
 	var userKey *cryptolib.KeyPair
 	var userAddr, stateAddr *iotago.Ed25519Address
 	var err error
@@ -74,7 +74,7 @@ func TestCreateOrigin(t *testing.T) {
 		err = u.AddToLedger(originTx)
 		require.NoError(t, err)
 
-		originTxID, err = originTx.ID()
+		originTxID, err = originTx.Transaction.ID()
 		require.NoError(t, err)
 
 		txBack, ok := u.GetTransaction(originTxID)
@@ -90,7 +90,7 @@ func TestCreateOrigin(t *testing.T) {
 		initTest()
 		createOrigin()
 
-		anchor, _, err := transaction.GetAnchorFromTransaction(originTx)
+		anchor, _, err := transaction.GetAnchorFromTransaction(originTx.Transaction)
 		require.NoError(t, err)
 		require.True(t, anchor.IsOrigin)
 		require.EqualValues(t, chainID, anchor.ChainID)
@@ -122,7 +122,7 @@ func TestCreateOrigin(t *testing.T) {
 		initTest()
 		createOrigin()
 
-		chainBaseTokens := originTx.Essence.Outputs[0].Deposit()
+		chainBaseTokens := originTx.Transaction.Outputs[0].BaseTokenAmount()
 
 		t.Logf("chainBaseTokens: %d", chainBaseTokens)
 
@@ -150,7 +150,7 @@ func TestMetadataBad(t *testing.T) {
 		return true
 	})
 
-	for deposit := uint64(0); deposit <= 10*isc.Million; deposit++ {
+	for deposit := iotago.BaseToken(0); deposit <= 10*isc.Million; deposit++ {
 		db := mapdb.NewMapDB()
 		st := state.NewStoreWithUniqueWriteMutex(db)
 		block1A := origin.InitChain(st, initParams, deposit)
@@ -182,7 +182,7 @@ func TestDictBytes(t *testing.T) {
 // example values taken from a test on the testnet
 func TestMismatchOriginCommitment(t *testing.T) {
 	store := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-	oid, err := iotago.OutputIDFromHex("0xcf72dd6a8c8cd76eab93c80ae192677a17c554b91334a41bed5079eff37effc40000")
+	oid, err := iotago.OutputIDFromHexString("0xcf72dd6a8c8cd76eab93c80ae192677a17c554b91334a41bed5079eff37effc40000")
 	require.NoError(t, err)
 	originMetadata, err := hexutil.DecodeHex("0x03016102e607016204ffffffff016322010024ed2ed9d3682c9c4b801dd15103f73d1fe877224cb51c8b3def6f91b67f5067")
 	require.NoError(t, err)
@@ -200,12 +200,11 @@ func TestMismatchOriginCommitment(t *testing.T) {
 	ao := isc.NewAccountOutputWithID(
 		&iotago.AccountOutput{
 			Amount:         10000000,
-			NativeTokens:   []*iotago.NativeTokenFeature{},
-			AccountID:        chainAccountAddress.(*iotago.AccountAddress).AccountID(),
+			AccountID:      chainAccountAddress.(*iotago.AccountAddress).AccountID(),
 			StateIndex:     0,
 			StateMetadata:  aoStateMetadata,
 			FoundryCounter: 0,
-			Conditions: []iotago.UnlockCondition{
+			Conditions: iotago.AccountOutputUnlockConditions{
 				&iotago.StateControllerAddressUnlockCondition{Address: stateController},
 				&iotago.GovernorAddressUnlockCondition{Address: govController},
 			},

@@ -4,6 +4,7 @@
 package registry
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"path"
 	"regexp"
+
+	"github.com/iancoleman/orderedmap"
 
 	"github.com/iotaledger/hive.go/runtime/ioutils"
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -50,7 +53,7 @@ func (c *comparableChainCommitteeID) Key() comparableChainCommitteeIDKey {
 }
 
 func (c *comparableChainCommitteeID) String() string {
-	return fmt.Sprintf("%s-%s", c.chainID, c.address.Bech32(parameters.L1().Protocol.Bech32HRP))
+	return fmt.Sprintf("%s-%s", c.chainID, c.address.Bech32(parameters.L1().Protocol.Bech32HRP()))
 }
 
 type consensusState struct {
@@ -79,15 +82,15 @@ func (c *consensusState) Address() iotago.Address {
 }
 
 type jsonConsensusState struct {
-	ChainID          string           `json:"chainId"`
-	CommitteeAddress *json.RawMessage `json:"committeeAddress"`
-	LogIndex         uint32           `json:"logIndex"`
+	ChainID          string                 `json:"chainId"`
+	CommitteeAddress *orderedmap.OrderedMap `json:"committeeAddress"`
+	LogIndex         uint32                 `json:"logIndex"`
 }
 
 func (c *consensusState) MarshalJSON() ([]byte, error) {
-	chainIDBech32 := c.identifier.chainID.AsAddress().Bech32(parameters.L1().Protocol.Bech32HRP)
+	chainIDBech32 := c.identifier.chainID.AsAddress().Bech32(parameters.L1().Protocol.Bech32HRP())
 
-	jAddressRaw, err := iotago.AddressToJSONRawMsg(c.identifier.address)
+	jAddressRaw, err := parameters.L1API().Underlying().MapEncode(context.Background(), c.identifier.address)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +113,8 @@ func (c *consensusState) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	committeeAddress, err := iotago.AddressFromJSONRawMsg(j.CommitteeAddress)
+	var committeeAddress iotago.Address
+	err = parameters.L1API().Underlying().MapDecode(context.Background(), j.CommitteeAddress.Values(), &committeeAddress)
 	if err != nil {
 		return err
 	}

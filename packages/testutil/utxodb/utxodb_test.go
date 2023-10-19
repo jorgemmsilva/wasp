@@ -2,27 +2,14 @@ package utxodb
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/tpkg"
+	"github.com/iotaledger/iota.go/v4/vm"
 )
-
-func TestBasic(t *testing.T) {
-	u := New()
-	require.EqualValues(t, u.Supply(), u.GetAddressBalanceBaseTokens(u.GenesisAddress()))
-	gtime := u.GlobalTime()
-	expectedTime := time.Unix(1, 0).Add(1 * time.Millisecond)
-	require.EqualValues(t, expectedTime, gtime)
-
-	u.AdvanceClockBy(10 * time.Second)
-	gtime1 := u.GlobalTime()
-	expectedTime = gtime.Add(10 * time.Second)
-	require.EqualValues(t, expectedTime, gtime1)
-}
 
 func TestRequestFunds(t *testing.T) {
 	u := New()
@@ -35,10 +22,6 @@ func TestRequestFunds(t *testing.T) {
 	txID, err := tx.Transaction.ID()
 	require.NoError(t, err)
 	require.Same(t, tx, u.MustGetTransaction(txID))
-
-	gtime := u.GlobalTime()
-	expectedTime := time.Unix(1, 0).Add(2 * time.Millisecond)
-	require.EqualValues(t, expectedTime, gtime)
 }
 
 func TestAddTransactionFail(t *testing.T) {
@@ -66,17 +49,27 @@ func TestDoubleSpend(t *testing.T) {
 	tx1ID, err := tx1.Transaction.ID()
 	require.NoError(t, err)
 
+	input := tx1.Transaction.Outputs[0]
+	inputID := iotago.OutputIDFromTransactionIDAndIndex(tx1ID, 0)
+	mana, err := vm.TotalManaIn(
+		u.api.ManaDecayProvider(),
+		u.api.RentStructure(),
+		u.slotIndex,
+		vm.InputSet{inputID: input},
+	)
+
 	spend2, err := u.TxBuilder().
 		AddInput(&builder.TxInput{
 			UnlockTarget: addr1,
-			Input:        tx1.Transaction.Outputs[0],
-			InputID:      iotago.OutputIDFromTransactionIDAndIndex(tx1ID, 0),
+			Input:        input,
+			InputID:      inputID,
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: FundsFromFaucetAmount,
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: addr2},
 			},
+			Mana: mana,
 		}).
 		Build(key1Signer)
 	require.NoError(t, err)
@@ -86,14 +79,15 @@ func TestDoubleSpend(t *testing.T) {
 	spend3, err := u.TxBuilder().
 		AddInput(&builder.TxInput{
 			UnlockTarget: addr1,
-			Input:        tx1.Transaction.Outputs[0],
-			InputID:      iotago.OutputIDFromTransactionIDAndIndex(tx1ID, 0),
+			Input:        input,
+			InputID:      inputID,
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: FundsFromFaucetAmount,
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: addr3},
 			},
+			Mana: mana,
 		}).
 		Build(key1Signer)
 	require.NoError(t, err)

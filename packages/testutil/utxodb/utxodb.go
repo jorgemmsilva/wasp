@@ -2,23 +2,25 @@ package utxodb
 
 import (
 	"crypto/ed25519"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 	"sync"
-	"time"
 
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/iota.go/v4/vm"
+	"github.com/iotaledger/iota.go/v4/vm/nova"
 )
 
 const (
 	// FundsFromFaucetAmount is how many base tokens are returned from the faucet.
 	FundsFromFaucetAmount = iotago.BaseToken(1_000_000_000)
+	ManaFromFaucetAmount  = iotago.Mana(1_000_000_000)
 )
 
 var (
@@ -36,70 +38,38 @@ type UtxoDB struct {
 	mutex        sync.RWMutex
 	transactions map[iotago.TransactionID]*iotago.SignedTransaction
 	utxo         map[iotago.OutputID]struct{}
-	// globalLogicalTime can be ahead of real time due to AdvanceClockBy
-	globalLogicalTime time.Time
-	timeStep          time.Duration
-	api               iotago.API
-}
-
-type InitParams struct {
-	initialTime        time.Time
-	timestep           time.Duration
-	protocolParameters iotago.ProtocolParameters
-}
-
-func DefaultInitParams() *InitParams {
-	return &InitParams{
-		initialTime:        time.Unix(1, 0),
-		timestep:           1 * time.Millisecond,
-		protocolParameters: tpkg.TestAPI.ProtocolParameters(),
-	}
-}
-
-func (i *InitParams) WithInitialTime(t time.Time) *InitParams {
-	i.initialTime = t
-	return i
-}
-
-func (i *InitParams) WithTimeStep(timestep time.Duration) *InitParams {
-	i.timestep = timestep
-	return i
-}
-
-func (i *InitParams) WithProtocolParameters(p iotago.ProtocolParameters) *InitParams {
-	i.protocolParameters = p
-	return i
+	slotIndex    iotago.SlotIndex
+	api          iotago.API
 }
 
 // New creates a new UtxoDB instance
-func New(params ...*InitParams) *UtxoDB {
-	var p *InitParams
-	if len(params) > 0 {
-		p = params[0]
-	} else {
-		p = DefaultInitParams()
-	}
+func New(l1api ...iotago.API) *UtxoDB {
 	u := &UtxoDB{
-		transactions:      make(map[iotago.TransactionID]*iotago.SignedTransaction),
-		utxo:              make(map[iotago.OutputID]struct{}),
-		globalLogicalTime: p.initialTime,
-		timeStep:          p.timestep,
-		api:               iotago.V3API(p.protocolParameters),
+		transactions: make(map[iotago.TransactionID]*iotago.SignedTransaction),
+		utxo:         make(map[iotago.OutputID]struct{}),
+		api: func() iotago.API {
+			if len(l1api) > 0 {
+				return l1api[0]
+			}
+			return tpkg.TestAPI
+		}(),
 	}
 	u.genesisInit()
 	return u
 }
 
 func (u *UtxoDB) TxBuilder() *builder.TransactionBuilder {
-	return builder.NewTransactionBuilder(u.api)
+	return builder.NewTransactionBuilder(u.api).SetCreationSlot(u.slotIndex)
 }
 
 func (u *UtxoDB) genesisInit() {
 	genesisTx, err := u.TxBuilder().
 		AddInput(&builder.TxInput{
 			UnlockTarget: genesisAddress,
+			InputID:      u.dummyOutputID(),
 			Input: &iotago.BasicOutput{
 				Amount: u.Supply(),
+				Mana:   iotago.MaxMana / 2,
 				Conditions: iotago.BasicOutputUnlockConditions{
 					&iotago.AddressUnlockCondition{Address: genesisAddress},
 				},
@@ -107,6 +77,7 @@ func (u *UtxoDB) genesisInit() {
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: u.Supply(),
+			Mana:   iotago.MaxMana / 2,
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: genesisAddress},
 			},
@@ -116,6 +87,15 @@ func (u *UtxoDB) genesisInit() {
 		panic(err)
 	}
 	u.addTransaction(genesisTx, true)
+}
+
+func (u *UtxoDB) dummyOutputID() iotago.OutputID {
+	var txID iotago.TransactionID
+	binary.LittleEndian.PutUint32(txID[iotago.IdentifierLength:iotago.TransactionIDLength], uint32(u.slotIndex))
+	var outputID iotago.OutputID
+	copy(outputID[:], txID[:])
+	binary.LittleEndian.PutUint16(outputID[iotago.TransactionIDLength:], 0) // tx index 0
+	return outputID
 }
 
 func (u *UtxoDB) addTransaction(tx *iotago.SignedTransaction, isGenesis bool) {
@@ -139,34 +119,26 @@ func (u *UtxoDB) addTransaction(tx *iotago.SignedTransaction, isGenesis bool) {
 		outputID := iotago.OutputIDFromTransactionIDAndIndex(txid, uint16(i))
 		u.utxo[outputID] = struct{}{}
 	}
-	// advance clock
-	u.advanceClockBy(u.timeStep)
+	u.advanceSlotIndex(1)
 	u.checkLedgerBalance()
 }
 
-func (u *UtxoDB) advanceClockBy(step time.Duration) {
-	if step == 0 {
-		panic("can't advance clock by 0 nanoseconds")
-	}
-	u.globalLogicalTime = u.globalLogicalTime.Add(step)
+func (u *UtxoDB) advanceSlotIndex(step uint) {
+	u.slotIndex += iotago.SlotIndex(step)
 }
 
-func (u *UtxoDB) AdvanceClockBy(step time.Duration) {
+func (u *UtxoDB) AdvanceSlotIndex(step uint) {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 
-	u.advanceClockBy(step)
+	u.advanceSlotIndex(step)
 }
 
-func (u *UtxoDB) GlobalTime() time.Time {
+func (u *UtxoDB) SlotIndex() iotago.SlotIndex {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 
-	return u.globalLogicalTime
-}
-
-func (u *UtxoDB) TimeStep() time.Duration {
-	return u.timeStep
+	return u.slotIndex
 }
 
 // GenesisAddress returns the genesis address.
@@ -179,11 +151,21 @@ func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotag
 	if len(unspentOutputs) != 1 {
 		panic("number of genesis outputs must be 1")
 	}
-	var inputOutput *iotago.BasicOutput
-	var inputOutputID iotago.OutputID
+	var input *iotago.BasicOutput
+	var inputID iotago.OutputID
 	for oid, out := range unspentOutputs {
-		inputOutput = out.(*iotago.BasicOutput)
-		inputOutputID = oid
+		input = out.(*iotago.BasicOutput)
+		inputID = oid
+	}
+
+	mana, err := vm.TotalManaIn(
+		u.api.ManaDecayProvider(),
+		u.api.RentStructure(),
+		u.slotIndex,
+		vm.InputSet{inputID: input},
+	)
+	if err != nil {
+		panic(err)
 	}
 
 	fundsAmount := FundsFromFaucetAmount
@@ -194,20 +176,22 @@ func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotag
 	tx, err := u.TxBuilder().
 		AddInput(&builder.TxInput{
 			UnlockTarget: genesisAddress,
-			InputID:      inputOutputID,
-			Input:        inputOutput,
+			InputID:      inputID,
+			Input:        input,
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: fundsAmount,
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: target},
 			},
+			Mana: ManaFromFaucetAmount,
 		}).
 		AddOutput(&iotago.BasicOutput{
-			Amount: inputOutput.Amount - fundsAmount,
+			Amount: input.Amount - fundsAmount,
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: genesisAddress},
 			},
+			Mana: mana - ManaFromFaucetAmount,
 		}).
 		Build(genesisSigner)
 	if err != nil {
@@ -262,6 +246,8 @@ func (u *UtxoDB) getTransactionInputs(tx *iotago.SignedTransaction) (iotago.Outp
 	return inputs, nil
 }
 
+var novaVM = nova.NewVirtualMachine()
+
 func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 	// serialize for syntactic check
 	if _, err := u.api.Encode(tx, serix.WithValidation()); err != nil {
@@ -278,7 +264,14 @@ func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 		}
 	}
 
-	_, err = vm.ValidateUnlocks(tx, vm.ResolvedInputs{InputSet: vm.InputSet(inputs)})
+	resolvedInputs := vm.ResolvedInputs{InputSet: vm.InputSet(inputs)}
+
+	unlockedIdentities, err := novaVM.ValidateUnlocks(tx, resolvedInputs)
+	if err != nil {
+		return err
+	}
+
+	_, err = novaVM.Execute(tx.Transaction, resolvedInputs, unlockedIdentities)
 	if err != nil {
 		return err
 	}
@@ -445,10 +438,9 @@ func (u *UtxoDB) checkLedgerBalance() {
 }
 
 type UtxoDBState struct {
-	Transactions      map[string]*iotago.SignedTransaction
-	UTXO              []string
-	GlobalLogicalTime time.Time
-	TimeStep          time.Duration
+	Transactions map[string]*iotago.SignedTransaction
+	UTXO         []string
+	SlotIndex    iotago.SlotIndex
 }
 
 func (u *UtxoDB) State() *UtxoDBState {
@@ -466,10 +458,9 @@ func (u *UtxoDB) State() *UtxoDBState {
 	}
 
 	return &UtxoDBState{
-		Transactions:      txs,
-		UTXO:              utxo,
-		GlobalLogicalTime: u.globalLogicalTime,
-		TimeStep:          u.timeStep,
+		Transactions: txs,
+		UTXO:         utxo,
+		SlotIndex:    u.slotIndex,
 	}
 }
 
@@ -479,8 +470,7 @@ func (u *UtxoDB) SetState(state *UtxoDBState) {
 
 	u.transactions = make(map[iotago.TransactionID]*iotago.SignedTransaction)
 	u.utxo = make(map[iotago.OutputID]struct{})
-	u.globalLogicalTime = state.GlobalLogicalTime
-	u.timeStep = state.TimeStep
+	u.slotIndex = state.SlotIndex
 
 	for s, tx := range state.Transactions {
 		b, err := hex.DecodeString(s)

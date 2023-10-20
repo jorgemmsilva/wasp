@@ -29,8 +29,6 @@ var (
 	genesisSigner  = iotago.NewInMemoryAddressSigner(iotago.NewAddressKeysForEd25519Address(genesisAddress, genesisPrivKey))
 )
 
-type UnixSeconds uint64
-
 // UtxoDB mocks the Tangle ledger by implementing a fully synchronous in-memory database
 // of transactions. It ensures the consistency of the ledger and all added transactions
 // by checking inputs, outputs and signatures.

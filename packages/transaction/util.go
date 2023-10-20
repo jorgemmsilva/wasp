@@ -166,7 +166,7 @@ func computeRemainderOutputs(
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := parameters.L1API().RentStructure().MinDeposit(out)
+		sd, err := parameters.RentStructure().MinDeposit(out)
 		if err != nil {
 			return nil, err
 		}
@@ -185,7 +185,7 @@ func computeRemainderOutputs(
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := parameters.L1API().RentStructure().MinDeposit(out)
+		sd, err := parameters.RentStructure().MinDeposit(out)
 		if err != nil {
 			return nil, err
 		}

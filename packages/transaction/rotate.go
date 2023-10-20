@@ -25,8 +25,8 @@ func NewRotateChainStateControllerTx(
 	resolvedAccountID := util.AccountIDFromAccountOutput(o, chainOutputID)
 	if resolvedAccountID != aliasID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
-			aliasID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP()),
-			chainOutput.(*iotago.AccountOutput).AccountID.ToAddress().Bech32(parameters.L1().Protocol.Bech32HRP()),
+			aliasID.ToAddress().Bech32(parameters.NetworkPrefix()),
+			chainOutput.(*iotago.AccountOutput).AccountID.ToAddress().Bech32(parameters.NetworkPrefix()),
 		)
 	}
 

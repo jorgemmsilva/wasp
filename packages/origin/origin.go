@@ -85,7 +85,7 @@ func InitChainByAccountOutput(chainStore state.Store, accountOutput *isc.Account
 			return nil, fmt.Errorf("invalid parameters on origin AO, %w", err)
 		}
 	}
-	aoMinSD, err := parameters.L1API().RentStructure().MinDeposit(accountOutput.GetAccountOutput())
+	aoMinSD, err := parameters.RentStructure().MinDeposit(accountOutput.GetAccountOutput())
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func NewChainOriginTransaction(
 		},
 	}
 
-	minSD, err := parameters.L1API().RentStructure().MinDeposit(accountOutput)
+	minSD, err := parameters.RentStructure().MinDeposit(accountOutput)
 	if err != nil {
 		return nil, accountOutput, isc.ChainID{}, err
 	}

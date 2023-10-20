@@ -53,7 +53,7 @@ func (c *comparableChainCommitteeID) Key() comparableChainCommitteeIDKey {
 }
 
 func (c *comparableChainCommitteeID) String() string {
-	return fmt.Sprintf("%s-%s", c.chainID, c.address.Bech32(parameters.L1().Protocol.Bech32HRP()))
+	return fmt.Sprintf("%s-%s", c.chainID, c.address.Bech32(parameters.NetworkPrefix()))
 }
 
 type consensusState struct {
@@ -88,7 +88,7 @@ type jsonConsensusState struct {
 }
 
 func (c *consensusState) MarshalJSON() ([]byte, error) {
-	chainIDBech32 := c.identifier.chainID.AsAddress().Bech32(parameters.L1().Protocol.Bech32HRP())
+	chainIDBech32 := c.identifier.chainID.AsAddress().Bech32(parameters.NetworkPrefix())
 
 	jAddressRaw, err := parameters.L1API().Underlying().MapEncode(context.Background(), c.identifier.address)
 	if err != nil {

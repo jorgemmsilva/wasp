@@ -25,7 +25,7 @@ func NewMintNFTsTransaction(
 	nftsOut := make(map[iotago.NFTID]bool)
 
 	addOutput := func(out *iotago.NFTOutput) {
-		d, err := parameters.L1API().RentStructure().MinDeposit(out)
+		d, err := parameters.RentStructure().MinDeposit(out)
 		if err != nil {
 			panic(err)
 		}

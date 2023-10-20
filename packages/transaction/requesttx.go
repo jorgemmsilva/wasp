@@ -34,7 +34,7 @@ func NewTransferTransaction(
 		output = AdjustToMinimumStorageDeposit(output)
 	}
 
-	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(output)
+	storageDeposit, err := parameters.RentStructure().MinDeposit(output)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func NewRequestTransaction(
 		out = AdjustToMinimumStorageDeposit(out)
 	}
 
-	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(out)
+	storageDeposit, err := parameters.RentStructure().MinDeposit(out)
 	if err != nil {
 		return nil, err
 	}

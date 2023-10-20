@@ -24,61 +24,54 @@ type BaseToken struct {
 	UseMetricPrefix bool   `json:"useMetricPrefix" swagger:"desc(Whether or not the token uses a metric prefix),required"`
 }
 
-var (
-	l1ParamsMutex = &sync.RWMutex{}
-	l1Params      *L1Params
-
-	L1ForTesting = &L1Params{
-		Protocol: tpkg.TestAPI.ProtocolParameters(),
-		BaseToken: &BaseToken{
-			Name:            "Iota",
-			TickerSymbol:    "MIOTA",
-			Unit:            "MIOTA",
-			Subunit:         "IOTA",
-			Decimals:        6,
-			UseMetricPrefix: false,
-		},
-	}
-
-	l1ParamsLazyInit func()
-)
-
 func isTestContext() bool {
 	return strings.HasSuffix(os.Args[0], ".test") ||
 		strings.HasSuffix(os.Args[0], ".test.exe") ||
 		strings.Contains(os.Args[0], "__debug_bin")
 }
 
-func L1() *L1Params {
-	l1ParamsMutex.Lock()
-	defer l1ParamsMutex.Unlock()
-	return L1NoLock()
+var L1ForTesting = &L1Params{
+	Protocol: tpkg.TestAPI.ProtocolParameters(),
+	BaseToken: &BaseToken{
+		Name:            "TestCoin",
+		TickerSymbol:    "TEST",
+		Unit:            "TEST",
+		Subunit:         "testies",
+		Decimals:        6,
+		UseMetricPrefix: false,
+	},
 }
 
-func L1NoLock() *L1Params {
-	if l1Params == nil {
-		if isTestContext() {
-			l1Params = L1ForTesting
-		} else if l1ParamsLazyInit != nil {
-			l1ParamsLazyInit()
-		}
-	}
-	if l1Params == nil {
+var L1 = sync.OnceValue(func() *L1Params {
+	if !isTestContext() {
 		panic("call InitL1() first")
 	}
-	return l1Params
-}
+	return L1ForTesting
+})
 
 // InitL1Lazy sets a function to be called the first time L1() is called.
-// The function must call InitL1().
-func InitL1Lazy(f func()) {
-	l1ParamsLazyInit = f
+func InitL1Lazy(f func() *L1Params) {
+	L1 = sync.OnceValue(f)
 }
 
 func InitL1(l1 *L1Params) {
-	l1Params = l1
+	L1 = func() *L1Params {
+		return l1
+	}
 }
 
 var L1API = sync.OnceValue(func() iotago.API {
 	return iotago.V3API(L1().Protocol)
 })
+
+func RentStructure() *iotago.RentStructure {
+	return L1API().RentStructure()
+}
+
+func Protocol() iotago.ProtocolParameters {
+	return L1().Protocol
+}
+
+func NetworkPrefix() iotago.NetworkPrefix {
+	return Protocol().Bech32HRP()
+}

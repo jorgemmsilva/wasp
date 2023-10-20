@@ -96,7 +96,7 @@ func NFTOutputFromPostData(
 	if !par.AdjustToMinimumStorageDeposit {
 		return out
 	}
-	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(out)
+	storageDeposit, err := parameters.RentStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}
@@ -142,7 +142,7 @@ func AssetsFromOutput(o iotago.Output) *isc.Assets {
 }
 
 func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
-	storageDeposit, err := parameters.L1API().RentStructure().MinDeposit(out)
+	storageDeposit, err := parameters.RentStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}

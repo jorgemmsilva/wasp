@@ -38,7 +38,7 @@ func EVMEstimateGas(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, 
 	}
 
 	if call.GasPrice == nil {
-		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.L1().BaseToken.Decimals)
+		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
 	}
 
 	gasCap = hi

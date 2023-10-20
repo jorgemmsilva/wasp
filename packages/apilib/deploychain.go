@@ -61,7 +61,7 @@ func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr i
 	}
 	fmt.Fprint(textout, par.Prefix)
 	fmt.Fprintf(textout, "Chain has been created successfully on the Tangle.\n* ChainID: %s\n* State address: %s\n* committee size = %d\n* quorum = %d\n",
-		chainID.String(), stateControllerAddr.Bech32(parameters.L1().Protocol.Bech32HRP), par.N, par.T)
+		chainID.String(), stateControllerAddr.Bech32(parameters.NetworkPrefix()), par.N, par.T)
 
 	fmt.Fprintf(textout, "Make sure to activate the chain on all committee nodes\n")
 

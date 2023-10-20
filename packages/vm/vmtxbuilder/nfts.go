@@ -108,7 +108,7 @@ func (txb *AnchorTransactionBuilder) internalNFTOutputFromRequest(nftOutput *iot
 	}
 
 	// set amount to the min SD
-	out.Amount = parameters.L1().Protocol.RentStructure.MinRent(out)
+	out.Amount = parameters.RentStructure().MinDeposit(out)
 
 	ret := &nftIncluded{
 		ID:              out.NFTID,
@@ -203,7 +203,7 @@ func (txb *AnchorTransactionBuilder) MintNFT(addr iotago.Address, immutableMetad
 			&iotago.MetadataFeature{Data: immutableMetadata},
 		},
 	}
-	nftOutput.Amount = parameters.L1().Protocol.RentStructure.MinRent(nftOutput)
+	nftOutput.Amount = parameters.RentStructure().MinDeposit(nftOutput)
 	txb.nftsMinted = append(txb.nftsMinted, nftOutput)
 	return uint16(len(txb.nftsMinted) - 1), nftOutput
 }

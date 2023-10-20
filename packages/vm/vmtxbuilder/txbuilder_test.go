@@ -46,7 +46,7 @@ func (m *mockAccountContractRead) Read() AccountsContractRead {
 }
 
 func newMockAccountsContractRead(anchor *iotago.AccountOutput) *mockAccountContractRead {
-	anchorMinSD := parameters.L1().Protocol.RentStructure.MinRent(anchor)
+	anchorMinSD := parameters.RentStructure().MinDeposit(anchor)
 	assets := isc.NewAssetsBaseTokens(anchor.Deposit() - anchorMinSD)
 	return &mockAccountContractRead{
 		assets:             assets,
@@ -81,7 +81,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		txb := NewAnchorTransactionBuilder(
 			anchor,
 			anchorID,
-			parameters.L1().Protocol.RentStructure.MinRent(anchor),
+			parameters.RentStructure().MinDeposit(anchor),
 			mockedAccounts.Read(),
 		)
 		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata)
@@ -169,7 +169,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		txb := NewAnchorTransactionBuilder(
 			anchor,
 			anchorID,
-			parameters.L1().Protocol.RentStructure.MinRent(anchor),
+			parameters.RentStructure().MinDeposit(anchor),
 			mockedAccounts.Read(),
 		)
 
@@ -412,7 +412,7 @@ func TestFoundries(t *testing.T) {
 		txb = NewAnchorTransactionBuilder(
 			anchor,
 			anchorID,
-			parameters.L1().Protocol.RentStructure.MinRent(anchor),
+			parameters.RentStructure().MinDeposit(anchor),
 			mockedAccounts.Read(),
 		)
 

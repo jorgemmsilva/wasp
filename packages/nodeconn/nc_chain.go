@@ -552,7 +552,7 @@ func (ncc *ncChain) queryLatestChainStateAccountOutput(ctx context.Context) (iot
 }
 
 func (ncc *ncChain) queryChainOutputIDs(ctx context.Context) ([]iotago.OutputID, error) {
-	bech32Addr := ncc.chainID.AsAddress().Bech32(parameters.L1().Protocol.Bech32HRP)
+	bech32Addr := ncc.chainID.AsAddress().Bech32(parameters.NetworkPrefix())
 
 	falseCondition := false
 	queries := []nodeclient.IndexerQuery{

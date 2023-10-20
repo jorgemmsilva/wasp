@@ -413,7 +413,7 @@ func (s WasmContextSandbox) fnUtilsBech32Decode(args []byte) []byte {
 	s.checkErr(err)
 	// Wasm VM will never be able to go outside the current network,
 	// so it probably does not make sense to use any external addresses
-	if hrp != parameters.L1().Protocol.Bech32HRP {
+	if hrp != parameters.NetworkPrefix() {
 		s.Panicf("Invalid protocol prefix: %s", string(hrp))
 	}
 	return cvt.ScAddress(addr).Bytes()
@@ -422,7 +422,7 @@ func (s WasmContextSandbox) fnUtilsBech32Decode(args []byte) []byte {
 func (s WasmContextSandbox) fnUtilsBech32Encode(args []byte) []byte {
 	scAddress := wasmtypes.AddressFromBytes(args)
 	addr := cvt.IscAddress(&scAddress)
-	return []byte(addr.Bech32(parameters.L1().Protocol.Bech32HRP))
+	return []byte(addr.Bech32(parameters.NetworkPrefix()))
 }
 
 func (s WasmContextSandbox) fnUtilsBlsAddress(args []byte) []byte {

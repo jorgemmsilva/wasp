@@ -310,7 +310,7 @@ func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockN
 		isc.NewEthereumAddressAgentID(*e.backend.ISCChainID(), address),
 		*e.backend.ISCChainID(),
 	)
-	return util.BaseTokensDecimalsToEthereumDecimals(baseTokens, parameters.L1().BaseToken.Decimals), nil
+	return util.BaseTokensDecimalsToEthereumDecimals(baseTokens, parameters.BaseToken().Decimals), nil
 }
 
 func (e *EVMChain) Code(address common.Address, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {
@@ -452,7 +452,7 @@ func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.
 
 func (e *EVMChain) GasPrice() *big.Int {
 	e.log.Debugf("GasPrice()")
-	return e.GasFeePolicy().GasPriceWei(parameters.L1().BaseToken.Decimals)
+	return e.GasFeePolicy().GasPriceWei(parameters.BaseToken().Decimals)
 }
 
 func (e *EVMChain) StorageAt(address common.Address, key common.Hash, blockNumberOrHash *rpc.BlockNumberOrHash) (common.Hash, error) {

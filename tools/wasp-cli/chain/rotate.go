@@ -32,8 +32,8 @@ func initRotateCmd() *cobra.Command {
 
 			prefix, newStateControllerAddr, err := iotago.ParseBech32(args[0])
 			log.Check(err)
-			if parameters.L1().Protocol.Bech32HRP != prefix {
-				log.Fatalf("unexpected prefix. expected: %s, actual: %s", parameters.L1().Protocol.Bech32HRP, prefix)
+			if parameters.NetworkPrefix() != prefix {
+				log.Fatalf("unexpected prefix. expected: %s, actual: %s", parameters.NetworkPrefix(), prefix)
 			}
 			rotateTo(chain, newStateControllerAddr)
 		},
@@ -104,18 +104,18 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 	if log.DebugFlag {
 		s, err2 := chainOutput.MarshalJSON()
 		log.Check(err2)
-		minSD := parameters.L1().Protocol.RentStructure.MinRent(chainOutput)
+		minSD := parameters.RentStructure().MinDeposit(chainOutput)
 		log.Printf("original chain output: %s, minSD: %d\n", s, minSD)
 
 		rotOut := tx.Outputs[0]
 		s, err2 = rotOut.MarshalJSON()
 		log.Check(err2)
-		minSD = parameters.L1().Protocol.RentStructure.MinRent(rotOut)
+		minSD = parameters.RentStructure().MinDeposit(rotOut)
 		log.Printf("new chain output: %s, minSD: %d\n", s, minSD)
 
 		json, err2 := tx.MarshalJSON()
 		log.Check(err2)
-		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(parameters.L1().Protocol.Bech32HRP))
+		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(parameters.NetworkPrefix()))
 		log.Printf("rotation tx: %s", string(json))
 	}
 

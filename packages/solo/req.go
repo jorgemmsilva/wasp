@@ -419,7 +419,7 @@ func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPai
 // deposit.
 func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptolib.KeyPair) uint64 {
 	out := transaction.MakeRequestTransactionOutput(ch.requestTransactionParams(req, keyPair))
-	storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(out)
+	storageDeposit := parameters.RentStructure().MinDeposit(out)
 
 	reqDeposit := uint64(0)
 	if req.ftokens != nil {

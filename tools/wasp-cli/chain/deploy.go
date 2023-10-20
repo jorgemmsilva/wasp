@@ -44,8 +44,8 @@ func controllerAddrDefaultFallback(addr string) iotago.Address {
 	}
 	prefix, govControllerAddr, err := iotago.ParseBech32(addr)
 	log.Check(err)
-	if parameters.L1().Protocol.Bech32HRP != prefix {
-		log.Fatalf("unexpected prefix. expected: %s, actual: %s", parameters.L1().Protocol.Bech32HRP, prefix)
+	if parameters.NetworkPrefix() != prefix {
+		log.Fatalf("unexpected prefix. expected: %s, actual: %s", parameters.NetworkPrefix(), prefix)
 	}
 	return govControllerAddr
 }

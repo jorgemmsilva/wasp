@@ -30,9 +30,9 @@ func (c *Controller) getControlAddresses(e echo.Context) error {
 	}
 
 	controlAddressesResponse := &models.ControlAddressesResponse{
-		GoverningAddress: controlAddresses.GoverningAddress.Bech32(parameters.L1().Protocol.Bech32HRP),
+		GoverningAddress: controlAddresses.GoverningAddress.Bech32(parameters.NetworkPrefix()),
 		SinceBlockIndex:  controlAddresses.SinceBlockIndex,
-		StateAddress:     controlAddresses.StateAddress.Bech32(parameters.L1().Protocol.Bech32HRP),
+		StateAddress:     controlAddresses.StateAddress.Bech32(parameters.NetworkPrefix()),
 	}
 
 	return e.JSON(http.StatusOK, controlAddressesResponse)

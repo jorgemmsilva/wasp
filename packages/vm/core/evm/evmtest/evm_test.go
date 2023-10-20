@@ -1107,17 +1107,17 @@ func TestERC20BaseTokens(t *testing.T) {
 	{
 		var name string
 		require.NoError(t, erc20.callView("name", nil, &name))
-		require.Equal(t, parameters.L1().BaseToken.Name, name)
+		require.Equal(t, parameters.BaseToken().Name, name)
 	}
 	{
 		var sym string
 		require.NoError(t, erc20.callView("symbol", nil, &sym))
-		require.Equal(t, parameters.L1().BaseToken.TickerSymbol, sym)
+		require.Equal(t, parameters.BaseToken().TickerSymbol, sym)
 	}
 	{
 		var dec uint8
 		require.NoError(t, erc20.callView("decimals", nil, &dec))
-		require.EqualValues(t, parameters.L1().BaseToken.Decimals, dec)
+		require.EqualValues(t, parameters.BaseToken().Decimals, dec)
 	}
 	{
 		var supply *big.Int

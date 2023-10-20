@@ -27,7 +27,7 @@ func ValueFromString(vtype, s string, chainID isc.ChainID) []byte {
 	case "address":
 		prefix, addr, err := iotago.ParseBech32(s)
 		log.Check(err)
-		l1Prefix := parameters.L1().Protocol.Bech32HRP
+		l1Prefix := parameters.NetworkPrefix()
 		if prefix != l1Prefix {
 			log.Fatalf("address prefix %s does not match L1 prefix %s", prefix, l1Prefix)
 		}
@@ -130,7 +130,7 @@ func ValueToString(vtype string, v []byte) string {
 	case "address":
 		addr, err := codec.DecodeAddress(v)
 		log.Check(err)
-		return addr.Bech32(parameters.L1().Protocol.Bech32HRP)
+		return addr.Bech32(parameters.NetworkPrefix())
 	case "agentid":
 		aid, err := codec.DecodeAgentID(v)
 		log.Check(err)

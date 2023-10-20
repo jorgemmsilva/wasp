@@ -6,22 +6,14 @@ import (
 	"sync"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 )
 
 // L1Params describes parameters coming from the L1Params node
 type L1Params struct {
-	Protocol  iotago.ProtocolParameters `json:"protocol" swagger:"required"`
-	BaseToken *BaseToken                `json:"baseToken" swagger:"required"`
-}
-
-type BaseToken struct {
-	Name            string `json:"name" swagger:"desc(The base token name),required"`
-	TickerSymbol    string `json:"tickerSymbol" swagger:"desc(The ticker symbol),required"`
-	Unit            string `json:"unit" swagger:"desc(The token unit),required"`
-	Subunit         string `json:"subunit" swagger:"desc(The token subunit),required"`
-	Decimals        uint32 `json:"decimals" swagger:"desc(The token decimals),required"`
-	UseMetricPrefix bool   `json:"useMetricPrefix" swagger:"desc(Whether or not the token uses a metric prefix),required"`
+	Protocol  iotago.ProtocolParameters   `json:"protocol" swagger:"required"`
+	BaseToken *apimodels.InfoResBaseToken `json:"baseToken" swagger:"required"`
 }
 
 func isTestContext() bool {
@@ -32,7 +24,7 @@ func isTestContext() bool {
 
 var L1ForTesting = &L1Params{
 	Protocol: tpkg.TestAPI.ProtocolParameters(),
-	BaseToken: &BaseToken{
+	BaseToken: &apimodels.InfoResBaseToken{
 		Name:            "TestCoin",
 		TickerSymbol:    "TEST",
 		Unit:            "TEST",
@@ -74,4 +66,8 @@ func Protocol() iotago.ProtocolParameters {
 
 func NetworkPrefix() iotago.NetworkPrefix {
 	return Protocol().Bech32HRP()
+}
+
+func BaseToken() *apimodels.InfoResBaseToken {
+	return L1().BaseToken
 }

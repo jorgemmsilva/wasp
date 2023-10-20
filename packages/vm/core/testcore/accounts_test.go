@@ -504,7 +504,7 @@ func TestAccountBalances(t *testing.T) {
 
 		bi := ch.GetLatestBlockInfo()
 
-		anchorSD := parameters.L1().Protocol.RentStructure.MinRent(anchor)
+		anchorSD := parameters.RentStructure().MinDeposit(anchor)
 		require.EqualValues(t,
 			anchor.Deposit(),
 			anchorSD+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(senderAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
@@ -600,7 +600,7 @@ func TestDepositBaseTokens(t *testing.T) {
 			require.NoError(t, err)
 			rec := v.ch.LastReceipt()
 
-			storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(tx.Outputs[0])
+			storageDeposit := parameters.RentStructure().MinDeposit(tx.Outputs[0])
 			t.Logf("byteCost = %d", storageDeposit)
 
 			adjusted := addBaseTokens
@@ -900,7 +900,7 @@ func TestTransferPartialAssets(t *testing.T) {
 		isc.NewAssets(
 			baseTokensToSend,
 			[]*iotago.NativeTokenFeature{
-				&iotago.NativeTokenFeature{
+				{
 					ID:     nativeTokenID,
 					Amount: big.NewInt(9),
 				},
@@ -936,7 +936,7 @@ func TestMintedTokensBurn(t *testing.T) {
 		inputIDs[1]: &iotago.AccountOutput{
 			Amount:         OneMi,
 			NativeTokens:   nil,
-			AccountID:        aliasIdent1.AccountID(),
+			AccountID:      aliasIdent1.AccountID(),
 			StateIndex:     1,
 			StateMetadata:  nil,
 			FoundryCounter: 1,
@@ -978,7 +978,7 @@ func TestMintedTokensBurn(t *testing.T) {
 			&iotago.AccountOutput{
 				Amount:         OneMi,
 				NativeTokens:   nil,
-				AccountID:        aliasIdent1.AccountID(),
+				AccountID:      aliasIdent1.AccountID(),
 				StateIndex:     2,
 				StateMetadata:  nil,
 				FoundryCounter: 1,
@@ -1328,7 +1328,7 @@ func TestAllowanceNotEnoughFunds(t *testing.T) {
 		// test base token
 		isc.NewAssetsBaseTokens(1000 * isc.Million),
 		// test fungible tokens
-		isc.NewAssets(0, []*iotago.NativeTokenFeature{&iotago.NativeTokenFeature{
+		isc.NewAssets(0, []*iotago.NativeTokenFeature{{
 			ID:     [38]byte{0x1},
 			Amount: big.NewInt(10),
 		}}),

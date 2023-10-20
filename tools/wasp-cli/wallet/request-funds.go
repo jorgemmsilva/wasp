@@ -19,7 +19,7 @@ func initRequestFundsCmd() *cobra.Command {
 			log.Check(cliclients.L1Client().RequestFunds(address))
 
 			model := &RequestFundsModel{
-				Address: address.Bech32(parameters.L1().Protocol.Bech32HRP),
+				Address: address.Bech32(parameters.NetworkPrefix()),
 				Message: "success",
 			}
 

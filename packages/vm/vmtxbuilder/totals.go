@@ -29,7 +29,7 @@ type TransactionTotals struct {
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
-	anchorInputSD := parameters.L1().Protocol.RentStructure.MinRent(txb.anchorOutput)
+	anchorInputSD := parameters.RentStructure().MinDeposit(txb.anchorOutput)
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
@@ -83,7 +83,7 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	anchorOutputSD := parameters.L1().Protocol.RentStructure.MinRent(txb.resultAnchorOutput)
+	anchorOutputSD := parameters.RentStructure().MinDeposit(txb.resultAnchorOutput)
 
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),

@@ -22,5 +22,5 @@ func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestPara
 		contractIdentity,
 		par,
 	)
-	return parameters.L1().Protocol.RentStructure.MinRent(out)
+	return parameters.RentStructure().MinDeposit(out)
 }

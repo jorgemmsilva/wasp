@@ -315,13 +315,13 @@ func (env *Solo) deployChain(
 	env.AssertL1BaseTokens(originatorAddr, initialL1Balance-anchor.Deposit)
 
 	env.logger.Infof("deploying new chain '%s'. ID: %s, state controller address: %s",
-		name, chainID.String(), stateControllerAddr.Bech32(parameters.L1().Protocol.Bech32HRP))
-	env.logger.Infof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(parameters.L1().Protocol.Bech32HRP))
-	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(parameters.L1().Protocol.Bech32HRP))
+		name, chainID.String(), stateControllerAddr.Bech32(parameters.NetworkPrefix()))
+	env.logger.Infof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(parameters.NetworkPrefix()))
+	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(parameters.NetworkPrefix()))
 
 	db, writeMutex, err := env.chainStateDatabaseManager.ChainStateKVStore(chainID)
 	require.NoError(env.T, err)
-	originAOMinSD := parameters.L1().Protocol.RentStructure.MinRent(originAO)
+	originAOMinSD := parameters.RentStructure().MinDeposit(originAO)
 	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(db))
 	origin.InitChain(store, initParams, originAO.Amount-originAOMinSD)
 

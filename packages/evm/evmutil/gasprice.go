@@ -10,7 +10,7 @@ import (
 )
 
 func CheckGasPrice(tx *types.Transaction, gasFeePolicy *gas.FeePolicy) error {
-	expectedGasPrice := gasFeePolicy.GasPriceWei(parameters.L1().BaseToken.Decimals)
+	expectedGasPrice := gasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
 	gasPrice := tx.GasPrice()
 	if gasPrice.Cmp(expectedGasPrice) != 0 {
 		return fmt.Errorf(

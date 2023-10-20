@@ -24,7 +24,7 @@ func EVMCall(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, call et
 	}
 
 	if call.GasPrice == nil {
-		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.L1().BaseToken.Decimals)
+		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
 	}
 
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)

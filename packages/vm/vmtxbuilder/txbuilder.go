@@ -165,7 +165,7 @@ func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerReques
 func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 	defer txb.assertLimits()
 
-	storageDeposit := parameters.L1().Protocol.RentStructure.MinRent(o)
+	storageDeposit := parameters.RentStructure().MinDeposit(o)
 	if o.Deposit() < storageDeposit {
 		panic(fmt.Errorf("%v: available %d < required %d base tokens",
 			transaction.ErrNotEnoughBaseTokensForStorageDeposit, o.Deposit(), storageDeposit))
@@ -293,7 +293,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *i
 		)
 	}
 
-	minSD := parameters.L1().Protocol.RentStructure.MinRent(anchorOutput)
+	minSD := parameters.RentStructure().MinDeposit(anchorOutput)
 	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + minSD
 	return anchorOutput
 }

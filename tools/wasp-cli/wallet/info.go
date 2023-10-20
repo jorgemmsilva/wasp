@@ -20,7 +20,7 @@ func initAddressCmd() *cobra.Command {
 			myWallet := wallet.Load()
 			address := myWallet.Address()
 
-			model := &AddressModel{Address: address.Bech32(parameters.L1().Protocol.Bech32HRP)}
+			model := &AddressModel{Address: address.Bech32(parameters.NetworkPrefix())}
 
 			if log.VerboseFlag {
 				verboseOutput := make(map[string]string)
@@ -67,7 +67,7 @@ func initBalanceCmd() *cobra.Command {
 			balance := isc.AssetsFromOutputMap(outs)
 
 			model := &BalanceModel{
-				Address:      address.Bech32(parameters.L1().Protocol.Bech32HRP),
+				Address:      address.Bech32(parameters.NetworkPrefix()),
 				AddressIndex: myWallet.AddressIndex,
 				NativeTokens: balance.NativeTokens,
 				BaseTokens:   balance.BaseTokens,

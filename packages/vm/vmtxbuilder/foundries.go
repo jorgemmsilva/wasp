@@ -42,7 +42,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 			Data: metadata,
 		}}
 	}
-	f.Amount = parameters.L1().Protocol.RentStructure.MinRent(f)
+	f.Amount = parameters.RentStructure().MinDeposit(f)
 	txb.invokedFoundries[f.SerialNumber] = &foundryInvoked{
 		serialNumber:     f.SerialNumber,
 		accountingInput:  nil,

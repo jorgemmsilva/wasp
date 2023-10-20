@@ -91,7 +91,7 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
 
-	bech32Addr := myAddress.Bech32(parameters.L1().Protocol.Bech32HRP)
+	bech32Addr := myAddress.Bech32(parameters.NetworkPrefix())
 	queries := []nodeclient.IndexerQuery{
 		&nodeclient.BasicOutputsQuery{AddressBech32: bech32Addr},
 		&nodeclient.FoundriesQuery{AccountAddressBech32: bech32Addr},
@@ -327,7 +327,7 @@ func (c *l1client) FaucetRequestHTTP(addr iotago.Address, timeout ...time.Durati
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
 
-	faucetReq := fmt.Sprintf("{\"address\":%q}", addr.Bech32(parameters.L1().Protocol.Bech32HRP))
+	faucetReq := fmt.Sprintf("{\"address\":%q}", addr.Bech32(parameters.NetworkPrefix()))
 	faucetURL := fmt.Sprintf("%s/api/enqueue", c.config.FaucetAddress)
 	httpReq, err := http.NewRequestWithContext(ctxWithTimeout, http.MethodPost, faucetURL, bytes.NewReader([]byte(faucetReq)))
 	if err != nil {

@@ -132,16 +132,12 @@ func NewChainOriginTransaction(
 	stateControllerAddress iotago.Address,
 	governanceControllerAddress iotago.Address,
 	deposit iotago.BaseToken,
+	depositMana iotago.Mana,
 	initParams dict.Dict,
 	unspentOutputs iotago.OutputSet,
-	unspentOutputIDs iotago.OutputIDs,
 	creationSlot iotago.SlotIndex,
 	schemaVersion uint32,
 ) (*iotago.SignedTransaction, *iotago.AccountOutput, isc.ChainID, error) {
-	if len(unspentOutputs) != len(unspentOutputIDs) {
-		panic("mismatched lengths of outputs and inputs slices")
-	}
-
 	walletAddr := keyPair.GetPublicKey().AsEd25519Address()
 
 	if initParams == nil {
@@ -162,6 +158,7 @@ func NewChainOriginTransaction(
 		Features: iotago.AccountOutputFeatures{
 			&iotago.MetadataFeature{Data: initParams.Bytes()},
 		},
+		Mana: depositMana,
 	}
 
 	minSD, err := parameters.RentStructure().MinDeposit(accountOutput)
@@ -177,11 +174,9 @@ func NewChainOriginTransaction(
 
 	txInputs, remainder, err := transaction.ComputeInputsAndRemainder(
 		walletAddr,
-		accountOutput.Amount,
-		nil,
-		nil,
 		unspentOutputs,
-		unspentOutputIDs,
+		transaction.AssetsAndStoredManaFromOutput(accountOutput),
+		creationSlot,
 	)
 	if err != nil {
 		return nil, accountOutput, isc.ChainID{}, err

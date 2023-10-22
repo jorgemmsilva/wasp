@@ -306,20 +306,10 @@ func (u *UtxoDB) MustGetTransaction(txID iotago.TransactionID) *iotago.SignedTra
 }
 
 // GetUnspentOutputs returns all unspent outputs locked by the address with its ids
-func (u *UtxoDB) GetUnspentOutputs(addr iotago.Address) (iotago.OutputSet, iotago.OutputIDs) {
+func (u *UtxoDB) GetUnspentOutputs(addr iotago.Address) iotago.OutputSet {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
-
-	outs := u.getUnspentOutputs(addr)
-
-	ids := make(iotago.OutputIDs, len(outs))
-	i := 0
-	for id := range outs {
-		ids[i] = id
-		i++
-	}
-
-	return outs, ids
+	return u.getUnspentOutputs(addr)
 }
 
 // GetAddressBalanceBaseTokens returns the total amount of base tokens owned by the address

@@ -10,7 +10,7 @@ import (
 	"github.com/iotaledger/iota.go/v4/tpkg"
 )
 
-// L1Params describes parameters coming from the L1Params node
+// L1Params describes parameters coming from the L1 node
 type L1Params struct {
 	Protocol  iotago.ProtocolParameters   `json:"protocol" swagger:"required"`
 	BaseToken *apimodels.InfoResBaseToken `json:"baseToken" swagger:"required"`

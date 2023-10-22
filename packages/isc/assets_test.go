@@ -81,6 +81,7 @@ func TestAssetsSpendBudget(t *testing.T) {
 	}
 	toSpend = budget.Clone()
 	require.True(t, budget.Spend(toSpend))
+	println(budget.String())
 	require.True(t, budget.IsEmpty())
 
 	budget = &isc.Assets{

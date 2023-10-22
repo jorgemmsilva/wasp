@@ -3,6 +3,7 @@ package transaction
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 )
@@ -13,12 +14,11 @@ func NewMintNFTsTransaction(
 	target iotago.Address,
 	immutableMetadata [][]byte,
 	unspentOutputs iotago.OutputSet,
-	unspentOutputIDs iotago.OutputIDs,
 	creationSlot iotago.SlotIndex,
 ) (*iotago.SignedTransaction, error) {
 	senderAddress := issuerKeyPair.Address()
 
-	storageDeposit := iotago.BaseToken(0)
+	outputAssets := isc.NewEmptyAssetsWithMana()
 	var outputs iotago.TxEssenceOutputs
 
 	var issuerAddress iotago.Address = senderAddress
@@ -30,8 +30,7 @@ func NewMintNFTsTransaction(
 			panic(err)
 		}
 		out.Amount = d
-		storageDeposit += d
-
+		outputAssets.BaseTokens += d
 		outputs = append(outputs, out)
 	}
 
@@ -60,7 +59,12 @@ func NewMintNFTsTransaction(
 		})
 	}
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(senderAddress, storageDeposit, nil, nftsOut, unspentOutputs, unspentOutputIDs)
+	inputIDs, remainder, err := ComputeInputsAndRemainder(
+		senderAddress,
+		unspentOutputs,
+		outputAssets,
+		creationSlot,
+	)
 	if err != nil {
 		return nil, err
 	}

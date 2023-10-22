@@ -157,7 +157,7 @@ func (a *Assets) String() string {
 		ret += fmt.Sprintf(", tokens (%d):", len(a.NativeTokens))
 	}
 	for _, nt := range a.NativeTokens {
-		ret += fmt.Sprintf("\n       %s: %d", nt.ID.String(), nt.Amount)
+		ret += fmt.Sprintf("\n       %s: %s", nt.ID.String(), nt.Amount.Text(10))
 	}
 	for _, nftid := range a.NFTs {
 		ret += fmt.Sprintf("\n NFTID: %s", nftid.String())
@@ -193,62 +193,51 @@ func (a *Assets) Equals(b *Assets) bool {
 	return true
 }
 
+func (a *Assets) Geq(b *Assets) bool {
+	if a.IsEmpty() {
+		return b.IsEmpty()
+	}
+	if b.IsEmpty() {
+		return true
+	}
+	if a.BaseTokens < b.BaseTokens {
+		return false
+	}
+
+	aNTs := a.NativeTokenSum()
+	for _, bNT := range b.NativeTokens {
+		aNT, ok := aNTs[bNT.ID]
+		if !ok || aNT.Cmp(bNT.Amount) < 0 {
+			return false
+		}
+	}
+
+	return lo.Every(b.NFTs, a.NFTs)
+}
+
 // Spend subtracts assets from the current set.
 // Mutates receiver `a` !
 // If budget is not enough, returns false and leaves receiver untouched
 func (a *Assets) Spend(toSpend *Assets) bool {
-	if a.IsEmpty() {
-		return toSpend.IsEmpty()
-	}
-	if toSpend.IsEmpty() {
-		return true
-	}
-	if a.Equals(toSpend) {
-		a.BaseTokens = 0
-		a.NativeTokens = nil
-		a.NFTs = nil
-		return true
-	}
-
-	if a.BaseTokens < toSpend.BaseTokens {
+	if !a.Geq(toSpend) {
 		return false
 	}
-	targetSet := a.NativeTokenSum()
-
-	for _, nativeToken := range toSpend.NativeTokens {
-		curr, ok := targetSet[nativeToken.ID]
-		if !ok || curr.Cmp(nativeToken.Amount) < 0 {
-			return false
-		}
-		curr.Sub(curr, nativeToken.Amount)
+	if toSpend.IsEmpty() { // necessary if a == nil
+		return true
 	}
 
-	nftSet := a.NFTSet()
-	for _, nftID := range toSpend.NFTs {
-		if !nftSet[nftID] {
-			return false
-		}
-		delete(nftSet, nftID)
-	}
-
-	// budget is enough
 	a.BaseTokens -= toSpend.BaseTokens
-	a.NativeTokens = a.NativeTokens[:0]
-	for ntID, ntAmount := range targetSet {
-		if util.IsZeroBigInt(ntAmount) {
-			continue
-		}
-		a.NativeTokens = append(a.NativeTokens, &iotago.NativeTokenFeature{
-			ID:     ntID,
-			Amount: ntAmount,
-		})
+
+	aNTs := a.NativeTokenSum()
+	for id, amt := range toSpend.NativeTokenSum() {
+		aNTs[id] = aNTs[id].Sub(aNTs[id], amt)
 	}
-	a.NFTs = make([]iotago.NFTID, len(nftSet))
-	i := 0
-	for nftID := range nftSet {
-		a.NFTs[i] = nftID
-		i++
-	}
+	a.NativeTokens = nativeTokensFromSet(aNTs)
+
+	a.NFTs = lo.Reject(a.NFTs, func(id iotago.NFTID, i int) bool {
+		return lo.Contains(toSpend.NFTs, id)
+	})
+
 	return true
 }
 
@@ -335,14 +324,15 @@ func (a *Assets) fillEmptyNFTIDs(output iotago.Output, outputID iotago.OutputID)
 }
 
 func nativeTokensFromSet(set iotago.NativeTokenSum) []*iotago.NativeTokenFeature {
-	ret := make([]*iotago.NativeTokenFeature, len(set))
-	i := 0
+	ret := make([]*iotago.NativeTokenFeature, 0, len(set))
 	for id, amt := range set {
-		ret[i] = &iotago.NativeTokenFeature{
+		if amt.Sign() == 0 {
+			continue
+		}
+		ret = append(ret, &iotago.NativeTokenFeature{
 			ID:     id,
 			Amount: amt,
-		}
-		i++
+		})
 	}
 	return ret
 }
@@ -433,4 +423,37 @@ func (a *Assets) Write(w io.Writer) error {
 		}
 	}
 	return ww.Err
+}
+
+func (a *Assets) WithMana(m iotago.Mana) *AssetsWithMana {
+	return NewAssetsWithMana(a, m)
+}
+
+type AssetsWithMana struct {
+	*Assets
+	Mana iotago.Mana
+}
+
+func NewAssetsWithMana(assets *Assets, mana iotago.Mana) *AssetsWithMana {
+	return &AssetsWithMana{Assets: assets, Mana: mana}
+}
+
+func NewEmptyAssetsWithMana() *AssetsWithMana {
+	return NewAssetsWithMana(NewEmptyAssets(), 0)
+}
+
+func (a *AssetsWithMana) Geq(b *AssetsWithMana) bool {
+	if !a.Assets.Geq(b.Assets) {
+		return false
+	}
+	return a.Mana > b.Mana
+}
+
+func (a *AssetsWithMana) Equals(b *AssetsWithMana) bool {
+	return a.Assets.Equals(b.Assets) && a.Mana == b.Mana
+}
+
+func (a *AssetsWithMana) Add(b *AssetsWithMana) {
+	a.Assets.Add(b.Assets)
+	a.Mana += b.Mana
 }

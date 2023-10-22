@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
@@ -26,7 +27,7 @@ func BasicOutputFromPostData(
 	ret := MakeBasicOutput(
 		par.TargetAddress,
 		senderAddress,
-		par.Assets,
+		par.Assets.WithMana(0),
 		&isc.RequestMetadata{
 			SenderContract: senderContract,
 			TargetContract: metadata.TargetContract,
@@ -47,18 +48,19 @@ func BasicOutputFromPostData(
 func MakeBasicOutput(
 	targetAddress iotago.Address,
 	senderAddress iotago.Address,
-	assets *isc.Assets,
+	assets *isc.AssetsWithMana,
 	metadata *isc.RequestMetadata,
 	unlockConditions []iotago.UnlockCondition,
 ) *iotago.BasicOutput {
 	if assets == nil {
-		assets = &isc.Assets{}
+		assets = isc.NewEmptyAssetsWithMana()
 	}
 	out := &iotago.BasicOutput{
 		Amount: assets.BaseTokens,
 		Conditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: targetAddress},
 		},
+		Mana: assets.Mana,
 	}
 	if len(assets.NativeTokens) > 1 {
 		panic("at most 1 native token is supported")
@@ -90,6 +92,9 @@ func NFTOutputFromPostData(
 	par isc.RequestParameters,
 	nft *isc.NFT,
 ) *iotago.NFTOutput {
+	if len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0] {
+		panic("inconsistency: len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0]")
+	}
 	basicOutput := BasicOutputFromPostData(senderAddress, senderContract, par)
 	out := NFTOutputFromBasicOutput(basicOutput, nft)
 
@@ -139,6 +144,28 @@ func AssetsFromOutput(o iotago.Output) *isc.Assets {
 		assets.NFTs = append(assets.NFTs, o.NFTID)
 	}
 	return assets
+}
+
+func AssetsAndManaFromOutput(
+	oID iotago.OutputID,
+	o iotago.Output,
+	slotIndex iotago.SlotIndex,
+) (*isc.AssetsWithMana, error) {
+	assets := AssetsFromOutput(o)
+	mana, err := vm.TotalManaIn(
+		parameters.L1API().ManaDecayProvider(),
+		parameters.RentStructure(),
+		slotIndex,
+		vm.InputSet{oID: o},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return isc.NewAssetsWithMana(assets, mana), nil
+}
+
+func AssetsAndStoredManaFromOutput(o iotago.Output) *isc.AssetsWithMana {
+	return AssetsFromOutput(o).WithMana(o.StoredMana())
 }
 
 func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {

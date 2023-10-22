@@ -1,9 +1,13 @@
 package transaction
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
+
+	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -43,42 +47,30 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 	}, anchorOutput, nil
 }
 
-// computeInputsAndRemainder computes inputs and remainder for given outputs balances.
-// Takes into account minimum storage deposit requirements
-// The inputs are consumed one by one in the order provided in the parameters.
-// Consumes only what is needed to cover output balances
-// Returned reminder is nil if not needed
+// ComputeInputsAndRemainder finds inputs so that the neededAssets are covered,
+// and computes remainder outputs, taking into account minimum storage deposit requirements.
+// The inputs are consumed one by one in deterministic order (sorted by OutputID).
 func ComputeInputsAndRemainder(
 	senderAddress iotago.Address,
-	baseTokenOut iotago.BaseToken,
-	tokensOut iotago.NativeTokenSum,
-	nftsOut map[iotago.NFTID]bool,
 	unspentOutputs iotago.OutputSet,
-	unspentOutputIDs iotago.OutputIDs,
+	target *isc.AssetsWithMana,
+	slotIndex iotago.SlotIndex,
 ) (
 	inputIDs iotago.OutputIDs,
 	remainder iotago.TxEssenceOutputs,
 	err error,
 ) {
-	baseTokensIn := iotago.BaseToken(0)
-	tokensIn := iotago.NativeTokenSum{}
-	nftsIn := make(map[iotago.NFTID]bool)
+	sum := isc.NewEmptyAssetsWithMana()
 
-	// we need to start with a predefined error, otherwise we won't return a failure
-	// even if not a single unspentOutputID was given and we never run into the following loop.
-	errLast := errors.New("no valid inputs found to create transaction")
-
+	unspentOutputIDs := lo.Keys(unspentOutputs)
+	slices.SortFunc(unspentOutputIDs, func(a, b iotago.OutputID) int {
+		return bytes.Compare(a[:], b[:])
+	})
 	for _, outputID := range unspentOutputIDs {
-		output, ok := unspentOutputs[outputID]
-		if !ok {
-			return nil, nil, errors.New("computeInputsAndRemainder: outputID is not in the set")
-		}
-
+		output := unspentOutputs[outputID]
 		if nftOutput, ok := output.(*iotago.NFTOutput); ok {
 			nftID := util.NFTIDFromNFTOutput(nftOutput, outputID)
-			if nftsOut[nftID] {
-				nftsIn[nftID] = true
-			} else {
+			if !lo.Contains(target.NFTs, nftID) {
 				// this is an UTXO that holds an NFT that is not relevant for this tx, should be skipped
 				continue
 			}
@@ -96,71 +88,64 @@ func ComputeInputsAndRemainder(
 			continue
 		}
 		inputIDs = append(inputIDs, outputID)
-		a := AssetsFromOutput(output)
-		baseTokensIn += a.BaseTokens
-		for _, nativeToken := range a.NativeTokens {
-			nativeTokenAmountSum, ok := tokensIn[nativeToken.ID]
-			if !ok {
-				nativeTokenAmountSum = new(big.Int)
-			}
-			nativeTokenAmountSum.Add(nativeTokenAmountSum, nativeToken.Amount)
-			tokensIn[nativeToken.ID] = nativeTokenAmountSum
+		a, err := AssetsAndManaFromOutput(outputID, output, slotIndex)
+		if err != nil {
+			return nil, nil, err
 		}
-		// calculate remainder. It will return  err != nil if inputs not enough.
-		remainder, errLast = computeRemainderOutputs(senderAddress, baseTokensIn, baseTokenOut, tokensIn, tokensOut)
-		if errLast == nil && len(nftsIn) == len(nftsOut) {
+		sum.Add(a)
+		if sum.Geq(target) {
 			break
 		}
 	}
-	if errLast != nil {
-		return nil, nil, errLast
+	remainder, err = computeRemainderOutputs(senderAddress, sum, target)
+	if err != nil {
+		return nil, nil, err
 	}
 	return inputIDs, remainder, nil
 }
 
 // computeRemainderOutputs calculates remainders for base tokens and native tokens
-// - inBaseTokens and inTokens is what is available in inputs
-// - outBaseTokens, outTokens is what is in outputs, except the remainder output itself with its storage deposit
+// - available is what is available in inputs
+// - target is what is in outputs, except the remainder output itself with its storage deposit
 // Returns (nil, error) if inputs are not enough (taking into account storage deposit requirements)
 // If return (nil, nil) it means remainder is a perfect match between inputs and outputs, remainder not needed
 //
 //nolint:gocyclo
 func computeRemainderOutputs(
 	senderAddress iotago.Address,
-	inBaseTokens, outBaseTokens iotago.BaseToken,
-	inTokens, outTokens iotago.NativeTokenSum,
+	available *isc.AssetsWithMana,
+	target *isc.AssetsWithMana,
 ) (ret iotago.TxEssenceOutputs, err error) {
-	if inBaseTokens < outBaseTokens {
+	if available.BaseTokens < target.BaseTokens {
 		return nil, ErrNotEnoughBaseTokens
 	}
-	remBaseTokens := inBaseTokens - outBaseTokens
+	excess := *isc.NewEmptyAssetsWithMana()
+	excess.BaseTokens = available.BaseTokens - target.BaseTokens
 
-	// collect all token ids
-	nativeTokenIDs := make(map[iotago.NativeTokenID]bool)
-	for id := range inTokens {
-		nativeTokenIDs[id] = true
+	if available.Mana < target.Mana {
+		return nil, ErrNotEnoughMana
 	}
-	for id := range outTokens {
-		nativeTokenIDs[id] = true
+	excess.Mana = available.Mana - target.Mana
+
+	availableNTs := available.NativeTokenSum()
+	for _, nt := range available.NativeTokens {
+		excess.AddNativeTokens(nt.ID, nt.Amount)
 	}
-	remTokens := iotago.NativeTokenSum{}
-	// calc remainders by outputs
-	for nativeTokenID := range nativeTokenIDs {
-		amountIn := inTokens.ValueOrBigInt0(nativeTokenID)
-		amountOut := outTokens.ValueOrBigInt0(nativeTokenID)
-		if amountIn.Cmp(amountOut) < 0 {
+	for _, nt := range target.NativeTokens {
+		if availableNTs.ValueOrBigInt0(nt.ID).Cmp(nt.Amount) < 0 {
 			return nil, ErrNotEnoughNativeTokens
 		}
-		diff := new(big.Int).Sub(amountIn, amountOut)
-		if !util.IsZeroBigInt(diff) {
-			remTokens[nativeTokenID] = diff
-		}
+		amount := new(big.Int).Set(nt.Amount)
+		excess.AddNativeTokens(nt.ID, amount.Neg(amount))
 	}
 
-	for ntId, ntAmount := range remTokens {
+	for _, nt := range excess.NativeTokens {
+		if nt.Amount.Sign() == 0 {
+			continue
+		}
 		out := &iotago.BasicOutput{
 			Features: iotago.BasicOutputFeatures{
-				&iotago.NativeTokenFeature{ID: ntId, Amount: ntAmount},
+				&iotago.NativeTokenFeature{ID: nt.ID, Amount: nt.Amount},
 			},
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: senderAddress},
@@ -170,17 +155,17 @@ func computeRemainderOutputs(
 		if err != nil {
 			return nil, err
 		}
-		if remBaseTokens < sd {
+		if excess.BaseTokens < sd {
 			return nil, ErrNotEnoughBaseTokensForStorageDeposit
 		}
-		remBaseTokens -= sd
+		excess.BaseTokens -= sd
 		out.Amount = sd
 		ret = append(ret, out)
 	}
 
-	if remBaseTokens > 0 {
+	if excess.BaseTokens > 0 {
 		out := &iotago.BasicOutput{
-			Amount: remBaseTokens,
+			Amount: excess.BaseTokens,
 			Conditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
@@ -189,10 +174,18 @@ func computeRemainderOutputs(
 		if err != nil {
 			return nil, err
 		}
-		if remBaseTokens < sd {
+		if excess.BaseTokens < sd {
 			return nil, ErrNotEnoughBaseTokensForStorageDeposit
 		}
 		ret = append(ret, out)
+	}
+
+	if excess.Mana > 0 {
+		if len(ret) == 0 {
+			return nil, ErrNotEnoughBaseTokensForStorageDeposit
+		}
+		out := ret[len(ret)-1].(*iotago.BasicOutput)
+		out.Mana = excess.Mana
 	}
 
 	return ret, nil
@@ -237,11 +230,12 @@ func CreateAndSignTx(
 	outputs iotago.TxEssenceOutputs,
 	creationSlot iotago.SlotIndex,
 ) (*iotago.SignedTransaction, error) {
-	panic("TODO: is this still relevant?")
+	panic("TODO: is ordering still needed?")
 	// IMPORTANT: make sure inputs and outputs are correctly ordered before
 	// signing, otherwise it might fail when it reaches the node, since the PoW
 	// that would order the tx is done after the signing, so if we don't order
 	// now, we might sign an invalid TX
+
 	tx := &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{

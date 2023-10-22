@@ -57,17 +57,17 @@ func TestCreateOrigin(t *testing.T) {
 		require.EqualValues(t, 0, u.GetAddressBalanceBaseTokens(stateAddr))
 	}
 	createOrigin := func() {
-		allOutputs, ids := u.GetUnspentOutputs(userAddr)
+		allOutputs := u.GetUnspentOutputs(userAddr)
 
 		originTx, _, chainID, err = origin.NewChainOriginTransaction(
 			userKey,
 			stateAddr,
 			stateAddr,
 			1000,
+			1000,
 			nil,
 			allOutputs,
-			ids,
-			0,
+			u.SlotIndex(),
 			allmigrations.DefaultScheme.LatestSchemaVersion(),
 		)
 		require.NoError(t, err)
@@ -112,9 +112,8 @@ func TestCreateOrigin(t *testing.T) {
 		require.EqualValues(t, anchor.StateData, originStateMetadata.Bytes())
 
 		// only one output is expected in the ledger under the address of chainID
-		outs, ids := u.GetUnspentOutputs(chainID.AsAddress())
+		outs := u.GetUnspentOutputs(chainID.AsAddress())
 		require.EqualValues(t, 1, len(outs))
-		require.EqualValues(t, 1, len(ids))
 
 		out := u.GetOutput(anchor.OutputID)
 		require.NotNil(t, out)
@@ -129,9 +128,8 @@ func TestCreateOrigin(t *testing.T) {
 
 		require.EqualValues(t, utxodb.FundsFromFaucetAmount-chainBaseTokens, int(u.GetAddressBalanceBaseTokens(userAddr)))
 		require.EqualValues(t, 0, u.GetAddressBalanceBaseTokens(stateAddr))
-		allOutputs, ids := u.GetUnspentOutputs(chainID.AsAddress())
+		allOutputs := u.GetUnspentOutputs(chainID.AsAddress())
 		require.EqualValues(t, 1, len(allOutputs))
-		require.EqualValues(t, 1, len(ids))
 	})
 }
 

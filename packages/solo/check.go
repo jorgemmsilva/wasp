@@ -113,7 +113,7 @@ func (ch *Chain) HasL2NFT(agentID isc.AgentID, nftID *iotago.NFTID) bool {
 	return false
 }
 
-func (env *Solo) AssertL1BaseTokens(addr iotago.Address, expected uint64) {
+func (env *Solo) AssertL1BaseTokens(addr iotago.Address, expected iotago.BaseToken) {
 	if h, ok := env.T.(tHelper); ok {
 		h.Helper()
 	}
@@ -141,6 +141,6 @@ func (env *Solo) HasL1NFT(addr iotago.Address, id *iotago.NFTID) bool {
 	return false
 }
 
-func (env *Solo) GetUnspentOutputs(addr iotago.Address) (iotago.OutputSet, iotago.OutputIDs) {
+func (env *Solo) GetUnspentOutputs(addr iotago.Address) iotago.OutputSet {
 	return env.utxoDB.GetUnspentOutputs(addr)
 }

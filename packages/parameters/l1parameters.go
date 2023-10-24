@@ -10,10 +10,12 @@ import (
 	"github.com/iotaledger/iota.go/v4/tpkg"
 )
 
+type BaseTokenInfo apimodels.InfoResBaseToken
+
 // L1Params describes parameters coming from the L1 node
 type L1Params struct {
-	Protocol  iotago.ProtocolParameters   `json:"protocol" swagger:"required"`
-	BaseToken *apimodels.InfoResBaseToken `json:"baseToken" swagger:"required"`
+	Protocol  iotago.ProtocolParameters `json:"protocol" swagger:"required"`
+	BaseToken *BaseTokenInfo            `json:"baseToken" swagger:"required"`
 }
 
 func isTestContext() bool {
@@ -24,7 +26,7 @@ func isTestContext() bool {
 
 var L1ForTesting = &L1Params{
 	Protocol: tpkg.TestAPI.ProtocolParameters(),
-	BaseToken: &apimodels.InfoResBaseToken{
+	BaseToken: &BaseTokenInfo{
 		Name:            "TestCoin",
 		TickerSymbol:    "TEST",
 		Unit:            "TEST",
@@ -68,6 +70,6 @@ func NetworkPrefix() iotago.NetworkPrefix {
 	return Protocol().Bech32HRP()
 }
 
-func BaseToken() *apimodels.InfoResBaseToken {
+func BaseToken() *BaseTokenInfo {
 	return L1().BaseToken
 }

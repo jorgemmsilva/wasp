@@ -541,7 +541,7 @@ func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyP
 func (ch *Chain) postRequestSyncTxSpecial(req *CallParams, keyPair *cryptolib.KeyPair) *vm.RequestResult {
 	tx, _, err := ch.RequestFromParamsToLedger(req, keyPair)
 	require.NoError(ch.Env.T, err)
-	reqs, err := ch.Env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "postSpecial")
 	return results[0]
@@ -582,7 +582,7 @@ func (ch *Chain) GetL2FundsFromFaucet(agentID isc.AgentID, baseTokens ...iotago.
 		}
 	}()
 
-	var amount uint64
+	var amount iotago.BaseToken
 	if len(baseTokens) > 0 {
 		amount = baseTokens[0]
 	} else {

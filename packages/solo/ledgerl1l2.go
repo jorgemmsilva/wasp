@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -16,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
@@ -110,7 +110,7 @@ func (ch *Chain) L2CommonAccountAssets() *isc.Assets {
 	return ch.L2Assets(accounts.CommonAccount())
 }
 
-func (ch *Chain) L2CommonAccountBaseTokens() uint64 {
+func (ch *Chain) L2CommonAccountBaseTokens() iotago.BaseToken {
 	return ch.L2Assets(accounts.CommonAccount()).BaseTokens
 }
 
@@ -126,7 +126,7 @@ func (ch *Chain) L2TotalAssets() *isc.Assets {
 }
 
 // L2TotalBaseTokens return total sum of base tokens in L2 (all accounts)
-func (ch *Chain) L2TotalBaseTokens() uint64 {
+func (ch *Chain) L2TotalBaseTokens() iotago.BaseToken {
 	return ch.L2TotalAssets().BaseTokens
 }
 
@@ -149,7 +149,7 @@ func (ch *Chain) GetFoundryOutput(sn uint32) (*iotago.FoundryOutput, error) {
 	}
 	outBin := res.Get(accounts.ParamFoundryOutputBin)
 	out := &iotago.FoundryOutput{}
-	_, err = out.Deserialize(outBin, serializer.DeSeriModeNoValidation, nil)
+	_, err = parameters.L1API().Decode(outBin, &out)
 	require.NoError(ch.Env.T, err)
 	return out, nil
 }
@@ -168,11 +168,8 @@ type foundryParams struct {
 	sch  iotago.TokenScheme
 }
 
-// CreateFoundryGasBudgetBaseTokens always takes 100000 base tokens as gas budget and ftokens for the call
 const (
-	DestroyTokensGasBudgetBaseTokens       = 1 * isc.Million
 	SendToL2AccountGasBudgetBaseTokens     = 1 * isc.Million
-	DestroyFoundryGasBudgetBaseTokens      = 1 * isc.Million
 	TransferAllowanceToGasBudgetBaseTokens = 1 * isc.Million
 )
 
@@ -244,9 +241,11 @@ func toFoundrySN(foundry interface{}) uint32 {
 }
 
 func (ch *Chain) DestroyFoundry(sn uint32, user *cryptolib.KeyPair) error {
-	req := NewCallParams(accounts.Contract.Name, accounts.FuncFoundryDestroy.Name,
-		accounts.ParamFoundrySN, sn).
-		WithGasBudget(DestroyFoundryGasBudgetBaseTokens)
+	req := NewCallParams(
+		accounts.Contract.Name, accounts.FuncFoundryDestroy.Name,
+		accounts.ParamFoundrySN, sn,
+	).
+		WithMaxAffordableGasBudget()
 	_, err := ch.PostRequestSync(req, user)
 	return err
 }
@@ -283,7 +282,7 @@ func (ch *Chain) DestroyTokensOnL2(nativeTokenID iotago.NativeTokenID, amount in
 				Amount: util.ToBigInt(amount),
 			},
 		}),
-	).WithGasBudget(DestroyTokensGasBudgetBaseTokens)
+	).WithMaxAffordableGasBudget()
 
 	if user == nil {
 		user = ch.OriginatorPrivateKey
@@ -298,7 +297,7 @@ func (ch *Chain) DestroyTokensOnL1(nativeTokenID iotago.NativeTokenID, amount in
 		accounts.ParamFoundrySN, toFoundrySN(nativeTokenID),
 		accounts.ParamSupplyDeltaAbs, util.ToBigInt(amount),
 		accounts.ParamDestroyTokens, true,
-	).WithGasBudget(DestroyTokensGasBudgetBaseTokens).AddBaseTokens(1000)
+	).WithMaxAffordableGasBudget().AddBaseTokens(1000)
 	req.AddNativeTokens(nativeTokenID, amount)
 	req.AddAllowanceNativeTokens(nativeTokenID, amount)
 	if user == nil {
@@ -343,11 +342,11 @@ func (ch *Chain) TransferAllowanceTo(
 }
 
 // DepositBaseTokensToL2 deposits ftokens on user's on-chain account
-func (ch *Chain) DepositBaseTokensToL2(amount uint64, user *cryptolib.KeyPair) error {
+func (ch *Chain) DepositBaseTokensToL2(amount iotago.BaseToken, user *cryptolib.KeyPair) error {
 	return ch.DepositAssetsToL2(isc.NewAssets(amount, nil), user)
 }
 
-func (ch *Chain) MustDepositBaseTokensToL2(amount uint64, user *cryptolib.KeyPair) {
+func (ch *Chain) MustDepositBaseTokensToL2(amount iotago.BaseToken, user *cryptolib.KeyPair) {
 	err := ch.DepositBaseTokensToL2(amount, user)
 	require.NoError(ch.Env.T, err)
 }
@@ -380,7 +379,7 @@ func (ch *Chain) Withdraw(assets *isc.Assets, user *cryptolib.KeyPair) error {
 
 // SendFromL1ToL2Account sends ftokens from L1 address to the target account on L2
 // Sender pays the gas fee
-func (ch *Chain) SendFromL1ToL2Account(totalBaseTokens uint64, toSend *isc.Assets, target isc.AgentID, user *cryptolib.KeyPair) error {
+func (ch *Chain) SendFromL1ToL2Account(totalBaseTokens iotago.BaseToken, toSend *isc.Assets, target isc.AgentID, user *cryptolib.KeyPair) error {
 	require.False(ch.Env.T, toSend.IsEmpty())
 	sumAssets := toSend.Clone().AddBaseTokens(totalBaseTokens)
 	_, err := ch.PostRequestSync(
@@ -407,12 +406,12 @@ func (ch *Chain) SendFromL2ToL2Account(transfer *isc.Assets, target isc.AgentID,
 
 	req.AddBaseTokens(SendToL2AccountGasBudgetBaseTokens).
 		AddAllowance(transfer).
-		WithGasBudget(SendToL2AccountGasBudgetBaseTokens)
+		WithMaxAffordableGasBudget()
 	_, err := ch.PostRequestSync(req, user)
 	return err
 }
 
-func (ch *Chain) SendFromL2ToL2AccountBaseTokens(baseTokens uint64, target isc.AgentID, user *cryptolib.KeyPair) error {
+func (ch *Chain) SendFromL2ToL2AccountBaseTokens(baseTokens iotago.BaseToken, target isc.AgentID, user *cryptolib.KeyPair) error {
 	return ch.SendFromL2ToL2Account(isc.NewAssetsBaseTokens(baseTokens), target, user)
 }
 

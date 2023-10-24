@@ -38,7 +38,7 @@ func ISCRequestFromCallParams(ch *Chain, req *CallParams, keyPair *cryptolib.Key
 	if err != nil {
 		return nil, err
 	}
-	requestsFromSignedTx, err := isc.RequestsInTransaction(tx)
+	requestsFromSignedTx, err := isc.RequestsInTransaction(tx.Transaction)
 	if err != nil {
 		return nil, err
 	}

@@ -28,11 +28,11 @@ import (
 // tests.
 type jsonRPCSoloBackend struct {
 	Chain     *Chain
-	baseToken *parameters.BaseToken
+	baseToken *parameters.BaseTokenInfo
 	snapshots []*Snapshot
 }
 
-func newJSONRPCSoloBackend(chain *Chain, baseToken *parameters.BaseToken) jsonrpc.ChainBackend {
+func newJSONRPCSoloBackend(chain *Chain, baseToken *parameters.BaseTokenInfo) jsonrpc.ChainBackend {
 	return &jsonRPCSoloBackend{Chain: chain, baseToken: baseToken}
 }
 
@@ -94,7 +94,7 @@ func (b *jsonRPCSoloBackend) ISCStateByTrieRoot(trieRoot trie.Hash) (state.State
 	return b.Chain.store.StateByTrieRoot(trieRoot)
 }
 
-func (b *jsonRPCSoloBackend) BaseToken() *parameters.BaseToken {
+func (b *jsonRPCSoloBackend) BaseToken() *parameters.BaseTokenInfo {
 	return b.baseToken
 }
 
@@ -148,7 +148,7 @@ func init() {
 	}
 }
 
-func (ch *Chain) EthereumAccountByIndexWithL2Funds(i int, baseTokens ...uint64) (*ecdsa.PrivateKey, common.Address) {
+func (ch *Chain) EthereumAccountByIndexWithL2Funds(i int, baseTokens ...iotago.BaseToken) (*ecdsa.PrivateKey, common.Address) {
 	key := EthereumAccounts[i]
 	addr := crypto.PubkeyToAddress(key.PublicKey)
 	ch.GetL2FundsFromFaucet(isc.NewEthereumAddressAgentID(ch.ChainID, addr), baseTokens...)

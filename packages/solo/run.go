@@ -5,7 +5,6 @@ package solo
 
 import (
 	"errors"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -61,7 +60,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 		AnchorOutput:       anchorOutput.GetAccountOutput(),
 		AnchorOutputID:     anchorOutput.OutputID(),
 		Requests:           reqs,
-		TimeAssumption:     ch.Env.GlobalTime(),
+		SlotIndex:          ch.Env.SlotIndex(),
 		Store:              ch.store,
 		Entropy:            hashing.PseudoRandomHash(nil),
 		ValidatorFeeTarget: ch.ValidatorFeeTarget,
@@ -83,28 +82,28 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 
 	res := ch.runTaskNoLock(reqs, false)
 
-	var essence *iotago.TransactionEssence
+	var unsignedTx *iotago.Transaction
 	if res.RotationAddress == nil {
-		essence = res.TransactionEssence
-		copy(essence.InputsCommitment[:], res.InputsCommitment)
+		unsignedTx = res.Transaction
+		copy(unsignedTx.InputsCommitment[:], res.InputsCommitment)
 	} else {
 		var err error
-		essence, err = rotate.MakeRotateStateControllerTransaction(
+		unsignedTx, err = rotate.MakeRotateStateControllerTransaction(
 			res.RotationAddress,
 			isc.NewAccountOutputWithID(res.Task.AnchorOutput, res.Task.AnchorOutputID),
-			res.Task.TimeAssumption.Add(2*time.Nanosecond),
+			res.Task.SlotIndex,
 			identity.ID{},
 			identity.ID{},
 		)
 		require.NoError(ch.Env.T, err)
 	}
-	sigs, err := essence.Sign(
-		essence.InputsCommitment[:],
+	sigs, err := unsignedTx.Sign(
+		unsignedTx.InputsCommitment[:],
 		ch.StateControllerKeyPair.GetPrivateKey().AddressKeys(ch.StateControllerAddress),
 	)
 	require.NoError(ch.Env.T, err)
 
-	tx := transaction.MakeAnchorTransaction(essence, sigs[0])
+	tx := transaction.MakeAnchorTransaction(unsignedTx, sigs[0])
 
 	if res.RotationAddress == nil {
 		// normal state transition
@@ -114,7 +113,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(ch.Env.T, err)
 
-	anchor, _, err := transaction.GetAnchorFromTransaction(tx)
+	anchor, _, err := transaction.GetAnchorFromTransaction(tx.Transaction)
 	require.NoError(ch.Env.T, err)
 
 	if res.RotationAddress != nil {
@@ -130,7 +129,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 	return res.RequestResults
 }
 
-func (ch *Chain) settleStateTransition(stateTx *iotago.Transaction, stateDraft state.StateDraft) {
+func (ch *Chain) settleStateTransition(stateTx *iotago.SignedTransaction, stateDraft state.StateDraft) {
 	block := ch.store.Commit(stateDraft)
 	err := ch.store.SetLatest(block.TrieRoot())
 	if err != nil {
@@ -153,7 +152,7 @@ func (ch *Chain) settleStateTransition(stateTx *iotago.Transaction, stateDraft s
 		ch.mempool.RemoveRequest(req.ID())
 	}
 	ch.Log().Infof("state transition --> #%d. Requests in the block: %d. Outputs: %d",
-		stateDraft.BlockIndex(), len(blockReceipts), len(stateTx.Essence.Outputs))
+		stateDraft.BlockIndex(), len(blockReceipts), len(stateTx.Transaction.Outputs))
 }
 
 func (ch *Chain) logRequestLastBlock() {

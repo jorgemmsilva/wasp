@@ -1,8 +1,6 @@
 package vm
 
 import (
-	"time"
-
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -23,7 +21,7 @@ type VMTask struct {
 	AnchorOutputID     iotago.OutputID
 	Store              state.Store
 	Requests           []isc.Request
-	TimeAssumption     time.Time
+	SlotIndex          iotago.SlotIndex
 	Entropy            hashing.HashValue
 	ValidatorFeeTarget isc.AgentID
 	// If EstimateGasMode is enabled, gas fee will be calculated but not charged
@@ -45,9 +43,9 @@ type VMTaskResult struct {
 	StateDraft state.StateDraft
 	// RotationAddress is the next address after a rotation, or nil if there is no rotation
 	RotationAddress iotago.Address
-	// TransactionEssence is the transaction essence for the next block,
+	// Transaction is the (unsigned) transaction for the next block,
 	// or nil if the task does not produce a normal block
-	TransactionEssence *iotago.TransactionEssence
+	Transaction *iotago.Transaction
 	// InputsCommitment is the inputs commitment necessary to sign the ResultTransactionEssence
 	InputsCommitment []byte
 	// RequestResults contains one result for each non-skipped request
@@ -65,8 +63,4 @@ type RequestResult struct {
 
 func (task *VMTask) WillProduceBlock() bool {
 	return !task.EstimateGasMode && task.EVMTracer == nil
-}
-
-func (task *VMTask) FinalStateTimestamp() time.Time {
-	return task.TimeAssumption.Add(time.Duration(len(task.Requests)+1) * time.Nanosecond)
 }

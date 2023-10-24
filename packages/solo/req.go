@@ -87,7 +87,7 @@ func (r *CallParams) AddAllowance(allowance *isc.Assets) *CallParams {
 	return r
 }
 
-func (r *CallParams) AddAllowanceBaseTokens(amount uint64) *CallParams {
+func (r *CallParams) AddAllowanceBaseTokens(amount iotago.BaseToken) *CallParams {
 	return r.AddAllowance(isc.NewAssetsBaseTokens(amount))
 }
 
@@ -106,7 +106,7 @@ func (r *CallParams) AddAllowanceNativeTokens(nativeTokenID iotago.NativeTokenID
 		r.allowance = isc.NewEmptyAssets()
 	}
 	r.allowance.Add(&isc.Assets{
-		NativeTokens: []*iotago.NativeTokenFeature{&iotago.NativeTokenFeature{
+		NativeTokens: []*iotago.NativeTokenFeature{{
 			ID:     nativeTokenID,
 			Amount: util.ToBigInt(amount),
 		}},
@@ -132,7 +132,7 @@ func (r *CallParams) AddFungibleTokens(assets *isc.Assets) *CallParams {
 	return r
 }
 
-func (r *CallParams) AddBaseTokens(amount uint64) *CallParams {
+func (r *CallParams) AddBaseTokens(amount iotago.BaseToken) *CallParams {
 	return r.AddFungibleTokens(isc.NewAssets(amount, nil))
 }
 
@@ -144,7 +144,7 @@ func (r *CallParams) AddNativeTokensVect(nativeTokens ...*iotago.NativeTokenFeat
 
 func (r *CallParams) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *CallParams {
 	return r.AddFungibleTokens(&isc.Assets{
-		NativeTokens: []*iotago.NativeTokenFeature{&iotago.NativeTokenFeature{
+		NativeTokens: []*iotago.NativeTokenFeature{{
 			ID:     nativeTokenID,
 			Amount: util.ToBigInt(amount),
 		}},
@@ -191,6 +191,20 @@ func (r *CallParams) NewRequestOffLedger(ch *Chain, keyPair *cryptolib.KeyPair) 
 	return ret.Sign(keyPair)
 }
 
+func (r *CallParams) Build(targetAddress iotago.Address) *isc.RequestParameters {
+	return &isc.RequestParameters{
+		TargetAddress: targetAddress,
+		Assets:        r.ftokens,
+		Metadata: &isc.SendMetadata{
+			TargetContract: r.target,
+			EntryPoint:     r.entryPoint,
+			Params:         r.params,
+			Allowance:      r.allowance,
+			GasBudget:      r.gasBudget,
+		},
+	}
+}
+
 func parseParams(params []interface{}) dict.Dict {
 	if len(params) == 1 {
 		return params[0].(dict.Dict)
@@ -222,7 +236,7 @@ func toMap(params []interface{}) map[string]interface{} {
 	return par
 }
 
-func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Transaction, error) {
+func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, error) {
 	if keyPair == nil {
 		keyPair = ch.OriginatorPrivateKey
 	}
@@ -231,49 +245,42 @@ func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*
 		return nil, errors.New("PostRequestSync - Signer doesn't own any base tokens on L1")
 	}
 
-	tx, err := transaction.NewRequestTransaction(ch.requestTransactionParams(req, keyPair))
+	keyPair, senderAddr := ch.requestSender(req, keyPair)
+	unspentOutputs := ch.Env.utxoDB.GetUnspentOutputs(keyPair.Address())
+	reqParams := req.Build(ch.ChainID.AsAddress())
+	tx, err := transaction.NewRequestTransaction(
+		keyPair,
+		senderAddr,
+		unspentOutputs,
+		reqParams,
+		req.nft,
+		ch.Env.SlotIndex(),
+		ch.Env.disableAutoAdjustStorageDeposit,
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if tx.Outputs[0].Deposit() == 0 {
+	if tx.Transaction.Outputs[0].BaseTokenAmount() == 0 {
 		return nil, errors.New("createRequestTx: amount == 0. Consider: solo.InitOptions{AutoAdjustStorageDeposit: true}")
 	}
 	return tx, err
 }
 
-func (ch *Chain) requestTransactionParams(req *CallParams, keyPair *cryptolib.KeyPair) transaction.NewRequestTransactionParams {
+func (ch *Chain) requestSigner(keyPair *cryptolib.KeyPair) *cryptolib.KeyPair {
 	if keyPair == nil {
 		keyPair = ch.OriginatorPrivateKey
 	}
+	return keyPair
+}
+
+func (ch *Chain) requestSender(req *CallParams, keyPair *cryptolib.KeyPair) (*cryptolib.KeyPair, iotago.Address) {
+	keyPair = ch.requestSigner(keyPair)
 	sender := req.sender
 	if sender == nil {
 		sender = keyPair.Address()
 	}
-
-	addr := keyPair.Address()
-	allOuts, allOutIDs := ch.Env.utxoDB.GetUnspentOutputs(addr)
-
-	return transaction.NewRequestTransactionParams{
-		SenderKeyPair:    keyPair,
-		SenderAddress:    sender,
-		UnspentOutputs:   allOuts,
-		UnspentOutputIDs: allOutIDs,
-		Request: &isc.RequestParameters{
-			TargetAddress: ch.ChainID.AsAddress(),
-			Assets:        req.ftokens,
-			Metadata: &isc.SendMetadata{
-				TargetContract: req.target,
-				EntryPoint:     req.entryPoint,
-				Params:         req.params,
-				Allowance:      req.allowance,
-				GasBudget:      req.gasBudget,
-			},
-			Options: isc.SendOptions{},
-		},
-		NFT:                             req.nft,
-		DisableAutoAdjustStorageDeposit: ch.Env.disableAutoAdjustStorageDeposit,
-	}
+	return keyPair, sender
 }
 
 // requestFromParams creates an on-ledger request without posting the transaction. It is intended
@@ -286,7 +293,7 @@ func (ch *Chain) requestFromParams(req *CallParams, keyPair *cryptolib.KeyPair) 
 	if err != nil {
 		return nil, err
 	}
-	reqs, err := isc.RequestsInTransaction(tx)
+	reqs, err := isc.RequestsInTransaction(tx.Transaction)
 	require.NoError(ch.Env.T, err)
 
 	for _, r := range reqs[ch.ChainID] {
@@ -299,7 +306,7 @@ func (ch *Chain) requestFromParams(req *CallParams, keyPair *cryptolib.KeyPair) 
 // RequestFromParamsToLedger creates transaction with one request based on parameters and sigScheme
 // Then it adds it to the ledger, atomically.
 // Locking on the mutex is needed to prevent mess when several goroutines work on the same address
-func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Transaction, isc.RequestID, error) {
+func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, isc.RequestID, error) {
 	ch.Env.ledgerMutex.Lock()
 	defer ch.Env.ledgerMutex.Unlock()
 
@@ -310,7 +317,7 @@ func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.K
 	err = ch.Env.AddToLedger(tx)
 	// once we created transaction successfully, it should be added to the ledger smoothly
 	require.NoError(ch.Env.T, err)
-	txid, err := tx.ID()
+	txid, err := tx.Transaction.ID()
 	require.NoError(ch.Env.T, err)
 
 	return tx, isc.NewRequestID(txid, 0), nil
@@ -345,7 +352,7 @@ func (ch *Chain) PostRequestOffLedger(req *CallParams, keyPair *cryptolib.KeyPai
 	return ch.RunOffLedgerRequest(r)
 }
 
-func (ch *Chain) PostRequestSyncTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Transaction, dict.Dict, error) {
+func (ch *Chain) PostRequestSyncTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, dict.Dict, error) {
 	tx, receipt, res, err := ch.PostRequestSyncExt(req, keyPair)
 	if err != nil {
 		return tx, res, err
@@ -363,12 +370,12 @@ func (ch *Chain) LastReceipt() *isc.Receipt {
 	return blocklogReceipt.ToISCReceipt(ch.ResolveVMError(blocklogReceipt.Error))
 }
 
-func (ch *Chain) PostRequestSyncExt(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Transaction, *blocklog.RequestReceipt, dict.Dict, error) {
+func (ch *Chain) PostRequestSyncExt(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, *blocklog.RequestReceipt, dict.Dict, error) {
 	defer ch.logRequestLastBlock()
 
 	tx, _, err := ch.RequestFromParamsToLedger(req, keyPair)
 	require.NoError(ch.Env.T, err)
-	reqs, err := ch.Env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "post")
 	if len(results) == 0 {
@@ -382,7 +389,7 @@ func (ch *Chain) PostRequestSyncExt(req *CallParams, keyPair *cryptolib.KeyPair)
 // any changes in the ledger. It returns the amount of gas consumed.
 // if useFakeBalance is `true` the request will be executed as if the sender had enough base tokens to cover the maximum gas allowed
 // WARNING: Gas estimation is just an "estimate", there is no guarantees that the real call will bear the same cost, due to the turing-completeness of smart contracts
-func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair, useFakeBudget ...bool) (gas, gasFee uint64, err error) {
+func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair, useFakeBudget ...bool) (gas uint64, gasFee iotago.BaseToken, err error) {
 	reqCopy := *req
 	if len(useFakeBudget) > 0 && useFakeBudget[0] {
 		reqCopy.WithGasBudget(0)
@@ -401,7 +408,7 @@ func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair
 // any changes in the ledger. It returns the amount of gas consumed.
 // if useMaxBalance is `true` the request will be executed as if the sender had enough base tokens to cover the maximum gas allowed
 // WARNING: Gas estimation is just an "estimate", there is no guarantees that the real call will bear the same cost, due to the turing-completeness of smart contracts
-func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPair, useMaxBalance ...bool) (gas, gasFee uint64, err error) {
+func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPair, useMaxBalance ...bool) (gas uint64, gasFee iotago.BaseToken, err error) {
 	reqCopy := *req
 	if len(useMaxBalance) > 0 && useMaxBalance[0] {
 		reqCopy.WithGasBudget(0)
@@ -417,11 +424,17 @@ func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPai
 // EstimateNeededStorageDeposit estimates the amount of base tokens that will be
 // needed to add to the request (if any) in order to cover for the storage
 // deposit.
-func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptolib.KeyPair) uint64 {
-	out := transaction.MakeRequestTransactionOutput(ch.requestTransactionParams(req, keyPair))
-	storageDeposit := parameters.RentStructure().MinDeposit(out)
+func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptolib.KeyPair) iotago.BaseToken {
+	keyPair, senderAddr := ch.requestSender(req, keyPair)
+	out := transaction.MakeRequestTransactionOutput(
+		senderAddr,
+		req.Build(ch.ChainID.AsAddress()),
+		req.nft,
+	)
+	storageDeposit, err := parameters.RentStructure().MinDeposit(out)
+	require.NoError(ch.Env.T, err)
 
-	reqDeposit := uint64(0)
+	reqDeposit := iotago.BaseToken(0)
 	if req.ftokens != nil {
 		reqDeposit = req.ftokens.BaseTokens
 	}

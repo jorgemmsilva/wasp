@@ -170,14 +170,13 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 		panic(err)
 	}
 
-	utxoDBinitParams := utxodb.DefaultInitParams()
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	t.Cleanup(cancelCtx)
 	ret := &Solo{
 		T:                               t,
 		logger:                          opt.Log,
 		chainStateDatabaseManager:       chainStateDatabaseManager,
-		utxoDB:                          utxodb.New(utxoDBinitParams),
+		utxoDB:                          utxodb.New(parameters.L1API()),
 		chains:                          make(map[isc.ChainID]*Chain),
 		processorConfig:                 coreprocessors.NewConfigWithCoreContracts(),
 		disableAutoAdjustStorageDeposit: !opt.AutoAdjustStorageDeposit,
@@ -186,9 +185,7 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 		publisher:                       publisher.New(opt.Log.Named("publisher")),
 		ctx:                             ctx,
 	}
-	globalTime := ret.utxoDB.GlobalTime()
-	ret.logger.Infof("Solo environment has been created: logical time: %v, time step: %v",
-		globalTime.Format(timeLayout), ret.utxoDB.TimeStep())
+	ret.logger.Infof("Solo environment has been created")
 
 	err = ret.processorConfig.RegisterVMType(vmtypes.WasmTime, func(binaryCode []byte) (isc.VMProcessor, error) {
 		return wasmhost.GetProcessor(binaryCode, opt.Log)
@@ -251,7 +248,7 @@ func (env *Solo) WithNativeContract(c *coreutil.ContractProcessor) *Solo {
 
 // NewChain deploys new default chain instance.
 func (env *Solo) NewChain(depositFundsForOriginator ...bool) *Chain {
-	ret, _ := env.NewChainExt(nil, 0, "chain1")
+	ret, _ := env.NewChainExt(nil, 0, 0, "chain1")
 	if len(depositFundsForOriginator) == 0 || depositFundsForOriginator[0] {
 		// deposit some tokens for the chain originator
 		err := ret.DepositAssetsToL2(isc.NewAssetsBaseTokens(5*isc.Million), nil)
@@ -262,10 +259,11 @@ func (env *Solo) NewChain(depositFundsForOriginator ...bool) *Chain {
 
 func (env *Solo) deployChain(
 	chainOriginator *cryptolib.KeyPair,
-	initBaseTokens uint64,
+	initBaseTokens iotago.BaseToken,
+	initMana iotago.Mana,
 	name string,
 	originParams ...dict.Dict,
-) (chainData, *iotago.Transaction) {
+) (chainData, *iotago.SignedTransaction) {
 	env.logger.Debugf("deploying new chain '%s'", name)
 
 	if chainOriginator == nil {
@@ -294,20 +292,21 @@ func (env *Solo) deployChain(
 
 	initialL1Balance := env.L1BaseTokens(originatorAddr)
 
-	outs, outIDs := env.utxoDB.GetUnspentOutputs(originatorAddr)
+	outs := env.utxoDB.GetUnspentOutputs(originatorAddr)
 	originTx, originAO, chainID, err := origin.NewChainOriginTransaction(
 		chainOriginator,
 		stateControllerAddr,
 		stateControllerAddr,
 		initBaseTokens, // will be adjusted to min storage deposit + DefaultMinBaseTokensOnCommonAccount
+		initMana,
 		initParams,
 		outs,
-		outIDs,
+		env.SlotIndex(),
 		0,
 	)
 	require.NoError(env.T, err)
 
-	anchor, _, err := transaction.GetAnchorFromTransaction(originTx)
+	anchor, _, err := transaction.GetAnchorFromTransaction(originTx.Transaction)
 	require.NoError(env.T, err)
 
 	err = env.utxoDB.AddToLedger(originTx)
@@ -321,7 +320,8 @@ func (env *Solo) deployChain(
 
 	db, writeMutex, err := env.chainStateDatabaseManager.ChainStateKVStore(chainID)
 	require.NoError(env.T, err)
-	originAOMinSD := parameters.RentStructure().MinDeposit(originAO)
+	originAOMinSD, err := parameters.RentStructure().MinDeposit(originAO)
+	require.NoError(env.T, err)
 	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(db))
 	origin.InitChain(store, initParams, originAO.Amount-originAOMinSD)
 
@@ -358,11 +358,18 @@ func (env *Solo) deployChain(
 // Upon return, the chain is fully functional to process requests
 func (env *Solo) NewChainExt(
 	chainOriginator *cryptolib.KeyPair,
-	initBaseTokens uint64,
+	initBaseTokens iotago.BaseToken,
+	initMana iotago.Mana,
 	name string,
 	originParams ...dict.Dict,
-) (*Chain, *iotago.Transaction) {
-	chData, originTx := env.deployChain(chainOriginator, initBaseTokens, name, originParams...)
+) (*Chain, *iotago.SignedTransaction) {
+	chData, originTx := env.deployChain(
+		chainOriginator,
+		initBaseTokens,
+		initMana,
+		name,
+		originParams...,
+	)
 
 	env.chainsMutex.Lock()
 	defer env.chainsMutex.Unlock()
@@ -383,7 +390,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    env.logger.Named(chData.Name),
 		metrics:                metrics.NewChainMetricsProvider().GetChainMetrics(chData.ChainID),
-		mempool:                newMempool(env.utxoDB.GlobalTime, chData.ChainID),
+		mempool:                newMempool(env.utxoDB.SlotIndex, chData.ChainID),
 		migrationScheme:        allmigrations.DefaultScheme,
 	}
 	env.chains[chData.ChainID] = ch
@@ -392,7 +399,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 
 // AddToLedger adds (synchronously confirms) transaction to the UTXODB ledger. Return error if it is
 // invalid or double spend
-func (env *Solo) AddToLedger(tx *iotago.Transaction) error {
+func (env *Solo) AddToLedger(tx *iotago.SignedTransaction) error {
 	return env.utxoDB.AddToLedger(tx)
 }
 
@@ -422,11 +429,11 @@ func (env *Solo) AddRequestsToMempool(ch *Chain, reqs []isc.Request) {
 }
 
 // EnqueueRequests adds requests contained in the transaction to mempools of respective target chains
-func (env *Solo) EnqueueRequests(tx *iotago.Transaction) {
+func (env *Solo) EnqueueRequests(tx *iotago.SignedTransaction) {
 	env.chainsMutex.RLock()
 	defer env.chainsMutex.RUnlock()
 
-	requests := env.requestsByChain(tx)
+	requests := env.requestsByChain(tx.Transaction)
 
 	for chainID, reqs := range requests {
 		ch, ok := env.chains[chainID]
@@ -517,15 +524,8 @@ func (ch *Chain) EnqueueAccountOutput(_ *isc.AccountOutputWithID) {
 
 // ---------------------------------------------
 
-func (env *Solo) UnspentOutputs(addr iotago.Address) (iotago.OutputSet, iotago.OutputIDs) {
-	allOuts, _ := env.utxoDB.GetUnspentOutputs(addr)
-	ids := make(iotago.OutputIDs, len(allOuts))
-	i := 0
-	for id := range allOuts {
-		ids[i] = id
-		i++
-	}
-	return allOuts, ids
+func (env *Solo) UnspentOutputs(addr iotago.Address) iotago.OutputSet {
+	return env.utxoDB.GetUnspentOutputs(addr)
 }
 
 func (env *Solo) L1NFTs(addr iotago.Address) map[iotago.OutputID]*iotago.NFTOutput {
@@ -538,13 +538,18 @@ func (env *Solo) L1NativeTokens(addr iotago.Address, nativeTokenID iotago.Native
 	return assets.AmountNativeToken(nativeTokenID)
 }
 
-func (env *Solo) L1BaseTokens(addr iotago.Address) uint64 {
-	return env.utxoDB.GetAddressBalances(addr).BaseTokens
+func (env *Solo) L1BaseTokens(addr iotago.Address) iotago.BaseToken {
+	return env.utxoDB.GetAddressBalanceBaseTokens(addr)
 }
 
 // L1Assets returns all ftokens of the address contained in the UTXODB ledger
 func (env *Solo) L1Assets(addr iotago.Address) *isc.Assets {
-	return env.utxoDB.GetAddressBalances(addr)
+	a := isc.NewAssetsBaseTokens(env.utxoDB.GetAddressBalanceBaseTokens(addr))
+	for id, nt := range env.utxoDB.GetAddressBalanceNativeTokens(addr) {
+		a.AddNativeTokens(id, nt)
+	}
+	a.AddNFTs(env.utxoDB.GetAddressBalanceNFTs(addr)...)
+	return a
 }
 
 func (env *Solo) L1Ledger() *utxodb.UtxoDB {
@@ -576,16 +581,16 @@ func (env *Solo) MintNFTL1(issuer *cryptolib.KeyPair, target iotago.Address, imm
 //
 // Base tokens in the NFT outputs are sent to the minimum storage deposit and are taken from the issuer account.
 func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, collectionOutputID *iotago.OutputID, immutableMetadata [][]byte) ([]*isc.NFT, []*NFTMintedInfo, error) {
-	allOuts, allOutIDs := env.utxoDB.GetUnspentOutputs(issuer.Address())
+	allOuts := env.utxoDB.GetUnspentOutputs(issuer.Address())
 
-	tx, err := transaction.NewMintNFTsTransaction(transaction.MintNFTsTransactionParams{
-		IssuerKeyPair:      issuer,
-		CollectionOutputID: collectionOutputID,
-		Target:             target,
-		ImmutableMetadata:  immutableMetadata,
-		UnspentOutputs:     allOuts,
-		UnspentOutputIDs:   allOutIDs,
-	})
+	tx, err := transaction.NewMintNFTsTransaction(
+		issuer,
+		collectionOutputID,
+		target,
+		immutableMetadata,
+		allOuts,
+		env.SlotIndex(),
+	)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -594,7 +599,7 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 		return nil, nil, err
 	}
 
-	outSet, err := tx.OutputsSet()
+	outSet, err := tx.Transaction.OutputsSet()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -611,8 +616,8 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 			}
 			nft := &isc.NFT{
 				ID:       info.NFTID,
-				Issuer:   out.ImmutableFeatureSet().IssuerFeature().Address,
-				Metadata: out.ImmutableFeatureSet().MetadataFeature().Data,
+				Issuer:   out.ImmutableFeatureSet().Issuer().Address,
+				Metadata: out.ImmutableFeatureSet().Metadata().Data,
 			}
 			nfts = append(nfts, nft)
 			infos = append(infos, info)
@@ -622,18 +627,18 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 }
 
 // SendL1 sends base or native tokens to another L1 address
-func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.Assets, wallet *cryptolib.KeyPair) {
-	allOuts, allOutIDs := env.utxoDB.GetUnspentOutputs(wallet.Address())
-	tx, err := transaction.NewTransferTransaction(transaction.NewTransferTransactionParams{
-		DisableAutoAdjustStorageDeposit: env.disableAutoAdjustStorageDeposit,
-		FungibleTokens:                  assets,
-		SendOptions:                     isc.SendOptions{},
-		SenderAddress:                   wallet.Address(),
-		SenderKeyPair:                   wallet,
-		TargetAddress:                   targetAddress,
-		UnspentOutputs:                  allOuts,
-		UnspentOutputIDs:                allOutIDs,
-	})
+func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.AssetsWithMana, wallet *cryptolib.KeyPair) {
+	allOuts := env.utxoDB.GetUnspentOutputs(wallet.Address())
+	tx, err := transaction.NewTransferTransaction(
+		assets,
+		wallet.Address(),
+		wallet,
+		targetAddress,
+		allOuts,
+		nil,
+		env.SlotIndex(),
+		env.disableAutoAdjustStorageDeposit,
+	)
 	require.NoError(env.T, err)
 	err = env.AddToLedger(tx)
 	require.NoError(env.T, err)

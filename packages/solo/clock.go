@@ -4,17 +4,13 @@
 package solo
 
 import (
-	"time"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
-// GlobalTime return current logical clock time on the 'solo' instance
-func (env *Solo) GlobalTime() time.Time {
-	return env.utxoDB.GlobalTime()
+func (env *Solo) SlotIndex() iotago.SlotIndex {
+	return env.utxoDB.SlotIndex()
 }
 
-// AdvanceClockBy advances logical clock by time step
-func (env *Solo) AdvanceClockBy(step time.Duration) {
-	env.utxoDB.AdvanceClockBy(step)
-	env.logger.Infof("AdvanceClockBy: logical clock advanced by %v to %s",
-		step, env.utxoDB.GlobalTime().Format(timeLayout))
+func (env *Solo) AdvanceSlotIndex(step uint) {
+	env.utxoDB.AdvanceSlotIndex(step)
 }

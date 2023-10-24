@@ -343,6 +343,19 @@ func (u *UtxoDB) GetAddressBalanceNativeTokens(addr iotago.Address) iotago.Nativ
 	return tokens
 }
 
+func (u *UtxoDB) GetAddressBalanceNFTs(addr iotago.Address) iotago.NFTIDs {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+
+	var nfts iotago.NFTIDs
+	for _, out := range u.getUnspentOutputs(addr) {
+		if out.Type() == iotago.OutputNFT {
+			nfts = append(nfts, out.(*iotago.NFTOutput).NFTID)
+		}
+	}
+	return nfts
+}
+
 // GetAccountOutputs collects all outputs of type AccountOutput for the address
 func (u *UtxoDB) GetAccountOutputs(addr iotago.Address) map[iotago.OutputID]*iotago.AccountOutput {
 	u.mutex.RLock()

@@ -36,7 +36,7 @@ type AccountsContractRead struct {
 type AnchorTransactionBuilder struct {
 	// anchorOutput output of the chain
 	anchorOutput               *iotago.AccountOutput
-	anchorOutputStorageDeposit uint64
+	anchorOutputStorageDeposit iotago.BaseToken
 
 	// result new AO of the chain, filled by "BuildTransactionEssence"
 	resultAnchorOutput *iotago.AccountOutput
@@ -391,7 +391,7 @@ func (txb *AnchorTransactionBuilder) outputsAreFull() bool {
 	return txb.numOutputs() >= iotago.MaxOutputsCount
 }
 
-func (txb *AnchorTransactionBuilder) AnchorOutputStorageDeposit() uint64 {
+func (txb *AnchorTransactionBuilder) AnchorOutputStorageDeposit() iotago.BaseToken {
 	return txb.anchorOutputStorageDeposit
 }
 

@@ -14,7 +14,7 @@ import (
 func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 	scheme iotago.TokenScheme,
 	metadata []byte,
-) (uint32, uint64) {
+) (sn uint32, deposit iotago.BaseToken) {
 	// must check for valid token scheme to not create invalid transactions
 	simpleTokenScheme := util.MustTokenScheme(scheme)
 	maxSupply := simpleTokenScheme.MaximumSupply
@@ -27,22 +27,24 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 
 	f := &iotago.FoundryOutput{
 		Amount:       0,
-		NativeTokens: nil,
 		SerialNumber: txb.nextFoundrySerialNumber(),
 		TokenScheme:  scheme,
-		Conditions: iotago.UnlockConditions{
-			&iotago.ImmutableAliasUnlockCondition{
-				Address: util.AliasIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID).ToAddress().(*iotago.AccountAddress),
+		Conditions: iotago.FoundryOutputUnlockConditions{
+			&iotago.ImmutableAccountUnlockCondition{
+				Address: util.AccountIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID).ToAddress().(*iotago.AccountAddress),
 			},
 		},
-		Features: nil,
 	}
 	if len(metadata) > 0 {
-		f.Features = iotago.Features{&iotago.MetadataFeature{
+		f.Features = iotago.FoundryOutputFeatures{&iotago.MetadataFeature{
 			Data: metadata,
 		}}
 	}
-	f.Amount = parameters.RentStructure().MinDeposit(f)
+	var err error
+	f.Amount, err = parameters.RentStructure().MinDeposit(f)
+	if err != nil {
+		panic(err)
+	}
 	txb.invokedFoundries[f.SerialNumber] = &foundryInvoked{
 		serialNumber:     f.SerialNumber,
 		accountingInput:  nil,
@@ -64,8 +66,6 @@ func (txb *AnchorTransactionBuilder) ModifyNativeTokenSupply(nativeTokenID iotag
 		panic(fmt.Errorf("%v: requested token ID: %s, foundry token id: %s",
 			vm.ErrCantModifySupplyOfTheToken, nativeTokenID.String(), f.accountingInput.MustNativeTokenID().String()))
 	}
-
-	defer txb.mustCheckTotalNativeTokensExceeded()
 
 	simpleTokenScheme := util.MustTokenScheme(f.accountingOutput.TokenScheme)
 
@@ -113,7 +113,7 @@ func (txb *AnchorTransactionBuilder) ensureFoundry(sn uint32) *foundryInvoked {
 }
 
 // DestroyFoundry destroys existing foundry. Return storage deposit
-func (txb *AnchorTransactionBuilder) DestroyFoundry(sn uint32) uint64 {
+func (txb *AnchorTransactionBuilder) DestroyFoundry(sn uint32) iotago.BaseToken {
 	f := txb.ensureFoundry(sn)
 	if f == nil {
 		panic(vm.ErrFoundryDoesNotExist)
@@ -121,8 +121,6 @@ func (txb *AnchorTransactionBuilder) DestroyFoundry(sn uint32) uint64 {
 	if f.accountingInput == nil {
 		panic(vm.ErrCantDestroyFoundryBeingCreated)
 	}
-
-	defer txb.mustCheckTotalNativeTokensExceeded()
 
 	f.accountingOutput = nil
 	return f.accountingInput.Amount
@@ -246,8 +244,6 @@ func identicalFoundries(f1, f2 *iotago.FoundryOutput) bool {
 		return false
 	case f1.Amount != f2.Amount:
 		panic("identicalFoundries: inconsistency, amount is assumed immutable")
-	case len(f1.NativeTokens) > 0 || len(f2.NativeTokens) > 0:
-		panic("identicalFoundries: inconsistency, foundry is not expected not contain native tokens")
 	case simpleTokenSchemeF1.MaximumSupply.Cmp(simpleTokenSchemeF2.MaximumSupply) != 0:
 		panic("identicalFoundries: inconsistency, maximum supply is immutable")
 	case !f1.Ident().Equal(f2.Ident()):

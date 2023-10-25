@@ -1,6 +1,8 @@
 package vm
 
 import (
+	"time"
+
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -21,7 +23,7 @@ type VMTask struct {
 	AnchorOutputID     iotago.OutputID
 	Store              state.Store
 	Requests           []isc.Request
-	SlotIndex          iotago.SlotIndex
+	Time               isc.BlockTime
 	Entropy            hashing.HashValue
 	ValidatorFeeTarget isc.AgentID
 	// If EstimateGasMode is enabled, gas fee will be calculated but not charged
@@ -63,4 +65,8 @@ type RequestResult struct {
 
 func (task *VMTask) WillProduceBlock() bool {
 	return !task.EstimateGasMode && task.EVMTracer == nil
+}
+
+func (task *VMTask) FinalStateTimestamp() time.Time {
+	return task.Time.Timestamp.Add(time.Duration(len(task.Requests)+1) * time.Nanosecond)
 }

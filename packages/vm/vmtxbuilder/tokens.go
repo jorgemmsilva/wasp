@@ -59,7 +59,7 @@ func (n *nativeTokenBalance) requiresExistingAccountingUTXOAsInput() bool {
 }
 
 func (n *nativeTokenBalance) getOutValue() *big.Int {
-	return n.accountingOutput.NativeTokens[0].Amount
+	return n.accountingOutput.FeatureSet().NativeToken().Amount
 }
 
 func (n *nativeTokenBalance) add(delta *big.Int) *nativeTokenBalance {
@@ -71,13 +71,16 @@ func (n *nativeTokenBalance) add(delta *big.Int) *nativeTokenBalance {
 	if amount.Cmp(util.MaxUint256) > 0 {
 		panic(vm.ErrOverflow)
 	}
-	n.accountingOutput.NativeTokens[0].Amount = amount
+	n.accountingOutput.FeatureSet().NativeToken().Amount = amount
 	return n
 }
 
 // updateMinSD uptates the resulting output to have the minimum SD
 func (n *nativeTokenBalance) updateMinSD() {
-	minSD := parameters.RentStructure().MinDeposit(n.accountingOutput)
+	minSD, err := parameters.RentStructure().MinDeposit(n.accountingOutput)
+	if err != nil {
+		panic(err)
+	}
 	if minSD > n.accountingOutput.Amount {
 		// sd for internal output can only ever increase
 		n.accountingOutput.Amount = minSD
@@ -94,18 +97,8 @@ func (n *nativeTokenBalance) identicalInOut() bool {
 		return false
 	case n.accountingInput.Amount != n.accountingOutput.Amount:
 		return false
-	case !n.accountingInput.NativeTokens.Equal(n.accountingOutput.NativeTokens):
-		return false
 	case !n.accountingInput.Features.Equal(n.accountingOutput.Features):
 		return false
-	case len(n.accountingInput.NativeTokens) != 1:
-		panic("identicalBasicOutputs: internal inconsistency 2")
-	case len(n.accountingOutput.NativeTokens) != 1:
-		panic("identicalBasicOutputs: internal inconsistency 3")
-	case n.accountingInput.NativeTokens[0].ID != n.nativeTokenID:
-		panic("identicalBasicOutputs: internal inconsistency 4")
-	case n.accountingOutput.NativeTokens[0].ID != n.nativeTokenID:
-		panic("identicalBasicOutputs: internal inconsistency 5")
 	}
 	return true
 }
@@ -120,16 +113,16 @@ func cloneInternalBasicOutputOrNil(o *iotago.BasicOutput) *iotago.BasicOutput {
 func (txb *AnchorTransactionBuilder) newInternalTokenOutput(aliasID iotago.AccountID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
 	out := &iotago.BasicOutput{
 		Amount: 0,
-		NativeTokens: []*iotago.NativeTokenFeature{{
-			ID:     nativeTokenID,
-			Amount: big.NewInt(0),
-		}},
-		Conditions: iotago.UnlockConditions{
+		Conditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: aliasID.ToAddress()},
 		},
-		Features: iotago.Features{
+		Features: iotago.BasicOutputFeatures{
 			&iotago.SenderFeature{
 				Address: aliasID.ToAddress(),
+			},
+			&iotago.NativeTokenFeature{
+				ID:     nativeTokenID,
+				Amount: big.NewInt(0),
 			},
 		},
 	}
@@ -222,7 +215,7 @@ func (txb *AnchorTransactionBuilder) ensureNativeTokenBalance(nativeTokenID iota
 
 	var basicOutputOut *iotago.BasicOutput
 	if basicOutputIn == nil {
-		basicOutputOut = txb.newInternalTokenOutput(util.AliasIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID), nativeTokenID)
+		basicOutputOut = txb.newInternalTokenOutput(util.AccountIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID), nativeTokenID)
 	} else {
 		basicOutputOut = cloneInternalBasicOutputOrNil(basicOutputIn)
 	}

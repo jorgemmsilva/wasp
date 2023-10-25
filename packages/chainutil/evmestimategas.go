@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/params"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -20,7 +20,7 @@ var evmErrOutOfGasRegex = regexp.MustCompile("out of gas|intrinsic gas too low")
 
 // EVMEstimateGas executes the given request and discards the resulting chain state. It is useful
 // for estimating gas.
-func EVMEstimateGas(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, call ethereum.CallMsg) (uint64, error) { //nolint:gocyclo
+func EVMEstimateGas(ch chaintypes.ChainCore, accountOutput *isc.AccountOutputWithID, call ethereum.CallMsg) (uint64, error) { //nolint:gocyclo
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
 		lo     uint64 = params.TxGas - 1
@@ -44,10 +44,13 @@ func EVMEstimateGas(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, 
 	gasCap = hi
 
 	// Create a helper to check if a gas allowance results in an executable transaction
-	blockTime := time.Now()
 	executable := func(gas uint64) (failed bool, result *vm.RequestResult, err error) {
 		call.Gas = gas
 		iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
+		blockTime := vm.Time{
+			SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
+			Timestamp: time.Now(),
+		}
 		res, err := runISCRequest(ch, accountOutput, blockTime, iscReq, true)
 		if err != nil {
 			return true, nil, err
@@ -120,11 +123,11 @@ func EVMEstimateGas(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, 
 	return hi, nil
 }
 
-func getChainInfo(ch chain.ChainCore) *isc.ChainInfo {
+func getChainInfo(ch chaintypes.ChainCore) *isc.ChainInfo {
 	return governance.NewStateAccess(mustLatestState(ch)).ChainInfo(ch.ID())
 }
 
-func resolveError(ch chain.ChainCore, receiptError *isc.UnresolvedVMError) (isOutOfGas bool, resolved *isc.VMError, err error) {
+func resolveError(ch chaintypes.ChainCore, receiptError *isc.UnresolvedVMError) (isOutOfGas bool, resolved *isc.VMError, err error) {
 	if receiptError.ErrorCode == vm.ErrGasBudgetExceeded.Code() {
 		// out of gas when charging ISC gas
 		return true, nil, nil

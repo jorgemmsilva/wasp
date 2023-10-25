@@ -28,6 +28,7 @@ import (
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/chainmanager"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
 	"github.com/iotaledger/wasp/packages/chain/cons"
 	consGR "github.com/iotaledger/wasp/packages/chain/cons/cons_gr"
@@ -65,44 +66,6 @@ var (
 	ConsensusInstsInAdvance  = 3
 	AwaitReceiptCleanupEvery = 100
 )
-
-type ChainRequests interface {
-	ReceiveOffLedgerRequest(request isc.OffLedgerRequest, sender *cryptolib.PublicKey) error
-	AwaitRequestProcessed(ctx context.Context, requestID isc.RequestID, confirmed bool) <-chan *blocklog.RequestReceipt
-}
-
-type Chain interface {
-	ChainCore
-	ChainRequests
-	// This is invoked when a node owner updates the chain configuration,
-	// possibly to update the per-node accessNode list.
-	ConfigUpdated(accessNodesPerNode []*cryptolib.PublicKey)
-	// This is invoked when the accessMgr determines the nodes which
-	// consider this node as an access node for this chain. The chain
-	// can query the nodes for blocks, etc. NOTE: servers = access⁻¹
-	ServersUpdated(serverNodes []*cryptolib.PublicKey)
-	// Metrics and the current descriptive state.
-	GetChainMetrics() *metrics.ChainMetrics
-	GetConsensusPipeMetrics() ConsensusPipeMetrics // TODO: Review this.
-	GetConsensusWorkflowStatus() ConsensusWorkflowStatus
-	GetMempoolContents() io.Reader
-}
-
-type CommitteeInfo struct {
-	Address       iotago.Address
-	Size          uint16
-	Quorum        uint16
-	QuorumIsAlive bool
-	PeerStatus    []*PeerStatus
-}
-
-type PeerStatus struct {
-	Name       string
-	Index      uint16
-	PubKey     *cryptolib.PublicKey
-	PeeringURL string
-	Connected  bool
-}
 
 type RequestOutputHandler = func(outputInfo *isc.OutputInfo)
 
@@ -144,30 +107,30 @@ type ChainNodeConn interface {
 }
 
 type chainNodeImpl struct {
-	me                  gpa.NodeID
-	nodeIdentity        *cryptolib.KeyPair
-	chainID             isc.ChainID
-	chainMgr            gpa.AckHandler
-	chainStore          indexedstore.IndexedStore
-	nodeConn            NodeConnection
-	tangleTime          time.Time
-	mempool             mempool.Mempool
-	stateMgr            statemanager.StateMgr
+	me                    gpa.NodeID
+	nodeIdentity          *cryptolib.KeyPair
+	chainID               isc.ChainID
+	chainMgr              gpa.AckHandler
+	chainStore            indexedstore.IndexedStore
+	nodeConn              NodeConnection
+	tangleTime            time.Time
+	mempool               mempool.Mempool
+	stateMgr              statemanager.StateMgr
 	recvAccountOutputPipe pipe.Pipe[*isc.AccountOutputWithID]
-	recvTxPublishedPipe pipe.Pipe[*txPublished]
-	recvMilestonePipe   pipe.Pipe[time.Time]
-	consensusInsts      *shrinkingmap.ShrinkingMap[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]] // Running consensus instances.
-	consOutputPipe      pipe.Pipe[*consOutput]
-	consRecoverPipe     pipe.Pipe[*consRecover]
-	publishingTXes      *shrinkingmap.ShrinkingMap[iotago.TransactionID, context.CancelFunc] // TX'es now being published.
-	procCache           *processors.Cache                                                    // Cache for the SC processors.
-	configUpdatedCh     chan *configUpdate
-	serversUpdatedPipe  pipe.Pipe[*serversUpdate]
-	awaitReceiptActCh   chan *awaitReceiptReq
-	awaitReceiptCnfCh   chan *awaitReceiptReq
-	stateTrackerAct     StateTracker
-	stateTrackerCnf     StateTracker
-	blockWAL            sm_gpa_utils.BlockWAL
+	recvTxPublishedPipe   pipe.Pipe[*txPublished]
+	recvMilestonePipe     pipe.Pipe[time.Time]
+	consensusInsts        *shrinkingmap.ShrinkingMap[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]] // Running consensus instances.
+	consOutputPipe        pipe.Pipe[*consOutput]
+	consRecoverPipe       pipe.Pipe[*consRecover]
+	publishingTXes        *shrinkingmap.ShrinkingMap[iotago.TransactionID, context.CancelFunc] // TX'es now being published.
+	procCache             *processors.Cache                                                    // Cache for the SC processors.
+	configUpdatedCh       chan *configUpdate
+	serversUpdatedPipe    pipe.Pipe[*serversUpdate]
+	awaitReceiptActCh     chan *awaitReceiptReq
+	awaitReceiptCnfCh     chan *awaitReceiptReq
+	stateTrackerAct       StateTracker
+	stateTrackerCnf       StateTracker
+	blockWAL              sm_gpa_utils.BlockWAL
 	//
 	// Configuration values.
 	consensusDelay   time.Duration
@@ -175,20 +138,20 @@ type chainNodeImpl struct {
 	validatorAgentID isc.AgentID
 	//
 	// Information for other components.
-	listener               ChainListener          // Object expecting event notifications.
-	accessLock             *sync.RWMutex          // Mutex for accessing informative fields from other threads.
-	activeCommitteeDKShare tcrypto.DKShare        // DKShare of the current active committee.
-	activeCommitteeNodes   []*cryptolib.PublicKey // The nodes acting as a committee for the latest consensus.
-	activeAccessNodes      []*cryptolib.PublicKey // All the nodes authorized for being access nodes (∪{{Self}, accessNodesFromNode, accessNodesFrom{ACT, CNF}}, activeCommitteeNodes}).
-	accessNodesFromNode    []*cryptolib.PublicKey // Access nodes, as configured locally by a user in this node.
-	accessNodesFromCNF     []*cryptolib.PublicKey // Access nodes, as configured in the governance contract (for the active state).
-	accessNodesFromACT     []*cryptolib.PublicKey // Access nodes, as configured in the governance contract (for the confirmed state).
-	serverNodes            []*cryptolib.PublicKey // The nodes we can query (because they consider us an access node).
+	listener               chaintypes.ChainListener // Object expecting event notifications.
+	accessLock             *sync.RWMutex            // Mutex for accessing informative fields from other threads.
+	activeCommitteeDKShare tcrypto.DKShare          // DKShare of the current active committee.
+	activeCommitteeNodes   []*cryptolib.PublicKey   // The nodes acting as a committee for the latest consensus.
+	activeAccessNodes      []*cryptolib.PublicKey   // All the nodes authorized for being access nodes (∪{{Self}, accessNodesFromNode, accessNodesFrom{ACT, CNF}}, activeCommitteeNodes}).
+	accessNodesFromNode    []*cryptolib.PublicKey   // Access nodes, as configured locally by a user in this node.
+	accessNodesFromCNF     []*cryptolib.PublicKey   // Access nodes, as configured in the governance contract (for the active state).
+	accessNodesFromACT     []*cryptolib.PublicKey   // Access nodes, as configured in the governance contract (for the confirmed state).
+	serverNodes            []*cryptolib.PublicKey   // The nodes we can query (because they consider us an access node).
 	latestConfirmedAO      *isc.AccountOutputWithID // Confirmed by L1, can be lagging from latestActiveAO.
-	latestConfirmedState   state.State            // State corresponding to latestConfirmedAO, for performance reasons.
+	latestConfirmedState   state.State              // State corresponding to latestConfirmedAO, for performance reasons.
 	latestConfirmedStateAO *isc.AccountOutputWithID // Set only when the corresponding state is retrieved.
 	latestActiveAO         *isc.AccountOutputWithID // This is the AO the chain is build on.
-	latestActiveState      state.State            // State corresponding to latestActiveAO, for performance reasons.
+	latestActiveState      state.State              // State corresponding to latestActiveAO, for performance reasons.
 	latestActiveStateAO    *isc.AccountOutputWithID // Set only when the corresponding state is retrieved.
 	//
 	// Infrastructure.
@@ -237,11 +200,11 @@ func (cr *consRecover) String() string {
 
 // This is event received from the NodeConn as response to PublishTX
 type txPublished struct {
-	committeeAddr   iotago.Ed25519Address
-	logIndex        cmt_log.LogIndex
-	txID            iotago.TransactionID
+	committeeAddr     iotago.Ed25519Address
+	logIndex          cmt_log.LogIndex
+	txID              iotago.TransactionID
 	nextAccountOutput *isc.AccountOutputWithID
-	confirmed       bool
+	confirmed         bool
 }
 
 // Represents config update event locally on this node.
@@ -253,7 +216,7 @@ type serversUpdate struct {
 	serverNodes []*cryptolib.PublicKey
 }
 
-var _ Chain = &chainNodeImpl{}
+var _ chaintypes.Chain = &chainNodeImpl{}
 
 //nolint:funlen
 func New(
@@ -269,7 +232,7 @@ func New(
 	recoverFromWAL bool,
 	blockWAL sm_gpa_utils.BlockWAL,
 	snapshotManager sm_snapshots.SnapshotManager,
-	listener ChainListener,
+	listener chaintypes.ChainListener,
 	accessNodesFromNode []*cryptolib.PublicKey,
 	net peering.NetworkProvider,
 	chainMetrics *metrics.ChainMetrics,
@@ -283,7 +246,7 @@ func New(
 	validatorAgentID isc.AgentID,
 	smParameters sm_gpa.StateManagerParameters,
 	mempoolTTL time.Duration,
-) (Chain, error) {
+) (chaintypes.Chain, error) {
 	log.Debugf("Starting the chain, chainID=%v", chainID)
 	if listener == nil {
 		listener = NewEmptyChainListener()
@@ -298,7 +261,7 @@ func New(
 		chainStore:             chainStore,
 		nodeConn:               nodeConn,
 		tangleTime:             time.Time{}, // Zero time, while we haven't received it from the L1.
-		recvAccountOutputPipe:    pipe.NewInfinitePipe[*isc.AccountOutputWithID](),
+		recvAccountOutputPipe:  pipe.NewInfinitePipe[*isc.AccountOutputWithID](),
 		recvTxPublishedPipe:    pipe.NewInfinitePipe[*txPublished](),
 		recvMilestonePipe:      pipe.NewInfinitePipe[time.Time](),
 		consensusInsts:         shrinkingmap.New[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]](),
@@ -779,11 +742,11 @@ func (cni *chainNodeImpl) handleChainMgrOutput(ctx context.Context, outputUntype
 			if err := cni.nodeConn.PublishTX(subCtx, cni.chainID, txToPost.Tx, func(_ *iotago.Transaction, confirmed bool) {
 				cni.chainMetrics.NodeConn.TXPublishResult(confirmed, time.Since(publishStart))
 				cni.recvTxPublishedPipe.In() <- &txPublished{
-					committeeAddr:   txToPost.CommitteeAddr,
-					logIndex:        txToPost.LogIndex,
-					txID:            txToPost.TxID,
+					committeeAddr:     txToPost.CommitteeAddr,
+					logIndex:          txToPost.LogIndex,
+					txID:              txToPost.TxID,
 					nextAccountOutput: txToPost.NextAccountOutput,
-					confirmed:       confirmed,
+					confirmed:         confirmed,
 				}
 			}); err != nil {
 				cni.log.Error(err.Error())
@@ -1067,13 +1030,13 @@ func (cni *chainNodeImpl) Log() *logger.Logger {
 	return cni.log
 }
 
-func (cni *chainNodeImpl) LatestAccountOutput(freshness StateFreshness) (*isc.AccountOutputWithID, error) {
+func (cni *chainNodeImpl) LatestAccountOutput(freshness chaintypes.StateFreshness) (*isc.AccountOutputWithID, error) {
 	cni.accessLock.RLock()
 	latestActiveAO := cni.latestActiveStateAO
 	latestConfirmedAO := cni.latestConfirmedStateAO
 	cni.accessLock.RUnlock()
 	switch freshness {
-	case ActiveOrCommittedState:
+	case chaintypes.ActiveOrCommittedState:
 		if latestActiveAO != nil {
 			if latestConfirmedAO == nil || latestActiveAO.GetStateIndex() > latestConfirmedAO.GetStateIndex() {
 				cni.log.Debugf("LatestAccountOutput(%v) => active = %v", freshness, latestActiveAO)
@@ -1085,13 +1048,13 @@ func (cni *chainNodeImpl) LatestAccountOutput(freshness StateFreshness) (*isc.Ac
 			return latestConfirmedAO, nil
 		}
 		return nil, fmt.Errorf("have no active nor confirmed state")
-	case ConfirmedState:
+	case chaintypes.ConfirmedState:
 		if latestConfirmedAO != nil {
 			cni.log.Debugf("LatestAccountOutput(%v) => confirmed = %v", freshness, latestConfirmedAO)
 			return latestConfirmedAO, nil
 		}
 		return nil, fmt.Errorf("have no confirmed state")
-	case ActiveState:
+	case chaintypes.ActiveState:
 		if latestActiveAO != nil {
 			cni.log.Debugf("LatestAccountOutput(%v) => active = %v", freshness, latestActiveAO)
 			return latestActiveAO, nil
@@ -1102,13 +1065,13 @@ func (cni *chainNodeImpl) LatestAccountOutput(freshness StateFreshness) (*isc.Ac
 	}
 }
 
-func (cni *chainNodeImpl) LatestState(freshness StateFreshness) (state.State, error) {
+func (cni *chainNodeImpl) LatestState(freshness chaintypes.StateFreshness) (state.State, error) {
 	cni.accessLock.RLock()
 	latestActiveState := cni.latestActiveState
 	latestConfirmedState := cni.latestConfirmedState
 	cni.accessLock.RUnlock()
 	switch freshness {
-	case ActiveOrCommittedState:
+	case chaintypes.ActiveOrCommittedState:
 		if latestActiveState != nil {
 			if latestConfirmedState == nil || latestActiveState.BlockIndex() > latestConfirmedState.BlockIndex() {
 				cni.log.Debugf("LatestState(%v) => active = %v", freshness, latestActiveState)
@@ -1122,7 +1085,7 @@ func (cni *chainNodeImpl) LatestState(freshness StateFreshness) (state.State, er
 		latestInStore, err := cni.chainStore.LatestState()
 		cni.log.Debugf("LatestState(%v) => inStore = %v, %v", freshness, latestInStore, err)
 		return latestInStore, err
-	case ConfirmedState:
+	case chaintypes.ConfirmedState:
 		if latestConfirmedState != nil {
 			cni.log.Debugf("LatestState(%v) => confirmed = %v", freshness, latestConfirmedState)
 			return latestConfirmedState, nil
@@ -1130,7 +1093,7 @@ func (cni *chainNodeImpl) LatestState(freshness StateFreshness) (state.State, er
 		latestInStore, err := cni.chainStore.LatestState()
 		cni.log.Debugf("LatestState(%v) => inStore = %v, %v", freshness, latestInStore, err)
 		return latestInStore, err
-	case ActiveState:
+	case chaintypes.ActiveState:
 		if latestActiveState != nil {
 			cni.log.Debugf("LatestState(%v) => active = %v", freshness, latestActiveState)
 			return latestActiveState, nil
@@ -1141,7 +1104,7 @@ func (cni *chainNodeImpl) LatestState(freshness StateFreshness) (state.State, er
 	}
 }
 
-func (cni *chainNodeImpl) GetCommitteeInfo() *CommitteeInfo {
+func (cni *chainNodeImpl) GetCommitteeInfo() *chaintypes.CommitteeInfo {
 	cni.accessLock.RLock()
 	dkShare := cni.activeCommitteeDKShare
 	cni.accessLock.RUnlock()
@@ -1150,14 +1113,14 @@ func (cni *chainNodeImpl) GetCommitteeInfo() *CommitteeInfo {
 	}
 	committeePubKeys := dkShare.GetNodePubKeys()
 	netPeerStatus := cni.net.PeerStatus()
-	peerStatus := make([]*PeerStatus, len(committeePubKeys))
+	peerStatus := make([]*chaintypes.PeerStatus, len(committeePubKeys))
 	connectedCount := uint16(0)
 	for i, nodePubKey := range committeePubKeys {
 		index := slices.IndexFunc(netPeerStatus, func(st peering.PeerStatusProvider) bool {
 			return st.PubKey().Equals(nodePubKey)
 		})
 		if index == -1 {
-			peerStatus[i] = &PeerStatus{
+			peerStatus[i] = &chaintypes.PeerStatus{
 				Index:      uint16(i),
 				PubKey:     nodePubKey,
 				PeeringURL: "",
@@ -1165,7 +1128,7 @@ func (cni *chainNodeImpl) GetCommitteeInfo() *CommitteeInfo {
 			}
 			continue
 		}
-		peerStatus[i] = &PeerStatus{
+		peerStatus[i] = &chaintypes.PeerStatus{
 			Index:      uint16(i),
 			PubKey:     nodePubKey,
 			PeeringURL: netPeerStatus[index].PeeringURL(),
@@ -1175,7 +1138,7 @@ func (cni *chainNodeImpl) GetCommitteeInfo() *CommitteeInfo {
 			connectedCount++
 		}
 	}
-	ci := &CommitteeInfo{
+	ci := &chaintypes.CommitteeInfo{
 		Address:       dkShare.GetAddress(),
 		Size:          dkShare.GetN(),
 		Quorum:        dkShare.GetT(),
@@ -1241,11 +1204,11 @@ func (cni *chainNodeImpl) GetChainMetrics() *metrics.ChainMetrics {
 	return cni.chainMetrics
 }
 
-func (cni *chainNodeImpl) GetConsensusPipeMetrics() ConsensusPipeMetrics {
+func (cni *chainNodeImpl) GetConsensusPipeMetrics() chaintypes.ConsensusPipeMetrics {
 	return &consensusPipeMetricsImpl{}
 }
 
-func (cni *chainNodeImpl) GetConsensusWorkflowStatus() ConsensusWorkflowStatus {
+func (cni *chainNodeImpl) GetConsensusWorkflowStatus() chaintypes.ConsensusWorkflowStatus {
 	return &consensusWorkflowStatusImpl{}
 }
 

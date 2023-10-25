@@ -14,7 +14,7 @@ import (
 
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -71,7 +71,7 @@ func (b *jsonRPCSoloBackend) ISCCallView(chainState state.State, scName, funName
 }
 
 func (b *jsonRPCSoloBackend) ISCLatestAccountOutput() (*isc.AccountOutputWithID, error) {
-	latestAccountOutput, err := b.Chain.LatestAccountOutput(chain.ActiveOrCommittedState)
+	latestAccountOutput, err := b.Chain.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
@@ -79,7 +79,7 @@ func (b *jsonRPCSoloBackend) ISCLatestAccountOutput() (*isc.AccountOutputWithID,
 }
 
 func (b *jsonRPCSoloBackend) ISCLatestState() state.State {
-	latestState, err := b.Chain.LatestState(chain.ActiveOrCommittedState)
+	latestState, err := b.Chain.LatestState(chaintypes.ActiveOrCommittedState)
 	if err != nil {
 		panic(err)
 	}

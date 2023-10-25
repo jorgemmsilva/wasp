@@ -19,7 +19,7 @@ import (
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/evm/evmlogger"
@@ -45,8 +45,6 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 	_ "github.com/iotaledger/wasp/packages/vm/sandbox"
-	"github.com/iotaledger/wasp/packages/vm/vmtypes"
-	"github.com/iotaledger/wasp/packages/wasmvm/wasmhost"
 )
 
 const (
@@ -125,14 +123,13 @@ type Chain struct {
 	migrationScheme *migrations.MigrationScheme
 }
 
-var _ chain.ChainCore = &Chain{}
-
 type InitOptions struct {
 	AutoAdjustStorageDeposit bool
 	Debug                    bool
 	PrintStackTrace          bool
 	GasBurnLogEnabled        bool
 	Seed                     cryptolib.Seed
+	ExtraVMTypes             map[string]processors.VMConstructor
 	Log                      *logger.Logger
 }
 
@@ -187,10 +184,10 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 	}
 	ret.logger.Infof("Solo environment has been created")
 
-	err = ret.processorConfig.RegisterVMType(vmtypes.WasmTime, func(binaryCode []byte) (isc.VMProcessor, error) {
-		return wasmhost.GetProcessor(binaryCode, opt.Log)
-	})
-	require.NoError(t, err)
+	for vmType, constructor := range opt.ExtraVMTypes {
+		err = ret.processorConfig.RegisterVMType(vmType, constructor)
+		require.NoError(t, err)
+	}
 
 	_ = ret.publisher.Events.Published.Hook(func(ev *publisher.ISCEvent[any]) {
 		ret.logger.Infof("solo publisher: %s %s %v", ev.Kind, ev.ChainID, ev.String())
@@ -498,7 +495,7 @@ func (ch *Chain) GetChainNodes() []peering.PeerStatusProvider {
 	panic("unimplemented")
 }
 
-func (ch *Chain) GetCommitteeInfo() *chain.CommitteeInfo {
+func (ch *Chain) GetCommitteeInfo() *chaintypes.CommitteeInfo {
 	panic("unimplemented")
 }
 

@@ -133,7 +133,8 @@ func TestOriginBlock(t *testing.T) {
 	validateBlock0(block0, nil)
 	s := cs.StateByTrieRoot(block0.TrieRoot())
 	require.EqualValues(t, 0, s.BlockIndex())
-	require.True(t, s.Timestamp().IsZero())
+	require.True(t, s.BlockTime().Timestamp.IsZero())
+	require.Zero(t, s.BlockTime().SlotIndex)
 
 	validateBlock0(state.NewStoreWithUniqueWriteMutex(db).BlockByTrieRoot(block0.TrieRoot()))
 	validateBlock0(state.NewStoreWithUniqueWriteMutex(db).LatestBlock())

@@ -1,14 +1,14 @@
 package chainutil
 
 import (
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
 
-func GetAccountBalance(ch chain.ChainCore, agentID isc.AgentID) (*isc.Assets, error) {
+func GetAccountBalance(ch chaintypes.ChainCore, agentID isc.AgentID) (*isc.Assets, error) {
 	params := codec.MakeDict(map[string]interface{}{
 		accounts.ParamAgentID: codec.EncodeAgentID(agentID),
 	})
@@ -19,8 +19,8 @@ func GetAccountBalance(ch chain.ChainCore, agentID isc.AgentID) (*isc.Assets, er
 	return isc.AssetsFromDict(ret)
 }
 
-func mustLatestState(ch chain.ChainCore) state.State {
-	latestState, err := ch.LatestState(chain.ActiveOrCommittedState)
+func mustLatestState(ch chaintypes.ChainCore) state.State {
+	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	if err != nil {
 		panic(err)
 	}

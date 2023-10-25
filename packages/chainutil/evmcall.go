@@ -6,15 +6,20 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // EVMCall executes an EVM contract call and returns its output, discarding any state changes
-func EVMCall(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, call ethereum.CallMsg) ([]byte, error) {
+func EVMCall(
+	ch chaintypes.ChainCore,
+	accountOutput *isc.AccountOutputWithID,
+	call ethereum.CallMsg,
+) ([]byte, error) {
 	info := getChainInfo(ch)
 
 	// 0 means view call
@@ -29,7 +34,11 @@ func EVMCall(ch chain.ChainCore, accountOutput *isc.AccountOutputWithID, call et
 
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 	// TODO: setting EstimateGasMode = true feels wrong here
-	res, err := runISCRequest(ch, accountOutput, time.Now(), iscReq, true)
+	blockTime := vm.Time{
+		SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
+		Timestamp: time.Now(),
+	}
+	res, err := runISCRequest(ch, accountOutput, blockTime, iscReq, true)
 	if err != nil {
 		return nil, err
 	}

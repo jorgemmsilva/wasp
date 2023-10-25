@@ -2,13 +2,12 @@ package viewcontext
 
 import (
 	"math/big"
-	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -47,7 +46,7 @@ type ViewContext struct {
 
 var _ execution.WaspCallContext = &ViewContext{}
 
-func New(ch chain.ChainCore, stateReader state.State, gasBurnLoggingEnabled bool) (*ViewContext, error) {
+func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled bool) (*ViewContext, error) {
 	chainID := ch.ID()
 	return &ViewContext{
 		processors:            ch.Processors(),
@@ -123,11 +122,11 @@ func (ctx *ViewContext) GetNFTData(nftID iotago.NFTID) *isc.NFT {
 	return accounts.GetNFTData(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), nftID)
 }
 
-func (ctx *ViewContext) Timestamp() time.Time {
-	return ctx.stateReader.Timestamp()
+func (ctx *ViewContext) BlockTime() isc.BlockTime {
+	return ctx.stateReader.BlockTime()
 }
 
-func (ctx *ViewContext) GetBaseTokensBalance(agentID isc.AgentID) uint64 {
+func (ctx *ViewContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken {
 	return accounts.GetBaseTokensBalance(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID)
 }
 

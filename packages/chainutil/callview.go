@@ -1,7 +1,7 @@
 package chainutil
 
 import (
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/state"
@@ -11,7 +11,7 @@ import (
 // CallView executes a view call on the latest block of the chain
 func CallView(
 	chainState state.State,
-	ch chain.ChainCore,
+	ch chaintypes.ChainCore,
 	contractHname,
 	viewHname isc.Hname,
 	params dict.Dict,

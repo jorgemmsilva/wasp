@@ -5,7 +5,6 @@ package sandbox
 
 import (
 	"math/big"
-	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -40,7 +39,7 @@ func (s *SandboxBase) Caller() isc.AgentID {
 	return s.Ctx.Caller()
 }
 
-func (s *SandboxBase) BalanceBaseTokens() uint64 {
+func (s *SandboxBase) BalanceBaseTokens() iotago.BaseToken {
 	s.Ctx.GasBurn(gas.BurnCodeGetBalance)
 	return s.Ctx.GetBaseTokensBalance(s.AccountID())
 }
@@ -95,9 +94,9 @@ func (s *SandboxBase) Contract() isc.Hname {
 	return s.Ctx.CurrentContractHname()
 }
 
-func (s *SandboxBase) Timestamp() time.Time {
+func (s *SandboxBase) BlockTime() isc.BlockTime {
 	s.Ctx.GasBurn(gas.BurnCodeGetContext)
-	return s.Ctx.Timestamp()
+	return s.Ctx.BlockTime()
 }
 
 func (s *SandboxBase) Log() isc.LogInterface {

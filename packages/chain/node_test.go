@@ -19,6 +19,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_snapshots"
@@ -33,7 +34,6 @@ import (
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/state/indexedstore"
 	"github.com/iotaledger/wasp/packages/testutil"
-	testparameters "github.com/iotaledger/wasp/packages/testutil/parameters"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
@@ -167,7 +167,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 	// assert state
 	for i, node := range te.nodes {
 		for {
-			latestState, err := node.LatestState(chain.ActiveOrCommittedState)
+			latestState, err := node.LatestState(chaintypes.ActiveOrCommittedState)
 			require.NoError(t, err)
 			cnt := inccounter.NewStateAccess(latestState).GetCounter()
 			te.log.Debugf("Counter[node=%v]=%v", i, cnt)
@@ -205,9 +205,9 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 		}
 		// Check if LastAccountOutput() works as expected.
 		awaitPredicate(te, ctxTimeout, "LatestAccountOutput", func() bool {
-			confirmedAO, err := node.LatestAccountOutput(chain.ConfirmedState)
+			confirmedAO, err := node.LatestAccountOutput(chaintypes.ConfirmedState)
 			require.NoError(t, err)
-			activeAO, err := node.LatestAccountOutput(chain.ActiveState)
+			activeAO, err := node.LatestAccountOutput(chaintypes.ActiveState)
 			require.NoError(t, err)
 			lastPublishedTX := te.nodeConns[i].published[len(te.nodeConns[i].published)-1]
 			lastPublishedAO, err := isc.AccountOutputWithIDFromTx(lastPublishedTX, te.chainID.AsAddress())
@@ -272,13 +272,13 @@ func awaitPredicate(te *testEnv, ctx context.Context, desc string, predicate fun
 // testNodeConn
 
 type testNodeConn struct {
-	t               *testing.T
-	chainID         isc.ChainID
-	published       []*iotago.Transaction
-	recvRequestCB   chain.RequestOutputHandler
+	t                 *testing.T
+	chainID           isc.ChainID
+	published         []*iotago.Transaction
+	recvRequestCB     chain.RequestOutputHandler
 	recvAccountOutput chain.AccountOutputHandler
-	recvMilestone   chain.MilestoneHandler
-	attachWG        *sync.WaitGroup
+	recvMilestone     chain.MilestoneHandler
+	attachWG          *sync.WaitGroup
 }
 
 func newTestNodeConn(t *testing.T) *testNodeConn {
@@ -360,15 +360,15 @@ func (tnc *testNodeConn) WaitUntilInitiallySynced(ctx context.Context) error {
 }
 
 func (tnc *testNodeConn) GetBech32HRP() iotago.NetworkPrefix {
-	return testparameters.GetBech32HRP()
+	return parameters.NetworkPrefix()
 }
 
 func (tnc *testNodeConn) GetL1Params() *parameters.L1Params {
-	return testparameters.GetL1ParamsForTesting()
+	return parameters.L1()
 }
 
-func (tnc *testNodeConn) GetL1ProtocolParams() *iotago.ProtocolParameters {
-	return testparameters.GetL1ProtocolParamsForTesting()
+func (tnc *testNodeConn) GetL1ProtocolParams() iotago.ProtocolParameters {
+	return parameters.Protocol()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -393,7 +393,7 @@ type testEnv struct {
 	originAO         *isc.AccountOutputWithID
 	originTx         *iotago.Transaction
 	nodeConns        []*testNodeConn
-	nodes            []chain.Chain
+	nodes            []chaintypes.Chain
 }
 
 func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
@@ -402,7 +402,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.log = testlogger.NewLogger(t).Named(fmt.Sprintf("%04d", rand.Intn(10000))) // For test instance ID.
 	//
 	// Create ledger accounts.
-	te.utxoDB = utxodb.New(utxodb.DefaultInitParams())
+	te.utxoDB = utxodb.New(parameters.L1API())
 	te.governor = cryptolib.NewKeyPair()
 	te.originator = cryptolib.NewKeyPair()
 	_, err := te.utxoDB.GetFundsFromFaucet(te.governor.Address())
@@ -436,7 +436,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	//
 	// Initialize the nodes.
 	te.nodeConns = make([]*testNodeConn, len(te.peerIdentities))
-	te.nodes = make([]chain.Chain, len(te.peerIdentities))
+	te.nodes = make([]chaintypes.Chain, len(te.peerIdentities))
 	require.NoError(t, err)
 	for i := range te.peerIdentities {
 		te.nodeConns[i] = newTestNodeConn(t)

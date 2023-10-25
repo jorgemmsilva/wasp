@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -106,7 +107,7 @@ type Block interface {
 
 type StateCommonValues interface {
 	BlockIndex() uint32
-	Timestamp() time.Time
+	BlockTime() isc.BlockTime
 	PreviousL1Commitment() *L1Commitment
 }
 

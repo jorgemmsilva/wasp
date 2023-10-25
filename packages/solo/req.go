@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -458,7 +458,7 @@ func (ch *Chain) ResolveVMError(e *isc.UnresolvedVMError) *isc.VMError {
 // 'paramValue') where 'paramName' is a string and 'paramValue' must be of type
 // accepted by the 'codec' package
 func (ch *Chain) CallView(scName, funName string, params ...interface{}) (dict.Dict, error) {
-	latestState, err := ch.LatestState(chain.ActiveOrCommittedState)
+	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	if err != nil {
 		return nil, err
 	}
@@ -498,7 +498,7 @@ func (ch *Chain) GetMerkleProofRaw(key []byte) *trie.MerkleProof {
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
 
-	latestState, err := ch.LatestState(chain.ActiveOrCommittedState)
+	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	require.NoError(ch.Env.T, err)
 	vmctx, err := viewcontext.New(ch, latestState, false)
 	require.NoError(ch.Env.T, err)
@@ -514,7 +514,7 @@ func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie.Me
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
 
-	latestState, err := ch.LatestState(chain.ActiveOrCommittedState)
+	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	require.NoError(ch.Env.T, err)
 	vmctx, err := viewcontext.New(ch, latestState, false)
 	if err != nil {
@@ -554,7 +554,7 @@ func (ch *Chain) GetRootCommitment() trie.Hash {
 
 // GetContractStateCommitment returns commitment to the state of the specific contract, if possible
 func (ch *Chain) GetContractStateCommitment(hn isc.Hname) ([]byte, error) {
-	latestState, err := ch.LatestState(chain.ActiveOrCommittedState)
+	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	require.NoError(ch.Env.T, err)
 	vmctx, err := viewcontext.New(ch, latestState, false)
 	if err != nil {

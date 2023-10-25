@@ -4,8 +4,6 @@
 package jsonrpc
 
 import (
-	"time"
-
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/tracers"
@@ -22,7 +20,13 @@ type ChainBackend interface {
 	EVMSendTransaction(tx *types.Transaction) error
 	EVMCall(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) ([]byte, error)
 	EVMEstimateGas(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) (uint64, error)
-	EVMTraceTransaction(accountOutput *isc.AccountOutputWithID, blockTime time.Time, iscRequestsInBlock []isc.Request, txIndex uint64, tracer tracers.Tracer) error
+	EVMTraceTransaction(
+		accountOutput *isc.AccountOutputWithID,
+		blockTime isc.BlockTime,
+		iscRequestsInBlock []isc.Request,
+		txIndex uint64,
+		tracer tracers.Tracer,
+	) error
 	ISCChainID() *isc.ChainID
 	ISCCallView(chainState state.State, scName string, funName string, args dict.Dict) (dict.Dict, error)
 	ISCLatestAccountOutput() (*isc.AccountOutputWithID, error)

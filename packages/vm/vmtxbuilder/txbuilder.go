@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -52,18 +54,18 @@ type AnchorTransactionBuilder struct {
 	// all nfts loaded during the batch run
 	nftsIncluded map[iotago.NFTID]*nftIncluded
 	// all nfts minted
-	nftsMinted []iotago.Output
+	nftsMinted iotago.TxEssenceOutputs
 	// invoked foundries. Foundry serial number is used as a key
 	invokedFoundries map[uint32]*foundryInvoked
 	// requests posted by smart contracts
-	postedOutputs []iotago.Output
+	postedOutputs iotago.TxEssenceOutputs
 }
 
 // NewAnchorTransactionBuilder creates new AnchorTransactionBuilder object
 func NewAnchorTransactionBuilder(
 	anchorOutput *iotago.AccountOutput,
 	anchorOutputID iotago.OutputID,
-	anchorOutputStorageDeposit uint64, // because we don't know what L1 parameters were used to calculate the last AO, we need to infer it from the accounts state
+	anchorOutputStorageDeposit iotago.BaseToken, // because we don't know what L1 parameters were used to calculate the last AO, we need to infer it from the accounts state
 	accounts AccountsContractRead,
 ) *AnchorTransactionBuilder {
 	return &AnchorTransactionBuilder{
@@ -73,10 +75,10 @@ func NewAnchorTransactionBuilder(
 		accountsView:               accounts,
 		consumed:                   make([]isc.OnLedgerRequest, 0, iotago.MaxInputsCount-1),
 		balanceNativeTokens:        make(map[iotago.NativeTokenID]*nativeTokenBalance),
-		postedOutputs:              make([]iotago.Output, 0, iotago.MaxOutputsCount-1),
+		postedOutputs:              make(iotago.TxEssenceOutputs, 0, iotago.MaxOutputsCount-1),
 		invokedFoundries:           make(map[uint32]*foundryInvoked),
 		nftsIncluded:               make(map[iotago.NFTID]*nftIncluded),
-		nftsMinted:                 make([]iotago.Output, 0),
+		nftsMinted:                 make(iotago.TxEssenceOutputs, 0),
 	}
 }
 
@@ -92,18 +94,22 @@ func (txb *AnchorTransactionBuilder) Clone() *AnchorTransactionBuilder {
 		accountsView:               txb.accountsView,
 		consumed:                   util.CloneSlice(txb.consumed),
 		balanceNativeTokens:        util.CloneMap(txb.balanceNativeTokens),
-		postedOutputs:              util.CloneSlice(txb.postedOutputs),
-		invokedFoundries:           util.CloneMap(txb.invokedFoundries),
-		nftsIncluded:               util.CloneMap(txb.nftsIncluded),
-		nftsMinted:                 util.CloneSlice(txb.nftsMinted),
+		postedOutputs: lo.Map(txb.postedOutputs, func(o iotago.TxEssenceOutput, _ int) iotago.TxEssenceOutput {
+			return o.Clone()
+		}),
+		invokedFoundries: util.CloneMap(txb.invokedFoundries),
+		nftsIncluded:     util.CloneMap(txb.nftsIncluded),
+		nftsMinted: lo.Map(txb.nftsMinted, func(o iotago.TxEssenceOutput, _ int) iotago.TxEssenceOutput {
+			return o.Clone()
+		}),
 	}
 }
 
 // splitAssetsIntoInternalOutputs splits the native Tokens/NFT from a given (request) output.
 // returns the resulting outputs and the list of new outputs
 // (some of the native tokens might already have an accounting output owned by the chain, so we don't need new outputs for those)
-func (txb *AnchorTransactionBuilder) splitAssetsIntoInternalOutputs(req isc.OnLedgerRequest) uint64 {
-	requiredSD := uint64(0)
+func (txb *AnchorTransactionBuilder) splitAssetsIntoInternalOutputs(req isc.OnLedgerRequest) iotago.BaseToken {
+	requiredSD := iotago.BaseToken(0)
 	for _, nativeToken := range req.Assets().NativeTokens {
 		// ensure this NT is in the txbuilder, update it
 		nt := txb.ensureNativeTokenBalance(nativeToken.ID)
@@ -135,7 +141,6 @@ func (txb *AnchorTransactionBuilder) assertLimits() {
 	if txb.outputsAreFull() {
 		panic(vmexceptions.ErrOutputLimitExceeded)
 	}
-	txb.mustCheckTotalNativeTokensExceeded()
 }
 
 // Consume adds an input to the transaction.
@@ -143,7 +148,7 @@ func (txb *AnchorTransactionBuilder) assertLimits() {
 // All explicitly consumed inputs will hold fixed index in the transaction
 // It updates total assets held by the chain. So it may panic due to exceed output counts
 // Returns  the amount of baseTokens needed to cover SD costs for the NTs/NFT contained by the request output
-func (txb *AnchorTransactionBuilder) Consume(req isc.OnLedgerRequest) uint64 {
+func (txb *AnchorTransactionBuilder) Consume(req isc.OnLedgerRequest) iotago.BaseToken {
 	defer txb.assertLimits()
 	// deduct the minSD for all the outputs that need to be created
 	requiredSD := txb.splitAssetsIntoInternalOutputs(req)
@@ -165,10 +170,13 @@ func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerReques
 func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 	defer txb.assertLimits()
 
-	storageDeposit := parameters.RentStructure().MinDeposit(o)
-	if o.Deposit() < storageDeposit {
+	storageDeposit, err := parameters.RentStructure().MinDeposit(o)
+	if err != nil {
+		panic(err)
+	}
+	if o.BaseTokenAmount() < storageDeposit {
 		panic(fmt.Errorf("%v: available %d < required %d base tokens",
-			transaction.ErrNotEnoughBaseTokensForStorageDeposit, o.Deposit(), storageDeposit))
+			transaction.ErrNotEnoughBaseTokensForStorageDeposit, o.BaseTokenAmount(), storageDeposit))
 	}
 	assets := transaction.AssetsFromOutput(o)
 
@@ -189,16 +197,17 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 }
 
 // BuildTransactionEssence builds transaction essence from tx builder data
-func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte) (*iotago.TransactionEssence, []byte) {
+func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte) (*iotago.Transaction, []byte) {
 	inputs, inputIDs := txb.inputs()
-	essence := &iotago.TransactionEssence{
-		NetworkID: parameters.L1().Protocol.NetworkID(),
-		Inputs:    inputIDs.UTXOInputs(),
-		Outputs:   txb.outputs(stateMetadata),
-		Payload:   nil,
+	essence := &iotago.Transaction{
+		API: parameters.L1API(),
+		TransactionEssence: &iotago.TransactionEssence{
+			Inputs: inputIDs.UTXOInputs(),
+		},
+		Outputs: txb.outputs(stateMetadata),
 	}
 
-	inputsCommitment := inputIDs.OrderedSet(inputs).MustCommitment()
+	inputsCommitment := inputIDs.OrderedSet(inputs).MustCommitment(parameters.L1API())
 	copy(essence.InputsCommitment[:], inputsCommitment)
 
 	return essence, inputsCommitment
@@ -266,26 +275,25 @@ func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputID
 func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *iotago.AccountOutput {
 	aliasID := txb.anchorOutput.AccountID
 	if aliasID.Empty() {
-		aliasID = iotago.AliasIDFromOutputID(txb.anchorOutputID)
+		aliasID = iotago.AccountIDFromOutputID(txb.anchorOutputID)
 	}
 	anchorOutput := &iotago.AccountOutput{
 		Amount:         0,
-		NativeTokens:   nil, // anchor output does not contain native tokens
-		AccountID:        aliasID,
+		AccountID:      aliasID,
 		StateIndex:     txb.anchorOutput.StateIndex + 1,
 		StateMetadata:  stateMetadata,
 		FoundryCounter: txb.nextFoundryCounter(),
-		Conditions: iotago.UnlockConditions{
+		Conditions: iotago.AccountOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: txb.anchorOutput.StateController()},
 			&iotago.GovernorAddressUnlockCondition{Address: txb.anchorOutput.GovernorAddress()},
 		},
-		Features: iotago.Features{
+		Features: iotago.AccountOutputFeatures{
 			&iotago.SenderFeature{
 				Address: aliasID.ToAddress(),
 			},
 		},
 	}
-	if metadata := txb.anchorOutput.FeatureSet().MetadataFeature(); metadata != nil {
+	if metadata := txb.anchorOutput.FeatureSet().Metadata(); metadata != nil {
 		anchorOutput.Features = append(anchorOutput.Features,
 			&iotago.MetadataFeature{
 				Data: metadata.Data,
@@ -293,7 +301,10 @@ func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *i
 		)
 	}
 
-	minSD := parameters.RentStructure().MinDeposit(anchorOutput)
+	minSD, err := parameters.RentStructure().MinDeposit(anchorOutput)
+	if err != nil {
+		panic(err)
+	}
 	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + minSD
 	return anchorOutput
 }
@@ -306,8 +317,8 @@ func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *i
 // 3. received NFTs
 // 4. minted NFTs
 // 5. other outputs (posted from requests)
-func (txb *AnchorTransactionBuilder) outputs(stateMetadata []byte) iotago.Outputs {
-	ret := make(iotago.Outputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
+func (txb *AnchorTransactionBuilder) outputs(stateMetadata []byte) iotago.TxEssenceOutputs {
+	ret := make(iotago.TxEssenceOutputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
 
 	txb.resultAnchorOutput = txb.CreateAnchorOutput(stateMetadata)
 	ret = append(ret, txb.resultAnchorOutput)
@@ -380,48 +391,32 @@ func (txb *AnchorTransactionBuilder) outputsAreFull() bool {
 	return txb.numOutputs() >= iotago.MaxOutputsCount
 }
 
-func (txb *AnchorTransactionBuilder) mustCheckTotalNativeTokensExceeded() {
-	num := 0
-	for _, nt := range txb.balanceNativeTokens {
-		if nt.requiresExistingAccountingUTXOAsInput() || nt.producesAccountingOutput() {
-			num++
-		}
-		if num > iotago.MaxNativeTokensCount {
-			panic(vmexceptions.ErrTotalNativeTokensLimitExceeded)
-		}
-	}
-}
-
 func (txb *AnchorTransactionBuilder) AnchorOutputStorageDeposit() uint64 {
 	return txb.anchorOutputStorageDeposit
 }
 
-func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAliasID iotago.AccountID) iotago.Output {
+func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAccountID iotago.AccountID) iotago.Output {
 	out := req.Output().Clone()
 
-	features := iotago.Features{
-		&iotago.SenderFeature{
-			Address: chainAliasID.ToAddress(), // must have the chain as the sender, so its recognized as an internalUTXO
-		},
+	feature := &iotago.SenderFeature{
+		Address: chainAccountID.ToAddress(), // must have the chain as the sender, so its recognized as an internalUTXO
 	}
 
-	unlock := iotago.UnlockConditions{
-		&iotago.AddressUnlockCondition{
-			Address: chainAliasID.ToAddress(),
-		},
+	unlock := &iotago.AddressUnlockCondition{
+		Address: chainAccountID.ToAddress(),
 	}
 
 	// cleanup features and unlock conditions except metadata
 	switch o := out.(type) {
 	case *iotago.BasicOutput:
-		o.Features = features
-		o.Conditions = unlock
+		o.Features = iotago.BasicOutputFeatures{feature}
+		o.Conditions = iotago.BasicOutputUnlockConditions{unlock}
 	case *iotago.NFTOutput:
-		o.Features = features
-		o.Conditions = unlock
+		o.Features = iotago.NFTOutputFeatures{feature}
+		o.Conditions = iotago.NFTOutputUnlockConditions{unlock}
 	case *iotago.AccountOutput:
-		o.Features = features
-		o.Conditions = unlock
+		o.Features = iotago.AccountOutputFeatures{feature}
+		o.Conditions = iotago.AccountOutputUnlockConditions{unlock}
 	default:
 		panic("unexpected output type")
 	}

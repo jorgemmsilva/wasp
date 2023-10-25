@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/serializer/v2"
@@ -46,8 +47,11 @@ func (m *mockAccountContractRead) Read() AccountsContractRead {
 }
 
 func newMockAccountsContractRead(anchor *iotago.AccountOutput) *mockAccountContractRead {
-	anchorMinSD := parameters.RentStructure().MinDeposit(anchor)
-	assets := isc.NewAssetsBaseTokens(anchor.Deposit() - anchorMinSD)
+	anchorMinSD, err := parameters.RentStructure().MinDeposit(anchor)
+	if err != nil {
+		panic(err)
+	}
+	assets := isc.NewAssetsBaseTokens(anchor.BaseTokenAmount() - anchorMinSD)
 	return &mockAccountContractRead{
 		assets:             assets,
 		nativeTokenOutputs: make(map[iotago.FoundryID]*iotago.BasicOutput),
@@ -59,17 +63,16 @@ func TestTxBuilderBasic(t *testing.T) {
 	addr := tpkg.RandEd25519Address()
 	aliasID := testiotago.RandAliasID()
 	anchor := &iotago.AccountOutput{
-		Amount:       initialTotalBaseTokens,
-		NativeTokens: nil,
-		AccountID:      aliasID,
-		Conditions: iotago.UnlockConditions{
+		Amount:    initialTotalBaseTokens,
+		AccountID: aliasID,
+		Conditions: iotago.AccountOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
 		StateIndex:     0,
 		StateMetadata:  dummyStateMetadata,
 		FoundryCounter: 0,
-		Features: iotago.Features{
+		Features: iotago.AccountOutputFeatures{
 			&iotago.SenderFeature{
 				Address: aliasID.ToAddress(),
 			},
@@ -81,7 +84,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		txb := NewAnchorTransactionBuilder(
 			anchor,
 			anchorID,
-			parameters.RentStructure().MinDeposit(anchor),
+			lo.Must(parameters.RentStructure().MinDeposit(anchor)),
 			mockedAccounts.Read(),
 		)
 		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata)
@@ -91,7 +94,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		require.False(t, txb.InputsAreFull())
 		require.False(t, txb.outputsAreFull())
 
-		require.EqualValues(t, 1, len(essence.Inputs))
+		require.EqualValues(t, 1, len(essence.TransactionEssence.Inputs))
 		require.EqualValues(t, 1, len(essence.Outputs))
 
 		_, err := essence.Serialize(serializer.DeSeriModeNoValidation, nil)
@@ -148,7 +151,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	anchor := &iotago.AccountOutput{
 		Amount:       initialTotalBaseTokens,
 		NativeTokens: nil,
-		AccountID:      aliasID,
+		AccountID:    aliasID,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
@@ -386,7 +389,7 @@ func TestFoundries(t *testing.T) {
 	anchor := &iotago.AccountOutput{
 		Amount:       initialTotalBaseTokens,
 		NativeTokens: nil,
-		AccountID:      aliasID,
+		AccountID:    aliasID,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},

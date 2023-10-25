@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -36,6 +37,8 @@ type UtxoDB struct {
 	mutex        sync.RWMutex
 	transactions map[iotago.TransactionID]*iotago.SignedTransaction
 	utxo         map[iotago.OutputID]struct{}
+	timestamp    time.Time
+	timestep     time.Duration
 	slotIndex    iotago.SlotIndex
 	api          iotago.API
 }
@@ -45,6 +48,8 @@ func New(l1api ...iotago.API) *UtxoDB {
 	u := &UtxoDB{
 		transactions: make(map[iotago.TransactionID]*iotago.SignedTransaction),
 		utxo:         make(map[iotago.OutputID]struct{}),
+		timestamp:    time.Unix(1, 0),
+		timestep:     1 * time.Millisecond,
 		api: func() iotago.API {
 			if len(l1api) > 0 {
 				return l1api[0]
@@ -117,19 +122,34 @@ func (u *UtxoDB) addTransaction(tx *iotago.SignedTransaction, isGenesis bool) {
 		outputID := iotago.OutputIDFromTransactionIDAndIndex(txid, uint16(i))
 		u.utxo[outputID] = struct{}{}
 	}
-	u.advanceSlotIndex(1)
+	u.advanceTime(1, u.timestep)
 	u.checkLedgerBalance()
 }
 
-func (u *UtxoDB) advanceSlotIndex(step uint) {
-	u.slotIndex += iotago.SlotIndex(step)
+func (u *UtxoDB) advanceTime(slotStep uint, timeStep time.Duration) {
+	u.slotIndex += iotago.SlotIndex(slotStep)
+	u.timestamp = u.timestamp.Add(timeStep)
 }
 
-func (u *UtxoDB) AdvanceSlotIndex(step uint) {
+func (u *UtxoDB) AdvanceTime(slotStep uint, timeStep time.Duration) {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 
-	u.advanceSlotIndex(step)
+	u.advanceTime(slotStep, timeStep)
+}
+
+func (u *UtxoDB) Timestamp() time.Time {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+
+	return u.timestamp
+}
+
+func (u *UtxoDB) SetTimestep(ts time.Duration) {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+
+	u.timestep = ts
 }
 
 func (u *UtxoDB) SlotIndex() iotago.SlotIndex {
@@ -441,6 +461,8 @@ func (u *UtxoDB) checkLedgerBalance() {
 type UtxoDBState struct {
 	Transactions map[string]*iotago.SignedTransaction
 	UTXO         []string
+	Timestamp    time.Time
+	Timestep     time.Duration
 	SlotIndex    iotago.SlotIndex
 }
 
@@ -461,6 +483,8 @@ func (u *UtxoDB) State() *UtxoDBState {
 	return &UtxoDBState{
 		Transactions: txs,
 		UTXO:         utxo,
+		Timestamp:    u.timestamp,
+		Timestep:     u.timestep,
 		SlotIndex:    u.slotIndex,
 	}
 }
@@ -471,6 +495,8 @@ func (u *UtxoDB) SetState(state *UtxoDBState) {
 
 	u.transactions = make(map[iotago.TransactionID]*iotago.SignedTransaction)
 	u.utxo = make(map[iotago.OutputID]struct{})
+	u.timestamp = state.Timestamp
+	u.timestep = state.Timestep
 	u.slotIndex = state.SlotIndex
 
 	for s, tx := range state.Transactions {

@@ -14,26 +14,29 @@ import (
 
 type TransactionTotals struct {
 	// does not include internal storage deposits
-	TotalBaseTokensInL2Accounts uint64
+	TotalBaseTokensInL2Accounts iotago.BaseToken
 	// internal storage deposit
-	TotalBaseTokensInStorageDeposit uint64
+	TotalBaseTokensInStorageDeposit iotago.BaseToken
 	// balances of native tokens (in all inputs/outputs). In the tx builder only loaded those which are needed
 	NativeTokenBalances iotago.NativeTokenSum
 	// token supplies in foundries
 	TokenCirculatingSupplies iotago.NativeTokenSum
 	// base tokens sent out by the transaction
-	SentOutBaseTokens uint64
+	SentOutBaseTokens iotago.BaseToken
 	// Sent out native tokens by the transaction
 	SentOutTokenBalances iotago.NativeTokenSum
 }
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
-	anchorInputSD := parameters.RentStructure().MinDeposit(txb.anchorOutput)
+	anchorInputSD, err := parameters.RentStructure().MinDeposit(txb.anchorOutput)
+	if err != nil {
+		panic(err)
+	}
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     txb.anchorOutput.Deposit() - anchorInputSD,
+		TotalBaseTokensInL2Accounts:     txb.anchorOutput.BaseTokenAmount() - anchorInputSD,
 		TotalBaseTokensInStorageDeposit: anchorInputSD,
 	}
 	// sum over native tokens which require inputs
@@ -45,7 +48,7 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 		if !ok {
 			s = new(big.Int)
 		}
-		s.Add(s, ntb.accountingInput.NativeTokens[0].Amount)
+		s.Add(s, ntb.accountingInput.FeatureSet().NativeToken().Amount)
 		totals.NativeTokenBalances[id] = s
 		// sum up storage deposit in inputs of internal UTXOs
 		totals.TotalBaseTokensInStorageDeposit += ntb.accountingInput.Amount
@@ -83,7 +86,10 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	anchorOutputSD := parameters.RentStructure().MinDeposit(txb.resultAnchorOutput)
+	anchorOutputSD, err := parameters.RentStructure().MinDeposit(txb.resultAnchorOutput)
+	if err != nil {
+		panic(err)
+	}
 
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
@@ -135,13 +141,13 @@ func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
 		}
 	}
 	for _, nft := range txb.nftsMinted {
-		totals.SentOutBaseTokens += nft.Deposit()
+		totals.SentOutBaseTokens += nft.BaseTokenAmount()
 	}
 	return totals
 }
 
 // TotalBaseTokensInOutputs returns (a) total base tokens owned by SCs and (b) total base tokens locked as storage deposit
-func (txb *AnchorTransactionBuilder) TotalBaseTokensInOutputs() (uint64, uint64) {
+func (txb *AnchorTransactionBuilder) TotalBaseTokensInOutputs() (iotago.BaseToken, iotago.BaseToken) {
 	totals := txb.sumOutputs()
 	return totals.TotalBaseTokensInL2Accounts, totals.TotalBaseTokensInStorageDeposit
 }

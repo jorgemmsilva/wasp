@@ -2,11 +2,10 @@ package chainutil
 
 import (
 	"errors"
-	"time"
 
 	"go.uber.org/zap"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -15,9 +14,9 @@ import (
 )
 
 func runISCTask(
-	ch chain.ChainCore,
+	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime time.Time,
+	blockTime vm.Time,
 	reqs []isc.Request,
 	estimateGasMode bool,
 	evmTracer *isc.EVMTracer,
@@ -28,7 +27,7 @@ func runISCTask(
 		AnchorOutputID:       accountOutput.OutputID(),
 		Store:                ch.Store(),
 		Requests:             reqs,
-		TimeAssumption:       blockTime,
+		Time:                 blockTime,
 		Entropy:              hashing.PseudoRandomHash(nil),
 		ValidatorFeeTarget:   accounts.CommonAccount(),
 		EnableGasBurnLogging: estimateGasMode,
@@ -44,9 +43,9 @@ func runISCTask(
 }
 
 func runISCRequest(
-	ch chain.ChainCore,
+	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime time.Time,
+	blockTime vm.Time,
 	req isc.Request,
 	estimateGasMode bool,
 ) (*vm.RequestResult, error) {

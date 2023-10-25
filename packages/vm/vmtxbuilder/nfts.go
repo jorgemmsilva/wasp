@@ -67,7 +67,7 @@ func (txb *AnchorTransactionBuilder) NFTOutputs() []*iotago.NFTOutput {
 	return outs
 }
 
-func (txb *AnchorTransactionBuilder) NFTOutputsToBeUpdated() (toBeAdded, toBeRemoved []*iotago.NFTOutput, minted []iotago.Output) {
+func (txb *AnchorTransactionBuilder) NFTOutputsToBeUpdated() (toBeAdded, toBeRemoved []*iotago.NFTOutput, minted iotago.TxEssenceOutputs) {
 	toBeAdded = make([]*iotago.NFTOutput, 0, len(txb.nftsIncluded))
 	toBeRemoved = make([]*iotago.NFTOutput, 0, len(txb.nftsIncluded))
 	for _, nft := range txb.nftsSorted() {
@@ -90,13 +90,12 @@ func (txb *AnchorTransactionBuilder) internalNFTOutputFromRequest(nftOutput *iot
 	out := nftOutput.Clone().(*iotago.NFTOutput)
 	out.Amount = 0
 	chainAddr := txb.chainAddress()
-	out.NativeTokens = nil
-	out.Conditions = iotago.UnlockConditions{
+	out.Conditions = iotago.NFTOutputUnlockConditions{
 		&iotago.AddressUnlockCondition{
 			Address: chainAddr,
 		},
 	}
-	out.Features = iotago.Features{
+	out.Features = iotago.NFTOutputFeatures{
 		&iotago.SenderFeature{
 			Address: chainAddr,
 		},
@@ -108,7 +107,11 @@ func (txb *AnchorTransactionBuilder) internalNFTOutputFromRequest(nftOutput *iot
 	}
 
 	// set amount to the min SD
-	out.Amount = parameters.RentStructure().MinDeposit(out)
+	var err error
+	out.Amount, err = parameters.RentStructure().MinDeposit(out)
+	if err != nil {
+		panic(err)
+	}
 
 	ret := &nftIncluded{
 		ID:              out.NFTID,
@@ -149,7 +152,7 @@ func (txb *AnchorTransactionBuilder) sendNFT(o *iotago.NFTOutput) int64 {
 
 	txb.nftsIncluded[o.NFTID] = toInclude
 
-	return int64(in.Deposit())
+	return int64(in.BaseTokenAmount())
 }
 
 func (txb *AnchorTransactionBuilder) MintNFT(addr iotago.Address, immutableMetadata []byte, issuer iotago.Address) (uint16, *iotago.NFTOutput) {
@@ -190,20 +193,24 @@ func (txb *AnchorTransactionBuilder) MintNFT(addr iotago.Address, immutableMetad
 
 	nftOutput := &iotago.NFTOutput{
 		NFTID: iotago.NFTID{},
-		Conditions: iotago.UnlockConditions{
+		Conditions: iotago.NFTOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: addr},
 		},
-		Features: iotago.Features{
+		Features: iotago.NFTOutputFeatures{
 			&iotago.SenderFeature{
 				Address: chainAddr, // must set the chainID as the sender (so its recognized as an internalUTXO)
 			},
 		},
-		ImmutableFeatures: iotago.Features{
+		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.IssuerFeature{Address: issuer},
 			&iotago.MetadataFeature{Data: immutableMetadata},
 		},
 	}
-	nftOutput.Amount = parameters.RentStructure().MinDeposit(nftOutput)
+	var err error
+	nftOutput.Amount, err = parameters.RentStructure().MinDeposit(nftOutput)
+	if err != nil {
+		panic(err)
+	}
 	txb.nftsMinted = append(txb.nftsMinted, nftOutput)
 	return uint16(len(txb.nftsMinted) - 1), nftOutput
 }

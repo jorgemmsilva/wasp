@@ -53,6 +53,7 @@ import (
 	"github.com/iotaledger/hive.go/logger"
 	consGR "github.com/iotaledger/wasp/packages/chain/cons/cons_gr"
 	"github.com/iotaledger/wasp/packages/chain/mempool/distsync"
+	"github.com/iotaledger/wasp/packages/chain/mempool/mempooltypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -74,16 +75,6 @@ const (
 	distShareRePublishTick  = 5 * time.Second
 	waitRequestCleanupEvery = 10
 )
-
-// Partial interface for providing chain events to the outside.
-// This interface is in the mempool part only because it tracks
-// the actual state for checking the consumed requests.
-type ChainListener interface {
-	// This function is called by the chain when new block is applied to the
-	// state. This block might be not confirmed yet, but the chain is going
-	// to build the next block on top of this one.
-	BlockApplied(chainID isc.ChainID, block state.Block)
-}
 
 type Mempool interface {
 	consGR.Mempool
@@ -161,7 +152,7 @@ type mempoolImpl struct {
 	ttl                            time.Duration // time to live (how much time requests are allowed to sit in the pool without being processed)
 	log                            *logger.Logger
 	metrics                        *metrics.ChainMempoolMetrics
-	listener                       ChainListener
+	listener                       mempooltypes.ChainListener
 }
 
 var _ Mempool = &mempoolImpl{}
@@ -219,7 +210,7 @@ func New(
 	log *logger.Logger,
 	metrics *metrics.ChainMempoolMetrics,
 	pipeMetrics *metrics.ChainPipeMetrics,
-	listener ChainListener,
+	listener mempooltypes.ChainListener,
 	ttl time.Duration,
 ) Mempool {
 	netPeeringID := peering.HashPeeringIDFromBytes(chainID.Bytes(), []byte("Mempool")) // ChainID × Mempool

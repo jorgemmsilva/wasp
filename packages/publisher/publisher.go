@@ -6,7 +6,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/runtime/event"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
@@ -31,7 +31,7 @@ type Publisher struct {
 	Events           *Events
 }
 
-var _ chain.ChainListener = &Publisher{}
+var _ chaintypes.ChainListener = &Publisher{}
 
 type blockApplied struct {
 	chainID isc.ChainID

@@ -570,7 +570,7 @@ func filterAndAppendToLogs(query *ethereum.FilterQuery, receipts []*types.Receip
 	return nil
 }
 
-func (e *EVMChain) BaseToken() *parameters.BaseToken {
+func (e *EVMChain) BaseToken() *parameters.BaseTokenInfo {
 	e.log.Debugf("BaseToken()")
 	return e.backend.BaseToken()
 }
@@ -643,7 +643,7 @@ func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceCon
 
 	err = e.backend.EVMTraceTransaction(
 		iscBlock.PreviousAccountOutput,
-		iscBlock.Timestamp,
+		iscBlock.Time,
 		iscRequestsInBlock,
 		txIndex,
 		tracer,

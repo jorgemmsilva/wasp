@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -41,7 +41,7 @@ import (
 )
 
 // solo chain implements Chain interface
-var _ chain.Chain = &Chain{}
+var _ chaintypes.Chain = &Chain{}
 
 // String is string representation for main parameters of the chain
 func (ch *Chain) String() string {
@@ -476,7 +476,7 @@ func (ch *Chain) GetRequestReceiptsForBlockRangeAsStrings(fromBlockIndex, toBloc
 }
 
 func (ch *Chain) GetControlAddresses() *isc.ControlAddresses {
-	accountOutputID, err := ch.LatestAccountOutput(chain.ConfirmedState)
+	accountOutputID, err := ch.LatestAccountOutput(chaintypes.ConfirmedState)
 	if err != nil {
 		return nil
 	}
@@ -622,12 +622,12 @@ func (ch *Chain) GetChainMetrics() *metrics.ChainMetrics {
 }
 
 // GetConsensusPipeMetrics implements chain.Chain
-func (*Chain) GetConsensusPipeMetrics() chain.ConsensusPipeMetrics {
+func (*Chain) GetConsensusPipeMetrics() chaintypes.ConsensusPipeMetrics {
 	panic("unimplemented")
 }
 
 // GetConsensusWorkflowStatus implements chain.Chain
-func (*Chain) GetConsensusWorkflowStatus() chain.ConsensusWorkflowStatus {
+func (*Chain) GetConsensusWorkflowStatus() chaintypes.ConsensusWorkflowStatus {
 	panic("unimplemented")
 }
 
@@ -642,7 +642,7 @@ func (*Chain) GetTimeData() time.Time {
 }
 
 // LatestAccountOutput implements chain.Chain
-func (ch *Chain) LatestAccountOutput(freshness chain.StateFreshness) (*isc.AccountOutputWithID, error) {
+func (ch *Chain) LatestAccountOutput(freshness chaintypes.StateFreshness) (*isc.AccountOutputWithID, error) {
 	ao := ch.GetAnchorOutputFromL1()
 	if ao == nil {
 		return nil, fmt.Errorf("have no latest alias output")
@@ -651,8 +651,8 @@ func (ch *Chain) LatestAccountOutput(freshness chain.StateFreshness) (*isc.Accou
 }
 
 // LatestState implements chain.Chain
-func (ch *Chain) LatestState(freshness chain.StateFreshness) (state.State, error) {
-	if freshness == chain.ActiveOrCommittedState || freshness == chain.ActiveState {
+func (ch *Chain) LatestState(freshness chaintypes.StateFreshness) (state.State, error) {
+	if freshness == chaintypes.ActiveOrCommittedState || freshness == chaintypes.ActiveState {
 		return ch.store.LatestState()
 	}
 	ao := ch.GetAnchorOutputFromL1()

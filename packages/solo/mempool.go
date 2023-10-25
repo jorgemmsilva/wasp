@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"sync"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -30,16 +29,16 @@ type MempoolInfo struct {
 type mempoolImpl struct {
 	requests    map[isc.RequestID]isc.Request
 	info        MempoolInfo
-	currentSlot func() iotago.SlotIndex
+	currentTime func() isc.BlockTime
 	chainID     isc.ChainID
 	mu          sync.Mutex
 }
 
-func newMempool(currentSlot func() iotago.SlotIndex, chainID isc.ChainID) Mempool {
+func newMempool(currentTime func() isc.BlockTime, chainID isc.ChainID) Mempool {
 	return &mempoolImpl{
 		requests:    map[isc.RequestID]isc.Request{},
 		info:        MempoolInfo{},
-		currentSlot: currentSlot,
+		currentTime: currentTime,
 		chainID:     chainID,
 		mu:          sync.Mutex{},
 	}
@@ -63,7 +62,7 @@ func (mi *mempoolImpl) ReceiveRequests(reqs ...isc.Request) {
 func (mi *mempoolImpl) RequestBatchProposal() []isc.Request {
 	mi.mu.Lock()
 	defer mi.mu.Unlock()
-	slotIndex := mi.currentSlot()
+	now := mi.currentTime()
 	batch := []isc.Request{}
 	for rid, request := range mi.requests {
 		switch request := request.(type) {
@@ -71,12 +70,12 @@ func (mi *mempoolImpl) RequestBatchProposal() []isc.Request {
 			reqUnlockCondSet := request.Output().UnlockConditionSet()
 			timeLock := reqUnlockCondSet.Timelock()
 			expiration := reqUnlockCondSet.Expiration()
-			if expiration != nil && slotIndex >= expiration.SlotIndex {
+			if expiration != nil && now.SlotIndex >= expiration.SlotIndex {
 				// can never be processed, just reject
 				delete(mi.requests, rid)
 				continue
 			}
-			if timeLock == nil || timeLock.SlotIndex <= slotIndex {
+			if timeLock == nil || timeLock.SlotIndex <= now.SlotIndex {
 				batch = append(batch, request)
 				continue
 			}

@@ -2,11 +2,12 @@ package state
 
 import (
 	"fmt"
-	"time"
 
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/trie"
 )
 
@@ -45,19 +46,24 @@ func loadBlockIndexFromState(s kv.KVStoreReader) uint32 {
 	return codec.MustDecodeUint32(s.Get(kv.Key(coreutil.StatePrefixBlockIndex)))
 }
 
-func (s *state) Timestamp() time.Time {
-	ts, err := loadTimestampFromState(s)
+func (s *state) BlockTime() isc.BlockTime {
+	t, err := loadBlockTimeFromState(s)
 	mustNoErr(err)
-	return ts
+	return t
 }
 
-func loadTimestampFromState(chainState kv.KVStoreReader) (time.Time, error) {
+func loadBlockTimeFromState(chainState kv.KVStoreReader) (ret isc.BlockTime, err error) {
 	tsBin := chainState.Get(kv.Key(coreutil.StatePrefixTimestamp))
-	ts, err := codec.DecodeTime(tsBin)
+	ret.Timestamp, err = codec.DecodeTime(tsBin)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("loadTimestampFromState: %w", err)
+		return isc.BlockTime{}, fmt.Errorf("loadTimestampFromState: %w", err)
 	}
-	return ts, nil
+	siBin := chainState.Get(kv.Key(coreutil.StatePrefixSlotIndex))
+	if len(siBin) == 0 { // state is before 2.0 migration
+		return ret, nil
+	}
+	_, err = parameters.L1API().Decode(siBin, &ret.SlotIndex)
+	return ret, err
 }
 
 func (s *state) PreviousL1Commitment() *L1Commitment {

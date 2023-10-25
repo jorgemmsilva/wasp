@@ -34,8 +34,8 @@ type SandboxBase interface {
 	AccountID() AgentID
 	// Caller is the agentID of the caller.
 	Caller() AgentID
-	// Timestamp returns the Unix timestamp of the current state in seconds
-	Timestamp() time.Time
+	// BlockTime returns the Unix timestamp of the current state in seconds
+	BlockTime() BlockTime
 	// Log returns a logger that outputs on the local machine. It includes Panicf method
 	Log() LogInterface
 	// Utils provides access to common necessary functionality
@@ -48,6 +48,11 @@ type SandboxBase interface {
 	CallView(contractHname Hname, entryPoint Hname, params dict.Dict) dict.Dict
 	// StateR returns the immutable k/v store of the current call (in the context of the smart contract)
 	StateR() kv.KVStoreReader
+}
+
+type BlockTime struct {
+	SlotIndex iotago.SlotIndex
+	Timestamp time.Time
 }
 
 type Params struct {
@@ -68,7 +73,7 @@ type Authorize interface {
 
 type Balance interface {
 	// BalanceBaseTokens returns number of base tokens in the balance of the smart contract
-	BalanceBaseTokens() uint64
+	BalanceBaseTokens() iotago.BaseToken
 	// BalanceNativeToken returns number of native token or nil if it is empty
 	BalanceNativeToken(iotago.NativeTokenID) *big.Int
 	// BalanceNativeTokens returns all native tokens owned by the smart contract

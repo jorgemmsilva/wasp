@@ -4,21 +4,26 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
 func SimulateRequest(
-	ch chain.ChainCore,
+	ch chaintypes.ChainCore,
 	req isc.Request,
 	estimateGas bool,
 ) (*blocklog.RequestReceipt, error) {
-	accountOutput, err := ch.LatestAccountOutput(chain.ActiveOrCommittedState)
+	accountOutput, err := ch.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
-	res, err := runISCRequest(ch, accountOutput, time.Now(), req, estimateGas)
+	blockTime := vm.Time{
+		SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
+		Timestamp: time.Now(),
+	}
+	res, err := runISCRequest(ch, accountOutput, blockTime, req, estimateGas)
 	if err != nil {
 		return nil, err
 	}

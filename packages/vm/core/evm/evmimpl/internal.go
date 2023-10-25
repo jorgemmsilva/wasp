@@ -142,14 +142,14 @@ func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.Bas
 func (ctx *emulatorContext) AddBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
 	ctx.sandbox.Privileged().CreditToAccount(
 		isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
-		isc.NewAssetsBaseTokens(amount),
+		isc.NewFungibleTokens(amount, nil),
 	)
 }
 
 func (ctx *emulatorContext) SubBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
 	ctx.sandbox.Privileged().DebitFromAccount(
 		isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
-		isc.NewAssetsBaseTokens(amount),
+		isc.NewFungibleTokens(amount, nil),
 	)
 }
 

@@ -20,7 +20,7 @@ import (
 
 // creditToAccount deposits transfer from request to chain account of of the called contract
 // It adds new tokens to the chain ledger. It is used when new tokens arrive with a request
-func creditToAccount(chainState kv.KVStore, agentID isc.AgentID, ftokens *isc.Assets, chainID isc.ChainID) {
+func creditToAccount(chainState kv.KVStore, agentID isc.AgentID, ftokens *isc.FungibleTokens, chainID isc.ChainID) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
 		accounts.CreditToAccount(s, agentID, ftokens, chainID)
 	})
@@ -43,7 +43,7 @@ func creditNFTToAccount(chainState kv.KVStore, agentID isc.AgentID, req isc.OnLe
 
 // debitFromAccount subtracts tokens from account if it is enough of it.
 // should be called only when posting request
-func debitFromAccount(chainState kv.KVStore, agentID isc.AgentID, transfer *isc.Assets, chainID isc.ChainID) {
+func debitFromAccount(chainState kv.KVStore, agentID isc.AgentID, transfer *isc.FungibleTokens, chainID isc.ChainID) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
 		accounts.DebitFromAccount(s, agentID, transfer, chainID)
 	})
@@ -70,8 +70,8 @@ func findContractByHname(chainState kv.KVStore, contractHname isc.Hname) (ret *r
 	return ret
 }
 
-func (reqctx *requestContext) GetBaseTokensBalance(agentID isc.AgentID) uint64 {
-	var ret uint64
+func (reqctx *requestContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken {
+	var ret iotago.BaseToken
 	reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
 		ret = accounts.GetBaseTokensBalance(s, agentID, reqctx.ChainID())
 	})
@@ -124,7 +124,7 @@ func (reqctx *requestContext) GetNFTData(nftID iotago.NFTID) (ret *isc.NFT) {
 	return ret
 }
 
-func (reqctx *requestContext) GetSenderTokenBalanceForFees() uint64 {
+func (reqctx *requestContext) GetSenderTokenBalanceForFees() iotago.BaseToken {
 	sender := reqctx.req.SenderAccount()
 	if sender == nil {
 		return 0
@@ -215,7 +215,7 @@ func (reqctx *requestContext) mustSaveEvent(hContract isc.Hname, topic string, p
 		ContractID: hContract,
 		Topic:      topic,
 		Payload:    payload,
-		Timestamp:  uint64(reqctx.Timestamp().UnixNano()),
+		Timestamp:  uint64(reqctx.BlockTime().Timestamp.UnixNano()),
 	}
 	eventKey := reqctx.eventLookupKey().Bytes()
 	reqctx.callCore(blocklog.Contract, func(s kv.KVStore) {

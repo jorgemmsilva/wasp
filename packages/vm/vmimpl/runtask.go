@@ -6,6 +6,7 @@ import (
 
 	"github.com/iotaledger/hive.go/lo"
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -45,7 +46,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 		panic(err)
 	}
 
-	stateDraft, err := task.Store.NewStateDraft(task.TimeAssumption, prevL1Commitment)
+	stateDraft, err := task.Store.NewStateDraft(task.Time, prevL1Commitment)
 	if err != nil {
 		panic(err)
 	}
@@ -91,12 +92,12 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 
 	if rotationAddr == nil {
 		// rotation does not happen
-		taskResult.TransactionEssence, taskResult.InputsCommitment = vmctx.BuildTransactionEssence(l1Commitment, true)
+		taskResult.Transaction = vmctx.BuildTransactionEssence(l1Commitment, true)
 		vmctx.task.Log.Debugf("runTask OUT. block index: %d", blockIndex)
 	} else {
 		// rotation happens
 		taskResult.RotationAddress = rotationAddr
-		taskResult.TransactionEssence = nil
+		taskResult.Transaction = nil
 		vmctx.task.Log.Debugf("runTask OUT: rotate to address %s", rotationAddr.String())
 	}
 	return taskResult
@@ -149,7 +150,7 @@ func (vmctx *vmContext) getMigrations() *migrations.MigrationScheme {
 	return allmigrations.DefaultScheme
 }
 
-func (vmctx *vmContext) getAnchorOutputSD() uint64 {
+func (vmctx *vmContext) getAnchorOutputSD() iotago.BaseToken {
 	// get the total L2 funds in accounting
 	totalL2Funds := vmctx.loadTotalFungibleTokens()
 	return vmctx.task.AnchorOutput.Amount - totalL2Funds.BaseTokens

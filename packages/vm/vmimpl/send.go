@@ -56,7 +56,7 @@ func (reqctx *requestContext) sendOutput(o iotago.Output) {
 	}
 	reqctx.numPostedOutputs++
 
-	assets := isc.AssetsFromOutput(o)
+	fts := isc.FungibleTokensFromOutput(o)
 
 	// this call cannot panic due to not enough base tokens for storage deposit because
 	// it does not change total balance of the transaction, and it does not create new internal outputs
@@ -66,5 +66,5 @@ func (reqctx *requestContext) sendOutput(o iotago.Output) {
 	reqctx.adjustL2BaseTokensIfNeeded(baseTokenAdjustmentL2, reqctx.CurrentContractAccountID())
 	// debit the assets from the on-chain account
 	// It panics with accounts.ErrNotEnoughFunds if sender's account balances are exceeded
-	debitFromAccount(reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), assets, reqctx.ChainID())
+	debitFromAccount(reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), fts, reqctx.ChainID())
 }

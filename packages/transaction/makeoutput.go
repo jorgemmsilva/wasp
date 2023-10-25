@@ -131,9 +131,7 @@ func NFTOutputFromBasicOutput(o *iotago.BasicOutput, nft *isc.NFT) *iotago.NFTOu
 }
 
 func AssetsFromOutput(o iotago.Output) *isc.Assets {
-	assets := &isc.Assets{
-		BaseTokens: o.BaseTokenAmount(),
-	}
+	assets := isc.NewAssets(o.BaseTokenAmount(), nil)
 	if nt := o.FeatureSet().NativeToken(); nt != nil {
 		assets.NativeTokens = append(assets.NativeTokens, &iotago.NativeTokenFeature{
 			ID:     nt.ID,

@@ -1,8 +1,6 @@
 package vmimpl
 
 import (
-	"time"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -24,9 +22,9 @@ func (vmctx *vmContext) ChainID() isc.ChainID {
 	var chainID isc.ChainID
 	if vmctx.task.AnchorOutput.StateIndex == 0 {
 		// origin
-		chainID = isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(vmctx.task.AnchorOutputID))
+		chainID = isc.ChainIDFromAccountID(iotago.AccountIDFromOutputID(vmctx.task.AnchorOutputID))
 	} else {
-		chainID = isc.ChainIDFromAliasID(vmctx.task.AnchorOutput.AccountID)
+		chainID = isc.ChainIDFromAccountID(vmctx.task.AnchorOutput.AccountID)
 	}
 	return chainID
 }
@@ -63,8 +61,8 @@ func (reqctx *requestContext) Caller() isc.AgentID {
 	return reqctx.getCallContext().caller
 }
 
-func (reqctx *requestContext) Timestamp() time.Time {
-	return reqctx.vm.task.TimeAssumption
+func (reqctx *requestContext) BlockTime() isc.BlockTime {
+	return reqctx.vm.task.Time
 }
 
 func (reqctx *requestContext) CurrentContractAccountID() isc.AgentID {
@@ -128,7 +126,7 @@ func (reqctx *requestContext) transferAllowedFunds(target isc.AgentID, transfer 
 }
 
 func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
-	var nilAliasID iotago.AccountID
+	var nilAccountID iotago.AccountID
 	blockset := vmctx.task.AnchorOutput.FeatureSet()
 	senderBlock := blockset.SenderFeature()
 	var sender iotago.Address
@@ -138,14 +136,13 @@ func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
 	return &isc.StateAnchor{
 		ChainID:              vmctx.ChainID(),
 		Sender:               sender,
-		IsOrigin:             vmctx.task.AnchorOutput.AccountID == nilAliasID,
+		IsOrigin:             vmctx.task.AnchorOutput.AccountID == nilAccountID,
 		StateController:      vmctx.task.AnchorOutput.StateController(),
 		GovernanceController: vmctx.task.AnchorOutput.GovernorAddress(),
 		StateIndex:           vmctx.task.AnchorOutput.StateIndex,
 		OutputID:             vmctx.task.AnchorOutputID,
 		StateData:            vmctx.task.AnchorOutput.StateMetadata,
 		Deposit:              vmctx.task.AnchorOutput.Amount,
-		NativeTokens:         vmctx.task.AnchorOutput.NativeTokens,
 	}
 }
 

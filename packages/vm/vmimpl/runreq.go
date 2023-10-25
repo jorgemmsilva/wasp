@@ -5,6 +5,8 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -51,7 +53,12 @@ func (vmctx *vmContext) runRequest(req isc.Request, requestIndex uint16, mainten
 
 	reqctx.uncommittedState.Set(
 		kv.Key(coreutil.StatePrefixTimestamp),
-		codec.EncodeTime(vmctx.stateDraft.Timestamp().Add(1*time.Nanosecond)),
+		codec.EncodeTime(vmctx.stateDraft.BlockTime().Timestamp.Add(1*time.Nanosecond)),
+	)
+
+	reqctx.uncommittedState.Set(
+		kv.Key(coreutil.StatePrefixSlotIndex),
+		lo.Must(parameters.L1API().Encode(vmctx.stateDraft.BlockTime().SlotIndex)),
 	)
 
 	if err = reqctx.earlyCheckReasonToSkip(maintenanceMode); err != nil {
@@ -107,9 +114,9 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		// onleger request with no sender, send all assets to the payoutAddress
 		payoutAgentID := reqctx.vm.payoutAgentID()
 		creditNFTToAccount(reqctx.uncommittedState, payoutAgentID, req, reqctx.ChainID())
-		creditToAccount(reqctx.uncommittedState, payoutAgentID, req.Assets(), reqctx.ChainID())
+		creditToAccount(reqctx.uncommittedState, payoutAgentID, req.Assets().FungibleTokens, reqctx.ChainID())
 		if storageDepositNeeded > 0 {
-			debitFromAccount(reqctx.uncommittedState, payoutAgentID, isc.NewAssetsBaseTokens(storageDepositNeeded), reqctx.ChainID())
+			debitFromAccount(reqctx.uncommittedState, payoutAgentID, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID())
 		}
 		return
 	}
@@ -122,11 +129,11 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		panic(vmexceptions.ErrNotEnoughFundsForSD)
 	}
 
-	creditToAccount(reqctx.uncommittedState, sender, req.Assets(), reqctx.ChainID())
+	creditToAccount(reqctx.uncommittedState, sender, req.Assets().FungibleTokens, reqctx.ChainID())
 	creditNFTToAccount(reqctx.uncommittedState, sender, req, reqctx.ChainID())
 	if storageDepositNeeded > 0 {
 		reqctx.sdCharged = storageDepositNeeded
-		debitFromAccount(reqctx.uncommittedState, sender, isc.NewAssetsBaseTokens(storageDepositNeeded), reqctx.ChainID())
+		debitFromAccount(reqctx.uncommittedState, sender, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID())
 	}
 }
 
@@ -314,7 +321,7 @@ func (reqctx *requestContext) getGasBudget() uint64 {
 // Affordable gas budget is calculated from gas budget provided in the request by the user and taking into account
 // how many tokens the sender has in its account and how many are allowed for the target.
 // Safe arithmetics is used
-func (reqctx *requestContext) calculateAffordableGasBudget() (budget, maxTokensToSpendForGasFee uint64) {
+func (reqctx *requestContext) calculateAffordableGasBudget() (budget uint64, maxTokensToSpendForGasFee iotago.BaseToken) {
 	gasBudget := reqctx.getGasBudget()
 
 	if reqctx.vm.task.EstimateGasMode && gasBudget == 0 {
@@ -346,7 +353,7 @@ func (reqctx *requestContext) calculateAffordableGasBudget() (budget, maxTokensT
 
 // calcGuaranteedFeeTokens return the maximum tokens (base tokens or native) can be guaranteed for the fee,
 // taking into account allowance (which must be 'reserved')
-func (reqctx *requestContext) calcGuaranteedFeeTokens() uint64 {
+func (reqctx *requestContext) calcGuaranteedFeeTokens() iotago.BaseToken {
 	tokensGuaranteed := reqctx.GetBaseTokensBalance(reqctx.req.SenderAccount())
 	// safely subtract the allowed from the sender to the target
 	if allowed := reqctx.req.Allowance(); allowed != nil {
@@ -410,7 +417,7 @@ func (reqctx *requestContext) chargeGasFee() {
 
 	// ensure common account has at least minBalanceInCommonAccount, and transfer the rest of gas fee to payout AgentID
 	// if the payout AgentID is not set in governance contract, then chain owner will be used
-	var minBalanceInCommonAccount uint64
+	var minBalanceInCommonAccount iotago.BaseToken
 	withContractState(reqctx.uncommittedState, governance.Contract, func(s kv.KVStore) {
 		minBalanceInCommonAccount = governance.MustGetMinCommonAccountBalance(s)
 	})
@@ -466,9 +473,9 @@ func (vmctx *vmContext) loadChainConfig() {
 
 // checkTransactionSize panics with ErrMaxTransactionSizeExceeded if the estimated transaction size exceeds the limit
 func (vmctx *vmContext) checkTransactionSize() error {
-	essence, _ := vmctx.BuildTransactionEssence(state.L1CommitmentNil, false)
+	essence := vmctx.BuildTransactionEssence(state.L1CommitmentNil, false)
 	tx := transaction.MakeAnchorTransaction(essence, &iotago.Ed25519Signature{})
-	if tx.Size() > parameters.L1().MaxPayloadSize {
+	if tx.Size() > iotago.MaxPayloadSize {
 		return vmexceptions.ErrMaxTransactionSizeExceeded
 	}
 	return nil

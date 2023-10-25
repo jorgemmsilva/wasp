@@ -30,12 +30,12 @@ func (reqctx *requestContext) TryLoadContract(programHash hashing.HashValue) err
 	return reqctx.vm.task.Processors.NewProcessor(programHash, programBinary, vmtype)
 }
 
-func (reqctx *requestContext) CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, uint64) {
+func (reqctx *requestContext) CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, iotago.BaseToken) {
 	reqctx.mustBeCalledFromContract(accounts.Contract)
 	return reqctx.vm.txbuilder.CreateNewFoundry(scheme, metadata)
 }
 
-func (reqctx *requestContext) DestroyFoundry(sn uint32) uint64 {
+func (reqctx *requestContext) DestroyFoundry(sn uint32) iotago.BaseToken {
 	reqctx.mustBeCalledFromContract(accounts.Contract)
 	return reqctx.vm.txbuilder.DestroyFoundry(sn)
 }

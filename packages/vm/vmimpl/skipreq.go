@@ -3,12 +3,12 @@ package vmimpl
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
@@ -17,20 +17,12 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/vmexceptions"
 )
 
-const (
-	// ExpiryUnlockSafetyWindowDuration creates safety window around time assumption,
-	// the UTXO won't be consumed to avoid race conditions
-	ExpiryUnlockSafetyWindowDuration = 1 * time.Minute
-)
-
 // earlyCheckReasonToSkip checks if request must be ignored without even modifying the state
 func (reqctx *requestContext) earlyCheckReasonToSkip(maintenanceMode bool) error {
-	if reqctx.vm.task.AnchorOutput.StateIndex == 0 {
-		if len(reqctx.vm.task.AnchorOutput.NativeTokens) > 0 {
+	if reqctx.vm.task.AnchorOutput.FeatureSet().NativeToken() != nil {
+		if reqctx.vm.task.AnchorOutput.StateIndex == 0 {
 			return errors.New("can't init chain with native assets on the origin alias output")
-		}
-	} else {
-		if len(reqctx.vm.task.AnchorOutput.NativeTokens) > 0 {
+		} else {
 			panic("inconsistency: native assets on the anchor output")
 		}
 	}
@@ -108,10 +100,7 @@ func (reqctx *requestContext) checkReasonToSkipOnLedger() error {
 	if err := reqctx.checkReasonReturnAmount(); err != nil {
 		return err
 	}
-	if err := reqctx.checkReasonTimeLock(); err != nil {
-		return err
-	}
-	if err := reqctx.checkReasonExpiry(); err != nil {
+	if err := reqctx.checkReasonUnlockable(); err != nil {
 		return err
 	}
 	if reqctx.vm.txbuilder.InputsAreFull() {
@@ -131,47 +120,23 @@ func (reqctx *requestContext) checkInternalOutput() error {
 	return nil
 }
 
-// checkReasonTimeLock checking timelock conditions based on time assumptions.
-// VM must ensure that the UTXO can be unlocked
-func (reqctx *requestContext) checkReasonTimeLock() error {
-	timeLock := reqctx.req.(isc.OnLedgerRequest).Features().TimeLock()
-	if !timeLock.IsZero() {
-		if reqctx.vm.task.FinalStateTimestamp().Before(timeLock) {
-			return fmt.Errorf("can't be consumed due to lock until %v", reqctx.vm.task.FinalStateTimestamp())
-		}
+// checkReasonUnlockable checks if the request output is unlockable
+func (reqctx *requestContext) checkReasonUnlockable() error {
+	req := reqctx.req.(isc.OnLedgerRequest)
+	output, ok := req.Output().(iotago.TransIndepIdentOutput)
+	if !ok {
+		return errors.New("output is not unlockable")
 	}
-	return nil
-}
-
-// checkReasonExpiry checking expiry conditions based on time assumptions.
-// VM must ensure that the UTXO can be unlocked
-func (reqctx *requestContext) checkReasonExpiry() error {
-	expiry, _ := reqctx.req.(isc.OnLedgerRequest).Features().Expiry()
-
-	if expiry.IsZero() {
-		return nil
+	now := reqctx.vm.task.Time.SlotIndex
+	params := parameters.Protocol()
+	ok = output.UnlockableBy(
+		reqctx.vm.task.AnchorOutput.AccountID.ToAddress(),
+		now+params.MaxCommittableAge(),
+		now+params.MinCommittableAge(),
+	)
+	if !ok {
+		return errors.New("output is not unlockable")
 	}
-
-	// Validate time window
-	finalStateTimestamp := reqctx.vm.task.FinalStateTimestamp()
-	windowFrom := finalStateTimestamp.Add(-ExpiryUnlockSafetyWindowDuration)
-	windowTo := finalStateTimestamp.Add(ExpiryUnlockSafetyWindowDuration)
-
-	if expiry.After(windowFrom) && expiry.Before(windowTo) {
-		return fmt.Errorf("can't be consumed in the expire safety window close to %v", expiry)
-	}
-
-	// General unlock validation
-	output, _ := reqctx.req.(isc.OnLedgerRequest).Output().(iotago.TransIndepIdentOutput)
-
-	unlockable := output.UnlockableBy(reqctx.vm.task.AnchorOutput.AccountID.ToAddress(), &iotago.ExternalUnlockParameters{
-		ConfUnix: uint32(finalStateTimestamp.Unix()),
-	})
-
-	if !unlockable {
-		return fmt.Errorf("can't be consumed, expiry: %v", expiry)
-	}
-
 	return nil
 }
 

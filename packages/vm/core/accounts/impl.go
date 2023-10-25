@@ -52,7 +52,7 @@ var Processor = Contract.Processor(nil,
 // this expects the origin amount minus SD
 func SetInitialState(state kv.KVStore, baseTokensOnAnchor iotago.BaseToken) {
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
-	CreditToAccount(state, CommonAccount(), isc.NewAssetsBaseTokens(baseTokensOnAnchor), isc.ChainID{})
+	CreditToAccount(state, CommonAccount(), isc.NewFungibleTokens(baseTokensOnAnchor, nil), isc.ChainID{})
 }
 
 // deposit is a function to deposit attached assets to the sender's chain account
@@ -264,9 +264,7 @@ func foundryDestroy(ctx isc.Sandbox) dict.Dict {
 	deleteFoundryFromAccount(state, caller, sn)
 	DeleteFoundryOutput(state, sn)
 	// the storage deposit goes to the caller's account
-	CreditToAccount(state, caller, &isc.Assets{
-		BaseTokens: storageDepositReleased,
-	}, ctx.ChainID())
+	CreditToAccount(state, caller, isc.NewFungibleTokens(storageDepositReleased, nil), ctx.ChainID())
 	eventFoundryDestroyed(ctx, sn)
 	return nil
 }
@@ -299,7 +297,7 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 	// accrue change on the caller's account
 	// update native tokens on L2 ledger and transit foundry UTXO
 	var storageDepositAdjustment int64
-	if deltaAssets := isc.NewEmptyAssets().AddNativeTokens(nativeTokenID, delta); destroy {
+	if deltaAssets := isc.NewEmptyFungibleTokens().AddNativeTokens(nativeTokenID, delta); destroy {
 		// take tokens to destroy from allowance
 		accountID := ctx.AccountID()
 		ctx.TransferAllowedFunds(accountID,
@@ -324,7 +322,7 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 		debitBaseTokensFromAllowance(ctx, iotago.BaseToken(-storageDepositAdjustment), ctx.ChainID())
 	case storageDepositAdjustment > 0:
 		// storage deposit is returned to the caller account
-		CreditToAccount(state, caller, isc.NewAssetsBaseTokens(iotago.BaseToken(storageDepositAdjustment)), ctx.ChainID())
+		CreditToAccount(state, caller, isc.NewFungibleTokens(iotago.BaseToken(storageDepositAdjustment), nil), ctx.ChainID())
 	}
 	eventFoundryModified(ctx, sn)
 	return nil

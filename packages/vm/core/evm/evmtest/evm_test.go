@@ -1263,7 +1263,7 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 	require.NoError(t, err)
 
 	// need an alias to create a foundry; the easiest way is to create a "disposable" ISC chain
-	foundryChain, _ := env.solo.NewChainExt(foundryOwner, 0, "foundryChain")
+	foundryChain, _ := env.solo.NewChainExt(foundryOwner, 0, 0, "foundryChain")
 	err = foundryChain.DepositBaseTokensToL2(env.solo.L1BaseTokens(foundryOwnerAddr)/2, foundryOwner)
 	require.NoError(t, err)
 	supply := big.NewInt(int64(10 * isc.Million))

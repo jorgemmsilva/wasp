@@ -65,8 +65,8 @@ func MustGetChainInfo(state kv.KVStoreReader, chainID isc.ChainID) *isc.ChainInf
 	return info
 }
 
-func MustGetMinCommonAccountBalance(state kv.KVStoreReader) uint64 {
-	return kvdecoder.New(state).MustGetUint64(VarMinBaseTokensOnCommonAccount)
+func MustGetMinCommonAccountBalance(state kv.KVStoreReader) iotago.BaseToken {
+	return iotago.BaseToken(kvdecoder.New(state).MustGetUint64(VarMinBaseTokensOnCommonAccount))
 }
 
 func MustGetPayoutAgentID(state kv.KVStoreReader) isc.AgentID {

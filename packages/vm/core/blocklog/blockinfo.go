@@ -23,7 +23,7 @@ type BlockInfo struct {
 	NumOffLedgerRequests  uint16
 	PreviousAccountOutput *isc.AccountOutputWithID // nil for block #0
 	GasBurned             uint64
-	GasFeeCharged         uint64
+	GasFeeCharged         iotago.BaseToken
 }
 
 func (bi *BlockInfo) String() string {
@@ -78,7 +78,7 @@ func (bi *BlockInfo) Read(r io.Reader) error {
 		rr.Read(bi.PreviousAccountOutput)
 	}
 	bi.GasBurned = rr.ReadGas64()
-	bi.GasFeeCharged = rr.ReadGas64()
+	bi.GasFeeCharged = iotago.BaseToken(rr.ReadGas64())
 	return rr.Err
 }
 
@@ -97,6 +97,6 @@ func (bi *BlockInfo) Write(w io.Writer) error {
 		ww.Write(bi.PreviousAccountOutput)
 	}
 	ww.WriteGas64(bi.GasBurned)
-	ww.WriteGas64(bi.GasFeeCharged)
+	ww.WriteGas64(uint64(bi.GasFeeCharged))
 	return ww.Err
 }

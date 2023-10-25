@@ -22,9 +22,9 @@ func setBaseTokens(state kv.KVStore, accountKey kv.Key, n iotago.BaseToken) {
 func AdjustAccountBaseTokens(state kv.KVStore, account isc.AgentID, adjustment int64, chainID isc.ChainID) {
 	switch {
 	case adjustment > 0:
-		CreditToAccount(state, account, isc.NewAssets(iotago.BaseToken(adjustment), nil), chainID)
+		CreditToAccount(state, account, isc.NewFungibleTokens(iotago.BaseToken(adjustment), nil), chainID)
 	case adjustment < 0:
-		DebitFromAccount(state, account, isc.NewAssets(iotago.BaseToken(-adjustment), nil), chainID)
+		DebitFromAccount(state, account, isc.NewFungibleTokens(iotago.BaseToken(-adjustment), nil), chainID)
 	}
 }
 

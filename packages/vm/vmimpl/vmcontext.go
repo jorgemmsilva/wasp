@@ -1,8 +1,6 @@
 package vmimpl
 
 import (
-	"time"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -37,7 +35,7 @@ type vmContext struct {
 
 type blockGas struct {
 	burned     uint64
-	feeCharged uint64
+	feeCharged iotago.BaseToken
 }
 
 type requestContext struct {
@@ -53,7 +51,7 @@ type requestContext struct {
 	onWriteReceipt    []coreCallbackFunc
 	gas               requestGas
 	// SD charged to consume the current request
-	sdCharged uint64
+	sdCharged iotago.BaseToken
 	// requests that the sender asked to retry
 	unprocessableToRetry []isc.OnLedgerRequest
 	// snapshots taken via ctx.TakeStateSnapshot()
@@ -69,13 +67,13 @@ type requestGas struct {
 	// is gas burn enabled
 	burnEnabled bool
 	// max tokens that can be charged for gas fee
-	maxTokensToSpendForGasFee uint64
+	maxTokensToSpendForGasFee iotago.BaseToken
 	// final gas budget set for the run
 	budgetAdjusted uint64
 	// gas already burned
 	burned uint64
 	// tokens charged
-	feeCharged uint64
+	feeCharged iotago.BaseToken
 	// burn history. If disabled, it is nil
 	burnLog *gas.BurnLog
 }
@@ -107,12 +105,12 @@ func (vmctx *vmContext) withStateUpdate(f func(chainState kv.KVStore)) {
 func (vmctx *vmContext) extractBlock(
 	numRequests, numSuccess, numOffLedger uint16,
 	unprocessable []isc.OnLedgerRequest,
-) (uint32, *state.L1Commitment, time.Time, iotago.Address) {
+) (uint32, *state.L1Commitment, isc.BlockTime, iotago.Address) {
 	var rotationAddr iotago.Address
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		rotationAddr = vmctx.saveBlockInfo(numRequests, numSuccess, numOffLedger)
 		withContractState(chainState, evm.Contract, func(s kv.KVStore) {
-			evmimpl.MintBlock(s, vmctx.chainInfo, vmctx.task.TimeAssumption)
+			evmimpl.MintBlock(s, vmctx.chainInfo, vmctx.task.Time.Timestamp)
 		})
 		vmctx.saveInternalUTXOs(unprocessable)
 	})
@@ -122,9 +120,9 @@ func (vmctx *vmContext) extractBlock(
 	l1Commitment := block.L1Commitment()
 
 	blockIndex := vmctx.stateDraft.BlockIndex()
-	timestamp := vmctx.stateDraft.Timestamp()
+	blockTime := vmctx.stateDraft.BlockTime()
 
-	return blockIndex, l1Commitment, timestamp, rotationAddr
+	return blockIndex, l1Commitment, blockTime, rotationAddr
 }
 
 func (vmctx *vmContext) checkRotationAddress() (ret iotago.Address) {
@@ -145,11 +143,11 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 
 	blockInfo := &blocklog.BlockInfo{
 		SchemaVersion:         blocklog.BlockInfoLatestSchemaVersion,
-		Timestamp:             vmctx.stateDraft.Timestamp(),
+		Time:                  vmctx.stateDraft.BlockTime(),
 		TotalRequests:         numRequests,
 		NumSuccessfulRequests: numSuccess,
 		NumOffLedgerRequests:  numOffLedger,
-		PreviousAccountOutput:   isc.NewAccountOutputWithID(vmctx.task.AnchorOutput, vmctx.task.AnchorOutputID),
+		PreviousAccountOutput: isc.NewAccountOutputWithID(vmctx.task.AnchorOutput, vmctx.task.AnchorOutputID),
 		GasBurned:             vmctx.blockGas.burned,
 		GasFeeCharged:         vmctx.blockGas.feeCharged,
 	}
@@ -173,7 +171,10 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	// create a mock AO, with a nil statecommitment, just to calculate changes in the minimum SD
 	mockAO := vmctx.txbuilder.CreateAnchorOutput(vmctx.stateMetadata(state.L1CommitmentNil))
-	newMinSD := parameters.RentStructure().MinDeposit(mockAO)
+	newMinSD, err := parameters.RentStructure().MinDeposit(mockAO)
+	if err != nil {
+		panic(err)
+	}
 	oldMinSD := vmctx.txbuilder.AnchorOutputStorageDeposit()
 	changeInSD := int64(oldMinSD) - int64(newMinSD)
 
@@ -249,7 +250,8 @@ func (vmctx *vmContext) removeUnprocessable(reqID isc.RequestID) {
 }
 
 func (vmctx *vmContext) assertConsistentGasTotals(requestResults []*vm.RequestResult) {
-	var sumGasBurned, sumGasFeeCharged uint64
+	var sumGasBurned uint64
+	var sumGasFeeCharged iotago.BaseToken
 
 	for _, r := range requestResults {
 		sumGasBurned += r.Receipt.GasBurned

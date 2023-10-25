@@ -24,7 +24,7 @@ import (
 var dummyStateMetadata = []byte("foobar")
 
 type mockAccountContractRead struct {
-	assets             *isc.Assets
+	assets             *isc.FungibleTokens
 	nativeTokenOutputs map[iotago.NativeTokenID]*iotago.BasicOutput
 }
 
@@ -39,7 +39,7 @@ func (m *mockAccountContractRead) Read() AccountsContractRead {
 		NFTOutput: func(id iotago.NFTID) (*iotago.NFTOutput, iotago.OutputID) {
 			return nil, iotago.OutputID{}
 		},
-		TotalFungibleTokens: func() *isc.Assets {
+		TotalFungibleTokens: func() *isc.FungibleTokens {
 			return m.assets
 		},
 	}
@@ -50,7 +50,7 @@ func newMockAccountsContractRead(anchor *iotago.AccountOutput) *mockAccountContr
 	if err != nil {
 		panic(err)
 	}
-	assets := isc.NewAssetsBaseTokens(anchor.BaseTokenAmount() - anchorMinSD)
+	assets := isc.NewFungibleTokens(anchor.BaseTokenAmount()-anchorMinSD, nil)
 	return &mockAccountContractRead{
 		assets:             assets,
 		nativeTokenOutputs: make(map[iotago.FoundryID]*iotago.BasicOutput),
@@ -86,7 +86,7 @@ func TestTxBuilderBasic(t *testing.T) {
 			lo.Must(parameters.RentStructure().MinDeposit(anchor)),
 			mockedAccounts.Read(),
 		)
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata)
+		essence := txb.BuildTransactionEssence(dummyStateMetadata)
 		txb.MustBalanced()
 		require.EqualValues(t, 1, txb.numInputs())
 		require.EqualValues(t, 1, txb.numOutputs())
@@ -107,7 +107,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		txb.Consume(req1)
 		mockedAccounts.assets.AddBaseTokens(req1.Output().BaseTokenAmount())
 
-		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata)
+		essence = txb.BuildTransactionEssence(dummyStateMetadata)
 		txb.MustBalanced()
 		require.Len(t, essence.Outputs, 1)
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount())
@@ -127,10 +127,10 @@ func TestTxBuilderBasic(t *testing.T) {
 		totalSDBaseTokensUsedToSplitAssets := txb.Consume(req2)
 
 		// deduct SD costs of creating the internal accounting outputs
-		mockedAccounts.assets.Add(req2.Assets())
+		mockedAccounts.assets.Add(req2.Assets().FungibleTokens)
 		mockedAccounts.assets.Spend(isc.NewAssetsBaseTokens(totalSDBaseTokensUsedToSplitAssets))
 
-		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata)
+		essence = txb.BuildTransactionEssence(dummyStateMetadata)
 		txb.MustBalanced()
 		require.Len(t, essence.Outputs, 3) // 1 anchor AO, 1 NFT internal Output, 1 NativeTokens internal outputs
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount()-totalSDBaseTokensUsedToSplitAssets)

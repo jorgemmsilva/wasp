@@ -104,7 +104,7 @@ func (req *OffLedgerRequestData) Allowance() *Assets {
 
 // Assets is attached assets to the UTXO. Nil for off-ledger
 func (req *OffLedgerRequestData) Assets() *Assets {
-	return nil
+	return NewEmptyAssets()
 }
 
 func (req *OffLedgerRequestData) Bytes() []byte {

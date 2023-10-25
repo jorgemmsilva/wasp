@@ -44,39 +44,45 @@ func TestAssetsSpendBudget(t *testing.T) {
 	require.True(t, budget.IsEmpty())
 	require.True(t, budget.IsEmpty())
 
-	budget = &isc.Assets{BaseTokens: 1}
+	budget = isc.NewAssetsBaseTokens(1)
 	require.True(t, budget.Spend(toSpend))
 	require.False(t, toSpend.Spend(budget))
 
-	budget = &isc.Assets{BaseTokens: 10}
+	budget = isc.NewAssetsBaseTokens(10)
 	require.True(t, budget.Spend(budget))
 	require.True(t, budget.IsEmpty())
 
-	budget = &isc.Assets{BaseTokens: 2}
-	toSpend = &isc.Assets{BaseTokens: 1}
+	budget = isc.NewAssetsBaseTokens(2)
+	toSpend = isc.NewAssetsBaseTokens(1)
 	require.True(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(&isc.Assets{
-		BaseTokens:   1,
-		NativeTokens: []*iotago.NativeTokenFeature{},
-		NFTs:         []iotago.NFTID{},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens:   1,
+			NativeTokens: []*iotago.NativeTokenFeature{},
+		},
+		NFTs: []iotago.NFTID{},
 	}))
 
-	budget = &isc.Assets{BaseTokens: 1}
-	toSpend = &isc.Assets{BaseTokens: 2}
+	budget = isc.NewAssetsBaseTokens(1)
+	toSpend = isc.NewAssetsBaseTokens(2)
 	require.False(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(&isc.Assets{
-		BaseTokens:   1,
-		NativeTokens: []*iotago.NativeTokenFeature{},
-		NFTs:         []iotago.NFTID{},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens:   1,
+			NativeTokens: []*iotago.NativeTokenFeature{},
+		},
+		NFTs: []iotago.NFTID{},
 	}))
 
 	nativeTokenID1 := tpkg.RandNativeTokenFeature().ID
 	nativeTokenID2 := tpkg.RandNativeTokenFeature().ID
 
 	budget = &isc.Assets{
-		BaseTokens: 1,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID1, Amount: big.NewInt(5)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 1,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID1, Amount: big.NewInt(5)},
+			},
 		},
 	}
 	toSpend = budget.Clone()
@@ -85,53 +91,67 @@ func TestAssetsSpendBudget(t *testing.T) {
 	require.True(t, budget.IsEmpty())
 
 	budget = &isc.Assets{
-		BaseTokens: 1,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID1, Amount: big.NewInt(5)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 1,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID1, Amount: big.NewInt(5)},
+			},
 		},
 	}
 	cloneBudget := budget.Clone()
 	toSpend = &isc.Assets{
-		BaseTokens: 1,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID1, Amount: big.NewInt(10)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 1,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID1, Amount: big.NewInt(10)},
+			},
 		},
 	}
 	require.False(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(cloneBudget))
 
 	budget = &isc.Assets{
-		BaseTokens: 1,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID1, Amount: big.NewInt(5)},
-			{ID: nativeTokenID2, Amount: big.NewInt(1)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 1,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID1, Amount: big.NewInt(5)},
+				{ID: nativeTokenID2, Amount: big.NewInt(1)},
+			},
 		},
 	}
 	toSpend = &isc.Assets{
-		BaseTokens: 1,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID1, Amount: big.NewInt(5)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 1,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID1, Amount: big.NewInt(5)},
+			},
 		},
 	}
 	expected := &isc.Assets{
-		BaseTokens: 0,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID2, Amount: big.NewInt(1)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 0,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID2, Amount: big.NewInt(1)},
+			},
 		},
 	}
 	require.True(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(expected))
 
 	budget = &isc.Assets{
-		BaseTokens: 10,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID2, Amount: big.NewInt(1)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 10,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID2, Amount: big.NewInt(1)},
+			},
 		},
 	}
 	toSpend = &isc.Assets{
-		BaseTokens: 1,
-		NativeTokens: []*iotago.NativeTokenFeature{
-			{ID: nativeTokenID1, Amount: big.NewInt(5)},
+		FungibleTokens: &isc.FungibleTokens{
+			BaseTokens: 1,
+			NativeTokens: []*iotago.NativeTokenFeature{
+				{ID: nativeTokenID1, Amount: big.NewInt(5)},
+			},
 		},
 	}
 

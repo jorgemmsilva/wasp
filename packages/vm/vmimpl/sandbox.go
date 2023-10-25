@@ -78,7 +78,7 @@ func (s *contractSandbox) Send(par isc.RequestParameters) {
 	s.reqctx.send(par)
 }
 
-func (s *contractSandbox) EstimateRequiredStorageDeposit(par isc.RequestParameters) uint64 {
+func (s *contractSandbox) EstimateRequiredStorageDeposit(par isc.RequestParameters) iotago.BaseToken {
 	s.Ctx.GasBurn(gas.BurnCodeEstimateStorageDepositCost)
 	return s.reqctx.estimateRequiredStorageDeposit(par)
 }
@@ -134,11 +134,11 @@ func (s *contractSandbox) TryLoadContract(programHash hashing.HashValue) error {
 	return s.reqctx.TryLoadContract(programHash)
 }
 
-func (s *contractSandbox) CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, uint64) {
+func (s *contractSandbox) CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, iotago.BaseToken) {
 	return s.reqctx.CreateNewFoundry(scheme, metadata)
 }
 
-func (s *contractSandbox) DestroyFoundry(sn uint32) uint64 {
+func (s *contractSandbox) DestroyFoundry(sn uint32) iotago.BaseToken {
 	return s.reqctx.DestroyFoundry(sn)
 }
 
@@ -163,8 +163,8 @@ func (s *contractSandbox) MustMoveBetweenAccounts(fromAgentID, toAgentID isc.Age
 	s.checkRemainingTokens(fromAgentID)
 }
 
-func (s *contractSandbox) DebitFromAccount(agentID isc.AgentID, tokens *isc.Assets) {
-	debitFromAccount(s.reqctx.chainStateWithGasBurn(), agentID, tokens, s.ChainID())
+func (s *contractSandbox) DebitFromAccount(agentID isc.AgentID, fts *isc.FungibleTokens) {
+	debitFromAccount(s.reqctx.chainStateWithGasBurn(), agentID, fts, s.ChainID())
 	s.checkRemainingTokens(agentID)
 }
 
@@ -178,7 +178,7 @@ func (s *contractSandbox) checkRemainingTokens(debitedAccount isc.AgentID) {
 	}
 }
 
-func (s *contractSandbox) CreditToAccount(agentID isc.AgentID, tokens *isc.Assets) {
+func (s *contractSandbox) CreditToAccount(agentID isc.AgentID, tokens *isc.FungibleTokens) {
 	creditToAccount(s.reqctx.chainStateWithGasBurn(), agentID, tokens, s.ChainID())
 }
 

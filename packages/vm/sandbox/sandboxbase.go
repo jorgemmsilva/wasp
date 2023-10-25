@@ -61,11 +61,10 @@ func (s *SandboxBase) OwnedNFTs() []iotago.NFTID {
 
 func (s *SandboxBase) HasInAccount(agentID isc.AgentID, assets *isc.Assets) bool {
 	s.Ctx.GasBurn(gas.BurnCodeGetBalance)
-	accountAssets := isc.Assets{
-		BaseTokens:   s.Ctx.GetBaseTokensBalance(agentID),
-		NativeTokens: s.Ctx.GetNativeTokens(agentID),
-		NFTs:         s.Ctx.GetAccountNFTs(agentID),
-	}
+	accountAssets := isc.NewAssets(
+		s.Ctx.GetBaseTokensBalance(agentID),
+		s.Ctx.GetNativeTokens(agentID),
+	).AddNFTs(s.Ctx.GetAccountNFTs(agentID)...)
 	return accountAssets.Spend(assets)
 }
 

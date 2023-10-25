@@ -2,7 +2,6 @@ package vmimpl
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -10,6 +9,7 @@ import (
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
@@ -53,7 +53,7 @@ func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 	origin.InitChain(cs, nil, 0)
 	latest, err := cs.LatestBlock()
 	require.NoError(t, err)
-	stateDraft, err := cs.NewStateDraft(time.Now(), latest.L1Commitment())
+	stateDraft, err := cs.NewStateDraft(isc.BlockTime{}, latest.L1Commitment())
 	require.NoError(t, err)
 	task := &vm.VMTask{
 		AnchorOutput: &iotago.AccountOutput{

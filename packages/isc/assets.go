@@ -18,19 +18,31 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-type Assets struct {
+type FungibleTokens struct {
 	BaseTokens   iotago.BaseToken             `json:"baseTokens"`
 	NativeTokens []*iotago.NativeTokenFeature `json:"nativeTokens"`
-	NFTs         []iotago.NFTID               `json:"nfts"`
+}
+
+func NewFungibleTokens(baseTokens iotago.BaseToken, tokens []*iotago.NativeTokenFeature) *FungibleTokens {
+	return &FungibleTokens{
+		BaseTokens:   baseTokens,
+		NativeTokens: tokens,
+	}
+}
+
+func NewEmptyFungibleTokens() *FungibleTokens {
+	return &FungibleTokens{}
+}
+
+type Assets struct {
+	*FungibleTokens
+	NFTs []iotago.NFTID `json:"nfts"`
 }
 
 var BaseTokenID = []byte{}
 
 func NewAssets(baseTokens iotago.BaseToken, tokens []*iotago.NativeTokenFeature, nfts ...iotago.NFTID) *Assets {
-	ret := &Assets{
-		BaseTokens:   baseTokens,
-		NativeTokens: tokens,
-	}
+	ret := &Assets{FungibleTokens: NewFungibleTokens(baseTokens, tokens)}
 	if len(nfts) != 0 {
 		ret.AddNFTs(nfts...)
 	}
@@ -38,11 +50,11 @@ func NewAssets(baseTokens iotago.BaseToken, tokens []*iotago.NativeTokenFeature,
 }
 
 func NewAssetsBaseTokens(amount iotago.BaseToken) *Assets {
-	return &Assets{BaseTokens: amount}
+	return &Assets{FungibleTokens: NewFungibleTokens(amount, nil)}
 }
 
 func NewEmptyAssets() *Assets {
-	return &Assets{}
+	return &Assets{FungibleTokens: NewEmptyFungibleTokens()}
 }
 
 func AssetsFromBytes(b []byte) (*Assets, error) {
@@ -52,8 +64,8 @@ func AssetsFromBytes(b []byte) (*Assets, error) {
 	return rwutil.ReadFromBytes(b, NewEmptyAssets())
 }
 
-func AssetsFromDict(d dict.Dict) (*Assets, error) {
-	ret := NewEmptyAssets()
+func FungibleTokensFromDict(d dict.Dict) (*FungibleTokens, error) {
+	ret := NewEmptyFungibleTokens()
 	for key, val := range d {
 		if IsBaseToken([]byte(key)) {
 			ret.BaseTokens = iotago.BaseToken(new(big.Int).SetBytes(d.Get(kv.Key(BaseTokenID))).Uint64())
@@ -72,8 +84,8 @@ func AssetsFromDict(d dict.Dict) (*Assets, error) {
 	return ret, nil
 }
 
-func AssetsFromNativeTokenSum(baseTokens iotago.BaseToken, tokens iotago.NativeTokenSum) *Assets {
-	ret := NewEmptyAssets()
+func FungibleTokensFromNativeTokenSum(baseTokens iotago.BaseToken, tokens iotago.NativeTokenSum) *FungibleTokens {
+	ret := NewEmptyFungibleTokens()
 	ret.BaseTokens = baseTokens
 	for id, val := range tokens {
 		ret.NativeTokens = append(ret.NativeTokens, &iotago.NativeTokenFeature{
@@ -84,13 +96,18 @@ func AssetsFromNativeTokenSum(baseTokens iotago.BaseToken, tokens iotago.NativeT
 	return ret
 }
 
-func AssetsFromOutput(o iotago.Output, oid iotago.OutputID) *Assets {
-	ret := &Assets{
+func FungibleTokensFromOutput(o iotago.Output) *FungibleTokens {
+	ret := &FungibleTokens{
 		BaseTokens: o.BaseTokenAmount(),
 	}
 	if o.FeatureSet().HasNativeTokenFeature() {
 		ret.NativeTokens = []*iotago.NativeTokenFeature{o.FeatureSet().NativeToken()}
 	}
+	return ret
+}
+
+func AssetsFromOutput(o iotago.Output, oid iotago.OutputID) *Assets {
+	ret := &Assets{FungibleTokens: FungibleTokensFromOutput(o)}
 	if o.Type() == iotago.OutputNFT {
 		ret.NFTs = []iotago.NFTID{util.NFTIDFromNFTOutput(o.(*iotago.NFTOutput), oid)}
 	}
@@ -114,16 +131,31 @@ func MustAssetsFromBytes(b []byte) *Assets {
 }
 
 // returns nil if nil pointer receiver is cloned
+func (a *FungibleTokens) ToAssets() *Assets {
+	return NewAssets(a.BaseTokens, a.NativeTokens)
+}
+
+// returns nil if nil pointer receiver is cloned
+func (a *FungibleTokens) Clone() *FungibleTokens {
+	if a == nil {
+		return nil
+	}
+	return NewFungibleTokens(
+		a.BaseTokens,
+		lo.Map(a.NativeTokens, func(item *iotago.NativeTokenFeature, index int) *iotago.NativeTokenFeature {
+			return item.Clone().(*iotago.NativeTokenFeature)
+		}),
+	)
+}
+
+// returns nil if nil pointer receiver is cloned
 func (a *Assets) Clone() *Assets {
 	if a == nil {
 		return nil
 	}
 	return &Assets{
-		BaseTokens: a.BaseTokens,
-		NativeTokens: lo.Map(a.NativeTokens, func(item *iotago.NativeTokenFeature, index int) *iotago.NativeTokenFeature {
-			return item.Clone().(*iotago.NativeTokenFeature)
-		}),
-		NFTs: slices.Clone(a.NFTs),
+		FungibleTokens: a.FungibleTokens.Clone(),
+		NFTs:           slices.Clone(a.NFTs),
 	}
 }
 
@@ -151,7 +183,7 @@ func (a *Assets) AmountNativeToken(nativeTokenID iotago.NativeTokenID) *big.Int 
 	return big.NewInt(0)
 }
 
-func (a *Assets) String() string {
+func (a *FungibleTokens) String() string {
 	ret := fmt.Sprintf("base tokens: %d", a.BaseTokens)
 	if len(a.NativeTokens) > 0 {
 		ret += fmt.Sprintf(", tokens (%d):", len(a.NativeTokens))
@@ -159,6 +191,11 @@ func (a *Assets) String() string {
 	for _, nt := range a.NativeTokens {
 		ret += fmt.Sprintf("\n       %s: %s", nt.ID.String(), nt.Amount.Text(10))
 	}
+	return ret
+}
+
+func (a *Assets) String() string {
+	ret := a.FungibleTokens.String()
 	for _, nftid := range a.NFTs {
 		ret += fmt.Sprintf("\n NFTID: %s", nftid.String())
 	}
@@ -169,7 +206,7 @@ func (a *Assets) Bytes() []byte {
 	return rwutil.WriteToBytes(a)
 }
 
-func (a *Assets) Equals(b *Assets) bool {
+func (a *FungibleTokens) Equals(b *FungibleTokens) bool {
 	if a == b {
 		return true
 	}
@@ -179,21 +216,31 @@ func (a *Assets) Equals(b *Assets) bool {
 	if a.BaseTokens != b.BaseTokens {
 		return false
 	}
-
 	if !maps.EqualFunc(a.NativeTokenSum(), b.NativeTokenSum(), func(nt1, nt2 *big.Int) bool {
 		return nt1.Cmp(nt2) == 0
 	}) {
 		return false
 	}
-
-	if !maps.Equal(a.NFTSet(), b.NFTSet()) {
-		return false
-	}
-
 	return true
 }
 
-func (a *Assets) Geq(b *Assets) bool {
+func (a *Assets) Equals(b *Assets) bool {
+	if a == b {
+		return true
+	}
+	if a == nil || b == nil {
+		return false
+	}
+	if !a.FungibleTokens.Equals(b.FungibleTokens) {
+		return false
+	}
+	if !maps.Equal(a.NFTSet(), b.NFTSet()) {
+		return false
+	}
+	return true
+}
+
+func (a *FungibleTokens) Geq(b *FungibleTokens) bool {
 	if a.IsEmpty() {
 		return b.IsEmpty()
 	}
@@ -212,13 +259,26 @@ func (a *Assets) Geq(b *Assets) bool {
 		}
 	}
 
+	return true
+}
+
+func (a *Assets) Geq(b *Assets) bool {
+	if a.IsEmpty() {
+		return b.IsEmpty()
+	}
+	if b.IsEmpty() {
+		return true
+	}
+	if !a.FungibleTokens.Geq(b.FungibleTokens) {
+		return false
+	}
 	return lo.Every(b.NFTs, a.NFTs)
 }
 
 // Spend subtracts assets from the current set.
 // Mutates receiver `a` !
 // If budget is not enough, returns false and leaves receiver untouched
-func (a *Assets) Spend(toSpend *Assets) bool {
+func (a *FungibleTokens) Spend(toSpend *FungibleTokens) bool {
 	if !a.Geq(toSpend) {
 		return false
 	}
@@ -234,14 +294,28 @@ func (a *Assets) Spend(toSpend *Assets) bool {
 	}
 	a.NativeTokens = nativeTokensFromSet(aNTs)
 
-	a.NFTs = lo.Reject(a.NFTs, func(id iotago.NFTID, i int) bool {
-		return lo.Contains(toSpend.NFTs, id)
-	})
-
 	return true
 }
 
-func (a *Assets) NativeTokenSum() iotago.NativeTokenSum {
+// Spend subtracts assets from the current set.
+// Mutates receiver `a` !
+// If budget is not enough, returns false and leaves receiver untouched
+func (a *Assets) Spend(toSpend *Assets) bool {
+	if !a.Geq(toSpend) {
+		return false
+	}
+	if toSpend.IsEmpty() { // necessary if a == nil
+		return true
+	}
+
+	a.FungibleTokens.Spend(toSpend.FungibleTokens)
+	a.NFTs = lo.Reject(a.NFTs, func(id iotago.NFTID, i int) bool {
+		return lo.Contains(toSpend.NFTs, id)
+	})
+	return true
+}
+
+func (a *FungibleTokens) NativeTokenSum() iotago.NativeTokenSum {
 	ret := iotago.NativeTokenSum{}
 	for _, nt := range a.NativeTokens {
 		ret[nt.ID] = nt.Amount
@@ -257,7 +331,7 @@ func (a *Assets) NFTSet() map[iotago.NFTID]bool {
 	return ret
 }
 
-func (a *Assets) Add(b *Assets) *Assets {
+func (a *FungibleTokens) Add(b *FungibleTokens) *FungibleTokens {
 	a.BaseTokens += b.BaseTokens
 	resultTokens := a.NativeTokenSum()
 	for _, nativeToken := range b.NativeTokens {
@@ -270,23 +344,35 @@ func (a *Assets) Add(b *Assets) *Assets {
 		)
 	}
 	a.NativeTokens = nativeTokensFromSet(resultTokens)
+	return a
+}
+
+func (a *Assets) Add(b *Assets) *Assets {
+	a.FungibleTokens.Add(b.FungibleTokens)
 	a.AddNFTs(b.NFTs...)
 	return a
 }
 
-func (a *Assets) IsEmpty() bool {
-	return a == nil || (a.BaseTokens == 0 &&
-		len(a.NativeTokens) == 0 &&
-		len(a.NFTs) == 0)
+func (a *FungibleTokens) IsEmpty() bool {
+	return a == nil || (a.BaseTokens == 0 && len(a.NativeTokens) == 0)
 }
 
-func (a *Assets) AddBaseTokens(amount iotago.BaseToken) *Assets {
+func (a *Assets) IsEmpty() bool {
+	return a == nil || a.FungibleTokens.IsEmpty() && len(a.NFTs) == 0
+}
+
+func (a *FungibleTokens) AddBaseTokens(amount iotago.BaseToken) *FungibleTokens {
 	a.BaseTokens += amount
 	return a
 }
 
-func (a *Assets) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *Assets {
-	b := NewAssets(0, []*iotago.NativeTokenFeature{
+func (a *Assets) AddBaseTokens(amount iotago.BaseToken) *Assets {
+	a.FungibleTokens.AddBaseTokens(amount)
+	return a
+}
+
+func (a *FungibleTokens) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *FungibleTokens {
+	b := NewFungibleTokens(0, []*iotago.NativeTokenFeature{
 		{
 			ID:     nativeTokenID,
 			Amount: util.ToBigInt(amount),
@@ -295,7 +381,12 @@ func (a *Assets) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount inte
 	return a.Add(b)
 }
 
-func (a *Assets) ToDict() dict.Dict {
+func (a *Assets) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *Assets {
+	a.FungibleTokens.AddNativeTokens(nativeTokenID, amount)
+	return a
+}
+
+func (a *FungibleTokens) ToDict() dict.Dict {
 	ret := dict.New()
 	ret.Set(kv.Key(BaseTokenID), new(big.Int).SetUint64(uint64(a.BaseTokens)).Bytes())
 	for _, nativeToken := range a.NativeTokens {

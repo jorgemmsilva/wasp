@@ -28,7 +28,7 @@ type AccountsContractRead struct {
 	NFTOutput func(id iotago.NFTID) (*iotago.NFTOutput, iotago.OutputID)
 
 	// TotalFungibleTokens returns the total base tokens and native tokens accounted by the chain
-	TotalFungibleTokens func() *isc.Assets
+	TotalFungibleTokens func() *isc.FungibleTokens
 }
 
 // AnchorTransactionBuilder represents structure which handles all the data needed to eventually
@@ -197,7 +197,7 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 }
 
 // BuildTransactionEssence builds transaction essence from tx builder data
-func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte) (*iotago.Transaction, []byte) {
+func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte) *iotago.Transaction {
 	inputs, inputIDs := txb.inputs()
 	essence := &iotago.Transaction{
 		API: parameters.L1API(),
@@ -206,11 +206,9 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 		},
 		Outputs: txb.outputs(stateMetadata),
 	}
-
 	inputsCommitment := inputIDs.OrderedSet(inputs).MustCommitment(parameters.L1API())
 	copy(essence.InputsCommitment[:], inputsCommitment)
-
-	return essence, inputsCommitment
+	return essence
 }
 
 // inputIDs generates a deterministic list of inputs for the transaction essence

@@ -145,8 +145,8 @@ type Privileged interface {
 	GasBurnEnable(enable bool)
 	GasBurnEnabled() bool
 	MustMoveBetweenAccounts(fromAgentID, toAgentID AgentID, assets *Assets)
-	DebitFromAccount(AgentID, *Assets)
-	CreditToAccount(AgentID, *Assets)
+	DebitFromAccount(AgentID, *FungibleTokens)
+	CreditToAccount(AgentID, *FungibleTokens)
 	RetryUnprocessable(req Request, outputID iotago.OutputID)
 	OnWriteReceipt(CoreCallbackFunc)
 	CallOnBehalfOf(caller AgentID, target, entryPoint Hname, params dict.Dict, allowance *Assets) dict.Dict
@@ -189,7 +189,6 @@ type StateAnchor struct {
 	StateIndex           uint32
 	StateData            []byte
 	Deposit              iotago.BaseToken
-	NativeTokens         []*iotago.NativeTokenFeature
 }
 
 // SendMetadata represents content of the data payload of the output

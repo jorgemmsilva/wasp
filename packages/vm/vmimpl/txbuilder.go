@@ -31,13 +31,13 @@ func (vmctx *vmContext) stateMetadata(stateCommitment *state.L1Commitment) []byt
 	return stateMetadata.Bytes()
 }
 
-func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) (*iotago.TransactionEssence, []byte) {
+func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) *iotago.Transaction {
 	stateMetadata := vmctx.stateMetadata(stateCommitment)
-	essence, inputsCommitment := vmctx.txbuilder.BuildTransactionEssence(stateMetadata)
+	essence := vmctx.txbuilder.BuildTransactionEssence(stateMetadata)
 	if assertTxbuilderBalanced {
 		vmctx.txbuilder.MustBalanced()
 	}
-	return essence, inputsCommitment
+	return essence
 }
 
 func (vmctx *vmContext) createTxBuilderSnapshot() *vmtxbuilder.AnchorTransactionBuilder {
@@ -69,8 +69,8 @@ func (vmctx *vmContext) loadNFT(nftID iotago.NFTID) (out *iotago.NFTOutput, id i
 	return
 }
 
-func (vmctx *vmContext) loadTotalFungibleTokens() *isc.Assets {
-	var totalAssets *isc.Assets
+func (vmctx *vmContext) loadTotalFungibleTokens() *isc.FungibleTokens {
+	var totalAssets *isc.FungibleTokens
 	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
 		totalAssets = accounts.GetTotalL2FungibleTokens(s)
 	})

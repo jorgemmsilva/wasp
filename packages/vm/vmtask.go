@@ -48,8 +48,6 @@ type VMTaskResult struct {
 	// Transaction is the (unsigned) transaction for the next block,
 	// or nil if the task does not produce a normal block
 	Transaction *iotago.Transaction
-	// InputsCommitment is the inputs commitment necessary to sign the ResultTransactionEssence
-	InputsCommitment []byte
 	// RequestResults contains one result for each non-skipped request
 	RequestResults []*RequestResult
 }

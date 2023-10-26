@@ -27,7 +27,7 @@ type ProtocolParameters struct {
 	MinPowScore uint32 `json:"minPowScore"`
 	// The network name
 	NetworkName string `json:"networkName"`
-	RentStructure RentStructure `json:"rentStructure"`
+	Storage Storage `json:"rentStructure"`
 	// The token supply
 	TokenSupply string `json:"tokenSupply"`
 	// The protocol version
@@ -38,13 +38,13 @@ type ProtocolParameters struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewProtocolParameters(bech32Hrp string, belowMaxDepth uint32, minPowScore uint32, networkName string, rentStructure RentStructure, tokenSupply string, version int32) *ProtocolParameters {
+func NewProtocolParameters(bech32Hrp string, belowMaxDepth uint32, minPowScore uint32, networkName string, rentStructure Storage, tokenSupply string, version int32) *ProtocolParameters {
 	this := ProtocolParameters{}
 	this.Bech32Hrp = bech32Hrp
 	this.BelowMaxDepth = belowMaxDepth
 	this.MinPowScore = minPowScore
 	this.NetworkName = networkName
-	this.RentStructure = rentStructure
+	this.Storage = rentStructure
 	this.TokenSupply = tokenSupply
 	this.Version = version
 	return &this
@@ -154,28 +154,28 @@ func (o *ProtocolParameters) SetNetworkName(v string) {
 	o.NetworkName = v
 }
 
-// GetRentStructure returns the RentStructure field value
-func (o *ProtocolParameters) GetRentStructure() RentStructure {
+// GetRentStructure returns the Storage field value
+func (o *ProtocolParameters) GetRentStructure() Storage {
 	if o == nil {
-		var ret RentStructure
+		var ret Storage
 		return ret
 	}
 
-	return o.RentStructure
+	return o.Storage
 }
 
-// GetRentStructureOk returns a tuple with the RentStructure field value
+// GetRentStructureOk returns a tuple with the Storage field value
 // and a boolean to check if the value has been set.
-func (o *ProtocolParameters) GetRentStructureOk() (*RentStructure, bool) {
+func (o *ProtocolParameters) GetRentStructureOk() (*Storage, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.RentStructure, true
+	return &o.Storage, true
 }
 
 // SetRentStructure sets field value
-func (o *ProtocolParameters) SetRentStructure(v RentStructure) {
-	o.RentStructure = v
+func (o *ProtocolParameters) SetRentStructure(v Storage) {
+	o.Storage = v
 }
 
 // GetTokenSupply returns the TokenSupply field value
@@ -240,7 +240,7 @@ func (o ProtocolParameters) ToMap() (map[string]interface{}, error) {
 	toSerialize["belowMaxDepth"] = o.BelowMaxDepth
 	toSerialize["minPowScore"] = o.MinPowScore
 	toSerialize["networkName"] = o.NetworkName
-	toSerialize["rentStructure"] = o.RentStructure
+	toSerialize["rentStructure"] = o.Storage
 	toSerialize["tokenSupply"] = o.TokenSupply
 	toSerialize["version"] = o.Version
 	return toSerialize, nil

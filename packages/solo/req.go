@@ -419,7 +419,7 @@ func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptoli
 		req.Build(ch.ChainID.AsAddress()),
 		req.nft,
 	)
-	storageDeposit, err := parameters.RentStructure().MinDeposit(out)
+	storageDeposit, err := parameters.Storage().MinDeposit(out)
 	require.NoError(ch.Env.T, err)
 
 	reqDeposit := iotago.BaseToken(0)

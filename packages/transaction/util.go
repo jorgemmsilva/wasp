@@ -151,7 +151,7 @@ func computeRemainderOutputs(
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := parameters.RentStructure().MinDeposit(out)
+		sd, err := parameters.Storage().MinDeposit(out)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +170,7 @@ func computeRemainderOutputs(
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := parameters.RentStructure().MinDeposit(out)
+		sd, err := parameters.Storage().MinDeposit(out)
 		if err != nil {
 			return nil, err
 		}
@@ -226,16 +226,9 @@ func MakeAnchorTransaction(tx *iotago.Transaction, sig iotago.Signature) *iotago
 func CreateAndSignTx(
 	wallet *cryptolib.KeyPair,
 	inputs iotago.TxEssenceInputs,
-	inputsCommitment []byte,
 	outputs iotago.TxEssenceOutputs,
 	creationSlot iotago.SlotIndex,
 ) (*iotago.SignedTransaction, error) {
-	panic("TODO: is ordering still needed?")
-	// IMPORTANT: make sure inputs and outputs are correctly ordered before
-	// signing, otherwise it might fail when it reaches the node, since the PoW
-	// that would order the tx is done after the signing, so if we don't order
-	// now, we might sign an invalid TX
-
 	tx := &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
@@ -246,10 +239,7 @@ func CreateAndSignTx(
 		Outputs: outputs,
 	}
 
-	sigs, err := tx.Sign(
-		inputsCommitment,
-		wallet.GetPrivateKey().AddressKeysForEd25519Address(wallet.Address()),
-	)
+	sigs, err := tx.Sign(wallet.GetPrivateKey().AddressKeysForEd25519Address(wallet.Address()))
 	if err != nil {
 		return nil, err
 	}

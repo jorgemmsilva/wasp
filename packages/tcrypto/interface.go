@@ -12,7 +12,6 @@ import (
 	"go.dedis.ch/kyber/v3/sign/dss"
 	"go.dedis.ch/kyber/v3/sign/tbls"
 
-	"github.com/iotaledger/hive.go/crypto/bls"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/onchangemap"
@@ -59,7 +58,7 @@ type DKShare interface {
 	BLSPublicShares() []kyber.Point
 	BLSSignShare(data []byte) (tbls.SigShare, error)
 	BLSVerifySigShare(data []byte, sigshare tbls.SigShare) error
-	BLSRecoverMasterSignature(sigShares [][]byte, data []byte) (*bls.SignatureWithPublicKey, error)
+	// TODO BLSRecoverMasterSignature(sigShares [][]byte, data []byte) (*bls.SignatureWithPublicKey, error)
 	BLSVerifyMasterSignature(data, signature []byte) error
 	BLSSign(data []byte) ([]byte, error)                        // Non-threshold variant.
 	BLSVerify(signer kyber.Point, data, signature []byte) error // Non-threshold variant.

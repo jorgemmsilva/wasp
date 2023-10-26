@@ -70,12 +70,12 @@ func (h *magicContractHandler) Send(
 	}
 	if sendOptions.Timelock > 0 {
 		req.UnlockConditions = append(req.UnlockConditions, &iotago.TimelockUnlockCondition{
-			SlotIndex: iotago.SlotIndex(sendOptions.Timelock),
+			Slot: iotago.SlotIndex(sendOptions.Timelock),
 		})
 	}
 	if sendOptions.Expiration.Time > 0 {
 		req.UnlockConditions = append(req.UnlockConditions, &iotago.ExpirationUnlockCondition{
-			SlotIndex:     iotago.SlotIndex(sendOptions.Expiration.Time),
+			Slot:          iotago.SlotIndex(sendOptions.Expiration.Time),
 			ReturnAddress: sendOptions.Expiration.ReturnAddress.MustUnwrap(),
 		})
 	}

@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/iancoleman/orderedmap"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/share"
 	"go.dedis.ch/kyber/v3/sign/bdn"
@@ -20,9 +21,6 @@ import (
 	"go.dedis.ch/kyber/v3/sign/tbls"
 	"go.dedis.ch/kyber/v3/suites"
 
-	"github.com/iancoleman/orderedmap"
-
-	"github.com/iotaledger/hive.go/crypto/bls"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -523,6 +521,8 @@ func (s *dkShareImpl) BLSVerifySigShare(data []byte, sigshare tbls.SigShare) err
 
 // BLSRecoverFullSignature generates (recovers) master signature from partial sigshares.
 // returns signature as defined in the value Tangle
+/*
+	TODO: package bls no longer exists
 func (s *dkShareImpl) BLSRecoverMasterSignature(sigShares [][]byte, data []byte) (*bls.SignatureWithPublicKey, error) {
 	var err error
 	var recoveredSignatureBin []byte
@@ -543,6 +543,7 @@ func (s *dkShareImpl) BLSRecoverMasterSignature(sigShares [][]byte, data []byte)
 	ret := bls.NewSignatureWithPublicKey(bls.PublicKey{Point: s.blsSharedPublic}, sig)
 	return &ret, nil
 }
+*/
 
 // BLSVerifyMasterSignature checks signature against master public key
 // NOTE: Not used. // TODO: Has to be used.

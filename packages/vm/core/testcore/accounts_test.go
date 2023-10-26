@@ -504,7 +504,7 @@ func TestAccountBalances(t *testing.T) {
 
 		bi := ch.GetLatestBlockInfo()
 
-		anchorSD := parameters.RentStructure().MinDeposit(anchor)
+		anchorSD := parameters.Storage().MinDeposit(anchor)
 		require.EqualValues(t,
 			anchor.Deposit(),
 			anchorSD+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(senderAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
@@ -600,7 +600,7 @@ func TestDepositBaseTokens(t *testing.T) {
 			require.NoError(t, err)
 			rec := v.ch.LastReceipt()
 
-			storageDeposit := parameters.RentStructure().MinDeposit(tx.Outputs[0])
+			storageDeposit := parameters.Storage().MinDeposit(tx.Outputs[0])
 			t.Logf("byteCost = %d", storageDeposit)
 
 			adjusted := addBaseTokens
@@ -972,8 +972,9 @@ func TestMintedTokensBurn(t *testing.T) {
 	}
 
 	essence := &iotago.TransactionEssence{
-		NetworkID: tpkg.TestNetworkID,
-		Inputs:    inputIDs.UTXOInputs(),
+		NetworkID:    tpkg.TestNetworkID,
+		CreationSlot: creationSlot,
+		Inputs:       inputIDs.UTXOInputs(),
 		Outputs: iotago.Outputs{
 			&iotago.AccountOutput{
 				Amount:         OneMi,

@@ -9,8 +9,8 @@ type NodeOwnerCertificateResponse struct {
 	Certificate string `json:"certificate" swagger:"desc(Certificate stating the ownership. (Hex)),required"`
 }
 
-// RentStructure defines the parameters of rent cost calculations on objects which take node resources.
-type RentStructure struct {
+// Storage defines the parameters of rent cost calculations on objects which take node resources.
+type Storage struct {
 	// Defines the rent of a single virtual byte denoted in IOTA tokens.
 	VByteCost uint32 `json:"vByteCost" swagger:"desc(The virtual byte cost),required,min(1)"`
 	// Defines the factor to be used for data only fields.
@@ -31,7 +31,7 @@ type ProtocolParameters struct {
 	// The below max depth parameter of the network.
 	BelowMaxDepth uint8 `json:"belowMaxDepth" swagger:"desc(The networks max depth),required,min(1)"`
 	// The rent structure used by given node/network.
-	RentStructure RentStructure `json:"rentStructure" swagger:"desc(The rent structure of the protocol),required"`
+	Storage Storage `json:"rentStructure" swagger:"desc(The rent structure of the protocol),required"`
 	// TokenSupply defines the current token supply on the network.
 	TokenSupply string `json:"tokenSupply" swagger:"desc(The token supply),required"`
 }
@@ -51,10 +51,10 @@ func MapL1Params(l1 *parameters.L1Params) *L1Params {
 			NetworkName: l1.Protocol.NetworkName,
 			Bech32HRP:   l1.Protocol.Bech32HRP,
 			MinPoWScore: l1.Protocol.MinPoWScore,
-			RentStructure: RentStructure{
-				VByteCost:    l1.Protocol.RentStructure.VByteCost,
-				VBFactorData: l1.Protocol.RentStructure.VBFactorData,
-				VBFactorKey:  l1.Protocol.RentStructure.VBFactorKey,
+			Storage: Storage{
+				VByteCost:    l1.Protocol.Storage.VByteCost,
+				VBFactorData: l1.Protocol.Storage.VBFactorData,
+				VBFactorKey:  l1.Protocol.Storage.VBFactorKey,
 			},
 			TokenSupply: iotago.EncodeUint64(l1.Protocol.TokenSupply),
 		},

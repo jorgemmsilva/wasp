@@ -129,12 +129,11 @@ func (reqctx *requestContext) checkReasonUnlockable() error {
 	}
 	now := reqctx.vm.task.Time.SlotIndex
 	params := parameters.Protocol()
-	ok = output.UnlockableBy(
+	if !output.UnlockableBy(
 		reqctx.vm.task.AnchorOutput.AccountID.ToAddress(),
 		now+params.MaxCommittableAge(),
 		now+params.MinCommittableAge(),
-	)
-	if !ok {
+	) {
 		return errors.New("output is not unlockable")
 	}
 	return nil

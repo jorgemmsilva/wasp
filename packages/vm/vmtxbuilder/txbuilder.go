@@ -170,7 +170,7 @@ func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerReques
 func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 	defer txb.assertLimits()
 
-	storageDeposit, err := parameters.RentStructure().MinDeposit(o)
+	storageDeposit, err := parameters.Storage().MinDeposit(o)
 	if err != nil {
 		panic(err)
 	}
@@ -197,18 +197,17 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 }
 
 // BuildTransactionEssence builds transaction essence from tx builder data
-func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte) *iotago.Transaction {
-	inputs, inputIDs := txb.inputs()
-	essence := &iotago.Transaction{
+func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) *iotago.Transaction {
+	_, inputIDs := txb.inputs()
+	return &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
-			Inputs: inputIDs.UTXOInputs(),
+			CreationSlot: creationSlot,
+			NetworkID:    parameters.Protocol().NetworkID(),
+			Inputs:       inputIDs.UTXOInputs(),
 		},
 		Outputs: txb.outputs(stateMetadata),
 	}
-	inputsCommitment := inputIDs.OrderedSet(inputs).MustCommitment(parameters.L1API())
-	copy(essence.InputsCommitment[:], inputsCommitment)
-	return essence
 }
 
 // inputIDs generates a deterministic list of inputs for the transaction essence
@@ -299,7 +298,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *i
 		)
 	}
 
-	minSD, err := parameters.RentStructure().MinDeposit(anchorOutput)
+	minSD, err := parameters.Storage().MinDeposit(anchorOutput)
 	if err != nil {
 		panic(err)
 	}

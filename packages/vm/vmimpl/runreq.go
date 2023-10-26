@@ -15,7 +15,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
@@ -58,7 +57,7 @@ func (vmctx *vmContext) runRequest(req isc.Request, requestIndex uint16, mainten
 
 	reqctx.uncommittedState.Set(
 		kv.Key(coreutil.StatePrefixSlotIndex),
-		lo.Must(parameters.L1API().Encode(vmctx.stateDraft.BlockTime().SlotIndex)),
+		lo.Must(vmctx.stateDraft.BlockTime().SlotIndex.Bytes()),
 	)
 
 	if err = reqctx.earlyCheckReasonToSkip(maintenanceMode); err != nil {

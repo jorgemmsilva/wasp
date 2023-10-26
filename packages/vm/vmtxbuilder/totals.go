@@ -29,7 +29,7 @@ type TransactionTotals struct {
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
-	anchorInputSD, err := parameters.RentStructure().MinDeposit(txb.anchorOutput)
+	anchorInputSD, err := parameters.Storage().MinDeposit(txb.anchorOutput)
 	if err != nil {
 		panic(err)
 	}
@@ -86,7 +86,7 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	anchorOutputSD, err := parameters.RentStructure().MinDeposit(txb.resultAnchorOutput)
+	anchorOutputSD, err := parameters.Storage().MinDeposit(txb.resultAnchorOutput)
 	if err != nil {
 		panic(err)
 	}

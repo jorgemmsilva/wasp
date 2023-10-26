@@ -9,7 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/iotaledger/hive.go/crypto/identity"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -89,13 +88,10 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 			res.RotationAddress,
 			isc.NewAccountOutputWithID(res.Task.AnchorOutput, res.Task.AnchorOutputID),
 			res.Task.Time.SlotIndex,
-			identity.ID{},
-			identity.ID{},
 		)
 		require.NoError(ch.Env.T, err)
 	}
 	sigs, err := unsignedTx.Sign(
-		unsignedTx.InputsCommitment[:],
 		ch.StateControllerKeyPair.GetPrivateKey().AddressKeys(ch.StateControllerAddress),
 	)
 	require.NoError(ch.Env.T, err)

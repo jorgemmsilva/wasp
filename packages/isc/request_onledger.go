@@ -126,7 +126,7 @@ func (req *onLedgerRequestData) Expiry() (iotago.SlotIndex, iotago.Address, bool
 	if expiration == nil {
 		return 0, nil, false
 	}
-	return expiration.SlotIndex, expiration.ReturnAddress, false
+	return expiration.Slot, expiration.ReturnAddress, false
 }
 
 func (req *onLedgerRequestData) Features() Features {
@@ -267,7 +267,7 @@ func (req *onLedgerRequestData) TimeLock() (iotago.SlotIndex, bool) {
 	if timelock == nil {
 		return 0, false
 	}
-	return timelock.SlotIndex, true
+	return timelock.Slot, true
 }
 
 // region RetryOnLedgerRequest //////////////////////////////////////////////////////////////////

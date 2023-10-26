@@ -205,7 +205,6 @@ type SendMetadata struct {
 type Utils interface {
 	Hashing() Hashing
 	ED25519() ED25519
-	BLS() BLS
 }
 
 type Hashing interface {
@@ -218,12 +217,6 @@ type Hashing interface {
 type ED25519 interface {
 	ValidSignature(data []byte, pubKey []byte, signature []byte) bool
 	AddressFromPublicKey(pubKey []byte) (iotago.Address, error)
-}
-
-type BLS interface {
-	ValidSignature(data []byte, pubKey []byte, signature []byte) bool
-	AddressFromPublicKey(pubKey []byte) (iotago.Address, error)
-	AggregateBLSSignatures(pubKeysBin [][]byte, sigsBin [][]byte) ([]byte, []byte, error)
 }
 
 type EVMTracer struct {

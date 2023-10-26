@@ -33,7 +33,7 @@ func (vmctx *vmContext) stateMetadata(stateCommitment *state.L1Commitment) []byt
 
 func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) *iotago.Transaction {
 	stateMetadata := vmctx.stateMetadata(stateCommitment)
-	essence := vmctx.txbuilder.BuildTransactionEssence(stateMetadata)
+	essence := vmctx.txbuilder.BuildTransactionEssence(stateMetadata, vmctx.task.Time.SlotIndex)
 	if assertTxbuilderBalanced {
 		vmctx.txbuilder.MustBalanced()
 	}

@@ -58,8 +58,8 @@ var L1API = sync.OnceValue(func() iotago.API {
 	return iotago.V3API(L1().Protocol)
 })
 
-func RentStructure() *iotago.RentStructure {
-	return L1API().RentStructure()
+func Storage() *iotago.StorageScoreStructure {
+	return L1API().StorageScoreStructure()
 }
 
 func Protocol() iotago.ProtocolParameters {

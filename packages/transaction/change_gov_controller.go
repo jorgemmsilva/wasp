@@ -5,7 +5,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -49,13 +48,11 @@ func NewChangeGovControllerTx(
 	chainOutput.AccountID = chainID // in case right after mint where outputID is still 0
 
 	inputIDs := iotago.OutputIDs{chainOutputID}
-	inputsCommitment := inputIDs.OrderedSet(utxos).MustCommitment(parameters.L1API())
 	outputs := iotago.TxEssenceOutputs{chainOutput}
 
 	return CreateAndSignTx(
 		wallet,
 		inputIDs.UTXOInputs(),
-		inputsCommitment,
 		outputs,
 		creationSlot,
 	)

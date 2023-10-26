@@ -12,7 +12,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 // stateDraft is the implementation of the StateDraft interface
@@ -42,7 +41,7 @@ func newStateDraft(blockTime isc.BlockTime, prevL1Commitment *L1Commitment, base
 	d := newEmptyStateDraft(prevL1Commitment, baseState)
 	d.Set(kv.Key(coreutil.StatePrefixBlockIndex), codec.EncodeUint32(baseState.BlockIndex()+1))
 	d.Set(kv.Key(coreutil.StatePrefixTimestamp), codec.EncodeTime(blockTime.Timestamp))
-	d.Set(kv.Key(coreutil.StatePrefixSlotIndex), lo.Must(parameters.L1API().Encode(blockTime.SlotIndex)))
+	d.Set(kv.Key(coreutil.StatePrefixSlotIndex), lo.Must(blockTime.SlotIndex.Bytes()))
 	d.Set(kv.Key(coreutil.StatePrefixPrevL1Commitment), prevL1Commitment.Bytes())
 	return d
 }

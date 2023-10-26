@@ -178,7 +178,7 @@ func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotag
 
 	mana, err := vm.TotalManaIn(
 		u.api.ManaDecayProvider(),
-		u.api.RentStructure(),
+		u.api.StorageScoreStructure(),
 		u.slotIndex,
 		vm.InputSet{inputID: input},
 	)

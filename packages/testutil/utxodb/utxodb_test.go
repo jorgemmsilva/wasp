@@ -53,7 +53,7 @@ func TestDoubleSpend(t *testing.T) {
 	inputID := iotago.OutputIDFromTransactionIDAndIndex(tx1ID, 0)
 	mana, err := vm.TotalManaIn(
 		u.api.ManaDecayProvider(),
-		u.api.RentStructure(),
+		u.api.Storage(),
 		u.slotIndex,
 		vm.InputSet{inputID: input},
 	)

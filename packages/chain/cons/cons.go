@@ -60,7 +60,6 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 
-	"github.com/iotaledger/hive.go/crypto/identity"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/cons/bp"
@@ -112,11 +111,11 @@ type Output struct {
 	//
 	// Requests for other components.
 	NeedMempoolProposal       *isc.AccountOutputWithID // Requests for the mempool are needed for this Base Alias Output.
-	NeedMempoolRequests       []*isc.RequestRef      // Request payloads are needed from mempool for this IDs/Hash.
+	NeedMempoolRequests       []*isc.RequestRef        // Request payloads are needed from mempool for this IDs/Hash.
 	NeedStateMgrStateProposal *isc.AccountOutputWithID // Query for a proposal for Virtual State (it will go to the batch proposal).
 	NeedStateMgrDecidedState  *isc.AccountOutputWithID // Query for a decided Virtual State to be used by VM.
-	NeedStateMgrSaveBlock     state.StateDraft       // Ask StateMgr to save the produced block.
-	NeedVMResult              *vm.VMTask             // VM Result is needed for this (agreed) batch.
+	NeedStateMgrSaveBlock     state.StateDraft         // Ask StateMgr to save the produced block.
+	NeedVMResult              *vm.VMTask               // VM Result is needed for this (agreed) batch.
 	//
 	// Following is the final result.
 	// All the fields are filled, if State == Completed.
@@ -124,10 +123,10 @@ type Output struct {
 }
 
 type Result struct {
-	Transaction     *iotago.Transaction    // The TX for committing the block.
-	BaseAccountOutput iotago.OutputID        // AO consumed in the TX.
+	Transaction       *iotago.Transaction      // The TX for committing the block.
+	BaseAccountOutput iotago.OutputID          // AO consumed in the TX.
 	NextAccountOutput *isc.AccountOutputWithID // AO produced in the TX.
-	Block           state.Block            // The state diff produced.
+	Block             state.Block              // The state diff produced.
 }
 
 func (r *Result) String() string {
@@ -586,8 +585,6 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 			vmResult.RotationAddress,
 			isc.NewAccountOutputWithID(vmResult.Task.AnchorOutput, vmResult.Task.AnchorOutputID),
 			vmResult.Task.TimeAssumption,
-			identity.ID{},
-			identity.ID{},
 		)
 		if err != nil {
 			c.log.Warnf("Cannot create rotation TX, failed to make TX essence: %w", err)
@@ -635,10 +632,10 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 		panic(fmt.Errorf("cannot get AccountOutput from produced TX: %w", err))
 	}
 	c.output.Result = &Result{
-		Transaction:     tx,
+		Transaction:       tx,
 		BaseAccountOutput: vmResult.Task.AnchorOutputID,
 		NextAccountOutput: chained,
-		Block:           block,
+		Block:             block,
 	}
 	c.output.Status = Completed
 	c.log.Infof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.AnchorOutputID.ToHex())

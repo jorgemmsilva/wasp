@@ -23,7 +23,7 @@ func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestPara
 		contractIdentity,
 		par,
 	)
-	sd, err := parameters.RentStructure().MinDeposit(out)
+	sd, err := parameters.Storage().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}

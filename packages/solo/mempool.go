@@ -70,12 +70,12 @@ func (mi *mempoolImpl) RequestBatchProposal() []isc.Request {
 			reqUnlockCondSet := request.Output().UnlockConditionSet()
 			timeLock := reqUnlockCondSet.Timelock()
 			expiration := reqUnlockCondSet.Expiration()
-			if expiration != nil && now.SlotIndex >= expiration.SlotIndex {
+			if expiration != nil && now.SlotIndex >= expiration.Slot {
 				// can never be processed, just reject
 				delete(mi.requests, rid)
 				continue
 			}
-			if timeLock == nil || timeLock.SlotIndex <= now.SlotIndex {
+			if timeLock == nil || timeLock.Slot <= now.SlotIndex {
 				batch = append(batch, request)
 				continue
 			}

@@ -15,24 +15,24 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/dgryski/go-clockpro v0.0.0-20140817124034-edc6d3eeb96e
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.13.2
+	github.com/ethereum/go-ethereum v1.13.4
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/iotaledger/hive.go/app v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/constraints v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/crypto v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/ds v0.0.0-20231010133617-cdbd5387e2af
+	github.com/iotaledger/hive.go/constraints v0.0.0-20231019122130-383150822505
+	github.com/iotaledger/hive.go/crypto v0.0.0-20231019122130-383150822505
+	github.com/iotaledger/hive.go/ds v0.0.0-20231019081410-32f61b05bebe
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/lo v0.0.0-20231010133617-cdbd5387e2af
+	github.com/iotaledger/hive.go/lo v0.0.0-20231019122130-383150822505
 	github.com/iotaledger/hive.go/logger v0.0.0-20231010133617-cdbd5387e2af
 	github.com/iotaledger/hive.go/objectstorage v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/runtime v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231010133617-cdbd5387e2af
+	github.com/iotaledger/hive.go/runtime v0.0.0-20231019122130-383150822505
+	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231019122130-383150822505
 	github.com/iotaledger/hive.go/web v0.0.0-20231010133617-cdbd5387e2af
 	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231005201410-a7eb4f4ced96
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231005201531-0b3ecef60a91
-	github.com/iotaledger/iota.go/v4 v4.0.0-20231009190623-e69513de9de6
+	github.com/iotaledger/iota.go/v4 v4.0.0-20231026103349-c270c7ed4d27
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
 	github.com/labstack/echo/v4 v4.11.2
@@ -112,9 +112,9 @@ require (
 	github.com/holiman/uint256 v1.2.3 // indirect
 	github.com/huin/goupnp v1.2.0 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
-	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231005142627-86973b2edb3b // indirect
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20231005142627-86973b2edb3b // indirect
-	github.com/iotaledger/hive.go/stringify v0.0.0-20231005142627-86973b2edb3b // indirect
+	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231019122130-383150822505 // indirect
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20231019122130-383150822505 // indirect
+	github.com/iotaledger/hive.go/stringify v0.0.0-20231019122130-383150822505 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect

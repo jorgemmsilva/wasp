@@ -14,11 +14,11 @@ import (
 	"encoding/json"
 )
 
-// checks if the RentStructure type satisfies the MappedNullable interface at compile time
-var _ MappedNullable = &RentStructure{}
+// checks if the Storage type satisfies the MappedNullable interface at compile time
+var _ MappedNullable = &Storage{}
 
-// RentStructure struct for RentStructure
-type RentStructure struct {
+// Storage struct for Storage
+type Storage struct {
 	// The virtual byte cost
 	VByteCost uint32 `json:"vByteCost"`
 	// The virtual byte factor for data fields
@@ -27,28 +27,28 @@ type RentStructure struct {
 	VByteFactorKey int32 `json:"vByteFactorKey"`
 }
 
-// NewRentStructure instantiates a new RentStructure object
+// NewRentStructure instantiates a new Storage object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewRentStructure(vByteCost uint32, vByteFactorData int32, vByteFactorKey int32) *RentStructure {
-	this := RentStructure{}
+func NewRentStructure(vByteCost uint32, vByteFactorData int32, vByteFactorKey int32) *Storage {
+	this := Storage{}
 	this.VByteCost = vByteCost
 	this.VByteFactorData = vByteFactorData
 	this.VByteFactorKey = vByteFactorKey
 	return &this
 }
 
-// NewRentStructureWithDefaults instantiates a new RentStructure object
+// NewRentStructureWithDefaults instantiates a new Storage object
 // This constructor will only assign default values to properties that have it defined,
 // but it doesn't guarantee that properties required by API are set
-func NewRentStructureWithDefaults() *RentStructure {
-	this := RentStructure{}
+func NewRentStructureWithDefaults() *Storage {
+	this := Storage{}
 	return &this
 }
 
 // GetVByteCost returns the VByteCost field value
-func (o *RentStructure) GetVByteCost() uint32 {
+func (o *Storage) GetVByteCost() uint32 {
 	if o == nil {
 		var ret uint32
 		return ret
@@ -59,7 +59,7 @@ func (o *RentStructure) GetVByteCost() uint32 {
 
 // GetVByteCostOk returns a tuple with the VByteCost field value
 // and a boolean to check if the value has been set.
-func (o *RentStructure) GetVByteCostOk() (*uint32, bool) {
+func (o *Storage) GetVByteCostOk() (*uint32, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -67,12 +67,12 @@ func (o *RentStructure) GetVByteCostOk() (*uint32, bool) {
 }
 
 // SetVByteCost sets field value
-func (o *RentStructure) SetVByteCost(v uint32) {
+func (o *Storage) SetVByteCost(v uint32) {
 	o.VByteCost = v
 }
 
 // GetVByteFactorData returns the VByteFactorData field value
-func (o *RentStructure) GetVByteFactorData() int32 {
+func (o *Storage) GetVByteFactorData() int32 {
 	if o == nil {
 		var ret int32
 		return ret
@@ -83,7 +83,7 @@ func (o *RentStructure) GetVByteFactorData() int32 {
 
 // GetVByteFactorDataOk returns a tuple with the VByteFactorData field value
 // and a boolean to check if the value has been set.
-func (o *RentStructure) GetVByteFactorDataOk() (*int32, bool) {
+func (o *Storage) GetVByteFactorDataOk() (*int32, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -91,12 +91,12 @@ func (o *RentStructure) GetVByteFactorDataOk() (*int32, bool) {
 }
 
 // SetVByteFactorData sets field value
-func (o *RentStructure) SetVByteFactorData(v int32) {
+func (o *Storage) SetVByteFactorData(v int32) {
 	o.VByteFactorData = v
 }
 
 // GetVByteFactorKey returns the VByteFactorKey field value
-func (o *RentStructure) GetVByteFactorKey() int32 {
+func (o *Storage) GetVByteFactorKey() int32 {
 	if o == nil {
 		var ret int32
 		return ret
@@ -107,7 +107,7 @@ func (o *RentStructure) GetVByteFactorKey() int32 {
 
 // GetVByteFactorKeyOk returns a tuple with the VByteFactorKey field value
 // and a boolean to check if the value has been set.
-func (o *RentStructure) GetVByteFactorKeyOk() (*int32, bool) {
+func (o *Storage) GetVByteFactorKeyOk() (*int32, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -115,11 +115,11 @@ func (o *RentStructure) GetVByteFactorKeyOk() (*int32, bool) {
 }
 
 // SetVByteFactorKey sets field value
-func (o *RentStructure) SetVByteFactorKey(v int32) {
+func (o *Storage) SetVByteFactorKey(v int32) {
 	o.VByteFactorKey = v
 }
 
-func (o RentStructure) MarshalJSON() ([]byte, error) {
+func (o Storage) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
@@ -127,7 +127,7 @@ func (o RentStructure) MarshalJSON() ([]byte, error) {
 	return json.Marshal(toSerialize)
 }
 
-func (o RentStructure) ToMap() (map[string]interface{}, error) {
+func (o Storage) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["vByteCost"] = o.VByteCost
 	toSerialize["vByteFactorData"] = o.VByteFactorData
@@ -136,15 +136,15 @@ func (o RentStructure) ToMap() (map[string]interface{}, error) {
 }
 
 type NullableRentStructure struct {
-	value *RentStructure
+	value *Storage
 	isSet bool
 }
 
-func (v NullableRentStructure) Get() *RentStructure {
+func (v NullableRentStructure) Get() *Storage {
 	return v.value
 }
 
-func (v *NullableRentStructure) Set(val *RentStructure) {
+func (v *NullableRentStructure) Set(val *Storage) {
 	v.value = val
 	v.isSet = true
 }
@@ -158,7 +158,7 @@ func (v *NullableRentStructure) Unset() {
 	v.isSet = false
 }
 
-func NewNullableRentStructure(val *RentStructure) *NullableRentStructure {
+func NewNullableRentStructure(val *Storage) *NullableRentStructure {
 	return &NullableRentStructure{value: val, isSet: true}
 }
 

@@ -3,11 +3,11 @@ package state
 import (
 	"fmt"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/trie"
 )
 
@@ -62,7 +62,7 @@ func loadBlockTimeFromState(chainState kv.KVStoreReader) (ret isc.BlockTime, err
 	if len(siBin) == 0 { // state is before 2.0 migration
 		return ret, nil
 	}
-	_, err = parameters.L1API().Decode(siBin, &ret.SlotIndex)
+	ret.SlotIndex, _, err = iotago.SlotIndexFromBytes(siBin)
 	return ret, err
 }
 

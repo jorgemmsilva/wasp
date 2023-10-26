@@ -34,7 +34,6 @@ func NewRotateChainStateControllerTx(
 	inputIDs := iotago.OutputIDs{chainOutputID}
 	outSet := iotago.OutputSet{}
 	outSet[chainOutputID] = chainOutput
-	inputsCommitment := inputIDs.OrderedSet(outSet).MustCommitment(parameters.L1API())
 
 	newChainOutput := chainOutput.Clone().(*iotago.AccountOutput)
 	newChainOutput.AccountID = resolvedAccountID
@@ -70,7 +69,6 @@ func NewRotateChainStateControllerTx(
 	return CreateAndSignTx(
 		kp,
 		inputIDs.UTXOInputs(),
-		inputsCommitment,
 		outputs,
 		creationSlot,
 	)

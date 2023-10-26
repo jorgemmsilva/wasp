@@ -317,7 +317,7 @@ func (env *Solo) deployChain(
 
 	db, writeMutex, err := env.chainStateDatabaseManager.ChainStateKVStore(chainID)
 	require.NoError(env.T, err)
-	originAOMinSD, err := parameters.RentStructure().MinDeposit(originAO)
+	originAOMinSD, err := parameters.Storage().MinDeposit(originAO)
 	require.NoError(env.T, err)
 	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(db))
 	origin.InitChain(store, initParams, originAO.Amount-originAOMinSD)

@@ -77,7 +77,7 @@ func (n *nativeTokenBalance) add(delta *big.Int) *nativeTokenBalance {
 
 // updateMinSD uptates the resulting output to have the minimum SD
 func (n *nativeTokenBalance) updateMinSD() {
-	minSD, err := parameters.RentStructure().MinDeposit(n.accountingOutput)
+	minSD, err := parameters.Storage().MinDeposit(n.accountingOutput)
 	if err != nil {
 		panic(err)
 	}

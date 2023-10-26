@@ -33,7 +33,7 @@ func NewTransferTransaction(
 		output = AdjustToMinimumStorageDeposit(output)
 	}
 
-	storageDeposit, err := parameters.RentStructure().MinDeposit(output)
+	storageDeposit, err := parameters.Storage().MinDeposit(output)
 	if err != nil {
 		return nil, err
 	}
@@ -54,12 +54,9 @@ func NewTransferTransaction(
 
 	outputs := append(iotago.TxEssenceOutputs{output}, remainder...)
 
-	inputsCommitment := inputIDs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API())
-
 	return CreateAndSignTx(
 		senderKeyPair,
 		inputIDs.UTXOInputs(),
-		inputsCommitment,
 		outputs,
 		creationSlot,
 	)
@@ -85,7 +82,7 @@ func NewRequestTransaction(
 		out = AdjustToMinimumStorageDeposit(out)
 	}
 
-	storageDeposit, err := parameters.RentStructure().MinDeposit(out)
+	storageDeposit, err := parameters.Storage().MinDeposit(out)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +114,9 @@ func NewRequestTransaction(
 
 	outputs = append(outputs, remainder...)
 
-	inputsCommitment := inputIDs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API())
 	return CreateAndSignTx(
 		senderKeyPair,
 		inputIDs.UTXOInputs(),
-		inputsCommitment,
 		outputs,
 		creationSlot,
 	)

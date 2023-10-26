@@ -41,7 +41,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 		}}
 	}
 	var err error
-	f.Amount, err = parameters.RentStructure().MinDeposit(f)
+	f.Amount, err = parameters.Storage().MinDeposit(f)
 	if err != nil {
 		panic(err)
 	}

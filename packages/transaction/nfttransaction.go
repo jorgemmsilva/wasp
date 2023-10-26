@@ -25,7 +25,7 @@ func NewMintNFTsTransaction(
 	nftsOut := make(map[iotago.NFTID]bool)
 
 	addOutput := func(out *iotago.NFTOutput) {
-		d, err := parameters.RentStructure().MinDeposit(out)
+		d, err := parameters.Storage().MinDeposit(out)
 		if err != nil {
 			panic(err)
 		}
@@ -70,11 +70,9 @@ func NewMintNFTsTransaction(
 	}
 	outputs = append(outputs, remainder...)
 
-	inputsCommitment := inputIDs.OrderedSet(unspentOutputs).MustCommitment(parameters.L1API())
 	return CreateAndSignTx(
 		issuerKeyPair,
 		inputIDs.UTXOInputs(),
-		inputsCommitment,
 		outputs,
 		creationSlot,
 	)

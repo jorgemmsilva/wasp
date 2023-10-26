@@ -34,12 +34,12 @@ func (ch *Chain) L2Accounts() []isc.AgentID {
 	return ret
 }
 
-func (ch *Chain) parseAccountBalance(d dict.Dict, err error) *isc.Assets {
+func (ch *Chain) parseAccountBalance(d dict.Dict, err error) *isc.FungibleTokens {
 	require.NoError(ch.Env.T, err)
 	if d.IsEmpty() {
-		return isc.NewEmptyAssets()
+		return isc.NewEmptyFungibleTokens()
 	}
-	ret, err := isc.AssetsFromDict(d)
+	ret, err := isc.FungibleTokensFromDict(d)
 	require.NoError(ch.Env.T, err)
 	return ret
 }
@@ -78,7 +78,7 @@ func (ch *Chain) L2AssetsAtStateIndex(agentID isc.AgentID, stateIndex uint32) *i
 	require.NoError(ch.Env.T, err)
 	assets := ch.parseAccountBalance(
 		ch.CallViewAtState(chainState, accounts.Contract.Name, accounts.ViewBalance.Name, accounts.ParamAgentID, agentID),
-	)
+	).ToAssets()
 	assets.NFTs = ch.L2NFTs(agentID)
 	return assets
 }
@@ -119,7 +119,7 @@ func (ch *Chain) L2CommonAccountNativeTokens(nativeTokenID iotago.NativeTokenID)
 }
 
 // L2TotalAssets return total sum of ftokens contained in the on-chain accounts
-func (ch *Chain) L2TotalAssets() *isc.Assets {
+func (ch *Chain) L2TotalAssets() *isc.FungibleTokens {
 	return ch.parseAccountBalance(
 		ch.CallView(accounts.Contract.Name, accounts.ViewTotalAssets.Name),
 	)
@@ -386,7 +386,7 @@ func (ch *Chain) SendFromL1ToL2Account(totalBaseTokens iotago.BaseToken, toSend 
 		NewCallParams(accounts.Contract.Name, accounts.FuncTransferAllowanceTo.Name,
 			accounts.ParamAgentID, target,
 		).
-			AddFungibleTokens(sumAssets).
+			AddAssets(sumAssets).
 			AddAllowance(toSend).
 			WithGasBudget(math.MaxUint64),
 		user,

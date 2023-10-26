@@ -174,7 +174,7 @@ func (a *Assets) AddNFTs(nfts ...iotago.NFTID) *Assets {
 	return a
 }
 
-func (a *Assets) AmountNativeToken(nativeTokenID iotago.NativeTokenID) *big.Int {
+func (a *FungibleTokens) AmountNativeToken(nativeTokenID iotago.NativeTokenID) *big.Int {
 	for _, t := range a.NativeTokens {
 		if t.ID == nativeTokenID {
 			return t.Amount

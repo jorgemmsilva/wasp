@@ -60,7 +60,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 		AnchorOutput:       anchorOutput.GetAccountOutput(),
 		AnchorOutputID:     anchorOutput.OutputID(),
 		Requests:           reqs,
-		SlotIndex:          ch.Env.SlotIndex(),
+		Time:               ch.Env.BlockTime(),
 		Store:              ch.store,
 		Entropy:            hashing.PseudoRandomHash(nil),
 		ValidatorFeeTarget: ch.ValidatorFeeTarget,
@@ -82,16 +82,13 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 
 	res := ch.runTaskNoLock(reqs, false)
 
-	var unsignedTx *iotago.Transaction
-	if res.RotationAddress == nil {
-		unsignedTx = res.Transaction
-		copy(unsignedTx.InputsCommitment[:], res.InputsCommitment)
-	} else {
+	unsignedTx := res.Transaction
+	if res.RotationAddress != nil {
 		var err error
 		unsignedTx, err = rotate.MakeRotateStateControllerTransaction(
 			res.RotationAddress,
 			isc.NewAccountOutputWithID(res.Task.AnchorOutput, res.Task.AnchorOutputID),
-			res.Task.SlotIndex,
+			res.Task.Time.SlotIndex,
 			identity.ID{},
 			identity.ID{},
 		)

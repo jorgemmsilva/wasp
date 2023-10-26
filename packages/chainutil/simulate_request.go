@@ -6,7 +6,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
@@ -19,7 +18,7 @@ func SimulateRequest(
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
-	blockTime := vm.Time{
+	blockTime := isc.BlockTime{
 		SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
 		Timestamp: time.Now(),
 	}

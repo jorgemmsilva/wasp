@@ -5,13 +5,12 @@ import (
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/vm"
 )
 
 func EVMTraceTransaction(
 	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime vm.Time,
+	blockTime isc.BlockTime,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
 	tracer tracers.Tracer,

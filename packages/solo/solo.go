@@ -387,7 +387,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    env.logger.Named(chData.Name),
 		metrics:                metrics.NewChainMetricsProvider().GetChainMetrics(chData.ChainID),
-		mempool:                newMempool(env.utxoDB.SlotIndex, chData.ChainID),
+		mempool:                newMempool(env.BlockTime, chData.ChainID),
 		migrationScheme:        allmigrations.DefaultScheme,
 	}
 	env.chains[chData.ChainID] = ch

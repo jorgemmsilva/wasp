@@ -16,7 +16,7 @@ import (
 func runISCTask(
 	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime vm.Time,
+	blockTime isc.BlockTime,
 	reqs []isc.Request,
 	estimateGasMode bool,
 	evmTracer *isc.EVMTracer,
@@ -45,7 +45,7 @@ func runISCTask(
 func runISCRequest(
 	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime vm.Time,
+	blockTime isc.BlockTime,
 	req isc.Request,
 	estimateGasMode bool,
 ) (*vm.RequestResult, error) {

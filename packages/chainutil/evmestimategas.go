@@ -47,7 +47,7 @@ func EVMEstimateGas(ch chaintypes.ChainCore, accountOutput *isc.AccountOutputWit
 	executable := func(gas uint64) (failed bool, result *vm.RequestResult, err error) {
 		call.Gas = gas
 		iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
-		blockTime := vm.Time{
+		blockTime := isc.BlockTime{
 			SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
 			Timestamp: time.Now(),
 		}

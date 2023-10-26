@@ -32,7 +32,7 @@ type CallParams struct {
 	target     isc.Hname
 	epName     string
 	entryPoint isc.Hname
-	ftokens    *isc.Assets // ignored off-ledger
+	assets     *isc.Assets // ignored off-ledger
 	nft        *isc.NFT
 	allowance  *isc.Assets
 	gasBudget  uint64
@@ -48,7 +48,7 @@ type CallParams struct {
 //   - 'params' is either a dict.Dict, or a sequence of pairs 'paramName', 'paramValue' which constitute call parameters
 //     The 'paramName' must be a string and 'paramValue' must different types (encoded based on type)
 //
-// With the WithTransfers the CallParams structure may be complemented with attached ftokens
+// With the WithTransfers the CallParams structure may be complemented with attached assets
 // sent together with the request
 func NewCallParams(scName, funName string, params ...interface{}) *CallParams {
 	return CallParamsFromDict(scName, funName, parseParams(params))
@@ -95,9 +95,7 @@ func (r *CallParams) AddAllowanceNativeTokensVect(nativeTokens ...*iotago.Native
 	if r.allowance == nil {
 		r.allowance = isc.NewEmptyAssets()
 	}
-	r.allowance.Add(&isc.Assets{
-		NativeTokens: nativeTokens,
-	})
+	r.allowance.Add(isc.NewAssets(0, nativeTokens))
 	return r
 }
 
@@ -105,12 +103,10 @@ func (r *CallParams) AddAllowanceNativeTokens(nativeTokenID iotago.NativeTokenID
 	if r.allowance == nil {
 		r.allowance = isc.NewEmptyAssets()
 	}
-	r.allowance.Add(&isc.Assets{
-		NativeTokens: []*iotago.NativeTokenFeature{{
-			ID:     nativeTokenID,
-			Amount: util.ToBigInt(amount),
-		}},
-	})
+	r.allowance.Add(isc.NewAssets(0, []*iotago.NativeTokenFeature{{
+		ID:     nativeTokenID,
+		Amount: util.ToBigInt(amount),
+	}}))
 	return r
 }
 
@@ -119,36 +115,28 @@ func (r *CallParams) AddAllowanceNFTs(nfts ...iotago.NFTID) *CallParams {
 }
 
 func (r *CallParams) WithFungibleTokens(assets *isc.Assets) *CallParams {
-	r.ftokens = assets.Clone()
+	r.assets = assets.Clone()
 	return r
 }
 
-func (r *CallParams) AddFungibleTokens(assets *isc.Assets) *CallParams {
-	if r.ftokens == nil {
-		r.ftokens = assets.Clone()
+func (r *CallParams) AddAssets(assets *isc.Assets) *CallParams {
+	if r.assets == nil {
+		r.assets = assets.Clone()
 	} else {
-		r.ftokens.Add(assets)
+		r.assets.Add(assets)
 	}
 	return r
 }
 
 func (r *CallParams) AddBaseTokens(amount iotago.BaseToken) *CallParams {
-	return r.AddFungibleTokens(isc.NewAssets(amount, nil))
-}
-
-func (r *CallParams) AddNativeTokensVect(nativeTokens ...*iotago.NativeTokenFeature) *CallParams {
-	return r.AddFungibleTokens(&isc.Assets{
-		NativeTokens: nativeTokens,
-	})
+	return r.AddAssets(isc.NewAssets(amount, nil))
 }
 
 func (r *CallParams) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *CallParams {
-	return r.AddFungibleTokens(&isc.Assets{
-		NativeTokens: []*iotago.NativeTokenFeature{{
-			ID:     nativeTokenID,
-			Amount: util.ToBigInt(amount),
-		}},
-	})
+	return r.AddAssets(isc.NewAssets(0, []*iotago.NativeTokenFeature{{
+		ID:     nativeTokenID,
+		Amount: util.ToBigInt(amount),
+	}}))
 }
 
 // Adds an nft to be sent (only applicable when the call is made via on-ledger request)
@@ -194,7 +182,7 @@ func (r *CallParams) NewRequestOffLedger(ch *Chain, keyPair *cryptolib.KeyPair) 
 func (r *CallParams) Build(targetAddress iotago.Address) *isc.RequestParameters {
 	return &isc.RequestParameters{
 		TargetAddress: targetAddress,
-		Assets:        r.ftokens,
+		Assets:        r.assets,
 		Metadata: &isc.SendMetadata{
 			TargetContract: r.target,
 			EntryPoint:     r.entryPoint,
@@ -435,8 +423,8 @@ func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptoli
 	require.NoError(ch.Env.T, err)
 
 	reqDeposit := iotago.BaseToken(0)
-	if req.ftokens != nil {
-		reqDeposit = req.ftokens.BaseTokens
+	if req.assets != nil {
+		reqDeposit = req.assets.BaseTokens
 	}
 
 	if reqDeposit >= storageDeposit {

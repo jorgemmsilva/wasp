@@ -62,10 +62,10 @@ func (ch *Chain) CheckChain() {
 func (ch *Chain) CheckAccountLedger() {
 	total := ch.L2TotalAssets()
 	accs := ch.L2Accounts()
-	sum := isc.NewEmptyAssets()
+	sum := isc.NewEmptyFungibleTokens()
 	for i := range accs {
 		acc := accs[i]
-		sum.Add(ch.L2Assets(acc))
+		sum.Add(ch.L2Assets(acc).FungibleTokens)
 	}
 	require.True(ch.Env.T, total.Equals(sum))
 	coreacc := isc.NewContractAgentID(ch.ChainID, root.Contract.Hname())

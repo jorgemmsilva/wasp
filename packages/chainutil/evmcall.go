@@ -9,7 +9,6 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
-	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -34,7 +33,7 @@ func EVMCall(
 
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 	// TODO: setting EstimateGasMode = true feels wrong here
-	blockTime := vm.Time{
+	blockTime := isc.BlockTime{
 		SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
 		Timestamp: time.Now(),
 	}

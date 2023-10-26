@@ -81,7 +81,13 @@ func (bfT *BlockFactory) GetChainInitParameters() dict.Dict {
 }
 
 func (bfT *BlockFactory) GetOriginOutput() *isc.AccountOutputWithID {
-	return bfT.GetAccountOutput(origin.L1Commitment(nil, 0))
+	return bfT.GetAccountOutput(origin.L1Commitment(bfT.chainInitParams, 0))
+}
+
+func (bfT *BlockFactory) GetOriginBlock() state.Block {
+	block, err := bfT.store.BlockByTrieRoot(origin.L1Commitment(bfT.chainInitParams, 0).TrieRoot())
+	require.NoError(bfT.t, err)
+	return block
 }
 
 func (bfT *BlockFactory) GetBlocks(

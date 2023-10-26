@@ -74,6 +74,7 @@ const (
 	distShareMaxMsgsPerTick = 100
 	distShareRePublishTick  = 5 * time.Second
 	waitRequestCleanupEvery = 10
+	forceCleanMempoolTick   = 1 * time.Minute
 )
 
 type Mempool interface {
@@ -368,6 +369,7 @@ func (mpi *mempoolImpl) run(ctx context.Context, cleanupFunc context.CancelFunc)
 	debugTicker := time.NewTicker(distShareDebugTick)
 	timeTicker := time.NewTicker(distShareTimeTick)
 	rePublishTicker := time.NewTicker(distShareRePublishTick)
+	forceCleanMempoolTicker := time.NewTicker(forceCleanMempoolTick)
 	for {
 		select {
 		case recv, ok := <-serverNodesUpdatedPipeOutCh:
@@ -388,6 +390,7 @@ func (mpi *mempoolImpl) run(ctx context.Context, cleanupFunc context.CancelFunc)
 				break
 			}
 			mpi.handleConsensusProposal(recv)
+			forceCleanMempoolTicker.Reset(forceCleanMempoolTick) // mempool will be forcebly cleanup if this ticker triggers
 		case recv, ok := <-reqConsensusRequestsPipeOutCh:
 			if !ok {
 				reqConsensusRequestsPipeOutCh = nil
@@ -435,6 +438,8 @@ func (mpi *mempoolImpl) run(ctx context.Context, cleanupFunc context.CancelFunc)
 			mpi.handleDistSyncTimeTick()
 		case <-rePublishTicker.C:
 			mpi.handleRePublishTimeTick()
+		case <-forceCleanMempoolTicker.C:
+			mpi.handleForceCleanMempool()
 		case <-ctx.Done():
 			// mpi.serverNodesUpdatedPipe.Close() // TODO: Causes panic: send on closed channel
 			// mpi.accessNodesUpdatedPipe.Close()
@@ -882,6 +887,17 @@ func (mpi *mempoolImpl) handleRePublishTimeTick() {
 	// 	}
 	// 	return true
 	// })
+}
+
+func (mpi *mempoolImpl) handleForceCleanMempool() {
+	mpi.offLedgerPool.Iterate(func(account string, entries []*OrderedPoolEntry[isc.OffLedgerRequest]) {
+		for _, e := range entries {
+			if time.Since(e.ts) > mpi.ttl && !lo.Some(mpi.consensusInstances, e.proposedFor) {
+				mpi.log.Debugf("handleForceCleanMempool, request TTL expired, removing: %s", e.req.ID().String())
+				mpi.offLedgerPool.Remove(e.req)
+			}
+		}
+	})
 }
 
 func (mpi *mempoolImpl) tryReAddRequest(req isc.Request) {

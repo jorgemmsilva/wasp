@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -198,7 +199,7 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 
 // BuildTransactionEssence builds transaction essence from tx builder data
 func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) *iotago.Transaction {
-	_, inputIDs := txb.inputs()
+	inputs, inputIDs := txb.inputs()
 	return &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
@@ -206,7 +207,7 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 			NetworkID:    parameters.Protocol().NetworkID(),
 			Inputs:       inputIDs.UTXOInputs(),
 		},
-		Outputs: txb.outputs(stateMetadata),
+		Outputs: txb.outputs(stateMetadata, creationSlot, inputs),
 	}
 }
 
@@ -269,7 +270,11 @@ func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputID
 	return inputs, outputIDs
 }
 
-func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *iotago.AccountOutput {
+func (txb *AnchorTransactionBuilder) CreateAnchorOutput(
+	stateMetadata []byte,
+	creationSlot iotago.SlotIndex,
+	inputs iotago.OutputSet,
+) *iotago.AccountOutput {
 	aliasID := txb.anchorOutput.AccountID
 	if aliasID.Empty() {
 		aliasID = iotago.AccountIDFromOutputID(txb.anchorOutputID)
@@ -303,6 +308,16 @@ func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *i
 		panic(err)
 	}
 	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + minSD
+	mana, err := vm.TotalManaIn(
+		parameters.L1API().ManaDecayProvider(),
+		parameters.Storage(),
+		creationSlot,
+		vm.InputSet(inputs),
+	)
+	if err != nil {
+		panic(err)
+	}
+	anchorOutput.Mana = mana
 	return anchorOutput
 }
 
@@ -314,10 +329,14 @@ func (txb *AnchorTransactionBuilder) CreateAnchorOutput(stateMetadata []byte) *i
 // 3. received NFTs
 // 4. minted NFTs
 // 5. other outputs (posted from requests)
-func (txb *AnchorTransactionBuilder) outputs(stateMetadata []byte) iotago.TxEssenceOutputs {
+func (txb *AnchorTransactionBuilder) outputs(
+	stateMetadata []byte,
+	creationSlot iotago.SlotIndex,
+	inputs iotago.OutputSet,
+) iotago.TxEssenceOutputs {
 	ret := make(iotago.TxEssenceOutputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
 
-	txb.resultAnchorOutput = txb.CreateAnchorOutput(stateMetadata)
+	txb.resultAnchorOutput = txb.CreateAnchorOutput(stateMetadata, creationSlot, inputs)
 	ret = append(ret, txb.resultAnchorOutput)
 
 	// creating outputs for updated internal accounts

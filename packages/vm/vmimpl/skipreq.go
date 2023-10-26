@@ -122,19 +122,38 @@ func (reqctx *requestContext) checkInternalOutput() error {
 
 // checkReasonUnlockable checks if the request output is unlockable
 func (reqctx *requestContext) checkReasonUnlockable() error {
-	req := reqctx.req.(isc.OnLedgerRequest)
-	output, ok := req.Output().(iotago.TransIndepIdentOutput)
-	if !ok {
-		return errors.New("output is not unlockable")
-	}
-	now := reqctx.vm.task.Time.SlotIndex
 	params := parameters.Protocol()
-	if !output.UnlockableBy(
-		reqctx.vm.task.AnchorOutput.AccountID.ToAddress(),
-		now+params.MaxCommittableAge(),
-		now+params.MinCommittableAge(),
-	) {
-		return errors.New("output is not unlockable")
+	now := reqctx.vm.task.Time.SlotIndex
+	pastBoundedSlotIndex := now + params.MaxCommittableAge()
+	futureBoundedSlotIndex := now + params.MinCommittableAge()
+
+	req := reqctx.req.(isc.OnLedgerRequest)
+	switch out := req.Output().(type) {
+	case *iotago.AccountOutput:
+		next := out.Clone().(*iotago.AccountOutput)
+		next.StateIndex += 1
+		ok, err := out.UnlockableBy(
+			reqctx.vm.ChainID().AsAddress(),
+			next,
+			pastBoundedSlotIndex,
+			futureBoundedSlotIndex,
+		)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			return errors.New("output is not unlockable")
+		}
+	case iotago.TransIndepIdentOutput:
+		if !out.UnlockableBy(
+			reqctx.vm.ChainID().AsAddress(),
+			pastBoundedSlotIndex,
+			futureBoundedSlotIndex,
+		) {
+			return errors.New("output is not unlockable")
+		}
+	default:
+		return fmt.Errorf("no handler for output type %T", out)
 	}
 	return nil
 }

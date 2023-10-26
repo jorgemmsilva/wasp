@@ -3,8 +3,8 @@ package inccounter
 import (
 	"fmt"
 	"math"
-	"time"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -83,8 +83,8 @@ func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
 			EntryPoint:     FuncIncCounter.Hname(),
 			GasBudget:      math.MaxUint64,
 		},
-		Options: isc.SendOptions{
-			Timelock: ctx.Timestamp().Add(2 * time.Second),
+		UnlockConditions: []iotago.UnlockCondition{
+			&iotago.TimelockUnlockCondition{Slot: ctx.SlotIndex() + 10},
 		},
 	})
 	ctx.Log().Debugf("incCounterAndRepeatOnce: PostRequestToSelfWithDelay RequestInc 2 sec")
@@ -128,8 +128,8 @@ func incCounterAndRepeatMany(ctx isc.Sandbox) dict.Dict {
 			GasBudget:      math.MaxUint64,
 			Allowance:      isc.NewAssetsBaseTokens(1000),
 		},
-		Options: isc.SendOptions{
-			Timelock: ctx.Timestamp().Add(2 * time.Second),
+		UnlockConditions: []iotago.UnlockCondition{
+			&iotago.TimelockUnlockCondition{Slot: ctx.SlotIndex() + 10},
 		},
 	})
 

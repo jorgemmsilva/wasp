@@ -117,7 +117,6 @@ func sendNFTsBack(ctx isc.Sandbox) dict.Dict {
 			Assets:                        isc.NewEmptyAssets().AddNFTs(nftID),
 			AdjustToMinimumStorageDeposit: true,
 			Metadata:                      &isc.SendMetadata{},
-			Options:                       isc.SendOptions{},
 		})
 	}
 	return nil

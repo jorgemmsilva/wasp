@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
@@ -582,7 +582,7 @@ func TestL1Metadata(t *testing.T) {
 	require.Equal(t, publicURLMetadata, string(resMetadata))
 
 	// assert metadata is correct on L1 alias output
-	ao, err := ch.LatestAccountOutput(chain.ActiveOrCommittedState)
+	ao, err := ch.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
 	require.NoError(t, err)
 	sm, err := transaction.StateMetadataFromBytes(ao.GetStateMetadata())
 	require.NoError(t, err)
@@ -613,7 +613,7 @@ func TestL1Metadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert gas policy changed on L1 metadata
-	ao, err = ch.LatestAccountOutput(chain.ActiveOrCommittedState)
+	ao, err = ch.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
 	require.NoError(t, err)
 	sm, err = transaction.StateMetadataFromBytes(ao.GetStateMetadata())
 	require.NoError(t, err)

@@ -12,6 +12,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/assert"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm/execution"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -97,6 +98,10 @@ func (s *SandboxBase) Contract() isc.Hname {
 func (s *SandboxBase) Timestamp() time.Time {
 	s.Ctx.GasBurn(gas.BurnCodeGetContext)
 	return s.Ctx.Timestamp()
+}
+
+func (s *SandboxBase) SlotIndex() iotago.SlotIndex {
+	return parameters.L1API().TimeProvider().SlotFromTime(s.Ctx.Timestamp())
 }
 
 func (s *SandboxBase) Log() isc.LogInterface {

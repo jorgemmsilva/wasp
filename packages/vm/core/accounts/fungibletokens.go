@@ -61,43 +61,40 @@ func DebitFromAccount(state kv.KVStore, agentID isc.AgentID, fts *isc.FungibleTo
 }
 
 // debitFromAccount debits assets from the internal accounts map
-func debitFromAccount(state kv.KVStore, accountKey kv.Key, fts *isc.FungibleTokens) bool {
-	if fts == nil || fts.IsEmpty() {
+func debitFromAccount(state kv.KVStore, accountKey kv.Key, debit *isc.FungibleTokens) bool {
+	if debit == nil || debit.IsEmpty() {
 		return true
 	}
 
 	// first check, then mutate
-	mutateBaseTokens := false
-	mutations := isc.NewEmptyAssets()
-
-	if fts.BaseTokens > 0 {
-		balance := getBaseTokens(state, accountKey)
-		if fts.BaseTokens > balance {
+	balance := isc.NewEmptyFungibleTokens()
+	if debit.BaseTokens > 0 {
+		baseTokens := getBaseTokens(state, accountKey)
+		if debit.BaseTokens > baseTokens {
 			return false
 		}
-		mutateBaseTokens = true
-		mutations.BaseTokens = balance - fts.BaseTokens
+		balance.BaseTokens = baseTokens
 	}
-	for _, nt := range fts.NativeTokens {
-		if nt.Amount.Sign() == 0 {
+	for _, debitNT := range debit.NativeTokens {
+		if debitNT.Amount.Sign() == 0 {
 			continue
 		}
-		if nt.Amount.Sign() < 0 {
+		if debitNT.Amount.Sign() < 0 {
 			panic(ErrBadAmount)
 		}
-		balance := getNativeTokenAmount(state, accountKey, nt.ID)
-		balance = balance.Sub(balance, nt.Amount)
-		if balance.Sign() < 0 {
+		ntBalance := getNativeTokenAmount(state, accountKey, debitNT.ID)
+		if ntBalance.Cmp(debitNT.Amount) < 0 {
 			return false
 		}
-		mutations.AddNativeTokens(nt.ID, balance)
+		balance.AddNativeTokens(debitNT.ID, ntBalance)
 	}
 
-	if mutateBaseTokens {
-		setBaseTokens(state, accountKey, mutations.BaseTokens)
+	if debit.BaseTokens > 0 {
+		setBaseTokens(state, accountKey, balance.BaseTokens-debit.BaseTokens)
 	}
-	for _, nt := range mutations.NativeTokens {
-		setNativeTokenAmount(state, accountKey, nt.ID, nt.Amount)
+	for _, debitNT := range debit.NativeTokens {
+		amount := new(big.Int).Sub(balance.AmountNativeToken(debitNT.ID), debitNT.Amount)
+		setNativeTokenAmount(state, accountKey, debitNT.ID, amount)
 	}
 	return true
 }

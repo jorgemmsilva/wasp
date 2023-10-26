@@ -1,6 +1,8 @@
 package vmimpl
 
 import (
+	"time"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -61,8 +63,8 @@ func (reqctx *requestContext) Caller() isc.AgentID {
 	return reqctx.getCallContext().caller
 }
 
-func (reqctx *requestContext) BlockTime() isc.BlockTime {
-	return reqctx.vm.task.Time
+func (reqctx *requestContext) Timestamp() time.Time {
+	return reqctx.vm.task.Timestamp
 }
 
 func (reqctx *requestContext) CurrentContractAccountID() isc.AgentID {

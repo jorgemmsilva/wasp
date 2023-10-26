@@ -46,7 +46,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 		panic(err)
 	}
 
-	stateDraft, err := task.Store.NewStateDraft(task.Time, prevL1Commitment)
+	stateDraft, err := task.Store.NewStateDraft(task.Timestamp, prevL1Commitment)
 	if err != nil {
 		panic(err)
 	}

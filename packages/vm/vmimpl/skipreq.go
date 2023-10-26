@@ -123,9 +123,9 @@ func (reqctx *requestContext) checkInternalOutput() error {
 // checkReasonUnlockable checks if the request output is unlockable
 func (reqctx *requestContext) checkReasonUnlockable() error {
 	params := parameters.Protocol()
-	now := reqctx.vm.task.Time.SlotIndex
-	pastBoundedSlotIndex := now + params.MaxCommittableAge()
-	futureBoundedSlotIndex := now + params.MinCommittableAge()
+	slot := reqctx.vm.CreationSlot()
+	pastBoundedSlotIndex := slot + params.MaxCommittableAge()
+	futureBoundedSlotIndex := slot + params.MinCommittableAge()
 
 	req := reqctx.req.(isc.OnLedgerRequest)
 	switch out := req.Output().(type) {

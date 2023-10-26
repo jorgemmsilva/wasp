@@ -3,6 +3,7 @@ package vmimpl
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -21,7 +22,7 @@ func TestSetThenGet(t *testing.T) {
 	origin.InitChain(cs, nil, 0)
 	latest, err := cs.LatestBlock()
 	require.NoError(t, err)
-	stateDraft, err := cs.NewStateDraft(isc.BlockTime{}, latest.L1Commitment())
+	stateDraft, err := cs.NewStateDraft(time.Time{}, latest.L1Commitment())
 	require.NoError(t, err)
 
 	hname := isc.Hn("test")
@@ -82,7 +83,7 @@ func TestIterate(t *testing.T) {
 	origin.InitChain(cs, nil, 0)
 	latest, err := cs.LatestBlock()
 	require.NoError(t, err)
-	stateDraft, err := cs.NewStateDraft(isc.BlockTime{}, latest.L1Commitment())
+	stateDraft, err := cs.NewStateDraft(time.Time{}, latest.L1Commitment())
 	require.NoError(t, err)
 
 	hname := isc.Hn("test")

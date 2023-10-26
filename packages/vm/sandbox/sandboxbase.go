@@ -5,6 +5,7 @@ package sandbox
 
 import (
 	"math/big"
+	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -93,9 +94,9 @@ func (s *SandboxBase) Contract() isc.Hname {
 	return s.Ctx.CurrentContractHname()
 }
 
-func (s *SandboxBase) BlockTime() isc.BlockTime {
+func (s *SandboxBase) Timestamp() time.Time {
 	s.Ctx.GasBurn(gas.BurnCodeGetContext)
-	return s.Ctx.BlockTime()
+	return s.Ctx.Timestamp()
 }
 
 func (s *SandboxBase) Log() isc.LogInterface {

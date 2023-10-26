@@ -23,7 +23,7 @@ type VMTask struct {
 	AnchorOutputID     iotago.OutputID
 	Store              state.Store
 	Requests           []isc.Request
-	Time               isc.BlockTime
+	Timestamp          time.Time
 	Entropy            hashing.HashValue
 	ValidatorFeeTarget isc.AgentID
 	// If EstimateGasMode is enabled, gas fee will be calculated but not charged
@@ -66,5 +66,5 @@ func (task *VMTask) WillProduceBlock() bool {
 }
 
 func (task *VMTask) FinalStateTimestamp() time.Time {
-	return task.Time.Timestamp.Add(time.Duration(len(task.Requests)+1) * time.Nanosecond)
+	return task.Timestamp.Add(time.Duration(len(task.Requests)+1) * time.Nanosecond)
 }

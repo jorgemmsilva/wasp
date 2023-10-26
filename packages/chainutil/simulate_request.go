@@ -18,11 +18,7 @@ func SimulateRequest(
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
 	}
-	blockTime := isc.BlockTime{
-		SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
-		Timestamp: time.Now(),
-	}
-	res, err := runISCRequest(ch, accountOutput, blockTime, req, estimateGas)
+	res, err := runISCRequest(ch, accountOutput, time.Now(), req, estimateGas)
 	if err != nil {
 		return nil, err
 	}

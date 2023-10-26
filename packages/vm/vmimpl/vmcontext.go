@@ -1,6 +1,8 @@
 package vmimpl
 
 import (
+	"time"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -105,12 +107,12 @@ func (vmctx *vmContext) withStateUpdate(f func(chainState kv.KVStore)) {
 func (vmctx *vmContext) extractBlock(
 	numRequests, numSuccess, numOffLedger uint16,
 	unprocessable []isc.OnLedgerRequest,
-) (uint32, *state.L1Commitment, isc.BlockTime, iotago.Address) {
+) (uint32, *state.L1Commitment, time.Time, iotago.Address) {
 	var rotationAddr iotago.Address
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		rotationAddr = vmctx.saveBlockInfo(numRequests, numSuccess, numOffLedger)
 		withContractState(chainState, evm.Contract, func(s kv.KVStore) {
-			evmimpl.MintBlock(s, vmctx.chainInfo, vmctx.task.Time.Timestamp)
+			evmimpl.MintBlock(s, vmctx.chainInfo, vmctx.task.Timestamp)
 		})
 		vmctx.saveInternalUTXOs(unprocessable)
 	})
@@ -120,9 +122,9 @@ func (vmctx *vmContext) extractBlock(
 	l1Commitment := block.L1Commitment()
 
 	blockIndex := vmctx.stateDraft.BlockIndex()
-	blockTime := vmctx.stateDraft.BlockTime()
+	timestamp := vmctx.stateDraft.Timestamp()
 
-	return blockIndex, l1Commitment, blockTime, rotationAddr
+	return blockIndex, l1Commitment, timestamp, rotationAddr
 }
 
 func (vmctx *vmContext) checkRotationAddress() (ret iotago.Address) {
@@ -143,7 +145,7 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 
 	blockInfo := &blocklog.BlockInfo{
 		SchemaVersion:         blocklog.BlockInfoLatestSchemaVersion,
-		Time:                  vmctx.stateDraft.BlockTime(),
+		Timestamp:             vmctx.stateDraft.Timestamp(),
 		TotalRequests:         numRequests,
 		NumSuccessfulRequests: numSuccess,
 		NumOffLedgerRequests:  numOffLedger,
@@ -172,7 +174,7 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	// create a mock AO, with a nil statecommitment, just to calculate changes in the minimum SD
 	mockAO := vmctx.txbuilder.CreateAnchorOutput(
 		vmctx.stateMetadata(state.L1CommitmentNil),
-		vmctx.task.Time.SlotIndex,
+		vmctx.CreationSlot(),
 		iotago.OutputSet{vmctx.task.AnchorOutputID: vmctx.task.AnchorOutput},
 	)
 	newMinSD, err := parameters.Storage().MinDeposit(mockAO)

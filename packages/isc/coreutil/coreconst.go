@@ -40,7 +40,6 @@ var (
 // the global names used in 'blocklog' contract and in 'state' package
 const (
 	StateVarTimestamp           = "T"
-	StateVarSlotIndex           = "s"
 	StateVarBlockIndex          = "I"
 	StateVarPrevL1Commitment    = "H"
 	ParamStateControllerAddress = "S"
@@ -49,7 +48,6 @@ const (
 // used in 'state' package as key for timestamp and block index
 var (
 	StatePrefixTimestamp        = string(CoreContractBlocklogHname.Bytes()) + StateVarTimestamp
-	StatePrefixSlotIndex        = string(CoreContractBlocklogHname.Bytes()) + StateVarSlotIndex
 	StatePrefixBlockIndex       = string(CoreContractBlocklogHname.Bytes()) + StateVarBlockIndex
 	StatePrefixPrevL1Commitment = string(CoreContractBlocklogHname.Bytes()) + StateVarPrevL1Commitment
 )

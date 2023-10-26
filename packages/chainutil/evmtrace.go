@@ -1,6 +1,8 @@
 package chainutil
 
 import (
+	"time"
+
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -10,7 +12,7 @@ import (
 func EVMTraceTransaction(
 	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime isc.BlockTime,
+	timestamp time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
 	tracer tracers.Tracer,
@@ -18,7 +20,7 @@ func EVMTraceTransaction(
 	_, err := runISCTask(
 		ch,
 		accountOutput,
-		blockTime,
+		timestamp,
 		iscRequestsInBlock,
 		false,
 		&isc.EVMTracer{

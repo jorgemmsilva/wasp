@@ -5,8 +5,6 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/samber/lo"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -52,12 +50,7 @@ func (vmctx *vmContext) runRequest(req isc.Request, requestIndex uint16, mainten
 
 	reqctx.uncommittedState.Set(
 		kv.Key(coreutil.StatePrefixTimestamp),
-		codec.EncodeTime(vmctx.stateDraft.BlockTime().Timestamp.Add(1*time.Nanosecond)),
-	)
-
-	reqctx.uncommittedState.Set(
-		kv.Key(coreutil.StatePrefixSlotIndex),
-		lo.Must(vmctx.stateDraft.BlockTime().SlotIndex.Bytes()),
+		codec.EncodeTime(vmctx.stateDraft.Timestamp().Add(1*time.Nanosecond)),
 	)
 
 	if err = reqctx.earlyCheckReasonToSkip(maintenanceMode); err != nil {

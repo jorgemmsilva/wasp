@@ -9,8 +9,10 @@ package solo
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type Mempool interface {
@@ -29,12 +31,12 @@ type MempoolInfo struct {
 type mempoolImpl struct {
 	requests    map[isc.RequestID]isc.Request
 	info        MempoolInfo
-	currentTime func() isc.BlockTime
+	currentTime func() time.Time
 	chainID     isc.ChainID
 	mu          sync.Mutex
 }
 
-func newMempool(currentTime func() isc.BlockTime, chainID isc.ChainID) Mempool {
+func newMempool(currentTime func() time.Time, chainID isc.ChainID) Mempool {
 	return &mempoolImpl{
 		requests:    map[isc.RequestID]isc.Request{},
 		info:        MempoolInfo{},
@@ -62,7 +64,7 @@ func (mi *mempoolImpl) ReceiveRequests(reqs ...isc.Request) {
 func (mi *mempoolImpl) RequestBatchProposal() []isc.Request {
 	mi.mu.Lock()
 	defer mi.mu.Unlock()
-	now := mi.currentTime()
+	slot := parameters.L1API().TimeProvider().SlotFromTime(mi.currentTime())
 	batch := []isc.Request{}
 	for rid, request := range mi.requests {
 		switch request := request.(type) {
@@ -70,12 +72,12 @@ func (mi *mempoolImpl) RequestBatchProposal() []isc.Request {
 			reqUnlockCondSet := request.Output().UnlockConditionSet()
 			timeLock := reqUnlockCondSet.Timelock()
 			expiration := reqUnlockCondSet.Expiration()
-			if expiration != nil && now.SlotIndex >= expiration.Slot {
+			if expiration != nil && slot >= expiration.Slot {
 				// can never be processed, just reject
 				delete(mi.requests, rid)
 				continue
 			}
-			if timeLock == nil || timeLock.Slot <= now.SlotIndex {
+			if timeLock == nil || timeLock.Slot <= slot {
 				batch = append(batch, request)
 				continue
 			}

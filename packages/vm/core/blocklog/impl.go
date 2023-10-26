@@ -2,6 +2,7 @@ package blocklog
 
 import (
 	"math"
+	"time"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -30,7 +31,7 @@ var ErrBlockNotFound = coreerrors.Register("Block not found").Create()
 func SetInitialState(s kv.KVStore) {
 	SaveNextBlockInfo(s, &BlockInfo{
 		SchemaVersion:         BlockInfoLatestSchemaVersion,
-		Time:                  isc.BlockTime{},
+		Timestamp:             time.Unix(0, 0),
 		TotalRequests:         1,
 		NumSuccessfulRequests: 1,
 		NumOffLedgerRequests:  0,

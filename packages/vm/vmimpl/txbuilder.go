@@ -4,6 +4,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -31,9 +32,13 @@ func (vmctx *vmContext) stateMetadata(stateCommitment *state.L1Commitment) []byt
 	return stateMetadata.Bytes()
 }
 
+func (vmctx *vmContext) CreationSlot() iotago.SlotIndex {
+	return parameters.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
+}
+
 func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) *iotago.Transaction {
 	stateMetadata := vmctx.stateMetadata(stateCommitment)
-	essence := vmctx.txbuilder.BuildTransactionEssence(stateMetadata, vmctx.task.Time.SlotIndex)
+	essence := vmctx.txbuilder.BuildTransactionEssence(stateMetadata, vmctx.CreationSlot())
 	if assertTxbuilderBalanced {
 		vmctx.txbuilder.MustBalanced()
 	}

@@ -2,9 +2,8 @@ package state
 
 import (
 	"fmt"
+	"time"
 
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -46,24 +45,15 @@ func loadBlockIndexFromState(s kv.KVStoreReader) uint32 {
 	return codec.MustDecodeUint32(s.Get(kv.Key(coreutil.StatePrefixBlockIndex)))
 }
 
-func (s *state) BlockTime() isc.BlockTime {
+func (s *state) Timestamp() time.Time {
 	t, err := loadBlockTimeFromState(s)
 	mustNoErr(err)
 	return t
 }
 
-func loadBlockTimeFromState(chainState kv.KVStoreReader) (ret isc.BlockTime, err error) {
+func loadBlockTimeFromState(chainState kv.KVStoreReader) (ret time.Time, err error) {
 	tsBin := chainState.Get(kv.Key(coreutil.StatePrefixTimestamp))
-	ret.Timestamp, err = codec.DecodeTime(tsBin)
-	if err != nil {
-		return isc.BlockTime{}, fmt.Errorf("loadTimestampFromState: %w", err)
-	}
-	siBin := chainState.Get(kv.Key(coreutil.StatePrefixSlotIndex))
-	if len(siBin) == 0 { // state is before 2.0 migration
-		return ret, nil
-	}
-	ret.SlotIndex, _, err = iotago.SlotIndexFromBytes(siBin)
-	return ret, err
+	return codec.DecodeTime(tsBin)
 }
 
 func (s *state) PreviousL1Commitment() *L1Commitment {

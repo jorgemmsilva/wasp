@@ -12,7 +12,6 @@ import (
 	lru "github.com/hashicorp/golang-lru/v2"
 
 	"github.com/iotaledger/hive.go/kvstore"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -93,12 +92,12 @@ func (s *store) NewOriginStateDraft() StateDraft {
 	return newOriginStateDraft()
 }
 
-func (s *store) NewStateDraft(blockTime isc.BlockTime, prevL1Commitment *L1Commitment) (StateDraft, error) {
+func (s *store) NewStateDraft(timestamp time.Time, prevL1Commitment *L1Commitment) (StateDraft, error) {
 	prevState, err := s.stateByTrieRoot(prevL1Commitment.TrieRoot())
 	if err != nil {
 		return nil, err
 	}
-	return newStateDraft(blockTime, prevL1Commitment, prevState), nil
+	return newStateDraft(timestamp, prevL1Commitment, prevState), nil
 }
 
 func (s *store) NewEmptyStateDraft(prevL1Commitment *L1Commitment) (StateDraft, error) {

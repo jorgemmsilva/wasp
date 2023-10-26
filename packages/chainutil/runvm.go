@@ -2,6 +2,7 @@ package chainutil
 
 import (
 	"errors"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -16,7 +17,7 @@ import (
 func runISCTask(
 	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime isc.BlockTime,
+	timestamp time.Time,
 	reqs []isc.Request,
 	estimateGasMode bool,
 	evmTracer *isc.EVMTracer,
@@ -27,7 +28,7 @@ func runISCTask(
 		AnchorOutputID:       accountOutput.OutputID(),
 		Store:                ch.Store(),
 		Requests:             reqs,
-		Time:                 blockTime,
+		Timestamp:            timestamp,
 		Entropy:              hashing.PseudoRandomHash(nil),
 		ValidatorFeeTarget:   accounts.CommonAccount(),
 		EnableGasBurnLogging: estimateGasMode,
@@ -45,14 +46,14 @@ func runISCTask(
 func runISCRequest(
 	ch chaintypes.ChainCore,
 	accountOutput *isc.AccountOutputWithID,
-	blockTime isc.BlockTime,
+	timestamp time.Time,
 	req isc.Request,
 	estimateGasMode bool,
 ) (*vm.RequestResult, error) {
 	results, err := runISCTask(
 		ch,
 		accountOutput,
-		blockTime,
+		timestamp,
 		[]isc.Request{req},
 		estimateGasMode,
 		nil,

@@ -2,6 +2,7 @@ package execution
 
 import (
 	"math/big"
+	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -32,7 +33,7 @@ type WaspCallContext interface {
 	WaspContext
 	GasContext
 	isc.LogInterface
-	BlockTime() isc.BlockTime
+	Timestamp() time.Time
 	CurrentContractAccountID() isc.AgentID
 	Caller() isc.AgentID
 	GetNativeTokens(agentID isc.AgentID) []*iotago.NativeTokenFeature

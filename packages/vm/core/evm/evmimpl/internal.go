@@ -118,7 +118,7 @@ func (ctx *emulatorContext) State() kv.KVStore {
 }
 
 func (ctx *emulatorContext) Timestamp() uint64 {
-	return timestamp(ctx.sandbox.BlockTime().Timestamp)
+	return timestamp(ctx.sandbox.Timestamp())
 }
 
 func (*emulatorContext) BaseTokensDecimals() uint32 {

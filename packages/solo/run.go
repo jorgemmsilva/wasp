@@ -59,7 +59,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 		AnchorOutput:       anchorOutput.GetAccountOutput(),
 		AnchorOutputID:     anchorOutput.OutputID(),
 		Requests:           reqs,
-		Time:               ch.Env.BlockTime(),
+		Timestamp:          ch.Env.Timestamp(),
 		Store:              ch.store,
 		Entropy:            hashing.PseudoRandomHash(nil),
 		ValidatorFeeTarget: ch.ValidatorFeeTarget,
@@ -87,7 +87,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 		unsignedTx, err = rotate.MakeRotateStateControllerTransaction(
 			res.RotationAddress,
 			isc.NewAccountOutputWithID(res.Task.AnchorOutput, res.Task.AnchorOutputID),
-			res.Task.Time.SlotIndex,
+			ch.Env.SlotIndex(),
 		)
 		require.NoError(ch.Env.T, err)
 	}

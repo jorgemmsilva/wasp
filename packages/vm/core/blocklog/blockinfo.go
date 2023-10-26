@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	BlockInfoLatestSchemaVersion = 1
+	BlockInfoLatestSchemaVersion = 0
 )
 
 type BlockInfo struct {
 	SchemaVersion         uint8
-	Time                  isc.BlockTime // schema version 0 -> just time.Time
+	Timestamp             time.Time
 	TotalRequests         uint16
 	NumSuccessfulRequests uint16 // which didn't panic
 	NumOffLedgerRequests  uint16
@@ -30,8 +30,7 @@ func (bi *BlockInfo) String() string {
 	ret := "{\n"
 	ret += fmt.Sprintf("\tBlock index: %d\n", bi.BlockIndex())
 	ret += fmt.Sprintf("\tSchemaVersion: %d\n", bi.SchemaVersion)
-	ret += fmt.Sprintf("\tSlot Index: %d\n", bi.Time.SlotIndex)
-	ret += fmt.Sprintf("\tTimestamp: %d\n", bi.Time.Timestamp.Unix())
+	ret += fmt.Sprintf("\tTimestamp: %d\n", bi.Timestamp.Unix())
 	ret += fmt.Sprintf("\tTotal requests: %d\n", bi.TotalRequests)
 	ret += fmt.Sprintf("\toff-ledger requests: %d\n", bi.NumOffLedgerRequests)
 	ret += fmt.Sprintf("\tSuccessful requests: %d\n", bi.NumSuccessfulRequests)
@@ -65,10 +64,7 @@ func (bi *BlockInfo) BlockIndex() uint32 {
 func (bi *BlockInfo) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	bi.SchemaVersion = rr.ReadUint8()
-	if bi.SchemaVersion >= 1 {
-		bi.Time.SlotIndex = iotago.SlotIndex(rr.ReadAmount64())
-	}
-	bi.Time.Timestamp = time.Unix(0, rr.ReadInt64())
+	bi.Timestamp = time.Unix(0, rr.ReadInt64())
 	bi.TotalRequests = rr.ReadUint16()
 	bi.NumSuccessfulRequests = rr.ReadUint16()
 	bi.NumOffLedgerRequests = rr.ReadUint16()
@@ -85,10 +81,7 @@ func (bi *BlockInfo) Read(r io.Reader) error {
 func (bi *BlockInfo) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteUint8(bi.SchemaVersion)
-	if bi.SchemaVersion >= 1 {
-		ww.WriteAmount64(uint64(bi.Time.SlotIndex))
-	}
-	ww.WriteInt64(bi.Time.Timestamp.UnixNano())
+	ww.WriteInt64(bi.Timestamp.UnixNano())
 	ww.WriteUint16(bi.TotalRequests)
 	ww.WriteUint16(bi.NumSuccessfulRequests)
 	ww.WriteUint16(bi.NumOffLedgerRequests)

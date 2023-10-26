@@ -4,9 +4,8 @@
 package state
 
 import (
-	"github.com/samber/lo"
+	"time"
 
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
@@ -37,11 +36,10 @@ func newEmptyStateDraft(prevL1Commitment *L1Commitment, baseState State) *stateD
 	}
 }
 
-func newStateDraft(blockTime isc.BlockTime, prevL1Commitment *L1Commitment, baseState State) *stateDraft {
+func newStateDraft(timestamp time.Time, prevL1Commitment *L1Commitment, baseState State) *stateDraft {
 	d := newEmptyStateDraft(prevL1Commitment, baseState)
 	d.Set(kv.Key(coreutil.StatePrefixBlockIndex), codec.EncodeUint32(baseState.BlockIndex()+1))
-	d.Set(kv.Key(coreutil.StatePrefixTimestamp), codec.EncodeTime(blockTime.Timestamp))
-	d.Set(kv.Key(coreutil.StatePrefixSlotIndex), lo.Must(blockTime.SlotIndex.Bytes()))
+	d.Set(kv.Key(coreutil.StatePrefixTimestamp), codec.EncodeTime(timestamp))
 	d.Set(kv.Key(coreutil.StatePrefixPrevL1Commitment), prevL1Commitment.Bytes())
 	return d
 }
@@ -54,7 +52,7 @@ func (s *stateDraft) BlockIndex() uint32 {
 	return loadBlockIndexFromState(s)
 }
 
-func (s *stateDraft) BlockTime() isc.BlockTime {
+func (s *stateDraft) Timestamp() time.Time {
 	ts, err := loadBlockTimeFromState(s)
 	mustNoErr(err)
 	return ts

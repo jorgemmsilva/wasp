@@ -6,6 +6,7 @@ package jsonrpc
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core"
@@ -83,7 +84,7 @@ func (b *WaspEVMBackend) EVMEstimateGas(accountOutput *isc.AccountOutputWithID, 
 
 func (b *WaspEVMBackend) EVMTraceTransaction(
 	accountOutput *isc.AccountOutputWithID,
-	blockTime isc.BlockTime,
+	timestamp time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
 	tracer tracers.Tracer,
@@ -91,7 +92,7 @@ func (b *WaspEVMBackend) EVMTraceTransaction(
 	return chainutil.EVMTraceTransaction(
 		b.chain,
 		accountOutput,
-		blockTime,
+		timestamp,
 		iscRequestsInBlock,
 		txIndex,
 		tracer,

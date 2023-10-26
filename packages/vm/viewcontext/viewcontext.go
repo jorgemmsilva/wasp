@@ -2,6 +2,7 @@ package viewcontext
 
 import (
 	"math/big"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -122,8 +123,8 @@ func (ctx *ViewContext) GetNFTData(nftID iotago.NFTID) *isc.NFT {
 	return accounts.GetNFTData(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), nftID)
 }
 
-func (ctx *ViewContext) BlockTime() isc.BlockTime {
-	return ctx.stateReader.BlockTime()
+func (ctx *ViewContext) Timestamp() time.Time {
+	return ctx.stateReader.Timestamp()
 }
 
 func (ctx *ViewContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken {

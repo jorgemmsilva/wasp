@@ -643,7 +643,7 @@ func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceCon
 
 	err = e.backend.EVMTraceTransaction(
 		iscBlock.PreviousAccountOutput,
-		iscBlock.Time,
+		iscBlock.Timestamp,
 		iscRequestsInBlock,
 		txIndex,
 		tracer,

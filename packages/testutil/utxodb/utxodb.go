@@ -39,7 +39,6 @@ type UtxoDB struct {
 	utxo         map[iotago.OutputID]struct{}
 	timestamp    time.Time
 	timestep     time.Duration
-	slotIndex    iotago.SlotIndex
 	api          iotago.API
 }
 
@@ -62,7 +61,7 @@ func New(l1api ...iotago.API) *UtxoDB {
 }
 
 func (u *UtxoDB) TxBuilder() *builder.TransactionBuilder {
-	return builder.NewTransactionBuilder(u.api).SetCreationSlot(u.slotIndex)
+	return builder.NewTransactionBuilder(u.api).SetCreationSlot(u.SlotIndex())
 }
 
 func (u *UtxoDB) genesisInit() {
@@ -94,7 +93,7 @@ func (u *UtxoDB) genesisInit() {
 
 func (u *UtxoDB) dummyOutputID() iotago.OutputID {
 	var txID iotago.TransactionID
-	binary.LittleEndian.PutUint32(txID[iotago.IdentifierLength:iotago.TransactionIDLength], uint32(u.slotIndex))
+	binary.LittleEndian.PutUint32(txID[iotago.IdentifierLength:iotago.TransactionIDLength], uint32(u.SlotIndex()))
 	var outputID iotago.OutputID
 	copy(outputID[:], txID[:])
 	binary.LittleEndian.PutUint16(outputID[iotago.TransactionIDLength:], 0) // tx index 0
@@ -122,20 +121,19 @@ func (u *UtxoDB) addTransaction(tx *iotago.SignedTransaction, isGenesis bool) {
 		outputID := iotago.OutputIDFromTransactionIDAndIndex(txid, uint16(i))
 		u.utxo[outputID] = struct{}{}
 	}
-	u.advanceTime(1, u.timestep)
+	u.advanceTime(u.timestep)
 	u.checkLedgerBalance()
 }
 
-func (u *UtxoDB) advanceTime(slotStep uint, timeStep time.Duration) {
-	u.slotIndex += iotago.SlotIndex(slotStep)
+func (u *UtxoDB) advanceTime(timeStep time.Duration) {
 	u.timestamp = u.timestamp.Add(timeStep)
 }
 
-func (u *UtxoDB) AdvanceTime(slotStep uint, timeStep time.Duration) {
+func (u *UtxoDB) AdvanceTime(timeStep time.Duration) {
 	u.mutex.RLock()
 	defer u.mutex.RUnlock()
 
-	u.advanceTime(slotStep, timeStep)
+	u.advanceTime(timeStep)
 }
 
 func (u *UtxoDB) Timestamp() time.Time {
@@ -153,10 +151,11 @@ func (u *UtxoDB) SetTimestep(ts time.Duration) {
 }
 
 func (u *UtxoDB) SlotIndex() iotago.SlotIndex {
-	u.mutex.RLock()
-	defer u.mutex.RUnlock()
+	return u.api.TimeProvider().SlotFromTime(u.Timestamp())
+}
 
-	return u.slotIndex
+func (u *UtxoDB) slotIndex() iotago.SlotIndex {
+	return u.api.TimeProvider().SlotFromTime(u.timestamp)
 }
 
 // GenesisAddress returns the genesis address.
@@ -179,7 +178,7 @@ func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotag
 	mana, err := vm.TotalManaIn(
 		u.api.ManaDecayProvider(),
 		u.api.StorageScoreStructure(),
-		u.slotIndex,
+		u.slotIndex(),
 		vm.InputSet{inputID: input},
 	)
 	if err != nil {
@@ -463,7 +462,6 @@ type UtxoDBState struct {
 	UTXO         []string
 	Timestamp    time.Time
 	Timestep     time.Duration
-	SlotIndex    iotago.SlotIndex
 }
 
 func (u *UtxoDB) State() *UtxoDBState {
@@ -485,7 +483,6 @@ func (u *UtxoDB) State() *UtxoDBState {
 		UTXO:         utxo,
 		Timestamp:    u.timestamp,
 		Timestep:     u.timestep,
-		SlotIndex:    u.slotIndex,
 	}
 }
 
@@ -497,7 +494,6 @@ func (u *UtxoDB) SetState(state *UtxoDBState) {
 	u.utxo = make(map[iotago.OutputID]struct{})
 	u.timestamp = state.Timestamp
 	u.timestep = state.Timestep
-	u.slotIndex = state.SlotIndex
 
 	for s, tx := range state.Transactions {
 		b, err := hex.DecodeString(s)

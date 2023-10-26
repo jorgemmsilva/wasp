@@ -33,11 +33,8 @@ func EVMCall(
 
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 	// TODO: setting EstimateGasMode = true feels wrong here
-	blockTime := isc.BlockTime{
-		SlotIndex: accountOutput.OutputID().CreationSlot() + 1,
-		Timestamp: time.Now(),
-	}
-	res, err := runISCRequest(ch, accountOutput, blockTime, iscReq, true)
+	timestamp := time.Now()
+	res, err := runISCRequest(ch, accountOutput, timestamp, iscReq, true)
 	if err != nil {
 		return nil, err
 	}

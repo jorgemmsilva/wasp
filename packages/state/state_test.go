@@ -97,8 +97,8 @@ func (m mustChainStore) LatestBlockIndex() uint32 {
 	return r
 }
 
-func (m mustChainStore) NewStateDraft(blockTime isc.BlockTime, prevL1Commitment *state.L1Commitment) state.StateDraft {
-	r, err := m.Store.NewStateDraft(blockTime, prevL1Commitment)
+func (m mustChainStore) NewStateDraft(timestamp time.Time, prevL1Commitment *state.L1Commitment) state.StateDraft {
+	r, err := m.Store.NewStateDraft(timestamp, prevL1Commitment)
 	if err != nil {
 		panic(err)
 	}
@@ -133,8 +133,7 @@ func TestOriginBlock(t *testing.T) {
 	validateBlock0(block0, nil)
 	s := cs.StateByTrieRoot(block0.TrieRoot())
 	require.EqualValues(t, 0, s.BlockIndex())
-	require.True(t, s.BlockTime().Timestamp.IsZero())
-	require.Zero(t, s.BlockTime().SlotIndex)
+	require.True(t, s.Timestamp().IsZero())
 
 	validateBlock0(state.NewStoreWithUniqueWriteMutex(db).BlockByTrieRoot(block0.TrieRoot()))
 	validateBlock0(state.NewStoreWithUniqueWriteMutex(db).LatestBlock())
@@ -161,17 +160,13 @@ func TestOriginBlockDeterminism(t *testing.T) {
 	})
 }
 
-func newBlockTime() isc.BlockTime {
-	return isc.BlockTime{SlotIndex: 0, Timestamp: time.Now()}
-}
-
 func Test1Block(t *testing.T) {
 	db := mapdb.NewMapDB()
 	cs := mustChainStore{initializedStore(db)}
 	require.False(t, cs.IsEmpty())
 
 	block1 := func() state.Block {
-		d := cs.NewStateDraft(newBlockTime(), cs.LatestBlock().L1Commitment())
+		d := cs.NewStateDraft(time.Now(), cs.LatestBlock().L1Commitment())
 		d.Set("a", []byte{1})
 
 		require.EqualValues(t, []byte{1}, d.Get("a"))
@@ -197,7 +192,7 @@ func TestReorg(t *testing.T) {
 
 	// main branch
 	for i := 1; i < 10; i++ {
-		d := cs.NewStateDraft(newBlockTime(), cs.LatestBlock().L1Commitment())
+		d := cs.NewStateDraft(time.Now(), cs.LatestBlock().L1Commitment())
 		d.Set("k", []byte("a"))
 		block := cs.Commit(d)
 		err := cs.SetLatest(block.TrieRoot())
@@ -207,7 +202,7 @@ func TestReorg(t *testing.T) {
 	// alt branch
 	block := cs.BlockByIndex(5)
 	for i := 6; i < 15; i++ {
-		d := cs.NewStateDraft(newBlockTime(), block.L1Commitment())
+		d := cs.NewStateDraft(time.Now(), block.L1Commitment())
 		d.Set("k", []byte("b"))
 		block = cs.Commit(d)
 	}
@@ -238,7 +233,7 @@ func TestReplay(t *testing.T) {
 	db := mapdb.NewMapDB()
 	cs := mustChainStore{initializedStore(db)}
 	for i := 1; i < 10; i++ {
-		d := cs.NewStateDraft(newBlockTime(), cs.LatestBlock().L1Commitment())
+		d := cs.NewStateDraft(time.Now(), cs.LatestBlock().L1Commitment())
 		d.Set("k", []byte(fmt.Sprintf("a%d", i)))
 		block := cs.Commit(d)
 		err := cs.SetLatest(block.TrieRoot())
@@ -285,7 +280,7 @@ func TestDoubleCommit(t *testing.T) {
 	cs := mustChainStore{initializedStore(db)}
 	keyChanged := kv.Key("k")
 	for i := 1; i < 10; i++ {
-		now := newBlockTime()
+		now := time.Now()
 		latestCommitment := cs.LatestBlock().L1Commitment()
 		newValue := []byte(fmt.Sprintf("a%d", i))
 		d1 := cs.NewStateDraft(now, latestCommitment)
@@ -341,8 +336,8 @@ func (r *randomState) randomValue() []byte {
 	return b
 }
 
-func (r *randomState) commitNewBlock(latestBlock state.Block, blockTime isc.BlockTime) state.Block {
-	d := r.cs.NewStateDraft(blockTime, latestBlock.L1Commitment())
+func (r *randomState) commitNewBlock(latestBlock state.Block, timestamp time.Time) state.Block {
+	d := r.cs.NewStateDraft(timestamp, latestBlock.L1Commitment())
 	for j := 0; j < 50; j++ {
 		d.Set(r.randomKey(), r.randomValue())
 	}
@@ -376,10 +371,7 @@ func TestPruning(t *testing.T) {
 		for i := 1; i <= 20; i++ {
 			block := r.commitNewBlock(
 				r.cs.LatestBlock(),
-				isc.BlockTime{
-					SlotIndex: iotago.SlotIndex(i),
-					Timestamp: time.Unix(int64(i), 0),
-				},
+				time.Unix(int64(i), 0),
 			)
 
 			index := block.StateIndex()
@@ -434,10 +426,7 @@ func TestPruning2(t *testing.T) {
 	for i := 1; i <= 20; i++ {
 		block := r.commitNewBlock(
 			r.cs.LatestBlock(),
-			isc.BlockTime{
-				SlotIndex: iotago.SlotIndex(i),
-				Timestamp: time.Unix(int64(i), 0),
-			},
+			time.Unix(int64(i), 0),
 		)
 		n++
 		trieRoots = append(trieRoots, block.TrieRoot())
@@ -475,10 +464,7 @@ func TestPruning2(t *testing.T) {
 		trieRoot := trieRoots[0]
 		block := r.commitNewBlock(
 			r.cs.BlockByTrieRoot(trieRoot),
-			isc.BlockTime{
-				SlotIndex: iotago.SlotIndex(n),
-				Timestamp: time.Unix(int64(n), 0),
-			},
+			time.Unix(int64(n), 0),
 		)
 		n++
 		trieRoots = append(trieRoots, block.TrieRoot())
@@ -491,7 +477,7 @@ func makeRandomDB(t *testing.T, nBlocks int) (mustChainStore, kvstore.KVStore) {
 	cs := mustChainStore{initializedStore(db)}
 	require.False(t, cs.IsEmpty())
 	for i := 1; i <= nBlocks; i++ {
-		d := cs.NewStateDraft(newBlockTime(), cs.LatestBlock().L1Commitment())
+		d := cs.NewStateDraft(time.Now(), cs.LatestBlock().L1Commitment())
 		d.Set(kv.Key(fmt.Sprintf("k%d", i)), []byte("v"))
 		d.Set("k", []byte{byte(i)})
 		if i == 1 {
@@ -584,10 +570,7 @@ func TestPrunedSnapshot(t *testing.T) {
 	for i := 1; i <= 20; i++ {
 		block := r.commitNewBlock(
 			r.cs.LatestBlock(),
-			isc.BlockTime{
-				SlotIndex: iotago.SlotIndex(i),
-				Timestamp: time.Unix(int64(i), 0),
-			},
+			time.Unix(int64(i), 0),
 		)
 		require.False(t, r.cs.IsEmpty())
 		index := block.StateIndex()

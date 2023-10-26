@@ -47,7 +47,7 @@ func (h *magicContractHandler) GetIRC27NFTData(nftID iscmagic.NFTID) iscmagic.IR
 
 // handler for ISCSandbox::getTimestampUnixSeconds
 func (h *magicContractHandler) GetTimestampUnixSeconds() int64 {
-	return h.ctx.BlockTime().Timestamp.Unix()
+	return h.ctx.Timestamp().Unix()
 }
 
 // handler for ISCSandbox::callView

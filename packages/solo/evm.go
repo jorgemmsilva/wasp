@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -50,7 +51,7 @@ func (b *jsonRPCSoloBackend) EVMEstimateGas(accountOutput *isc.AccountOutputWith
 
 func (b *jsonRPCSoloBackend) EVMTraceTransaction(
 	accountOutput *isc.AccountOutputWithID,
-	blockTime isc.BlockTime,
+	timestamp time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
 	tracer tracers.Tracer,
@@ -58,7 +59,7 @@ func (b *jsonRPCSoloBackend) EVMTraceTransaction(
 	return chainutil.EVMTraceTransaction(
 		b.Chain,
 		accountOutput,
-		blockTime,
+		timestamp,
 		iscRequestsInBlock,
 		txIndex,
 		tracer,

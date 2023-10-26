@@ -5,8 +5,8 @@ package state
 
 import (
 	"io"
+	"time"
 
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -56,7 +56,7 @@ type Store interface {
 	// - timestamp
 	// - block index
 	// - previous L1 commitment
-	NewStateDraft(blockTime isc.BlockTime, prevL1Commitment *L1Commitment) (StateDraft, error)
+	NewStateDraft(timestamp time.Time, prevL1Commitment *L1Commitment) (StateDraft, error)
 
 	// NewEmptyStateDraft starts a new StateDraft without updating any the common values.
 	// It may be used to replay a block given the mutations.
@@ -106,7 +106,7 @@ type Block interface {
 
 type StateCommonValues interface {
 	BlockIndex() uint32
-	BlockTime() isc.BlockTime
+	Timestamp() time.Time
 	PreviousL1Commitment() *L1Commitment
 }
 

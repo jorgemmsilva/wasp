@@ -11,7 +11,6 @@ import (
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -28,8 +27,8 @@ func TestNoSenderFeature(t *testing.T) {
 	// ----------------------------------------------------------------
 
 	// mint some NTs and withdraw them
-	gasFee := 10 * gas.LimitsDefault.MinGasPerRequest
-	withdrawAmount := 3 * gas.LimitsDefault.MinGasPerRequest
+	gasFee := iotago.BaseToken(10 * gas.LimitsDefault.MinGasPerRequest)
+	withdrawAmount := iotago.BaseToken(3 * gas.LimitsDefault.MinGasPerRequest)
 	err := ch.DepositAssetsToL2(isc.NewAssetsBaseTokens(withdrawAmount+gasFee), wallet)
 	require.NoError(t, err)
 	nativeTokenAmount := big.NewInt(123)
@@ -53,7 +52,7 @@ func TestNoSenderFeature(t *testing.T) {
 			ID:     nativeTokenID,
 			Amount: nativeTokenAmount,
 		}).
-		WithGasBudget(gasFee),
+		WithGasBudget(uint64(gasFee)),
 		wallet)
 	require.NoError(t, err)
 
@@ -65,46 +64,51 @@ func TestNoSenderFeature(t *testing.T) {
 	payoutAgentIDBalanceBefore := ch.L2Assets(ch.OriginatorAgentID)
 
 	// send a custom request with Base tokens / NTs / NFT (but no sender feature)
-	allOuts, allOutIDs := ch.Env.GetUnspentOutputs(addr)
-	tx, err := transaction.NewRequestTransaction(transaction.NewRequestTransactionParams{
-		SenderKeyPair:    wallet,
-		SenderAddress:    addr,
-		UnspentOutputs:   allOuts,
-		UnspentOutputIDs: allOutIDs,
-		Request: &isc.RequestParameters{
+	allOuts := ch.Env.GetUnspentOutputs(addr)
+	tx, err := transaction.NewRequestTransaction(
+		wallet,
+		addr,
+		allOuts,
+		&isc.RequestParameters{
 			TargetAddress: ch.ChainID.AsAddress(),
-			Assets: &isc.Assets{
-				BaseTokens:   5 * isc.Million,
-				NativeTokens: []*iotago.NativeTokenFeature{{ID: nativeTokenID, Amount: nativeTokenAmount}},
-				NFTs:         []iotago.NFTID{nft.ID},
-			},
+			Assets: isc.NewAssets(
+				5*isc.Million,
+				[]*iotago.NativeTokenFeature{{ID: nativeTokenID, Amount: nativeTokenAmount}},
+			).AddNFTs(nft.ID),
 			Metadata: &isc.SendMetadata{
 				TargetContract: inccounter.Contract.Hname(),
 				EntryPoint:     inccounter.FuncIncCounter.Hname(),
 				GasBudget:      math.MaxUint64,
 			},
 		},
-		NFT: nft,
-	})
+		nft,
+		env.SlotIndex(),
+		false,
+	)
 	require.NoError(t, err)
 
 	// tweak the tx before adding to the ledger, so the request output has no sender feature
-	for i, out := range tx.Outputs {
-		if out.FeatureSet().MetadataFeature() == nil {
+	for i, out := range tx.Transaction.Outputs {
+		if out.FeatureSet().Metadata() == nil {
 			// skip if not the request output
 			continue
 		}
-		customOut := out.Clone().(*iotago.NFTOutput)                                   // must be NFT output because we're sending an NFT
-		customOut.Features = iotago.Features{customOut.FeatureSet().MetadataFeature()} // keep metadata feature only
-		tx.Outputs[i] = customOut
+		customOut := out.Clone().(*iotago.NFTOutput)                                     // must be NFT output because we're sending an NFT
+		customOut.Features = iotago.NFTOutputFeatures{customOut.FeatureSet().Metadata()} // keep metadata feature only
+		tx.Transaction.Outputs[i] = customOut
 	}
 
-	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Outputs, wallet, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(
+		wallet,
+		tx.Transaction.TransactionEssence.Inputs,
+		tx.Transaction.Outputs,
+		env.SlotIndex(),
+	)
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(t, err)
 
-	reqs, err := ch.Env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "post") // under normal circumstances this request won't reach the mempool
 	require.Len(t, results, 1)
@@ -146,27 +150,29 @@ func TestSendBack(t *testing.T) {
 	require.EqualValues(t, 1, counter)
 
 	// send a custom request
-	allOuts, allOutIDs := ch.Env.GetUnspentOutputs(addr)
-	tx, err := transaction.NewRequestTransaction(transaction.NewRequestTransactionParams{
-		SenderKeyPair:    wallet,
-		SenderAddress:    addr,
-		UnspentOutputs:   allOuts,
-		UnspentOutputIDs: allOutIDs,
-		Request: &isc.RequestParameters{
+	allOuts := ch.Env.GetUnspentOutputs(addr)
+	tx, err := transaction.NewRequestTransaction(
+		wallet,
+		addr,
+		allOuts,
+		&isc.RequestParameters{
 			TargetAddress: ch.ChainID.AsAddress(),
-			Assets:        &isc.Assets{BaseTokens: 1 * isc.Million},
+			Assets:        isc.NewAssetsBaseTokens(1 * isc.Million),
 			Metadata: &isc.SendMetadata{
 				TargetContract: inccounter.Contract.Hname(),
 				EntryPoint:     inccounter.FuncIncCounter.Hname(),
 				GasBudget:      math.MaxUint64,
 			},
 		},
-	})
+		nil,
+		env.SlotIndex(),
+		false,
+	)
 	require.NoError(t, err)
 
 	// tweak the tx before adding to the ledger, so the request output has a StorageDepositReturn unlock condition
-	for i, out := range tx.Outputs {
-		if out.FeatureSet().MetadataFeature() == nil {
+	for i, out := range tx.Transaction.Outputs {
+		if out.FeatureSet().Metadata() == nil {
 			// skip if not the request output
 			continue
 		}
@@ -176,15 +182,20 @@ func TestSendBack(t *testing.T) {
 			Amount:        1 * isc.Million,
 		}
 		customOut.Conditions = append(customOut.Conditions, sendBackCondition)
-		tx.Outputs[i] = customOut
+		tx.Transaction.Outputs[i] = customOut
 	}
 
-	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Outputs, wallet, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(
+		wallet,
+		tx.Transaction.TransactionEssence.Inputs,
+		tx.Transaction.Outputs,
+		env.SlotIndex(),
+	)
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(t, err)
 
-	reqs, err := ch.Env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "post")
 	// TODO for now the request must be skipped, in the future this needs to be refactored, so that the request is handled as expected
@@ -205,27 +216,29 @@ func TestBadMetadata(t *testing.T) {
 	wallet, addr := env.NewKeyPairWithFunds()
 
 	// send a custom request
-	allOuts, allOutIDs := ch.Env.GetUnspentOutputs(addr)
-	tx, err := transaction.NewRequestTransaction(transaction.NewRequestTransactionParams{
-		SenderKeyPair:    wallet,
-		SenderAddress:    addr,
-		UnspentOutputs:   allOuts,
-		UnspentOutputIDs: allOutIDs,
-		Request: &isc.RequestParameters{
+	allOuts := ch.Env.GetUnspentOutputs(addr)
+	tx, err := transaction.NewRequestTransaction(
+		wallet,
+		addr,
+		allOuts,
+		&isc.RequestParameters{
 			TargetAddress: ch.ChainID.AsAddress(),
-			Assets:        &isc.Assets{BaseTokens: 1 * isc.Million},
+			Assets:        isc.NewAssetsBaseTokens(1 * isc.Million),
 			Metadata: &isc.SendMetadata{
 				TargetContract: inccounter.Contract.Hname(),
 				EntryPoint:     inccounter.FuncIncCounter.Hname(),
 				GasBudget:      math.MaxUint64,
 			},
 		},
-	})
+		nil,
+		env.SlotIndex(),
+		false,
+	)
 	require.NoError(t, err)
 
 	// tweak the tx before adding to the ledger, set bad metadata
-	for i, out := range tx.Outputs {
-		if out.FeatureSet().MetadataFeature() == nil {
+	for i, out := range tx.Transaction.Outputs {
+		if out.FeatureSet().Metadata() == nil {
 			// skip if not the request output
 			continue
 		}
@@ -236,16 +249,21 @@ func TestBadMetadata(t *testing.T) {
 				customOut.Features[ii] = mf
 			}
 		}
-		tx.Outputs[i] = customOut
+		tx.Transaction.Outputs[i] = customOut
 	}
 
-	tx, err = transaction.CreateAndSignTx(tx.Essence.Inputs, tx.Essence.InputsCommitment[:], tx.Outputs, wallet, parameters.L1().Protocol.NetworkID())
+	tx, err = transaction.CreateAndSignTx(
+		wallet,
+		tx.Transaction.TransactionEssence.Inputs,
+		tx.Transaction.Outputs,
+		env.SlotIndex(),
+	)
 	require.NoError(t, err)
 	require.Zero(t, ch.L2BaseTokens(isc.NewAddressAgentID(addr)))
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(t, err)
 
-	reqs, err := ch.Env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "post")
 	// assert request was processed with an error

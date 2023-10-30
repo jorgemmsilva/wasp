@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -23,7 +24,6 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
-	"github.com/iotaledger/wasp/packages/vm/core/governance/governanceimpl"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -125,7 +125,7 @@ func TestAccessNodes(t *testing.T) {
 	node1KP, _ := env.NewKeyPairWithFunds()
 	node1OwnerKP, node1OwnerAddr := env.NewKeyPairWithFunds()
 	chainKP, _ := env.NewKeyPairWithFunds()
-	chain, _ := env.NewChainExt(chainKP, 0, "chain1")
+	chain, _ := env.NewChainExt(chainKP, 0, initMana, "chain1")
 	var res dict.Dict
 	var err error
 
@@ -523,21 +523,9 @@ func TestMetadata(t *testing.T) {
 	)
 	require.Error(t, err)
 
-	// Test invalid custom metadata
-	_, err = ch.PostRequestSync(
-		solo.NewCallParams(
-			governance.Contract.Name,
-			governance.FuncSetMetadata.Name,
-			governance.ParamMetadata,
-			string(make([]byte, governanceimpl.MaxCustomMetadataLength+1)),
-		).WithMaxAffordableGasBudget(),
-		nil,
-	)
-	require.Error(t, err)
-
 	// set invalid custom metadata
 	hugePublicChainMetadata := isc.PublicChainMetadata{
-		Website: string(make([]byte, governanceimpl.MaxCustomMetadataLength+1)),
+		Website: string(make([]byte, transaction.MaxPublicURLLength+1)),
 	}
 	_, err = ch.PostRequestSync(
 		solo.NewCallParams(
@@ -678,8 +666,8 @@ func TestGovernanceZeroGasFee(t *testing.T) {
 				accounts.ParamAgentID: codec.EncodeAgentID(userAgentID2),
 			},
 		).
-			AddBaseTokens(gasGreaterThanEstimatedGas).
-			AddAllowanceBaseTokens(gasGreaterThanEstimatedGas).
+			AddBaseTokens(iotago.BaseToken(gasGreaterThanEstimatedGas)).
+			AddAllowanceBaseTokens(iotago.BaseToken(gasGreaterThanEstimatedGas)).
 			WithGasBudget(gasGreaterThanEstimatedGas),
 		user1,
 	)
@@ -688,7 +676,7 @@ func TestGovernanceZeroGasFee(t *testing.T) {
 	userL2Bal2 := ch.L2BaseTokens(userAgentID1)
 	userL1Bal2 := ch.Env.L1BaseTokens(userAddr1)
 	require.Equal(t, userL2Bal1, userL2Bal2)
-	require.Equal(t, userL1Bal1-gasGreaterThanEstimatedGas, userL1Bal2)
+	require.Equal(t, userL1Bal1-iotago.BaseToken(gasGreaterThanEstimatedGas), userL1Bal2)
 	require.Greater(t, ch.LastReceipt().GasBurned, uint64(0))
 	require.Zero(t, ch.LastReceipt().GasFeeCharged)
 
@@ -701,14 +689,14 @@ func TestGovernanceZeroGasFee(t *testing.T) {
 				accounts.ParamAgentID: codec.EncodeAgentID(userAgentID2),
 			},
 		).
-			AddBaseTokens(gasLessThanEstimatedGas).
+			AddBaseTokens(iotago.BaseToken(gasLessThanEstimatedGas)).
 			WithGasBudget(gasLessThanEstimatedGas),
 		user1,
 	)
 	require.NoError(t, err)
 
 	userL2Bal3 := ch.L2BaseTokens(userAgentID1)
-	require.Equal(t, userL2Bal2+gasLessThanEstimatedGas, userL2Bal3)
+	require.Equal(t, userL2Bal2+iotago.BaseToken(gasLessThanEstimatedGas), userL2Bal3)
 	require.Greater(t, ch.LastReceipt().GasBurned, uint64(0))
 	require.Zero(t, ch.LastReceipt().GasFeeCharged)
 }
@@ -819,7 +807,7 @@ func TestGasPayout(t *testing.T) {
 	// transfer some tokens from a new account (user1)
 	ownerBal1 := ch.L2Assets(ch.OriginatorAgentID)
 	user1Bal1 := ch.L2Assets(user1AgentID)
-	transferAmt := uint64(2000)
+	transferAmt := iotago.BaseToken(2000)
 	_, err := ch.PostRequestSync(
 		solo.NewCallParams(
 			accounts.Contract.Name,

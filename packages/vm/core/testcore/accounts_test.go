@@ -79,7 +79,7 @@ func TestWithdrawEverything(t *testing.T) {
 
 	// deposit some base tokens to L2
 	initialL1balance := ch.Env.L1BaseTokens(senderAddr)
-	baseTokensToDepositToL2 := uint64(100_000)
+	baseTokensToDepositToL2 := iotago.BaseToken(100_000)
 	err := ch.DepositBaseTokensToL2(baseTokensToDepositToL2, sender)
 	require.NoError(t, err)
 
@@ -109,6 +109,8 @@ func TestWithdrawEverything(t *testing.T) {
 	require.Zero(t, finalL2Balance)
 }
 
+const initMana = 1_000
+
 func TestFoundries(t *testing.T) {
 	var env *solo.Solo
 	var ch *solo.Chain
@@ -118,7 +120,7 @@ func TestFoundries(t *testing.T) {
 
 	initTest := func() {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ = env.NewChainExt(nil, 10*isc.Million, "chain1")
+		ch, _ = env.NewChainExt(nil, 10*isc.Million, initMana, "chain1")
 		senderKeyPair, senderAddr = env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID = isc.NewAgentID(senderAddr)
 
@@ -126,7 +128,7 @@ func TestFoundries(t *testing.T) {
 	}
 	t.Run("newFoundry fails when no allowance is provided", func(t *testing.T) {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ = env.NewChainExt(nil, 100_000, "chain1")
+		ch, _ = env.NewChainExt(nil, 100_000, initMana, "chain1")
 
 		req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
 			accounts.ParamTokenScheme, codec.EncodeTokenScheme(
@@ -141,7 +143,7 @@ func TestFoundries(t *testing.T) {
 	})
 	t.Run("newFoundry overrides bad melted/minted token counters in tokenscheme", func(t *testing.T) {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ = env.NewChainExt(nil, 100_000, "chain1")
+		ch, _ = env.NewChainExt(nil, 100_000, initMana, "chain1")
 
 		req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
 			accounts.ParamTokenScheme, codec.EncodeTokenScheme(
@@ -484,12 +486,12 @@ func TestAccountBalances(t *testing.T) {
 	sender, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(11))
 	senderAgentID := isc.NewAgentID(senderAddr)
 
-	l1BaseTokens := func(addr iotago.Address) uint64 { return env.L1Assets(addr).BaseTokens }
+	l1BaseTokens := func(addr iotago.Address) iotago.BaseToken { return env.L1Assets(addr).BaseTokens }
 	totalBaseTokens := l1BaseTokens(chainOwnerAddr) + l1BaseTokens(senderAddr)
 
-	ch, _ := env.NewChainExt(chainOwner, 0, "chain1")
+	ch, _ := env.NewChainExt(chainOwner, 0, initMana, "chain1")
 
-	totalGasFeeCharged := uint64(0)
+	totalGasFeeCharged := iotago.BaseToken(0)
 
 	checkBalance := func() {
 		require.EqualValues(t,
@@ -498,15 +500,15 @@ func TestAccountBalances(t *testing.T) {
 		)
 
 		anchor := ch.GetAnchorOutputFromL1().GetAccountOutput()
-		require.EqualValues(t, l1BaseTokens(ch.ChainID.AsAddress()), anchor.Deposit())
+		require.EqualValues(t, l1BaseTokens(ch.ChainID.AsAddress()), anchor.BaseTokenAmount())
 
 		require.LessOrEqual(t, len(ch.L2Accounts()), 3)
 
 		bi := ch.GetLatestBlockInfo()
 
-		anchorSD := parameters.Storage().MinDeposit(anchor)
+		anchorSD := lo.Must(parameters.Storage().MinDeposit(anchor))
 		require.EqualValues(t,
-			anchor.Deposit(),
+			anchor.BaseTokenAmount(),
 			anchorSD+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(senderAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
 		)
 
@@ -550,7 +552,7 @@ type testParams struct {
 	nativeTokenID     iotago.NativeTokenID
 }
 
-func initDepositTest(t *testing.T, originParams dict.Dict, initLoad ...uint64) *testParams {
+func initDepositTest(t *testing.T, originParams dict.Dict, initLoad ...iotago.BaseToken) *testParams {
 	ret := &testParams{}
 	ret.env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
 
@@ -559,11 +561,11 @@ func initDepositTest(t *testing.T, originParams dict.Dict, initLoad ...uint64) *
 	ret.user, ret.userAddr = ret.env.NewKeyPairWithFunds(ret.env.NewSeedFromIndex(11))
 	ret.userAgentID = isc.NewAgentID(ret.userAddr)
 
-	initBaseTokens := uint64(0)
+	initBaseTokens := iotago.BaseToken(0)
 	if len(initLoad) != 0 {
 		initBaseTokens = initLoad[0]
 	}
-	ret.ch, _ = ret.env.NewChainExt(ret.chainOwner, initBaseTokens, "chain1", originParams)
+	ret.ch, _ = ret.env.NewChainExt(ret.chainOwner, initBaseTokens, initMana, "chain1", originParams)
 
 	ret.req = solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name)
 	return ret
@@ -586,7 +588,7 @@ func (v *testParams) createFoundryAndMint(maxSupply, amount interface{}) (uint32
 func TestDepositBaseTokens(t *testing.T) {
 	// the test check how request transaction construction functions adjust base tokens to the minimum needed for the
 	// storage deposit. If storage deposit is 185, anything below that fill be topped up to 185, above that no adjustment is needed
-	for _, addBaseTokens := range []uint64{0, 50, 150, 200, 1000} {
+	for _, addBaseTokens := range []iotago.BaseToken{0, 50, 150, 200, 1000} {
 		t.Run("add base tokens "+strconv.Itoa(int(addBaseTokens)), func(t *testing.T) {
 			v := initDepositTest(t, nil)
 			v.req.WithGasBudget(100_000)
@@ -600,7 +602,7 @@ func TestDepositBaseTokens(t *testing.T) {
 			require.NoError(t, err)
 			rec := v.ch.LastReceipt()
 
-			storageDeposit := parameters.Storage().MinDeposit(tx.Outputs[0])
+			storageDeposit := lo.Must(parameters.Storage().MinDeposit(tx.Transaction.Outputs[0]))
 			t.Logf("byteCost = %d", storageDeposit)
 
 			adjusted := addBaseTokens
@@ -614,7 +616,7 @@ func TestDepositBaseTokens(t *testing.T) {
 }
 
 // initWithdrawTest creates foundry with 1_000_000 of max supply and mint 100 tokens to user's account
-func initWithdrawTest(t *testing.T, initLoad ...uint64) *testParams {
+func initWithdrawTest(t *testing.T, initLoad ...iotago.BaseToken) *testParams {
 	v := initDepositTest(t, nil, initLoad...)
 	v.ch.MustDepositBaseTokensToL2(2*isc.Million, v.user)
 	// create foundry and mint 100 tokens
@@ -798,7 +800,7 @@ func TestWithdrawDepositNativeTokens(t *testing.T) {
 
 		// create a new chain (ch2) with active state pruning set to keep only 1 block
 		blockKeepAmount := int32(1)
-		ch2, _ := v.env.NewChainExt(nil, 0, "evmchain", dict.Dict{
+		ch2, _ := v.env.NewChainExt(nil, 0, initMana, "evmchain", dict.Dict{
 			origin.ParamBlockKeepAmount: codec.EncodeInt32(blockKeepAmount),
 		})
 
@@ -918,113 +920,6 @@ func TestTransferPartialAssets(t *testing.T) {
 	v.ch.AssertL2TotalNativeTokens(nativeTokenID, big.NewInt(10))
 }
 
-// TestMintedTokensBurn belongs to iota.go
-func TestMintedTokensBurn(t *testing.T) {
-	const OneMi = 1_000_000
-
-	_, ident1, ident1AddrKeys := tpkg.RandEd25519Identity()
-	aliasIdent1 := tpkg.RandAccountAddress()
-
-	inputIDs := tpkg.RandOutputIDs(3)
-	inputs := iotago.OutputSet{
-		inputIDs[0]: &iotago.BasicOutput{
-			Amount: OneMi,
-			Conditions: iotago.UnlockConditions{
-				&iotago.AddressUnlockCondition{Address: ident1},
-			},
-		},
-		inputIDs[1]: &iotago.AccountOutput{
-			Amount:         OneMi,
-			NativeTokens:   nil,
-			AccountID:      aliasIdent1.AccountID(),
-			StateIndex:     1,
-			StateMetadata:  nil,
-			FoundryCounter: 1,
-			Conditions: iotago.UnlockConditions{
-				&iotago.StateControllerAddressUnlockCondition{Address: ident1},
-				&iotago.GovernorAddressUnlockCondition{Address: ident1},
-			},
-			Features: nil,
-		},
-		inputIDs[2]: &iotago.FoundryOutput{
-			Amount:       OneMi,
-			NativeTokens: nil,
-			SerialNumber: 1,
-			TokenScheme: &iotago.SimpleTokenScheme{
-				MintedTokens:  big.NewInt(50),
-				MeltedTokens:  util.Big0,
-				MaximumSupply: big.NewInt(50),
-			},
-			Conditions: iotago.UnlockConditions{
-				&iotago.ImmutableAliasUnlockCondition{Address: aliasIdent1},
-			},
-			Features: nil,
-		},
-	}
-
-	// set input BasicOutput NativeToken to 50 which get burned
-	foundryNativeTokenID := inputs[inputIDs[2]].(*iotago.FoundryOutput).MustNativeTokenID()
-	inputs[inputIDs[0]].(*iotago.BasicOutput).NativeTokens = []*iotago.NativeTokenFeature{
-		{
-			ID:     foundryNativeTokenID,
-			Amount: new(big.Int).SetInt64(50),
-		},
-	}
-
-	essence := &iotago.TransactionEssence{
-		NetworkID:    tpkg.TestNetworkID,
-		CreationSlot: creationSlot,
-		Inputs:       inputIDs.UTXOInputs(),
-		Outputs: iotago.Outputs{
-			&iotago.AccountOutput{
-				Amount:         OneMi,
-				NativeTokens:   nil,
-				AccountID:      aliasIdent1.AccountID(),
-				StateIndex:     2,
-				StateMetadata:  nil,
-				FoundryCounter: 1,
-				Conditions: iotago.UnlockConditions{
-					&iotago.StateControllerAddressUnlockCondition{Address: ident1},
-					&iotago.GovernorAddressUnlockCondition{Address: ident1},
-				},
-				Features: nil,
-			},
-			&iotago.FoundryOutput{
-				Amount:       2 * OneMi,
-				NativeTokens: nil,
-				SerialNumber: 1,
-				TokenScheme: &iotago.SimpleTokenScheme{
-					// burn supply by -50
-					MintedTokens:  big.NewInt(50),
-					MeltedTokens:  big.NewInt(50),
-					MaximumSupply: big.NewInt(50),
-				},
-				Conditions: iotago.UnlockConditions{
-					&iotago.ImmutableAliasUnlockCondition{Address: aliasIdent1},
-				},
-				Features: nil,
-			},
-		},
-	}
-
-	sigs, err := essence.Sign(inputIDs.OrderedSet(inputs).MustCommitment(), ident1AddrKeys)
-	require.NoError(t, err)
-
-	tx := &iotago.Transaction{
-		Essence: essence,
-		Unlocks: iotago.Unlocks{
-			&iotago.SignatureUnlock{Signature: sigs[0]},
-			&iotago.ReferenceUnlock{Reference: 0},
-			&iotago.AliasUnlock{Reference: 1},
-		},
-	}
-
-	require.NoError(t, tx.SemanticallyValidate(&iotago.SemanticValidationContext{
-		ExtParas:   nil,
-		WorkingSet: nil,
-	}, inputs))
-}
-
 func TestNFTAccount(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 	ch := env.NewChain()
@@ -1053,7 +948,7 @@ func TestNFTAccount(t *testing.T) {
 	ch.Env.AssertL1BaseTokens(nftAddress, 0)
 	ch.Env.AssertL1BaseTokens(
 		ownerAddress,
-		ownerBalance+nftInfo.Output.Deposit()-baseTokensToSend,
+		ownerBalance+nftInfo.Output.BaseTokenAmount()-baseTokensToSend,
 	)
 	require.True(t, ch.Env.HasL1NFT(ownerAddress, &nftInfo.NFTID))
 
@@ -1199,7 +1094,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	// move the native tokens to a new user that doesn't have on-chain balance
 	newUser, newUserAddress := v.env.NewKeyPairWithFunds()
 	newUserAgentID := isc.NewAgentID(newUserAddress)
-	v.env.SendL1(newUserAddress, assets, v.user)
+	v.env.SendL1(newUserAddress, assets.WithMana(0), v.user)
 	// also create an NFT
 	iscNFT, _, err := v.ch.Env.MintNFTL1(v.user, newUserAddress, []byte("foobar"))
 	require.NoError(t, err)
@@ -1225,7 +1120,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	testmisc.RequireErrorToBe(t, err, "request has been skipped")
 	require.Nil(t, receipt) // nil receipt means the request was not processed
 
-	txReqs, err := v.ch.Env.RequestsForChain(tx, v.ch.ChainID)
+	txReqs, err := v.ch.Env.RequestsForChain(tx.Transaction, v.ch.ChainID)
 	require.NoError(t, err)
 	unprocessableReqID := txReqs[0].ID()
 

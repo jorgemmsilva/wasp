@@ -118,7 +118,7 @@ func TestRequestIsProcessed(t *testing.T) {
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
 
-	reqs, err := env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, len(reqs))
 
@@ -141,7 +141,7 @@ func TestRequestReceipt(t *testing.T) {
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
 
-	reqs, err := env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, len(reqs))
 	require.True(t, ch.IsRequestProcessed(reqs[0].ID()))
@@ -170,7 +170,7 @@ func TestRequestReceiptsForBlocks(t *testing.T) {
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
 
-	reqs, err := env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, len(reqs))
 
@@ -195,7 +195,7 @@ func TestRequestIDsForBlocks(t *testing.T) {
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
 
-	reqs, err := env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, len(reqs))
 
@@ -217,7 +217,7 @@ func TestViewGetRequestReceipt(t *testing.T) {
 
 func TestBlocklogPruning(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
-	ch, _ := env.NewChainExt(nil, 10*isc.Million, "chain1", dict.Dict{
+	ch, _ := env.NewChainExt(nil, 10*isc.Million, initMana, "chain1", dict.Dict{
 		origin.ParamBlockKeepAmount: codec.EncodeInt32(10),
 	})
 	for i := 1; i <= 20; i++ {
@@ -246,7 +246,7 @@ func TestBlocklogFoundriesWithPruning(t *testing.T) {
 	// test that foundries can be accessed even after the block is pruned
 
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
-	ch, _ := env.NewChainExt(nil, 10*isc.Million, "chain1", dict.Dict{
+	ch, _ := env.NewChainExt(nil, 10*isc.Million, initMana, "chain1", dict.Dict{
 		origin.ParamBlockKeepAmount: codec.EncodeInt32(10),
 	})
 	ch.DepositBaseTokensToL2(1*isc.Million, nil)

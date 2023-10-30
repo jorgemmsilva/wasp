@@ -85,7 +85,7 @@ func (ch *Chain) AssertL2TotalNativeTokens(nativeTokenID iotago.NativeTokenID, b
 	require.True(ch.Env.T, util.ToBigInt(bal).Cmp(bals.AmountNativeToken(nativeTokenID)) == 0)
 }
 
-func (ch *Chain) AssertL2TotalBaseTokens(bal uint64) {
+func (ch *Chain) AssertL2TotalBaseTokens(bal iotago.BaseToken) {
 	if h, ok := ch.Env.T.(tHelper); ok {
 		h.Helper()
 	}

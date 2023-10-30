@@ -90,7 +90,7 @@ func TestManyEvents(t *testing.T) {
 				WithMaxAffordableGasBudget(),
 			nil,
 		)
-		return getBurnedGas(ch, tx, err)
+		return getBurnedGas(ch, tx.Transaction, err)
 	}
 
 	gas1000, err := postEvents(1000)
@@ -123,7 +123,7 @@ func TestEventTooLarge(t *testing.T) {
 				WithMaxAffordableGasBudget(),
 			nil,
 		)
-		return getBurnedGas(ch, tx, err)
+		return getBurnedGas(ch, tx.Transaction, err)
 	}
 
 	gas1k, err := postEvent(100_000)
@@ -144,7 +144,7 @@ func incrementSCCounter(t *testing.T, ch *solo.Chain) isc.RequestID {
 		nil,
 	)
 	require.NoError(t, err)
-	reqs, err := ch.Env.RequestsForChain(tx, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
 	require.NoError(t, err)
 	return reqs[0].ID()
 }

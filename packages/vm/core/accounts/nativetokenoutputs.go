@@ -61,12 +61,12 @@ func GetNativeTokenOutput(state kv.KVStoreReader, nativeTokenID iotago.NativeTok
 			&iotago.AddressUnlockCondition{Address: chainID.AsAddress()},
 		},
 		Features: iotago.BasicOutputFeatures{
+			&iotago.SenderFeature{
+				Address: chainID.AsAddress(),
+			},
 			&iotago.NativeTokenFeature{
 				ID:     nativeTokenID,
 				Amount: tokenRec.Amount,
-			},
-			&iotago.SenderFeature{
-				Address: chainID.AsAddress(),
 			},
 		},
 	}

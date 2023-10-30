@@ -110,15 +110,15 @@ func cloneInternalBasicOutputOrNil(o *iotago.BasicOutput) *iotago.BasicOutput {
 	return o.Clone().(*iotago.BasicOutput)
 }
 
-func (txb *AnchorTransactionBuilder) newInternalTokenOutput(aliasID iotago.AccountID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
+func (txb *AnchorTransactionBuilder) newInternalTokenOutput(accountID iotago.AccountID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
 	out := &iotago.BasicOutput{
 		Amount: 0,
 		Conditions: iotago.BasicOutputUnlockConditions{
-			&iotago.AddressUnlockCondition{Address: aliasID.ToAddress()},
+			&iotago.AddressUnlockCondition{Address: accountID.ToAddress()},
 		},
 		Features: iotago.BasicOutputFeatures{
 			&iotago.SenderFeature{
-				Address: aliasID.ToAddress(),
+				Address: accountID.ToAddress(),
 			},
 			&iotago.NativeTokenFeature{
 				ID:     nativeTokenID,

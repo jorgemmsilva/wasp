@@ -5,6 +5,8 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
@@ -40,11 +42,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 			Data: metadata,
 		}}
 	}
-	var err error
-	f.Amount, err = parameters.Storage().MinDeposit(f)
-	if err != nil {
-		panic(err)
-	}
+	f.Amount = lo.Must(parameters.Storage().MinDeposit(f))
 	txb.invokedFoundries[f.SerialNumber] = &foundryInvoked{
 		serialNumber:     f.SerialNumber,
 		accountingInput:  nil,

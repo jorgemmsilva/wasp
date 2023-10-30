@@ -15,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
@@ -44,7 +45,7 @@ func TestCreateOrigin(t *testing.T) {
 	var originTxID iotago.TransactionID
 
 	initTest := func() {
-		u = utxodb.New()
+		u = utxodb.New(parameters.L1API())
 		userKey = cryptolib.NewKeyPair()
 		userAddr = userKey.GetPublicKey().AsEd25519Address()
 		_, err2 := u.GetFundsFromFaucet(userAddr)

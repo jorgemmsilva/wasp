@@ -13,7 +13,6 @@ import (
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/builder"
-	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/iota.go/v4/vm/nova"
 )
@@ -43,18 +42,13 @@ type UtxoDB struct {
 }
 
 // New creates a new UtxoDB instance
-func New(l1api ...iotago.API) *UtxoDB {
+func New(api iotago.API) *UtxoDB {
 	u := &UtxoDB{
 		transactions: make(map[iotago.TransactionID]*iotago.SignedTransaction),
 		utxo:         make(map[iotago.OutputID]struct{}),
 		timestamp:    time.Unix(1, 0),
 		timestep:     1 * time.Millisecond,
-		api: func() iotago.API {
-			if len(l1api) > 0 {
-				return l1api[0]
-			}
-			return tpkg.TestAPI
-		}(),
+		api:          api,
 	}
 	u.genesisInit()
 	return u

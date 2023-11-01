@@ -12,7 +12,6 @@ import (
 
 	"github.com/iotaledger/hive.go/kvstore"
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -85,10 +84,7 @@ func TestWriteAmplification(t *testing.T) {
 	b := originBlock
 	allBytes := 0
 	for i := 0; i < 10_000; i++ {
-		sd, sdErr := chainStore.NewStateDraft(isc.BlockTime{
-			SlotIndex: iotago.SlotIndex(i),
-			Timestamp: time.Now(),
-		}, b.L1Commitment())
+		sd, sdErr := chainStore.NewStateDraft(time.Now(), b.L1Commitment())
 		require.NoError(t, sdErr)
 		for j := 0; j < 100; j++ {
 			k := kv.Key(fmt.Sprintf("key-%d-%d", 0, j)) // NOTE: independent of i.

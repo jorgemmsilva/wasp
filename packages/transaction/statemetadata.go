@@ -81,7 +81,7 @@ func (s *StateMetadata) Write(w io.Writer) error {
 
 /////////////// avoiding circular imports: state <-> transaction //////////////////
 
-func L1CommitmentFromAccountOutput(ao *iotago.AccountOutput) (*state.L1Commitment, error) {
+func L1CommitmentFromAnchorOutput(ao *iotago.AnchorOutput) (*state.L1Commitment, error) {
 	s, err := StateMetadataFromBytes(ao.StateMetadata)
 	if err != nil {
 		return nil, err
@@ -89,8 +89,8 @@ func L1CommitmentFromAccountOutput(ao *iotago.AccountOutput) (*state.L1Commitmen
 	return s.L1Commitment, nil
 }
 
-func MustL1CommitmentFromAccountOutput(ao *iotago.AccountOutput) *state.L1Commitment {
-	l1c, err := L1CommitmentFromAccountOutput(ao)
+func MustL1CommitmentFromAnchorOutput(ao *iotago.AnchorOutput) *state.L1Commitment {
+	l1c, err := L1CommitmentFromAnchorOutput(ao)
 	if err != nil {
 		panic(err)
 	}

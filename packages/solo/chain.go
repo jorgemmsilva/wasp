@@ -476,15 +476,15 @@ func (ch *Chain) GetRequestReceiptsForBlockRangeAsStrings(fromBlockIndex, toBloc
 }
 
 func (ch *Chain) GetControlAddresses() *isc.ControlAddresses {
-	accountOutputID, err := ch.LatestAccountOutput(chaintypes.ConfirmedState)
+	outs, err := ch.LatestChainOutputs(chaintypes.ConfirmedState)
 	if err != nil {
 		return nil
 	}
-	accountOutput := accountOutputID.GetAccountOutput()
+	anchorOutput := outs.AnchorOutput
 	controlAddr := &isc.ControlAddresses{
-		StateAddress:     accountOutput.StateController(),
-		GoverningAddress: accountOutput.GovernorAddress(),
-		SinceBlockIndex:  accountOutput.StateIndex,
+		StateAddress:     anchorOutput.StateController(),
+		GoverningAddress: anchorOutput.GovernorAddress(),
+		SinceBlockIndex:  anchorOutput.StateIndex,
 	}
 	return controlAddr
 }
@@ -641,13 +641,9 @@ func (*Chain) GetTimeData() time.Time {
 	panic("unimplemented")
 }
 
-// LatestAccountOutput implements chain.Chain
-func (ch *Chain) LatestAccountOutput(freshness chaintypes.StateFreshness) (*isc.AccountOutputWithID, error) {
-	ao := ch.GetAnchorOutputFromL1()
-	if ao == nil {
-		return nil, fmt.Errorf("have no latest alias output")
-	}
-	return ao, nil
+// LatestChainOutputs implements chain.Chain
+func (ch *Chain) LatestChainOutputs(freshness chaintypes.StateFreshness) (*isc.ChainOutputs, error) {
+	return ch.GetChainOutputsFromL1(), nil
 }
 
 // LatestState implements chain.Chain
@@ -655,11 +651,8 @@ func (ch *Chain) LatestState(freshness chaintypes.StateFreshness) (state.State, 
 	if freshness == chaintypes.ActiveOrCommittedState || freshness == chaintypes.ActiveState {
 		return ch.store.LatestState()
 	}
-	ao := ch.GetAnchorOutputFromL1()
-	if ao == nil {
-		return nil, errors.New("no AO for this chain in L1")
-	}
-	l1c, err := transaction.L1CommitmentFromAccountOutput(ao.GetAccountOutput())
+	outs := ch.GetChainOutputsFromL1()
+	l1c, err := transaction.L1CommitmentFromAnchorOutput(outs.AnchorOutput)
 	if err != nil {
 		panic(err)
 	}

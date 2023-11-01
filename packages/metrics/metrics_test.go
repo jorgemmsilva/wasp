@@ -108,17 +108,17 @@ func TestMessageMetrics(t *testing.T) {
 	checkMetricsValues(t, 3, outputID3, ncm.InStateOutput())
 
 	// IN Alias output
-	accountOutput1 := &iotago.AccountOutput{StateIndex: 1}
-	accountOutput2 := &iotago.AccountOutput{StateIndex: 2}
-	accountOutput3 := &iotago.AccountOutput{StateIndex: 3}
+	anchorOutput1 := &iotago.AnchorOutput{StateIndex: 1}
+	anchorOutput2 := &iotago.AnchorOutput{StateIndex: 2}
+	anchorOutput3 := &iotago.AnchorOutput{StateIndex: 3}
 
-	ncm.InAccountOutput().IncMessages(accountOutput1)
-	cncm1.InAccountOutput().IncMessages(accountOutput2)
-	cncm1.InAccountOutput().IncMessages(accountOutput3)
+	ncm.InAnchorOutput().IncMessages(anchorOutput1)
+	cncm1.InAnchorOutput().IncMessages(anchorOutput2)
+	cncm1.InAnchorOutput().IncMessages(anchorOutput3)
 
-	checkMetricsValues(t, 2, accountOutput3, cncm1.InAccountOutput())
-	checkMetricsValues(t, 0, new(iotago.AccountOutput), cncm2.InAccountOutput())
-	checkMetricsValues(t, 3, accountOutput3, ncm.InAccountOutput())
+	checkMetricsValues(t, 2, anchorOutput3, cncm1.InAnchorOutput())
+	checkMetricsValues(t, 0, new(iotago.AnchorOutput), cncm2.InAnchorOutput())
+	checkMetricsValues(t, 3, anchorOutput3, ncm.InAnchorOutput())
 
 	// IN Output
 	inOutput1 := &InOutput{OutputID: iotago.OutputID{1}}

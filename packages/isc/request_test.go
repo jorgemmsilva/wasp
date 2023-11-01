@@ -24,7 +24,7 @@ func TestRequestDataSerialization(t *testing.T) {
 	})
 
 	t.Run("on ledger", func(t *testing.T) {
-		sender := tpkg.RandAccountAddress()
+		sender := tpkg.RandAnchorAddress()
 		requestMetadata := &RequestMetadata{
 			SenderContract: ContractIdentityFromHname(Hn("sender_contract")),
 			TargetContract: Hn("target_contract"),

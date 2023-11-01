@@ -27,13 +27,13 @@ func TestAddressSerialization(t *testing.T) {
 		require.Equal(t, addr1, addr2)
 	}
 	{
-		data := make([]byte, iotago.AccountAddressSerializedBytesSize)
-		data[0] = byte(iotago.AddressAccount)
+		data := make([]byte, iotago.AnchorAddressSerializedBytesSize)
+		data[0] = byte(iotago.AddressAnchor)
 		rand.Read(data[1:])
 
 		addr1, err := isc.AddressFromBytes(data)
 		require.NoError(t, err)
-		require.IsType(t, &iotago.AccountAddress{}, addr1)
+		require.IsType(t, &iotago.AnchorAddress{}, addr1)
 
 		data2 := isc.AddressToBytes(addr1)
 		require.Equal(t, data, data2)

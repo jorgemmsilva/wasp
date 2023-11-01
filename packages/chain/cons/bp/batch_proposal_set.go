@@ -27,23 +27,23 @@ func (bps batchProposalSet) decidedDSSIndexProposals() map[gpa.NodeID][]int {
 
 // Decided Base Alias Output is the one, that was proposed by F+1 nodes or more.
 // If there is more that 1 such ID, we refuse to use all of them.
-func (bps batchProposalSet) decidedBaseAccountOutput(f int) *isc.AccountOutputWithID {
+func (bps batchProposalSet) decidedBaseAnchorOutput(f int) *isc.AnchorOutputWithID {
 	counts := map[hashing.HashValue]int{}
-	values := map[hashing.HashValue]*isc.AccountOutputWithID{}
+	values := map[hashing.HashValue]*isc.AnchorOutputWithID{}
 	for _, bp := range bps {
-		h := bp.baseAccountOutput.Hash()
+		h := bp.baseAnchorOutput.Hash()
 		counts[h]++
 		if _, ok := values[h]; !ok {
-			values[h] = bp.baseAccountOutput
+			values[h] = bp.baseAnchorOutput
 		}
 	}
 
-	var found *isc.AccountOutputWithID
+	var found *isc.AnchorOutputWithID
 	var uncertain bool
 	for h, count := range counts {
 		if count > f {
 			if found != nil && found.GetStateIndex() == values[h].GetStateIndex() {
-				// Found more that 1 AccountOutput proposed by F+1 or more nodes.
+				// Found more that 1 AnchorOutput proposed by F+1 or more nodes.
 				uncertain = true
 				continue
 			}
@@ -61,7 +61,7 @@ func (bps batchProposalSet) decidedBaseAccountOutput(f int) *isc.AccountOutputWi
 
 // Take requests proposed by at least F+1 nodes. Then the request is proposed at least by 1 fair node.
 // We should only consider the proposals from the nodes that proposed the decided AO, otherwise we can select already processed requests.
-func (bps batchProposalSet) decidedRequestRefs(f int, ao *isc.AccountOutputWithID) []*isc.RequestRef {
+func (bps batchProposalSet) decidedRequestRefs(f int, ao *isc.AnchorOutputWithID) []*isc.RequestRef {
 	minNumberMentioned := f + 1
 	requestsByKey := map[isc.RequestRefKey]*isc.RequestRef{}
 	numMentioned := map[isc.RequestRefKey]int{}
@@ -69,7 +69,7 @@ func (bps batchProposalSet) decidedRequestRefs(f int, ao *isc.AccountOutputWithI
 	// Count number of nodes proposing a request.
 	maxLen := 0
 	for _, bp := range bps {
-		if !bp.baseAccountOutput.Equals(ao) {
+		if !bp.baseAnchorOutput.Equals(ao) {
 			continue
 		}
 		for _, reqRef := range bp.requestRefs {

@@ -12,7 +12,7 @@ const (
 	labelNameMessageType                            = "message_type"
 	labelNameInMilestone                            = "in_milestone"
 	labelNameInStateOutputMetrics                   = "in_state_output"
-	labelNameInAccountOutputMetrics                   = "in_alias_output"
+	labelNameInAnchorOutputMetrics                   = "in_alias_output"
 	labelNameInOutputMetrics                        = "in_output"
 	labelNameInOnLedgerRequestMetrics               = "in_on_ledger_request"
 	labelNameInTxInclusionStateMetrics              = "in_tx_inclusion_state"

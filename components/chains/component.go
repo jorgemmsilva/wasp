@@ -97,7 +97,7 @@ func provide(c *dig.Container) error {
 				deps.NodeConnection,
 				deps.ProcessorsConfig,
 				ParamsValidator.Address,
-				ParamsChains.DeriveAccountOutputByQuorum,
+				ParamsChains.DeriveAnchorOutputByQuorum,
 				ParamsChains.PipeliningLimit,
 				ParamsChains.ConsensusDelay,
 				ParamsChains.RecoveryTimeout,

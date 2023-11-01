@@ -25,9 +25,9 @@ type varLocalViewSM struct {
 	lv cmt_log.VarLocalView
 	//
 	// Following stands for the model.
-	confirmed []*isc.AccountOutputWithID // A chain of confirmed AOs.
-	pending   []*isc.AccountOutputWithID // A list of AOs proposed by the chain, not confirmed yet.
-	rejected  []*isc.AccountOutputWithID // Rejected AOs, that should not impact the output anymore.
+	confirmed []*isc.AnchorOutputWithID // A chain of confirmed AOs.
+	pending   []*isc.AnchorOutputWithID // A list of AOs proposed by the chain, not confirmed yet.
+	rejected  []*isc.AnchorOutputWithID // Rejected AOs, that should not impact the output anymore.
 	rejSync   bool                     // True, if reject was done and pending was not made empty yet.
 	//
 	// Helpers.
@@ -38,10 +38,10 @@ var _ rapid.StateMachine = &varLocalViewSM{}
 
 func newVarLocalViewSM(t *rapid.T) *varLocalViewSM {
 	sm := new(varLocalViewSM)
-	sm.lv = cmt_log.NewVarLocalView(-1, func(ao *isc.AccountOutputWithID) {}, testlogger.NewLogger(t))
-	sm.confirmed = []*isc.AccountOutputWithID{}
-	sm.pending = []*isc.AccountOutputWithID{}
-	sm.rejected = []*isc.AccountOutputWithID{}
+	sm.lv = cmt_log.NewVarLocalView(-1, func(ao *isc.AnchorOutputWithID) {}, testlogger.NewLogger(t))
+	sm.confirmed = []*isc.AnchorOutputWithID{}
+	sm.pending = []*isc.AnchorOutputWithID{}
+	sm.rejected = []*isc.AnchorOutputWithID{}
 	sm.rejSync = false
 	return sm
 }
@@ -54,7 +54,7 @@ func (sm *varLocalViewSM) L1ExternalAOConfirmed(t *rapid.T) {
 	//
 	// The AO from L1 is always respected as the correct one.
 	newAO := sm.nextAO()
-	tipAO, tipChanged, _ := sm.lv.AccountOutputConfirmed(newAO)
+	tipAO, tipChanged, _ := sm.lv.AnchorOutputConfirmed(newAO)
 	require.True(t, tipChanged)            // BaseAO is replaced or set.
 	require.Equal(t, newAO, tipAO)         // BaseAO is replaced or set.
 	require.Equal(t, newAO, sm.lv.Value()) // BaseAO is replaced or set.
@@ -63,7 +63,7 @@ func (sm *varLocalViewSM) L1ExternalAOConfirmed(t *rapid.T) {
 	sm.confirmed = append(sm.confirmed, newAO)
 	sm.rejected = append(sm.rejected, sm.pending...)
 	sm.rejSync = false
-	sm.pending = []*isc.AccountOutputWithID{}
+	sm.pending = []*isc.AnchorOutputWithID{}
 }
 
 // E.g. A TX proposed by the consensus was approved.
@@ -79,7 +79,7 @@ func (sm *varLocalViewSM) L1PendingApproved(t *rapid.T) {
 	// Notify the LocalView on the CNF.
 	cnfAO := sm.pending[0]
 	prevAO := sm.lv.Value()
-	_, tipChanged, _ := sm.lv.AccountOutputConfirmed(cnfAO)
+	_, tipChanged, _ := sm.lv.AnchorOutputConfirmed(cnfAO)
 	//
 	// Update the model.
 	sm.confirmed = append(sm.confirmed, cnfAO)
@@ -105,7 +105,7 @@ func (sm *varLocalViewSM) L1PendingRejected(t *rapid.T) {
 	//
 	// Notify the LocalView on the rejection.
 	rejectFrom := rapid.IntRange(0, len(sm.pending)-1).Draw(t, "reject.idx")
-	newTip, _ := sm.lv.AccountOutputRejected(sm.pending[rejectFrom])
+	newTip, _ := sm.lv.AnchorOutputRejected(sm.pending[rejectFrom])
 	require.Equal(t, rejectFrom != 0, newTip == nil, "If that't not the first of the pending, then there are pending left, so the new tip is undefined.")
 	require.Equal(t, rejectFrom == 0, newTip != nil, "In this case, all the pending are marked as rejected, so we have the tip (the confirmed one).")
 	//
@@ -126,7 +126,7 @@ func (sm *varLocalViewSM) OutdatedRejectHandled(t *rapid.T) {
 	selectedAO := sm.rejected[selectedIdx]
 	//
 	// Perform the action.
-	_, tipChanged := sm.lv.AccountOutputRejected(selectedAO)
+	_, tipChanged := sm.lv.AnchorOutputRejected(selectedAO)
 	require.False(t, tipChanged)
 	//
 	// Update the model.
@@ -163,7 +163,7 @@ func (sm *varLocalViewSM) Check(t *rapid.T) {
 }
 
 // We don't use randomness to generate AOs because they have to be unique.
-func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AccountOutputWithID) *isc.AccountOutputWithID {
+func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AnchorOutputWithID) *isc.AnchorOutputWithID {
 	sm.utxoIDCounter++
 	txIDBytes := []byte(fmt.Sprintf("%v", sm.utxoIDCounter))
 	utxoInput := iotago.UTXOInput{}
@@ -178,10 +178,10 @@ func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AccountOutputWithID) *isc.Accoun
 	} else {
 		stateIndex = uint32(sm.utxoIDCounter)
 	}
-	return isc.NewAccountOutputWithID(&iotago.AccountOutput{StateIndex: stateIndex}, utxoInput.ID())
+	return isc.NewAnchorOutputWithID(&iotago.AnchorOutput{StateIndex: stateIndex}, utxoInput.ID())
 }
 
-// Alias output can be proposed, if there is at least one AO confirmed and there is no
+// Anchor output can be proposed, if there is at least one AO confirmed and there is no
 // ongoing resync because of rejections.
 func (sm *varLocalViewSM) nextChainStepPossible() bool {
 	return len(sm.confirmed) != 0 && !sm.rejSync

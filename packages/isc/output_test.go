@@ -13,20 +13,36 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-func TestAccountOutputWithIDSerialization(t *testing.T) {
-	output := iotago.AccountOutput{
+func TestAnchorOutputWithIDSerialization(t *testing.T) {
+	anchorOutput := iotago.AnchorOutput{
 		Amount:     iotago.BaseToken(mathrand.Uint64()),
 		StateIndex: mathrand.Uint32(),
 		// serix deserializes with empty slices instead of nil
 		StateMetadata:     make([]byte, 0),
+		Conditions:        make(iotago.AnchorOutputUnlockConditions, 0),
+		Features:          make(iotago.AnchorOutputFeatures, 0),
+		ImmutableFeatures: make(iotago.AnchorOutputImmFeatures, 0),
+	}
+	rand.Read(anchorOutput.AnchorID[:])
+	anchorOutputID := iotago.OutputID{}
+	rand.Read(anchorOutputID[:])
+
+	accountOutput := iotago.AccountOutput{
+		Amount:            iotago.BaseToken(mathrand.Uint64()),
 		Conditions:        make(iotago.AccountOutputUnlockConditions, 0),
 		Features:          make(iotago.AccountOutputFeatures, 0),
 		ImmutableFeatures: make(iotago.AccountOutputImmFeatures, 0),
 	}
-	rand.Read(output.AccountID[:])
-	outputID := iotago.OutputID{}
-	rand.Read(outputID[:])
-	accountOutputWithID := isc.NewAccountOutputWithID(&output, outputID)
-	rwutil.ReadWriteTest(t, accountOutputWithID, new(isc.AccountOutputWithID))
-	rwutil.BytesTest(t, accountOutputWithID, isc.AccountOutputWithIDFromBytes)
+	rand.Read(accountOutput.AccountID[:])
+	accountOutputID := iotago.OutputID{}
+	rand.Read(accountOutputID[:])
+
+	o := isc.NewChainOuptuts(
+		&anchorOutput,
+		anchorOutputID,
+		&accountOutput,
+		accountOutputID,
+	)
+	rwutil.ReadWriteTest(t, o, new(isc.ChainOutputs))
+	rwutil.BytesTest(t, o, isc.ChainOutputsFromBytes)
 }

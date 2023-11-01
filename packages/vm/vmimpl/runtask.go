@@ -3,13 +3,16 @@ package vmimpl
 import (
 	"errors"
 	"math"
+	"slices"
 
-	"github.com/iotaledger/hive.go/lo"
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
@@ -41,7 +44,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 		panic("invalid params: must be at least 1 request")
 	}
 
-	prevL1Commitment, err := transaction.L1CommitmentFromAccountOutput(task.AnchorOutput)
+	prevL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(task.Inputs.AnchorOutput)
 	if err != nil {
 		panic(err)
 	}
@@ -116,9 +119,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 		withContractState(chainState, blocklog.Contract, func(s kv.KVStore) {
 			blocklog.UpdateLatestBlockInfo(
 				s,
-				vmctx.task.AnchorOutputID.TransactionID(),
-				isc.NewAccountOutputWithID(vmctx.task.AnchorOutput, vmctx.task.AnchorOutputID),
-				prevL1Commitment,
+				vmctx.task.Inputs.AnchorOutputID.TransactionID(),
 			)
 		})
 	})
@@ -126,14 +127,12 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	// save the OutputID of the newly created tokens, foundries and NFTs in the previous block
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-			accounts.UpdateLatestOutputID(s, vmctx.task.AnchorOutputID.TransactionID(), vmctx.task.AnchorOutput.StateIndex)
+			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex)
 		})
 	})
 
 	vmctx.txbuilder = vmtxbuilder.NewAnchorTransactionBuilder(
-		vmctx.task.AnchorOutput,
-		vmctx.task.AnchorOutputID,
-		vmctx.getAnchorOutputSD(),
+		vmctx.task.Inputs,
 		vmtxbuilder.AccountsContractRead{
 			NativeTokenOutput:   vmctx.loadNativeTokenOutput,
 			FoundryOutput:       vmctx.loadFoundry,
@@ -150,10 +149,13 @@ func (vmctx *vmContext) getMigrations() *migrations.MigrationScheme {
 	return allmigrations.DefaultScheme
 }
 
-func (vmctx *vmContext) getAnchorOutputSD() iotago.BaseToken {
-	// get the total L2 funds in accounting
-	totalL2Funds := vmctx.loadTotalFungibleTokens()
-	return vmctx.task.AnchorOutput.Amount - totalL2Funds.BaseTokens
+func (vmctx *vmContext) getSDInChainOutputs() iotago.BaseToken {
+	api := parameters.L1Provider().APIForSlot(vmctx.task.Inputs.AnchorOutputID.CreationSlot())
+	ret := lo.Must(api.StorageScoreStructure().MinDeposit(vmctx.task.Inputs.AnchorOutput))
+	if _, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
+		ret += out.Amount
+	}
+	return ret
 }
 
 func (vmctx *vmContext) runRequests(
@@ -167,7 +169,7 @@ func (vmctx *vmContext) runRequests(
 	unprocessable []isc.OnLedgerRequest,
 ) {
 	results = []*vm.RequestResult{}
-	allReqs := lo.CopySlice(reqs)
+	allReqs := slices.Clone(reqs)
 
 	// main loop over the batch of requests
 	requestIndexCounter := uint16(0)

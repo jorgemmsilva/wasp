@@ -8,7 +8,7 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-// AddressAgentID is an AgentID backed by a non-account address.
+// AddressAgentID is an AgentID backed by a non-anchor address.
 type AddressAgentID struct {
 	a iotago.Address
 }

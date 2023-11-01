@@ -34,7 +34,13 @@ type CreateChainParams struct {
 }
 
 // DeployChain creates a new chain on specified committee address
-func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr iotago.Address) (isc.ChainID, error) {
+func DeployChain(
+	par CreateChainParams,
+	stateControllerAddr, govControllerAddr iotago.Address,
+	deposit iotago.BaseToken,
+	depositMana iotago.Mana,
+	creationSlot iotago.SlotIndex,
+) (isc.ChainID, error) {
 	var err error
 	textout := io.Discard
 	if par.Textout != nil {
@@ -52,7 +58,10 @@ func DeployChain(par CreateChainParams, stateControllerAddr, govControllerAddr i
 		par.OriginatorKeyPair,
 		stateControllerAddr,
 		govControllerAddr,
+		deposit,
+		depositMana,
 		par.InitParams,
+		creationSlot,
 	)
 	fmt.Fprint(textout, par.Prefix)
 	if err != nil {
@@ -82,7 +91,10 @@ func CreateChainOrigin(
 	originator *cryptolib.KeyPair,
 	stateController iotago.Address,
 	governanceController iotago.Address,
+	deposit iotago.BaseToken,
+	depositMana iotago.Mana,
 	initParams dict.Dict,
+	creationSlot iotago.SlotIndex,
 ) (isc.ChainID, error) {
 	originatorAddr := originator.GetPublicKey().AsEd25519Address()
 	// ----------- request owner address' outputs from the ledger
@@ -96,10 +108,11 @@ func CreateChainOrigin(
 		originator,
 		stateController,
 		governanceController,
-		10*isc.Million,
+		deposit,
+		depositMana,
 		initParams,
 		utxoMap,
-		utxoIDsFromUtxoMap(utxoMap),
+		creationSlot,
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 	)
 	if err != nil {

@@ -11,22 +11,22 @@ import (
 )
 
 func NewRotateChainStateControllerTx(
-	aliasID iotago.AccountID,
+	anchorID iotago.AnchorID,
 	newStateController iotago.Address,
 	chainOutputID iotago.OutputID,
 	chainOutput iotago.Output,
 	creationSlot iotago.SlotIndex,
 	kp *cryptolib.KeyPair,
 ) (*iotago.SignedTransaction, error) {
-	o, ok := chainOutput.(*iotago.AccountOutput)
+	o, ok := chainOutput.(*iotago.AnchorOutput)
 	if !ok {
-		return nil, fmt.Errorf("provided output is not the correct one. Expected AccountOutput, received %T=%v", chainOutput, chainOutput)
+		return nil, fmt.Errorf("provided output is not the correct one. Expected AnchorOutput, received %T=%v", chainOutput, chainOutput)
 	}
-	resolvedAccountID := util.AccountIDFromAccountOutput(o, chainOutputID)
-	if resolvedAccountID != aliasID {
+	resolvedAnchorID := util.AnchorIDFromAnchorOutput(o, chainOutputID)
+	if resolvedAnchorID != anchorID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
-			aliasID.ToAddress().Bech32(parameters.NetworkPrefix()),
-			chainOutput.(*iotago.AccountOutput).AccountID.ToAddress().Bech32(parameters.NetworkPrefix()),
+			anchorID.ToAddress().Bech32(parameters.NetworkPrefix()),
+			chainOutput.(*iotago.AnchorOutput).AnchorID.ToAddress().Bech32(parameters.NetworkPrefix()),
 		)
 	}
 
@@ -35,10 +35,10 @@ func NewRotateChainStateControllerTx(
 	outSet := iotago.OutputSet{}
 	outSet[chainOutputID] = chainOutput
 
-	newChainOutput := chainOutput.Clone().(*iotago.AccountOutput)
-	newChainOutput.AccountID = resolvedAccountID
+	newChainOutput := chainOutput.Clone().(*iotago.AnchorOutput)
+	newChainOutput.AnchorID = resolvedAnchorID
 	oldUnlockConditions := newChainOutput.UnlockConditionSet()
-	newChainOutput.Conditions = make(iotago.AccountOutputUnlockConditions, len(oldUnlockConditions))
+	newChainOutput.Conditions = make(iotago.AnchorOutputUnlockConditions, len(oldUnlockConditions))
 
 	// update the unlock conditions to the new state controller
 	i := 0
@@ -57,7 +57,7 @@ func NewRotateChainStateControllerTx(
 	}
 
 	// remove any "sender feature"
-	var newFeatures iotago.AccountOutputFeatures
+	var newFeatures iotago.AnchorOutputFeatures
 	for t, feature := range chainOutput.FeatureSet() {
 		if t != iotago.FeatureSender {
 			newFeatures = append(newFeatures, feature)

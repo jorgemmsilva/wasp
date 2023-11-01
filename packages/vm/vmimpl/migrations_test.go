@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
@@ -56,9 +57,14 @@ func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 	stateDraft, err := cs.NewStateDraft(time.Time{}, latest.L1Commitment())
 	require.NoError(t, err)
 	task := &vm.VMTask{
-		AnchorOutput: &iotago.AccountOutput{
-			StateIndex: stateIndex,
-		},
+		Inputs: isc.NewChainOuptuts(
+			&iotago.AnchorOutput{
+				StateIndex: stateIndex,
+			},
+			iotago.OutputID{},
+			&iotago.AccountOutput{},
+			iotago.OutputID{},
+		),
 	}
 	vmctx := &vmContext{
 		task:       task,

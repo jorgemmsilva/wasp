@@ -11,7 +11,7 @@ import (
 func (vmctx *vmContext) runMigrations(chainState kv.KVStore, migrationScheme *migrations.MigrationScheme) {
 	latestSchemaVersion := migrationScheme.LatestSchemaVersion()
 
-	if vmctx.task.AnchorOutput.StateIndex == 0 {
+	if vmctx.task.Inputs.AnchorOutput.StateIndex == 0 {
 		// initializing new chain -- set the schema to latest version
 		withContractState(chainState, root.Contract, func(s kv.KVStore) {
 			root.SetSchemaVersion(s, latestSchemaVersion)

@@ -180,7 +180,7 @@ func (vmctx *vmContext) storeUnprocessable(chainState kv.KVStore, unprocessable 
 	if len(unprocessable) == 0 {
 		return
 	}
-	blockIndex := vmctx.task.AnchorOutput.StateIndex + 1
+	blockIndex := vmctx.task.Inputs.AnchorOutput.StateIndex + 1
 
 	withContractState(chainState, blocklog.Contract, func(s kv.KVStore) {
 		for _, r := range unprocessable {

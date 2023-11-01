@@ -570,9 +570,9 @@ func TestL1Metadata(t *testing.T) {
 	require.Equal(t, publicURLMetadata, string(resMetadata))
 
 	// assert metadata is correct on L1 alias output
-	ao, err := ch.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
+	co, err := ch.LatestChainOutputs(chaintypes.ActiveOrCommittedState)
 	require.NoError(t, err)
-	sm, err := transaction.StateMetadataFromBytes(ao.GetStateMetadata())
+	sm, err := transaction.StateMetadataFromBytes(co.AnchorOutput.StateMetadata)
 	require.NoError(t, err)
 	require.Equal(t, publicURLMetadata, sm.PublicURL)
 	require.True(t, reflect.DeepEqual(sm.GasFeePolicy, gas.DefaultFeePolicy()))
@@ -601,9 +601,9 @@ func TestL1Metadata(t *testing.T) {
 	require.NoError(t, err)
 
 	// assert gas policy changed on L1 metadata
-	ao, err = ch.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
+	co, err = ch.LatestChainOutputs(chaintypes.ActiveOrCommittedState)
 	require.NoError(t, err)
-	sm, err = transaction.StateMetadataFromBytes(ao.GetStateMetadata())
+	sm, err = transaction.StateMetadataFromBytes(co.AnchorOutput.StateMetadata)
 	require.NoError(t, err)
 	require.Equal(t, publicURLMetadata, sm.PublicURL)
 	require.True(t, reflect.DeepEqual(sm.GasFeePolicy, newFeePolicy))

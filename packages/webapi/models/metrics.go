@@ -22,7 +22,7 @@ To not create a mapper for each type, the actual service remains using MetricIte
 This can be removed if we change to swag/echo-swagger
 */
 type (
-	AccountOutputMetricItem         MetricItem[*Output]
+	AnchorOutputMetricItem         MetricItem[*Output]
 	OnLedgerRequestMetricItem     MetricItem[*OnLedgerRequest]
 	InOutputMetricItem            MetricItem[*InOutput]
 	InStateOutputMetricItem       MetricItem[*InStateOutput]
@@ -38,7 +38,7 @@ type (
 
 type ChainMessageMetrics struct {
 	InStateOutput      InStateOutputMetricItem       `json:"inStateOutput" swagger:"required"`
-	InAccountOutput      AccountOutputMetricItem         `json:"inAccountOutput" swagger:"required"`
+	InAnchorOutput      AnchorOutputMetricItem         `json:"inAnchorOutput" swagger:"required"`
 	InOutput           InOutputMetricItem            `json:"inOutput" swagger:"required"`
 	InOnLedgerRequest  OnLedgerRequestMetricItem     `json:"inOnLedgerRequest" swagger:"required"`
 	InTxInclusionState TxInclusionStateMsgMetricItem `json:"inTxInclusionState" swagger:"required"`
@@ -55,7 +55,7 @@ type NodeMessageMetrics struct {
 
 	InMilestone        MilestoneMetricItem           `json:"inMilestone" swagger:"required"`
 	InStateOutput      InStateOutputMetricItem       `json:"inStateOutput" swagger:"required"`
-	InAccountOutput      AccountOutputMetricItem         `json:"inAccountOutput" swagger:"required"`
+	InAnchorOutput      AnchorOutputMetricItem         `json:"inAnchorOutput" swagger:"required"`
 	InOutput           InOutputMetricItem            `json:"inOutput" swagger:"required"`
 	InOnLedgerRequest  OnLedgerRequestMetricItem     `json:"inOnLedgerRequest" swagger:"required"`
 	InTxInclusionState TxInclusionStateMsgMetricItem `json:"inTxInclusionState" swagger:"required"`
@@ -88,7 +88,7 @@ func MapRegisteredChainIDs(registered []isc.ChainID) []string {
 func MapChainMessageMetrics(metrics *dto.ChainMessageMetrics) *ChainMessageMetrics {
 	return &ChainMessageMetrics{
 		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(metrics.InStateOutput.LastMessage))),
-		InAccountOutput:      AccountOutputMetricItem(MapMetricItem(metrics.InAccountOutput, OutputFromIotaGoOutput(metrics.InAccountOutput.LastMessage))),
+		InAnchorOutput:      AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
 		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(metrics.InOutput.LastMessage))),
 		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(metrics.InOnLedgerRequest.LastMessage))),
 		InTxInclusionState: TxInclusionStateMsgMetricItem(MapMetricItem(metrics.InTxInclusionState, TxInclusionStateMsgFromISCTxInclusionStateMsg(metrics.InTxInclusionState.LastMessage))),
@@ -107,7 +107,7 @@ func MapNodeMessageMetrics(metrics *dto.NodeMessageMetrics) *NodeMessageMetrics 
 
 		InMilestone:        MilestoneMetricItem(MapMetricItem(metrics.InMilestone, MilestoneFromIotaGoMilestone(metrics.InMilestone.LastMessage))),
 		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(metrics.InStateOutput.LastMessage))),
-		InAccountOutput:      AccountOutputMetricItem(MapMetricItem(metrics.InAccountOutput, OutputFromIotaGoOutput(metrics.InAccountOutput.LastMessage))),
+		InAnchorOutput:      AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
 		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(metrics.InOutput.LastMessage))),
 		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(metrics.InOnLedgerRequest.LastMessage))),
 		InTxInclusionState: TxInclusionStateMsgMetricItem(MapMetricItem(metrics.InTxInclusionState, TxInclusionStateMsgFromISCTxInclusionStateMsg(metrics.InTxInclusionState.LastMessage))),

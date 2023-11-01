@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"path"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -17,7 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/labstack/gommon/log"
 
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
+	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/runtime/event"
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -67,15 +66,14 @@ func NewEVMChain(
 	backend ChainBackend,
 	pub *publisher.Publisher,
 	isArchiveNode bool,
-	indexDbEngine hivedb.Engine,
-	indexDbPath string,
+	indexStore kvstore.KVStore,
 	log *logger.Logger,
 ) *EVMChain {
 	e := &EVMChain{
 		backend:  backend,
 		newBlock: event.New1[*NewBlockEvent](),
 		log:      log,
-		index:    jsonrpcindex.New(blockchainDB, backend.ISCStateByTrieRoot, indexDbEngine, path.Join(indexDbPath, backend.ISCChainID().String())),
+		index:    jsonrpcindex.New(blockchainDB, backend.ISCStateByTrieRoot, indexStore),
 	}
 
 	blocksFromPublisher := pipe.NewInfinitePipe[*publisher.BlockWithTrieRoot]()
@@ -255,9 +253,9 @@ func (e *EVMChain) iscStateFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.Block
 	return e.iscStateFromEVMBlockNumber(block.Number())
 }
 
-func (e *EVMChain) iscAccountOutputFromEVMBlockNumber(blockNumber *big.Int) (*isc.AccountOutputWithID, error) {
+func (e *EVMChain) iscChainOutputsFromEVMBlockNumber(blockNumber *big.Int) (*isc.ChainOutputs, error) {
 	if blockNumber == nil || blockNumber.Cmp(big.NewInt(int64(e.backend.ISCLatestState().BlockIndex()))) == 0 {
-		return e.backend.ISCLatestAccountOutput()
+		return e.backend.ISCLatestChainOutputs()
 	}
 	iscBlockIndex, err := iscBlockIndexByEVMBlockNumber(blockNumber)
 	if err != nil {
@@ -268,7 +266,7 @@ func (e *EVMChain) iscAccountOutputFromEVMBlockNumber(blockNumber *big.Int) (*is
 		return nil, fmt.Errorf("no EVM block with number %s", blockNumber)
 	}
 	if iscBlockIndex == latestBlockIndex {
-		return e.backend.ISCLatestAccountOutput()
+		return e.backend.ISCLatestChainOutputs()
 	}
 	nextISCBlockIndex := iscBlockIndex + 1
 	nextISCState, err := e.backend.ISCStateByBlockIndex(nextISCBlockIndex)
@@ -280,22 +278,22 @@ func (e *EVMChain) iscAccountOutputFromEVMBlockNumber(blockNumber *big.Int) (*is
 	if !ok {
 		return nil, fmt.Errorf("block not found: %d", nextISCBlockIndex)
 	}
-	return nextBlock.PreviousAccountOutput, nil
+	return nextBlock.PreviousChainOutputs, nil
 }
 
-func (e *EVMChain) iscAccountOutputFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.BlockNumberOrHash) (*isc.AccountOutputWithID, error) {
+func (e *EVMChain) iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash *rpc.BlockNumberOrHash) (*isc.ChainOutputs, error) {
 	if blockNumberOrHash == nil {
-		return e.backend.ISCLatestAccountOutput()
+		return e.backend.ISCLatestChainOutputs()
 	}
 	if blockNumber, ok := blockNumberOrHash.Number(); ok {
-		return e.iscAccountOutputFromEVMBlockNumber(parseBlockNumber(blockNumber))
+		return e.iscChainOutputsFromEVMBlockNumber(parseBlockNumber(blockNumber))
 	}
 	blockHash, _ := blockNumberOrHash.Hash()
 	block := e.BlockByHash(blockHash)
 	if block == nil {
 		return nil, fmt.Errorf("block with hash %s not found", blockHash)
 	}
-	return e.iscAccountOutputFromEVMBlockNumber(block.Number())
+	return e.iscChainOutputsFromEVMBlockNumber(block.Number())
 }
 
 func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockNumberOrHash) (*big.Int, error) {
@@ -434,20 +432,20 @@ func (e *EVMChain) TransactionCount(address common.Address, blockNumberOrHash *r
 
 func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {
 	e.log.Debugf("CallContract(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
-	accountOutput, err := e.iscAccountOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
+	chainOutputs, err := e.iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return nil, err
 	}
-	return e.backend.EVMCall(accountOutput, callMsg)
+	return e.backend.EVMCall(chainOutputs, callMsg)
 }
 
 func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) (uint64, error) {
 	e.log.Debugf("EstimateGas(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
-	accountOutput, err := e.iscAccountOutputFromEVMBlockNumberOrHash(blockNumberOrHash)
+	chainOutputs, err := e.iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return 0, err
 	}
-	return e.backend.EVMEstimateGas(accountOutput, callMsg)
+	return e.backend.EVMEstimateGas(chainOutputs, callMsg)
 }
 
 func (e *EVMChain) GasPrice() *big.Int {
@@ -642,7 +640,7 @@ func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceCon
 	}
 
 	err = e.backend.EVMTraceTransaction(
-		iscBlock.PreviousAccountOutput,
+		iscBlock.PreviousChainOutputs,
 		iscBlock.Timestamp,
 		iscRequestsInBlock,
 		txIndex,

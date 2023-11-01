@@ -27,7 +27,7 @@ type BlockInfoResponse struct {
 	GasFeeCharged string `json:"gasFeeCharged"`
 	NumOffLedgerRequests uint32 `json:"numOffLedgerRequests"`
 	NumSuccessfulRequests uint32 `json:"numSuccessfulRequests"`
-	PreviousAccountOutput string `json:"previousAccountOutput"`
+	PreviousAnchorOutput string `json:"previousAnchorOutput"`
 	Timestamp time.Time `json:"timestamp"`
 	TotalRequests uint32 `json:"totalRequests"`
 }
@@ -36,14 +36,14 @@ type BlockInfoResponse struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewBlockInfoResponse(blockIndex uint32, gasBurned string, gasFeeCharged string, numOffLedgerRequests uint32, numSuccessfulRequests uint32, previousAccountOutput string, timestamp time.Time, totalRequests uint32) *BlockInfoResponse {
+func NewBlockInfoResponse(blockIndex uint32, gasBurned string, gasFeeCharged string, numOffLedgerRequests uint32, numSuccessfulRequests uint32, previousAnchorOutput string, timestamp time.Time, totalRequests uint32) *BlockInfoResponse {
 	this := BlockInfoResponse{}
 	this.BlockIndex = blockIndex
 	this.GasBurned = gasBurned
 	this.GasFeeCharged = gasFeeCharged
 	this.NumOffLedgerRequests = numOffLedgerRequests
 	this.NumSuccessfulRequests = numSuccessfulRequests
-	this.PreviousAccountOutput = previousAccountOutput
+	this.PreviousAnchorOutput = previousAnchorOutput
 	this.Timestamp = timestamp
 	this.TotalRequests = totalRequests
 	return &this
@@ -177,28 +177,28 @@ func (o *BlockInfoResponse) SetNumSuccessfulRequests(v uint32) {
 	o.NumSuccessfulRequests = v
 }
 
-// GetPreviousAccountOutput returns the PreviousAccountOutput field value
-func (o *BlockInfoResponse) GetPreviousAccountOutput() string {
+// GetPreviousAnchorOutput returns the PreviousAnchorOutput field value
+func (o *BlockInfoResponse) GetPreviousAnchorOutput() string {
 	if o == nil {
 		var ret string
 		return ret
 	}
 
-	return o.PreviousAccountOutput
+	return o.PreviousAnchorOutput
 }
 
-// GetPreviousAccountOutputOk returns a tuple with the PreviousAccountOutput field value
+// GetPreviousAnchorOutputOk returns a tuple with the PreviousAnchorOutput field value
 // and a boolean to check if the value has been set.
-func (o *BlockInfoResponse) GetPreviousAccountOutputOk() (*string, bool) {
+func (o *BlockInfoResponse) GetPreviousAnchorOutputOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.PreviousAccountOutput, true
+	return &o.PreviousAnchorOutput, true
 }
 
-// SetPreviousAccountOutput sets field value
-func (o *BlockInfoResponse) SetPreviousAccountOutput(v string) {
-	o.PreviousAccountOutput = v
+// SetPreviousAnchorOutput sets field value
+func (o *BlockInfoResponse) SetPreviousAnchorOutput(v string) {
+	o.PreviousAnchorOutput = v
 }
 
 // GetTimestamp returns the Timestamp field value
@@ -264,7 +264,7 @@ func (o BlockInfoResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize["gasFeeCharged"] = o.GasFeeCharged
 	toSerialize["numOffLedgerRequests"] = o.NumOffLedgerRequests
 	toSerialize["numSuccessfulRequests"] = o.NumSuccessfulRequests
-	toSerialize["previousAccountOutput"] = o.PreviousAccountOutput
+	toSerialize["previousAnchorOutput"] = o.PreviousAnchorOutput
 	toSerialize["timestamp"] = o.Timestamp
 	toSerialize["totalRequests"] = o.TotalRequests
 	return toSerialize, nil

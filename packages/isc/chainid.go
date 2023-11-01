@@ -13,14 +13,14 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-const ChainIDLength = iotago.AccountIDLength
+const ChainIDLength = iotago.AnchorIDLength
 
 var emptyChainID = ChainID{}
 
 // ChainID represents the global identifier of the chain
-// It is wrapped AccountAddress, an address without a private key behind
+// It is wrapped AnchorAddress, an address without a private key behind
 type (
-	ChainID    iotago.AccountID
+	ChainID    iotago.AnchorID
 	ChainIDKey string
 )
 
@@ -29,13 +29,13 @@ func EmptyChainID() ChainID {
 	return emptyChainID
 }
 
-func ChainIDFromAddress(addr *iotago.AccountAddress) ChainID {
-	return ChainIDFromAccountID(addr.AccountID())
+func ChainIDFromAddress(addr *iotago.AnchorAddress) ChainID {
+	return ChainIDFromAnchorID(addr.AnchorID())
 }
 
-// ChainIDFromAccountID creates new chain ID from account address
-func ChainIDFromAccountID(aliasID iotago.AccountID) ChainID {
-	return ChainID(aliasID)
+// ChainIDFromAnchorID creates new chain ID from anchor address
+func ChainIDFromAnchorID(anchorID iotago.AnchorID) ChainID {
+	return ChainID(anchorID)
 }
 
 // ChainIDFromBytes reconstructs a ChainID from its binary representation.
@@ -49,10 +49,10 @@ func ChainIDFromString(bech32 string) (ChainID, error) {
 	if err != nil {
 		return ChainID{}, err
 	}
-	if addr.Type() != iotago.AddressAccount {
-		return ChainID{}, fmt.Errorf("chainID must be an account address (%s)", bech32)
+	if addr.Type() != iotago.AddressAnchor {
+		return ChainID{}, fmt.Errorf("chainID must be an anchor address (%s)", bech32)
 	}
-	return ChainIDFromAddress(addr.(*iotago.AccountAddress)), nil
+	return ChainIDFromAddress(addr.(*iotago.AnchorAddress)), nil
 }
 
 func ChainIDFromKey(key ChainIDKey) ChainID {
@@ -79,16 +79,16 @@ func RandomChainID(seed ...[]byte) ChainID {
 }
 
 func (id ChainID) AsAddress() iotago.Address {
-	addr := iotago.AccountAddress(id)
+	addr := iotago.AnchorAddress(id)
 	return &addr
 }
 
-func (id ChainID) AsAccountAddress() iotago.AccountAddress {
-	return iotago.AccountAddress(id)
+func (id ChainID) AsAnchorAddress() iotago.AnchorAddress {
+	return iotago.AnchorAddress(id)
 }
 
-func (id ChainID) AsAccountID() iotago.AccountID {
-	return iotago.AccountID(id)
+func (id ChainID) AsAnchorID() iotago.AnchorID {
+	return iotago.AnchorID(id)
 }
 
 func (id ChainID) Bytes() []byte {
@@ -104,7 +104,7 @@ func (id ChainID) Equals(other ChainID) bool {
 }
 
 func (id ChainID) Key() ChainIDKey {
-	return ChainIDKey(id.AsAccountID().String())
+	return ChainIDKey(id.AsAnchorID().String())
 }
 
 func (id ChainID) IsSameChain(agentID AgentID) bool {

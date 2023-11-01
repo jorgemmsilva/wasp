@@ -30,7 +30,7 @@ func (c MsgNextLogIndexCause) String() string {
 
 const (
 	MsgNextLogIndexCauseConsOut MsgNextLogIndexCause = iota // Consensus output received, we can go to the next log index.
-	MsgNextLogIndexCauseL1RepAO                             // L1 replaced an alias output, probably have to start new log index.
+	MsgNextLogIndexCauseL1RepAO                             // L1 replaced an anchor output, probably have to start new log index.
 	MsgNextLogIndexCauseRecover                             // Either node is booted or consensus asks for a recovery, try to proceed to next li.
 	MsgNextLogIndexCauseStarted                             // Consensus is started, maybe we have to catch up with it.
 )

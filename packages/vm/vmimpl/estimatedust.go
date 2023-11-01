@@ -19,7 +19,7 @@ func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestPara
 		contractIdentity = isc.ContractIdentityFromEVMAddress(common.Address{}) // use empty EVM address as STUB
 	}
 	out := transaction.BasicOutputFromPostData(
-		reqctx.vm.task.AnchorOutput.AccountID.ToAddress(),
+		reqctx.vm.task.Inputs.AnchorOutput.AnchorID.ToAddress(),
 		contractIdentity,
 		par,
 	)

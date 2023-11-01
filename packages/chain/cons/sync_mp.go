@@ -9,7 +9,7 @@ import (
 )
 
 type SyncMP interface {
-	BaseAccountOutputReceived(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	BaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	ProposalReceived(requestRefs []*isc.RequestRef) gpa.OutMessages
 	RequestsNeeded(requestRefs []*isc.RequestRef) gpa.OutMessages
 	RequestsReceived(requests []isc.Request) gpa.OutMessages
@@ -17,9 +17,9 @@ type SyncMP interface {
 }
 
 type syncMPImpl struct {
-	BaseAccountOutput       *isc.AccountOutputWithID
+	BaseAnchorOutput       *isc.AnchorOutputWithID
 	DecidedRequestIDs     []isc.RequestID
-	proposalInputsReadyCB func(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	proposalInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	proposalReceived      bool
 	proposalReceivedCB    func(requestRefs []*isc.RequestRef) gpa.OutMessages
 	requestsNeeded        bool
@@ -29,7 +29,7 @@ type syncMPImpl struct {
 }
 
 func NewSyncMP(
-	proposalInputsReadyCB func(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages,
+	proposalInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
 	proposalReceivedCB func(requestRefs []*isc.RequestRef) gpa.OutMessages,
 	requestsNeededCB func(requestIDs []*isc.RequestRef) gpa.OutMessages,
 	requestsReceivedCB func(requests []isc.Request) gpa.OutMessages,
@@ -42,12 +42,12 @@ func NewSyncMP(
 	}
 }
 
-func (sub *syncMPImpl) BaseAccountOutputReceived(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	if sub.BaseAccountOutput != nil {
+func (sub *syncMPImpl) BaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+	if sub.BaseAnchorOutput != nil {
 		return nil
 	}
-	sub.BaseAccountOutput = baseAccountOutput
-	return sub.proposalInputsReadyCB(sub.BaseAccountOutput)
+	sub.BaseAnchorOutput = baseAnchorOutput
+	return sub.proposalInputsReadyCB(sub.BaseAnchorOutput)
 }
 
 func (sub *syncMPImpl) ProposalReceived(requestRefs []*isc.RequestRef) gpa.OutMessages {
@@ -82,8 +82,8 @@ func (sub *syncMPImpl) String() string {
 	}
 	if sub.proposalReceived {
 		str += "/proposal=OK"
-	} else if sub.BaseAccountOutput == nil {
-		str += "/proposal=WAIT[params: baseAccountOutput]"
+	} else if sub.BaseAnchorOutput == nil {
+		str += "/proposal=WAIT[params: baseAnchorOutput]"
 	} else {
 		str += "/proposal=WAIT[RespFromMemPool]"
 	}

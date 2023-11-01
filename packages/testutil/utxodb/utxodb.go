@@ -174,6 +174,7 @@ func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotag
 		u.api.StorageScoreStructure(),
 		u.slotIndex(),
 		vm.InputSet{inputID: input},
+		vm.RewardsInputSet{},
 	)
 	if err != nil {
 		panic(err)
@@ -369,6 +370,14 @@ func (u *UtxoDB) GetAddressBalanceNFTs(addr iotago.Address) iotago.NFTIDs {
 	return nfts
 }
 
+// GetAnchorOutputs collects all outputs of type AnchorOutput for the address
+func (u *UtxoDB) GetAnchorOutputs(addr iotago.Address) map[iotago.OutputID]*iotago.AnchorOutput {
+	u.mutex.RLock()
+	defer u.mutex.RUnlock()
+
+	return filterOutputsOfType[*iotago.AnchorOutput](u.getUnspentOutputs(addr))
+}
+
 // GetAccountOutputs collects all outputs of type AccountOutput for the address
 func (u *UtxoDB) GetAccountOutputs(addr iotago.Address) map[iotago.OutputID]*iotago.AccountOutput {
 	u.mutex.RLock()
@@ -421,7 +430,12 @@ func getOutputAddress(out iotago.Output, outputID iotago.OutputID) iotago.Addres
 	case iotago.TransDepIdentOutput:
 		chainID := output.ChainID()
 		if chainID.Empty() {
-			chainID = iotago.AccountIDFromOutputID(outputID)
+			utxoChainID, is := chainID.(iotago.UTXOIDChainID)
+			if !is {
+				panic("unknown ChainID type")
+			}
+			//nolint:forcetypeassert // we can safely assume that this is an UTXOInput
+			chainID = utxoChainID.FromOutputID(outputID)
 		}
 		return chainID.ToAddress()
 	default:

@@ -12,11 +12,11 @@ import (
 type SyncSM interface {
 	//
 	// State proposal.
-	ProposedBaseAccountOutputReceived(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	ProposedBaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	StateProposalConfirmedByStateMgr() gpa.OutMessages
 	//
 	// Decided state.
-	DecidedVirtualStateNeeded(decidedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	DecidedVirtualStateNeeded(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	DecidedVirtualStateReceived(chainState state.State) gpa.OutMessages
 	//
 	// Save the block.
@@ -30,14 +30,14 @@ type SyncSM interface {
 type syncSMImpl struct {
 	//
 	// Query for a proposal.
-	proposedBaseAccountOutput         *isc.AccountOutputWithID
-	stateProposalQueryInputsReadyCB func(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	proposedBaseAnchorOutput         *isc.AnchorOutputWithID
+	stateProposalQueryInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	stateProposalReceived           bool
-	stateProposalReceivedCB         func(proposedAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	stateProposalReceivedCB         func(proposedAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	//
 	// Query for a decided Virtual State.
-	decidedBaseAccountOutput         *isc.AccountOutputWithID
-	decidedStateQueryInputsReadyCB func(decidedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages
+	decidedBaseAnchorOutput         *isc.AnchorOutputWithID
+	decidedStateQueryInputsReadyCB func(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
 	decidedStateReceived           bool
 	decidedStateReceivedCB         func(chainState state.State) gpa.OutMessages
 	//
@@ -50,9 +50,9 @@ type syncSMImpl struct {
 }
 
 func NewSyncSM(
-	stateProposalQueryInputsReadyCB func(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages,
-	stateProposalReceivedCB func(proposedAccountOutput *isc.AccountOutputWithID) gpa.OutMessages,
-	decidedStateQueryInputsReadyCB func(decidedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages,
+	stateProposalQueryInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
+	stateProposalReceivedCB func(proposedAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
+	decidedStateQueryInputsReadyCB func(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
 	decidedStateReceivedCB func(chainState state.State) gpa.OutMessages,
 	saveProducedBlockInputsReadyCB func(producedBlock state.StateDraft) gpa.OutMessages,
 	saveProducedBlockDoneCB func(savedBlock state.Block) gpa.OutMessages,
@@ -67,12 +67,12 @@ func NewSyncSM(
 	}
 }
 
-func (sub *syncSMImpl) ProposedBaseAccountOutputReceived(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	if sub.proposedBaseAccountOutput != nil {
+func (sub *syncSMImpl) ProposedBaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+	if sub.proposedBaseAnchorOutput != nil {
 		return nil
 	}
-	sub.proposedBaseAccountOutput = baseAccountOutput
-	return sub.stateProposalQueryInputsReadyCB(sub.proposedBaseAccountOutput)
+	sub.proposedBaseAnchorOutput = baseAnchorOutput
+	return sub.stateProposalQueryInputsReadyCB(sub.proposedBaseAnchorOutput)
 }
 
 func (sub *syncSMImpl) StateProposalConfirmedByStateMgr() gpa.OutMessages {
@@ -80,15 +80,15 @@ func (sub *syncSMImpl) StateProposalConfirmedByStateMgr() gpa.OutMessages {
 		return nil
 	}
 	sub.stateProposalReceived = true
-	return sub.stateProposalReceivedCB(sub.proposedBaseAccountOutput)
+	return sub.stateProposalReceivedCB(sub.proposedBaseAnchorOutput)
 }
 
-func (sub *syncSMImpl) DecidedVirtualStateNeeded(decidedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	if sub.decidedBaseAccountOutput != nil {
+func (sub *syncSMImpl) DecidedVirtualStateNeeded(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+	if sub.decidedBaseAnchorOutput != nil {
 		return nil
 	}
-	sub.decidedBaseAccountOutput = decidedBaseAccountOutput
-	return sub.decidedStateQueryInputsReadyCB(decidedBaseAccountOutput)
+	sub.decidedBaseAnchorOutput = decidedBaseAnchorOutput
+	return sub.decidedStateQueryInputsReadyCB(decidedBaseAnchorOutput)
 }
 
 func (sub *syncSMImpl) DecidedVirtualStateReceived(
@@ -126,14 +126,14 @@ func (sub *syncSMImpl) String() string {
 	}
 	if sub.stateProposalReceived {
 		str += "/proposal=OK"
-	} else if sub.proposedBaseAccountOutput == nil {
-		str += "/proposal=WAIT[params: baseAccountOutput]"
+	} else if sub.proposedBaseAnchorOutput == nil {
+		str += "/proposal=WAIT[params: baseAnchorOutput]"
 	} else {
 		str += "/proposal=WAIT[RespFromStateMgr]"
 	}
 	if sub.decidedStateReceived {
 		str += "/state=OK"
-	} else if sub.decidedBaseAccountOutput == nil {
+	} else if sub.decidedBaseAnchorOutput == nil {
 		str += "/state=WAIT[acs decision]"
 	} else {
 		str += "/state=WAIT[RespFromStateMgr]"

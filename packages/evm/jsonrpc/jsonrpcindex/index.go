@@ -10,8 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/iotaledger/hive.go/kvstore"
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
-	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -32,15 +30,10 @@ type Index struct {
 func New(
 	blockchainDB func(chainState state.State) *emulator.BlockchainDB,
 	stateByTrieRoot func(trieRoot trie.Hash) (state.State, error),
-	indexDbEngine hivedb.Engine,
-	indexDbPath string,
+	store kvstore.KVStore,
 ) *Index {
-	db, err := database.DatabaseWithDefaultSettings(indexDbPath, true, indexDbEngine, false)
-	if err != nil {
-		panic(err)
-	}
 	return &Index{
-		store:           db.KVStore(),
+		store:           store,
 		blockchainDB:    blockchainDB,
 		stateByTrieRoot: stateByTrieRoot,
 		mu:              sync.Mutex{},
@@ -76,7 +69,7 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 	}
 
 	// start in the active state of the block to cache
-	activeStateToCache, err := c.stateByTrieRoot(transaction.MustL1CommitmentFromAccountOutput(nextBlockInfo.PreviousAccountOutput.GetAccountOutput()).TrieRoot())
+	activeStateToCache, err := c.stateByTrieRoot(transaction.MustL1CommitmentFromAnchorOutput(nextBlockInfo.PreviousChainOutputs.AnchorOutput).TrieRoot())
 	if err != nil {
 		panic(err)
 	}
@@ -105,7 +98,7 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 			// nothing more to cache, don't try to walk back further
 			break
 		}
-		activeStateToCache, err = c.stateByTrieRoot(transaction.MustL1CommitmentFromAccountOutput(blockinfo.PreviousAccountOutput.GetAccountOutput()).TrieRoot())
+		activeStateToCache, err = c.stateByTrieRoot(transaction.MustL1CommitmentFromAnchorOutput(blockinfo.PreviousChainOutputs.AnchorOutput).TrieRoot())
 	}
 	c.setLastBlockIndexed(blockIndexToCache)
 	c.store.Flush()

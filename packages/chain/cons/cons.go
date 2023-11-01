@@ -12,11 +12,11 @@
 //   - StateMgr
 //   - VM
 //
-// > INPUT: baseAccountOutputID
+// > INPUT: baseAnchorOutputID
 // > ON Startup:
 // >     Start a DSS.
-// >     Ask Mempool for backlog (based on baseAccountOutputID).
-// >     Ask StateMgr for a virtual state (based on baseAccountOutputID).
+// >     Ask Mempool for backlog (based on baseAnchorOutputID).
+// >     Ask StateMgr for a virtual state (based on baseAnchorOutputID).
 // > UPON Reception of responses from Mempool, StateMgr and DSS NonceIndexes:
 // >     Produce a batch proposal.
 // >     Start the ACS.
@@ -110,10 +110,10 @@ type Output struct {
 	Terminated bool
 	//
 	// Requests for other components.
-	NeedMempoolProposal       *isc.AccountOutputWithID // Requests for the mempool are needed for this Base Alias Output.
+	NeedMempoolProposal       *isc.AnchorOutputWithID // Requests for the mempool are needed for this Base Alias Output.
 	NeedMempoolRequests       []*isc.RequestRef        // Request payloads are needed from mempool for this IDs/Hash.
-	NeedStateMgrStateProposal *isc.AccountOutputWithID // Query for a proposal for Virtual State (it will go to the batch proposal).
-	NeedStateMgrDecidedState  *isc.AccountOutputWithID // Query for a decided Virtual State to be used by VM.
+	NeedStateMgrStateProposal *isc.AnchorOutputWithID // Query for a proposal for Virtual State (it will go to the batch proposal).
+	NeedStateMgrDecidedState  *isc.AnchorOutputWithID // Query for a decided Virtual State to be used by VM.
 	NeedStateMgrSaveBlock     state.StateDraft         // Ask StateMgr to save the produced block.
 	NeedVMResult              *vm.VMTask               // VM Result is needed for this (agreed) batch.
 	//
@@ -124,8 +124,8 @@ type Output struct {
 
 type Result struct {
 	Transaction       *iotago.Transaction      // The TX for committing the block.
-	BaseAccountOutput iotago.OutputID          // AO consumed in the TX.
-	NextAccountOutput *isc.AccountOutputWithID // AO produced in the TX.
+	BaseAnchorOutput iotago.OutputID          // AO consumed in the TX.
+	NextAnchorOutput *isc.AnchorOutputWithID // AO produced in the TX.
 	Block             state.Block              // The state diff produced.
 }
 
@@ -134,7 +134,7 @@ func (r *Result) String() string {
 	if err != nil {
 		txID = iotago.TransactionID{}
 	}
-	return fmt.Sprintf("{cons.Result, txID=%v, baseAO=%v, nextAO=%v}", txID, r.BaseAccountOutput.ToHex(), r.NextAccountOutput)
+	return fmt.Sprintf("{cons.Result, txID=%v, baseAO=%v, nextAO=%v}", txID, r.BaseAnchorOutput.ToHex(), r.NextAnchorOutput)
 }
 
 type consImpl struct {
@@ -309,8 +309,8 @@ func (c *consImpl) Input(input gpa.Input) gpa.OutMessages {
 	case *inputProposal:
 		c.log.Infof("Consensus started, received %v", input.String())
 		return gpa.NoMessages().
-			AddAll(c.subMP.BaseAccountOutputReceived(input.baseAccountOutput)).
-			AddAll(c.subSM.ProposedBaseAccountOutputReceived(input.baseAccountOutput)).
+			AddAll(c.subMP.BaseAnchorOutputReceived(input.baseAnchorOutput)).
+			AddAll(c.subSM.ProposedBaseAnchorOutputReceived(input.baseAnchorOutput)).
 			AddAll(c.subDSS.InitialInputReceived())
 	case *inputMempoolProposal:
 		return c.subMP.ProposalReceived(input.requestRefs)
@@ -376,8 +376,8 @@ func (c *consImpl) StatusString() string {
 ////////////////////////////////////////////////////////////////////////////////
 // MP -- MemPool
 
-func (c *consImpl) uponMPProposalInputsReady(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	c.output.NeedMempoolProposal = baseAccountOutput
+func (c *consImpl) uponMPProposalInputsReady(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+	c.output.NeedMempoolProposal = baseAnchorOutput
 	return nil
 }
 
@@ -399,18 +399,18 @@ func (c *consImpl) uponMPRequestsReceived(requests []isc.Request) gpa.OutMessage
 ////////////////////////////////////////////////////////////////////////////////
 // SM -- StateManager
 
-func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	c.output.NeedStateMgrStateProposal = baseAccountOutput
+func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+	c.output.NeedStateMgrStateProposal = baseAnchorOutput
 	return nil
 }
 
-func (c *consImpl) uponSMStateProposalReceived(proposedAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMStateProposalReceived(proposedAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
 	c.output.NeedStateMgrStateProposal = nil
-	return c.subACS.StateProposalReceived(proposedAccountOutput)
+	return c.subACS.StateProposalReceived(proposedAnchorOutput)
 }
 
-func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAccountOutput *isc.AccountOutputWithID) gpa.OutMessages {
-	c.output.NeedStateMgrDecidedState = decidedBaseAccountOutput
+func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+	c.output.NeedStateMgrDecidedState = decidedBaseAnchorOutput
 	return nil
 }
 
@@ -473,10 +473,10 @@ func (c *consImpl) uponDSSOutputReady(signature []byte) gpa.OutMessages {
 ////////////////////////////////////////////////////////////////////////////////
 // ACS
 
-func (c *consImpl) uponACSInputsReceived(baseAccountOutput *isc.AccountOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
+func (c *consImpl) uponACSInputsReceived(baseAnchorOutput *isc.AnchorOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
 	batchProposal := bp.NewBatchProposal(
 		*c.dkShare.GetIndex(),
-		baseAccountOutput,
+		baseAnchorOutput,
 		util.NewFixedSizeBitVector(c.dkShare.GetN()).SetBits(dssIndexProposal),
 		timeData,
 		c.validatorAgentID,
@@ -501,7 +501,7 @@ func (c *consImpl) uponACSOutputReceived(outputValues map[gpa.NodeID][]byte) gpa
 		c.term.haveOutputProduced()
 		return nil
 	}
-	bao := aggr.DecidedBaseAccountOutput()
+	bao := aggr.DecidedBaseAnchorOutput()
 	baoID := bao.OutputID()
 	reqs := aggr.DecidedRequestRefs()
 	c.log.Debugf("ACS decision: baseAO=%v, requests=%v", bao, reqs)
@@ -551,11 +551,11 @@ func (c *consImpl) uponRNDSigSharesReady(dataToSign []byte, partialSigs map[gpa.
 func (c *consImpl) uponVMInputsReceived(aggregatedProposals *bp.AggregatedBatchProposals, chainState state.State, randomness *hashing.HashValue, requests []isc.Request) gpa.OutMessages {
 	// TODO: chainState state.State is not used for now. That's because VM takes it form the store by itself.
 	// The decided base alias output can be different from that we have proposed!
-	decidedBaseAccountOutput := aggregatedProposals.DecidedBaseAccountOutput()
+	decidedBaseAnchorOutput := aggregatedProposals.DecidedBaseAnchorOutput()
 	c.output.NeedVMResult = &vm.VMTask{
 		Processors:           c.processorCache,
-		AnchorOutput:         decidedBaseAccountOutput.GetAccountOutput(),
-		AnchorOutputID:       decidedBaseAccountOutput.OutputID(),
+		AnchorOutput:         decidedBaseAnchorOutput.GetAnchorOutput(),
+		AnchorOutputID:       decidedBaseAnchorOutput.OutputID(),
 		Store:                c.chainStore,
 		Requests:             aggregatedProposals.OrderedRequests(requests, *randomness),
 		TimeAssumption:       aggregatedProposals.AggregatedTime(),
@@ -583,7 +583,7 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 		// Rotation by the Self-Governed Committee.
 		essence, err := rotate.MakeRotateStateControllerTransaction(
 			vmResult.RotationAddress,
-			isc.NewAccountOutputWithID(vmResult.Task.AnchorOutput, vmResult.Task.AnchorOutputID),
+			isc.NewAnchorOutputWithID(vmResult.Task.AnchorOutput, vmResult.Task.AnchorOutputID),
 			vmResult.Task.TimeAssumption,
 		)
 		if err != nil {
@@ -627,14 +627,14 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 	if err != nil {
 		panic(fmt.Errorf("cannot get ID from the produced TX: %w", err))
 	}
-	chained, err := isc.AccountOutputWithIDFromTx(tx, c.chainID.AsAddress())
+	chained, err := isc.AnchorOutputWithIDFromTx(tx, c.chainID.AsAddress())
 	if err != nil {
-		panic(fmt.Errorf("cannot get AccountOutput from produced TX: %w", err))
+		panic(fmt.Errorf("cannot get AnchorOutput from produced TX: %w", err))
 	}
 	c.output.Result = &Result{
 		Transaction:       tx,
-		BaseAccountOutput: vmResult.Task.AnchorOutputID,
-		NextAccountOutput: chained,
+		BaseAnchorOutput: vmResult.Task.AnchorOutputID,
+		NextAnchorOutput: chained,
 		Block:             block,
 	}
 	c.output.Status = Completed

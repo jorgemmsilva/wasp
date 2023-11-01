@@ -19,8 +19,8 @@ import (
 
 // earlyCheckReasonToSkip checks if request must be ignored without even modifying the state
 func (reqctx *requestContext) earlyCheckReasonToSkip(maintenanceMode bool) error {
-	if reqctx.vm.task.AnchorOutput.FeatureSet().NativeToken() != nil {
-		if reqctx.vm.task.AnchorOutput.StateIndex == 0 {
+	if reqctx.vm.task.Inputs.AnchorOutput.FeatureSet().NativeToken() != nil {
+		if reqctx.vm.task.Inputs.AnchorOutput.StateIndex == 0 {
 			return errors.New("can't init chain with native assets on the origin alias output")
 		} else {
 			panic("inconsistency: native assets on the anchor output")
@@ -129,8 +129,8 @@ func (reqctx *requestContext) checkReasonUnlockable() error {
 
 	req := reqctx.req.(isc.OnLedgerRequest)
 	switch out := req.Output().(type) {
-	case *iotago.AccountOutput:
-		next := out.Clone().(*iotago.AccountOutput)
+	case *iotago.AnchorOutput:
+		next := out.Clone().(*iotago.AnchorOutput)
 		next.StateIndex += 1
 		ok, err := out.UnlockableBy(
 			reqctx.vm.ChainID().AsAddress(),

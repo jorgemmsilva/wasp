@@ -4,7 +4,6 @@
 package isc
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"math"
@@ -16,122 +15,140 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-var emptyTransactionID = iotago.TransactionID{}
-
 type OutputInfo struct {
-	OutputID           iotago.OutputID
-	Output             iotago.Output
+	ChainOutputs
 	TransactionIDSpent iotago.TransactionID
 }
 
 func (o *OutputInfo) Consumed() bool {
-	return o.TransactionIDSpent != emptyTransactionID
+	return o.TransactionIDSpent != iotago.EmptyTransactionID
 }
 
-func NewOutputInfo(outputID iotago.OutputID, output iotago.Output, transactionIDSpent iotago.TransactionID) *OutputInfo {
+func NewOutputInfo(chainOutputs ChainOutputs, transactionIDSpent iotago.TransactionID) *OutputInfo {
 	return &OutputInfo{
-		OutputID:           outputID,
-		Output:             output,
+		ChainOutputs:       chainOutputs,
 		TransactionIDSpent: transactionIDSpent,
 	}
 }
 
-func (o *OutputInfo) AccountOutputWithID() *AccountOutputWithID {
-	return NewAccountOutputWithID(o.Output.(*iotago.AccountOutput), o.OutputID)
+type ChainOutputs struct {
+	AnchorOutput    *iotago.AnchorOutput
+	AnchorOutputID  iotago.OutputID
+	accountOutput   *iotago.AccountOutput // nil if AnchorOutput.StateIndex == 0
+	accountOutputID iotago.OutputID
 }
 
-type AccountOutputWithID struct {
-	outputID      iotago.OutputID
-	accountOutput *iotago.AccountOutput
-}
-
-func NewAccountOutputWithID(accountOutput *iotago.AccountOutput, outputID iotago.OutputID) *AccountOutputWithID {
-	return &AccountOutputWithID{
-		outputID:      outputID,
-		accountOutput: accountOutput,
+func NewChainOuptuts(
+	AnchorOutput *iotago.AnchorOutput,
+	anchorOutputID iotago.OutputID,
+	accountOutput *iotago.AccountOutput,
+	accountOutputID iotago.OutputID,
+) *ChainOutputs {
+	return &ChainOutputs{
+		AnchorOutput:    AnchorOutput,
+		AnchorOutputID:  anchorOutputID,
+		accountOutput:   accountOutput,
+		accountOutputID: accountOutputID,
 	}
 }
 
 // only for testing
-func RandomAccountOutputWithID() *AccountOutputWithID {
-	outputID := testiotago.RandOutputID()
-	accountOutput := &iotago.AccountOutput{}
-	return NewAccountOutputWithID(accountOutput, outputID)
+func RandomChainOutputs() *ChainOutputs {
+	return NewChainOuptuts(
+		&iotago.AnchorOutput{},
+		testiotago.RandOutputID(),
+		&iotago.AccountOutput{},
+		testiotago.RandOutputID(),
+	)
 }
 
-func AccountOutputWithIDFromBytes(data []byte) (*AccountOutputWithID, error) {
-	return rwutil.ReadFromBytes(data, new(AccountOutputWithID))
+func ChainOutputsFromBytes(data []byte) (*ChainOutputs, error) {
+	return rwutil.ReadFromBytes(data, new(ChainOutputs))
 }
 
-func (a *AccountOutputWithID) Bytes() []byte {
+func (a *ChainOutputs) Bytes() []byte {
 	return rwutil.WriteToBytes(a)
 }
 
-func (a *AccountOutputWithID) GetAccountOutput() *iotago.AccountOutput {
+func (a *ChainOutputs) GetAnchorID() iotago.AnchorID {
+	return util.AnchorIDFromAnchorOutput(a.AnchorOutput, a.AnchorOutputID)
+}
+
+func (a *ChainOutputs) AccountOutput() (iotago.OutputID, *iotago.AccountOutput, bool) {
+	return a.accountOutputID, a.accountOutput, a.accountOutput != nil
+}
+
+func (a *ChainOutputs) MustAccountOutput() *iotago.AccountOutput {
+	if a.accountOutput == nil {
+		panic("expected account output != nil")
+	}
 	return a.accountOutput
 }
 
-func (a *AccountOutputWithID) OutputID() iotago.OutputID {
-	return a.outputID
+func (a *ChainOutputs) MustAccountOutputID() iotago.OutputID {
+	if a.accountOutput == nil {
+		panic("expected account output != nil")
+	}
+	return a.accountOutputID
 }
 
-func (a *AccountOutputWithID) TransactionID() iotago.TransactionID {
-	return a.outputID.TransactionID()
-}
-
-func (a *AccountOutputWithID) GetStateIndex() uint32 {
-	return a.accountOutput.StateIndex
-}
-
-func (a *AccountOutputWithID) GetStateMetadata() []byte {
-	return a.accountOutput.StateMetadata
-}
-
-func (a *AccountOutputWithID) GetStateAddress() iotago.Address {
-	return a.accountOutput.StateController()
-}
-
-func (a *AccountOutputWithID) GetAccountID() iotago.AccountID {
-	return util.AccountIDFromAccountOutput(a.accountOutput, a.outputID)
-}
-
-func (a *AccountOutputWithID) Equals(other *AccountOutputWithID) bool {
+func (a *ChainOutputs) Equals(other *ChainOutputs) bool {
 	if other == nil {
 		return false
 	}
-	if a.outputID != other.outputID {
+	if !a.AnchorOutput.Equal(other.AnchorOutput) {
 		return false
 	}
-	ww1 := rwutil.NewBytesWriter()
-	ww1.WriteSerialized(a.accountOutput, math.MaxInt32)
-	ww2 := rwutil.NewBytesWriter()
-	ww2.WriteSerialized(other.accountOutput, math.MaxInt32)
-	return bytes.Equal(ww1.Bytes(), ww2.Bytes())
+	if a.AnchorOutputID != other.AnchorOutputID {
+		return false
+	}
+	if a.accountOutput == nil {
+		if other.accountOutput != nil {
+			return false
+		}
+	} else {
+		if !a.accountOutput.Equal(other.accountOutput) {
+			return false
+		}
+		if a.accountOutputID != other.accountOutputID {
+			return false
+		}
+	}
+	return true
 }
 
-func (a *AccountOutputWithID) Hash() hashing.HashValue {
+func (a *ChainOutputs) Hash() hashing.HashValue {
 	return hashing.HashDataBlake2b(a.Bytes())
 }
 
-func (a *AccountOutputWithID) String() string {
+func (a *ChainOutputs) String() string {
 	if a == nil {
 		return "nil"
 	}
-	return fmt.Sprintf("AO[si#%v]%v", a.GetStateIndex(), a.outputID.ToHex())
+	return fmt.Sprintf("AO[si#%v]%v", a.AnchorOutput.StateIndex, a.AnchorOutputID.ToHex())
 }
 
-func (a *AccountOutputWithID) Read(r io.Reader) error {
+func (a *ChainOutputs) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
-	rr.ReadN(a.outputID[:])
-	a.accountOutput = new(iotago.AccountOutput)
-	rr.ReadSerialized(a.accountOutput, math.MaxInt32)
+	rr.ReadN(a.AnchorOutputID[:])
+	a.AnchorOutput = new(iotago.AnchorOutput)
+	rr.ReadSerialized(a.AnchorOutput, math.MaxInt32)
+	if a.AnchorOutput.StateIndex >= 1 {
+		rr.ReadN(a.accountOutputID[:])
+		a.accountOutput = new(iotago.AccountOutput)
+		rr.ReadSerialized(a.accountOutput, math.MaxInt32)
+	}
 	return rr.Err
 }
 
-func (a *AccountOutputWithID) Write(w io.Writer) error {
+func (a *ChainOutputs) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
-	ww.WriteN(a.outputID[:])
-	ww.WriteSerialized(a.accountOutput, math.MaxInt32)
+	ww.WriteN(a.AnchorOutputID[:])
+	ww.WriteSerialized(a.AnchorOutput, math.MaxInt32)
+	if a.AnchorOutput.StateIndex >= 1 {
+		ww.WriteN(a.accountOutputID[:])
+		ww.WriteSerialized(a.accountOutput, math.MaxInt32)
+	}
 	return ww.Err
 }
 
@@ -145,27 +162,41 @@ func OutputSetToOutputIDs(outputSet iotago.OutputSet) iotago.OutputIDs {
 	return outputIDs
 }
 
-func AccountOutputWithIDFromTx(tx *iotago.Transaction, aliasAddr iotago.Address) (*AccountOutputWithID, error) {
+func ChainOutputsFromTx(tx *iotago.Transaction, anchorAddr iotago.Address) (*ChainOutputs, error) {
 	txID, err := tx.ID()
 	if err != nil {
 		return nil, err
 	}
 
+	ret := &ChainOutputs{}
 	for index, output := range tx.Outputs {
-		if accountOutput, ok := output.(*iotago.AccountOutput); ok {
-			outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
-
-			aliasID := accountOutput.AccountID
-			if aliasID.Empty() {
-				aliasID = iotago.AccountIDFromOutputID(outputID)
+		if anchorOutput, ok := output.(*iotago.AnchorOutput); ok {
+			anchorOutputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
+			anchorID := anchorOutput.AnchorID
+			if anchorID.Empty() {
+				anchorID = iotago.AnchorIDFromOutputID(anchorOutputID)
 			}
-
-			if aliasID.ToAddress().Equal(aliasAddr) {
-				// output found
-				return NewAccountOutputWithID(accountOutput, outputID), nil
+			if anchorID.ToAddress().Equal(anchorAddr) {
+				if ret.AnchorOutput != nil {
+					panic("inconsistency: multiple anchor outputs for chain in tx")
+				}
+				ret.AnchorOutput = anchorOutput
+				ret.AnchorOutputID = anchorOutputID
+			}
+		}
+		if accountOutput, ok := output.(*iotago.AccountOutput); ok {
+			if addr := accountOutput.UnlockConditionSet().Address(); addr != nil && addr.Address.Equal(anchorAddr) {
+				if ret.accountOutput != nil {
+					panic("inconsistency: multiple account outputs for chain in tx")
+				}
+				ret.accountOutput = accountOutput
+				ret.accountOutputID = iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("cannot find alias output for address %v in transaction", aliasAddr.String())
+	if ret.AnchorOutput == nil {
+		return nil, fmt.Errorf("cannot find anchor output for address %v in transaction", anchorAddr.String())
+	}
+	return ret, nil
 }

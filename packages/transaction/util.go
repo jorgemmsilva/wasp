@@ -16,29 +16,29 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
-var ErrNoAccountOutputAtIndex0 = errors.New("origin AccountOutput not found at index 0")
+var ErrNoAnchorOutputAtIndex0 = errors.New("origin AnchorOutput not found at index 0")
 
 // GetAnchorFromTransaction analyzes the output at index 0 and extracts anchor information. Otherwise error
-func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago.AccountOutput, error) {
-	anchorOutput, ok := tx.Outputs[0].(*iotago.AccountOutput)
+func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago.AnchorOutput, error) {
+	anchorOutput, ok := tx.Outputs[0].(*iotago.AnchorOutput)
 	if !ok {
-		return nil, nil, ErrNoAccountOutputAtIndex0
+		return nil, nil, ErrNoAnchorOutputAtIndex0
 	}
 	txid, err := tx.ID()
 	if err != nil {
 		return nil, anchorOutput, fmt.Errorf("GetAnchorFromTransaction: %w", err)
 	}
-	accountID := anchorOutput.AccountID
+	anchorID := anchorOutput.AnchorID
 	isOrigin := false
 
-	if accountID.Empty() {
+	if anchorID.Empty() {
 		isOrigin = true
-		accountID = iotago.AccountIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0))
+		anchorID = iotago.AnchorIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0))
 	}
 	return &isc.StateAnchor{
 		IsOrigin:             isOrigin,
 		OutputID:             iotago.OutputIDFromTransactionIDAndIndex(txid, 0),
-		ChainID:              isc.ChainIDFromAccountID(accountID),
+		ChainID:              isc.ChainIDFromAnchorID(anchorID),
 		StateController:      anchorOutput.StateController(),
 		GovernanceController: anchorOutput.GovernorAddress(),
 		StateIndex:           anchorOutput.StateIndex,
@@ -48,7 +48,7 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 }
 
 // ComputeInputsAndRemainder finds inputs so that the neededAssets are covered,
-// and computes remainder outputs, taking into account minimum storage deposit requirements.
+// and computes remainder outputs, taking into anchor minimum storage deposit requirements.
 // The inputs are consumed one by one in deterministic order (sorted by OutputID).
 func ComputeInputsAndRemainder(
 	senderAddress iotago.Address,
@@ -75,8 +75,8 @@ func ComputeInputsAndRemainder(
 				continue
 			}
 		}
-		if _, ok := output.(*iotago.AccountOutput); ok {
-			// this is an UTXO that holds an account that is not relevant for this tx, should be skipped
+		if _, ok := output.(*iotago.AnchorOutput); ok {
+			// this is an UTXO that holds an anchor that is not relevant for this tx, should be skipped
 			continue
 		}
 		if _, ok := output.(*iotago.FoundryOutput); ok {
@@ -107,7 +107,7 @@ func ComputeInputsAndRemainder(
 // computeRemainderOutputs calculates remainders for base tokens and native tokens
 // - available is what is available in inputs
 // - target is what is in outputs, except the remainder output itself with its storage deposit
-// Returns (nil, error) if inputs are not enough (taking into account storage deposit requirements)
+// Returns (nil, error) if inputs are not enough (taking into anchor storage deposit requirements)
 // If return (nil, nil) it means remainder is a perfect match between inputs and outputs, remainder not needed
 //
 //nolint:gocyclo
@@ -203,14 +203,14 @@ func MakeSignatureAndReferenceUnlocks(totalInputs int, sig iotago.Signature) iot
 	return ret
 }
 
-func MakeSignatureAndAliasUnlockFeatures(totalInputs int, sig iotago.Signature) iotago.Unlocks {
+func MakeSignatureAndAnchorUnlockFeatures(totalInputs int, sig iotago.Signature) iotago.Unlocks {
 	ret := make(iotago.Unlocks, totalInputs)
 	for i := range ret {
 		if i == 0 {
 			ret[0] = &iotago.SignatureUnlock{Signature: sig}
 			continue
 		}
-		ret[i] = &iotago.AccountUnlock{Reference: 0}
+		ret[i] = &iotago.AnchorUnlock{Reference: 0}
 	}
 	return ret
 }
@@ -219,7 +219,7 @@ func MakeAnchorTransaction(tx *iotago.Transaction, sig iotago.Signature) *iotago
 	return &iotago.SignedTransaction{
 		API:         parameters.L1API(),
 		Transaction: tx,
-		Unlocks:     MakeSignatureAndAliasUnlockFeatures(len(tx.TransactionEssence.Inputs), sig),
+		Unlocks:     MakeSignatureAndAnchorUnlockFeatures(len(tx.TransactionEssence.Inputs), sig),
 	}
 }
 

@@ -14,14 +14,14 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zapcore"
+	"golang.org/x/crypto/blake2b"
 
 	"github.com/iotaledger/hive.go/kvstore"
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
+	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/evm/evmlogger"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -32,7 +32,6 @@ import (
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/publisher"
-	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/state/indexedstore"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
@@ -57,7 +56,7 @@ type Solo struct {
 	// instance of the test
 	T                               Context
 	logger                          *logger.Logger
-	chainStateDatabaseManager       *database.ChainStateDatabaseManager
+	db                              kvstore.KVStore
 	utxoDB                          *utxodb.UtxoDB
 	chainsMutex                     sync.RWMutex
 	ledgerMutex                     sync.RWMutex
@@ -89,9 +88,15 @@ type chainData struct {
 	// ValidatorFeeTarget is the agent ID to which all fees are accrued. By default, it is equal to OriginatorAgentID
 	ValidatorFeeTarget isc.AgentID
 
-	db         kvstore.KVStore
-	writeMutex *sync.Mutex
+	db kvstore.KVStore
 }
+
+type dbKind byte
+
+const (
+	dbKindChainState = dbKind(iota)
+	dbKindEVMJSONRPCIndex
+)
 
 // Chain represents state of individual chain.
 // There may be several parallel instances of the chain in the 'solo' test
@@ -159,20 +164,12 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 	}
 	evmlogger.Init(opt.Log)
 
-	chainRecordRegistryProvider, err := registry.NewChainRecordRegistryImpl("")
-	require.NoError(t, err)
-
-	chainStateDatabaseManager, err := database.NewChainStateDatabaseManager(chainRecordRegistryProvider, database.WithEngine(hivedb.EngineMapDB))
-	if err != nil {
-		panic(err)
-	}
-
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	t.Cleanup(cancelCtx)
 	ret := &Solo{
 		T:                               t,
 		logger:                          opt.Log,
-		chainStateDatabaseManager:       chainStateDatabaseManager,
+		db:                              mapdb.NewMapDB(),
 		utxoDB:                          utxodb.New(parameters.L1API()),
 		chains:                          make(map[isc.ChainID]*Chain),
 		processorConfig:                 coreprocessors.NewConfigWithCoreContracts(),
@@ -185,7 +182,7 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 	ret.logger.Infof("Solo environment has been created")
 
 	for vmType, constructor := range opt.ExtraVMTypes {
-		err = ret.processorConfig.RegisterVMType(vmType, constructor)
+		err := ret.processorConfig.RegisterVMType(vmType, constructor)
 		require.NoError(t, err)
 	}
 
@@ -214,8 +211,31 @@ func (env *Solo) batchLoop() {
 	}
 }
 
-func (env *Solo) GetDBHash() hashing.HashValue {
-	return env.chainStateDatabaseManager.DBHash()
+// GetDBHash computes a hash from the whole DB content.
+func (env *Solo) GetDBHash() (ret hashing.HashValue) {
+	h, err := blake2b.New256(nil)
+	if err != nil {
+		panic(err)
+	}
+	if h.Size() != hashing.HashSize {
+		panic("blake2b: hash size != 32")
+	}
+	err = env.db.Iterate([]byte{}, func(k []byte, v []byte) bool {
+		_, werr := h.Write(k)
+		if werr != nil {
+			panic(werr)
+		}
+		_, werr = h.Write(v)
+		if werr != nil {
+			panic(werr)
+		}
+		return true
+	})
+	if err != nil {
+		panic(err)
+	}
+	copy(ret[:], h.Sum(nil))
+	return
 }
 
 func (env *Solo) SyncLog() {
@@ -290,7 +310,7 @@ func (env *Solo) deployChain(
 	initialL1Balance := env.L1BaseTokens(originatorAddr)
 
 	outs := env.utxoDB.GetUnspentOutputs(originatorAddr)
-	originTx, originAO, chainID, err := origin.NewChainOriginTransaction(
+	originTx, chainOutputs, chainID, err := origin.NewChainOriginTransaction(
 		chainOriginator,
 		stateControllerAddr,
 		stateControllerAddr,
@@ -315,12 +335,11 @@ func (env *Solo) deployChain(
 	env.logger.Infof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(parameters.NetworkPrefix()))
 	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(parameters.NetworkPrefix()))
 
-	db, writeMutex, err := env.chainStateDatabaseManager.ChainStateKVStore(chainID)
+	chainDB := env.getDB(dbKindChainState, chainID)
 	require.NoError(env.T, err)
-	originAOMinSD, err := parameters.Storage().MinDeposit(originAO)
+	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(chainDB))
+	_, err = origin.InitChainByAnchorOutput(store, chainOutputs)
 	require.NoError(env.T, err)
-	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(db))
-	origin.InitChain(store, initParams, originAO.Amount-originAOMinSD)
 
 	{
 		block, err2 := store.LatestBlock()
@@ -334,9 +353,12 @@ func (env *Solo) deployChain(
 		StateControllerKeyPair: stateControllerKey,
 		OriginatorPrivateKey:   chainOriginator,
 		ValidatorFeeTarget:     originatorAgentID,
-		db:                     db,
-		writeMutex:             writeMutex,
+		db:                     chainDB,
 	}, originTx
+}
+
+func (env *Solo) getDB(kind dbKind, chainID isc.ChainID) kvstore.KVStore {
+	return lo.Must(env.db.WithRealm(append([]byte{byte(kind)}, chainID[:]...)))
 }
 
 // NewChainExt returns also origin and init transactions. Used for core testing
@@ -383,7 +405,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 		OriginatorAddress:      chData.OriginatorPrivateKey.GetPublicKey().AsEd25519Address(),
 		OriginatorAgentID:      isc.NewAgentID(chData.OriginatorPrivateKey.GetPublicKey().AsEd25519Address()),
 		Env:                    env,
-		store:                  indexedstore.New(state.NewStore(chData.db, chData.writeMutex)),
+		store:                  indexedstore.New(state.NewStoreWithUniqueWriteMutex(chData.db)),
 		proc:                   processors.MustNew(env.processorConfig),
 		log:                    env.logger.Named(chData.Name),
 		metrics:                metrics.NewChainMetricsProvider().GetChainMetrics(chData.ChainID),
@@ -442,11 +464,28 @@ func (env *Solo) EnqueueRequests(tx *iotago.SignedTransaction) {
 	}
 }
 
-func (ch *Chain) GetAnchorOutputFromL1() *isc.AccountOutputWithID {
-	outputs := ch.Env.utxoDB.GetAccountOutputs(ch.ChainID.AsAddress())
-	require.EqualValues(ch.Env.T, 1, len(outputs))
-	for outputID, accountOutput := range outputs {
-		return isc.NewAccountOutputWithID(accountOutput, outputID)
+func (ch *Chain) GetChainOutputsFromL1() *isc.ChainOutputs {
+	anchor := ch.Env.utxoDB.GetAnchorOutputs(ch.ChainID.AsAddress())
+	require.EqualValues(ch.Env.T, 1, len(anchor))
+	account := ch.Env.utxoDB.GetAccountOutputs(ch.ChainID.AsAddress())
+	require.LessOrEqual(ch.Env.T, len(account), 1)
+	for anchorOutputID, anchorOutput := range anchor {
+		for accountOutputID, accountOutput := range account {
+			return isc.NewChainOuptuts(
+				anchorOutput,
+				anchorOutputID,
+				accountOutput,
+				accountOutputID,
+			)
+		}
+		// state index 0 => no account output
+		require.EqualValues(ch.Env.T, 0, anchorOutput.StateIndex)
+		return isc.NewChainOuptuts(
+			anchorOutput,
+			anchorOutputID,
+			nil,
+			iotago.OutputID{},
+		)
 	}
 	panic("unreachable")
 }
@@ -509,14 +548,6 @@ func (ch *Chain) Log() *logger.Logger {
 
 func (ch *Chain) Processors() *processors.Cache {
 	return ch.proc
-}
-
-func (ch *Chain) EnqueueDismissChain(_ string) {
-	panic("unimplemented")
-}
-
-func (ch *Chain) EnqueueAccountOutput(_ *isc.AccountOutputWithID) {
-	panic("unimplemented")
 }
 
 // ---------------------------------------------

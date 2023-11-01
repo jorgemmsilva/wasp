@@ -3,7 +3,6 @@ package solo
 import (
 	"encoding/json"
 	"os"
-	"sync"
 
 	"github.com/stretchr/testify/require"
 
@@ -77,10 +76,9 @@ func (env *Solo) RestoreSnapshot(snapshot *Snapshot) {
 		val, err := isc.AgentIDFromBytes(chainSnapshot.ValidatorFeeTarget)
 		require.NoError(env.T, err)
 
-		db, _, err := env.chainStateDatabaseManager.ChainStateKVStore(chainID)
-		require.NoError(env.T, err)
+		chainDB := env.getDB(dbKindChainState, chainID)
 		for i := 0; i < len(chainSnapshot.DB); i += 2 {
-			err = db.Set(chainSnapshot.DB[i], chainSnapshot.DB[i+1])
+			err = chainDB.Set(chainSnapshot.DB[i], chainSnapshot.DB[i+1])
 			require.NoError(env.T, err)
 		}
 
@@ -90,8 +88,7 @@ func (env *Solo) RestoreSnapshot(snapshot *Snapshot) {
 			ChainID:                chainID,
 			OriginatorPrivateKey:   okp,
 			ValidatorFeeTarget:     val,
-			db:                     db,
-			writeMutex:             &sync.Mutex{},
+			db:                     chainDB,
 		}
 		env.addChain(chainData)
 	}

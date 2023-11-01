@@ -19,6 +19,8 @@ func newAddress(addressType iotago.AddressType) (address iotago.Address, err err
 		return &iotago.AccountAddress{}, nil
 	case iotago.AddressNFT:
 		return &iotago.NFTAddress{}, nil
+	case iotago.AddressAnchor:
+		return &iotago.AnchorAddress{}, nil
 	case iotago.AddressImplicitAccountCreation:
 		return &iotago.ImplicitAccountCreationAddress{}, nil
 	case iotago.AddressMulti:

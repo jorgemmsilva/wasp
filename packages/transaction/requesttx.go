@@ -68,7 +68,7 @@ func NewTransferTransaction(
 // unlockable for the sender address
 func NewRequestTransaction(
 	senderKeyPair *cryptolib.KeyPair,
-	senderAddress iotago.Address, // might be different from the senderKP address (when sending as NFT or alias)
+	senderAddress iotago.Address, // might be different from the senderKP address (when sending as NFT or anchor)
 	unspentOutputs iotago.OutputSet,
 	request *isc.RequestParameters,
 	nft *isc.NFT,
@@ -162,8 +162,8 @@ func outputMatchesSendAsAddress(output iotago.Output, outputID iotago.OutputID, 
 		if address.Equal(util.NFTIDFromNFTOutput(o, outputID).ToAddress()) {
 			return true
 		}
-	case *iotago.AccountOutput:
-		if address.Equal(o.AccountID.ToAddress()) {
+	case *iotago.AnchorOutput:
+		if address.Equal(o.AnchorID.ToAddress()) {
 			return true
 		}
 	}
@@ -195,7 +195,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 	if senderAddress.Equal(senderKeyPair.Address()) {
 		return outputs, outputAssets
 	}
-	// sending request "on behalf of" (need NFT or alias output as input/output)
+	// sending request "on behalf of" (need NFT or anchor output as input/output)
 
 	for _, output := range outputs {
 		if outputMatchesSendAsAddress(output, iotago.OutputID{}, senderAddress) {

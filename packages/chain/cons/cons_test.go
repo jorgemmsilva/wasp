@@ -96,11 +96,11 @@ func testConsBasic(t *testing.T, n, f int) {
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 	)
 	require.NoError(t, err)
-	stateAnchor, accountOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX)
 	require.NoError(t, err)
 	require.NotNil(t, stateAnchor)
-	require.NotNil(t, accountOutput)
-	ao0 := isc.NewAccountOutputWithID(accountOutput, stateAnchor.OutputID)
+	require.NotNil(t, anchorOutput)
+	ao0 := isc.NewAnchorOutputWithID(anchorOutput, stateAnchor.OutputID)
 	err = utxoDB.AddToLedger(originTX)
 	require.NoError(t, err)
 
@@ -136,11 +136,11 @@ func testConsBasic(t *testing.T, n, f int) {
 	outputs, _ = utxoDB.GetUnspentOutputs(chainID.AsAddress())
 	for outputID, output := range outputs {
 		if output.Type() == iotago.OutputAlias {
-			accountOutput := output.(*iotago.AccountOutput)
-			if accountOutput.AccountID == chainID.AsAliasID() {
+			anchorOutput := output.(*iotago.AnchorOutput)
+			if anchorOutput.AccountID == chainID.AsAliasID() {
 				continue // That's our alias output, not the request, skip it here.
 			}
-			if accountOutput.AccountID.Empty() {
+			if anchorOutput.AccountID.Empty() {
 				implicitAliasID := iotago.AliasIDFromOutputID(outputID)
 				if implicitAliasID == chainID.AsAliasID() {
 					continue // That's our origin alias output, not the request, skip it here.
@@ -167,7 +167,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareProviders[i].LoadDKShare(committeeAddress)
 		chainStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		origin.InitChainByAccountOutput(chainStates[nid], ao0)
+		origin.InitChainByAnchorOutput(chainStates[nid], ao0)
 		require.NoError(t, err)
 		nodes[nid] = cons.New(chainID, chainStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, accounts.CommonAccount(), nodeLog).AsGPA()
 	}
@@ -206,7 +206,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		require.Nil(t, out.NeedStateMgrStateProposal)
 		require.NotNil(t, out.NeedMempoolRequests)
 		require.NotNil(t, out.NeedStateMgrDecidedState)
-		l1Commitment, err := transaction.L1CommitmentFromAccountOutput(out.NeedStateMgrDecidedState.GetAccountOutput())
+		l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(out.NeedStateMgrDecidedState.GetAnchorOutput())
 		require.NoError(t, err)
 		chainState, err := chainStates[nid].StateByTrieRoot(l1Commitment.TrieRoot())
 		require.NoError(t, err)
@@ -262,7 +262,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		require.Nil(t, out.NeedStateMgrDecidedState)
 		require.Nil(t, out.NeedVMResult)
 		require.NotNil(t, out.Result.Transaction)
-		require.NotNil(t, out.Result.NextAccountOutput)
+		require.NotNil(t, out.Result.NextAnchorOutput)
 		require.NotNil(t, out.Result.Block)
 		if nid == nodeIDs[0] { // Just do this once.
 			require.NoError(t, utxoDB.AddToLedger(out.Result.Transaction))
@@ -365,7 +365,7 @@ func testChained(t *testing.T, n, f, b int) {
 	testNodeStates := map[gpa.NodeID]state.Store{}
 	for _, nid := range nodeIDs {
 		testNodeStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		origin.InitChainByAccountOutput(testNodeStates[nid], originAO)
+		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO)
 	}
 	testChainInsts := make([]testConsInst, b)
 	for i := range testChainInsts {
@@ -390,13 +390,13 @@ func testChained(t *testing.T, n, f, b int) {
 	// Start the process by providing input to the first instance.
 	for _, nid := range nodeIDs {
 		t.Log("Going to provide inputs.")
-		originL1Commitment, err := transaction.L1CommitmentFromAccountOutput(originAO.GetAccountOutput())
+		originL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(originAO.GetAnchorOutput())
 		require.NoError(t, err)
 		originState, err := testNodeStates[nid].StateByTrieRoot(originL1Commitment.TrieRoot())
 		require.NoError(t, err)
 		testChainInsts[0].input(&testInstInput{
 			nodeID:          nid,
-			baseAccountOutput: originAO,
+			baseAnchorOutput: originAO,
 			baseState:       originState,
 		})
 	}
@@ -421,8 +421,8 @@ func testChained(t *testing.T, n, f, b int) {
 
 type testInstInput struct {
 	nodeID          gpa.NodeID
-	baseAccountOutput *isc.AccountOutputWithID
-	baseState       state.State // State committed with the baseAccountOutput
+	baseAnchorOutput *isc.AnchorOutputWithID
+	baseState       state.State // State committed with the baseAnchorOutput
 }
 
 type testConsInst struct {
@@ -531,7 +531,7 @@ func (tci *testConsInst) run() {
 			}
 			tci.inputs[inp.nodeID] = inp
 			tci.lock.Unlock()
-			tci.tcInputCh <- map[gpa.NodeID]gpa.Input{inp.nodeID: cons.NewInputProposal(inp.baseAccountOutput)}
+			tci.tcInputCh <- map[gpa.NodeID]gpa.Input{inp.nodeID: cons.NewInputProposal(inp.baseAnchorOutput)}
 			timeForStatus = time.After(3 * time.Second)
 			tci.tryHandleOutput(inp.nodeID)
 		case compInp, ok := <-tci.compInputPipe:
@@ -599,7 +599,7 @@ func (tci *testConsInst) tryHandleOutput(nodeID gpa.NodeID) { //nolint:gocyclo
 		require.NoError(tci.t, err)
 		tci.doneCB(&testInstInput{
 			nodeID:          nodeID,
-			baseAccountOutput: out.Result.NextAccountOutput,
+			baseAnchorOutput: out.Result.NextAnchorOutput,
 			baseState:       resultState,
 		})
 		tci.done[nodeID] = true
@@ -640,7 +640,7 @@ func (tci *testConsInst) tryHandleOutput(nodeID gpa.NodeID) { //nolint:gocyclo
 
 func (tci *testConsInst) tryHandledNeedMempoolProposal(nodeID gpa.NodeID, out *cons.Output, inp *testInstInput) {
 	if out.NeedMempoolProposal != nil && !tci.handledNeedMempoolProposal[nodeID] {
-		require.Equal(tci.t, out.NeedMempoolProposal, inp.baseAccountOutput)
+		require.Equal(tci.t, out.NeedMempoolProposal, inp.baseAnchorOutput)
 		reqRefs := []*isc.RequestRef{}
 		for _, r := range tci.requests {
 			reqRefs = append(reqRefs, isc.RequestRefFromRequest(r))
@@ -652,7 +652,7 @@ func (tci *testConsInst) tryHandledNeedMempoolProposal(nodeID gpa.NodeID, out *c
 
 func (tci *testConsInst) tryHandledNeedStateMgrStateProposal(nodeID gpa.NodeID, out *cons.Output, inp *testInstInput) {
 	if out.NeedStateMgrStateProposal != nil && !tci.handledNeedStateMgrStateProposal[nodeID] {
-		require.Equal(tci.t, out.NeedStateMgrStateProposal, inp.baseAccountOutput)
+		require.Equal(tci.t, out.NeedStateMgrStateProposal, inp.baseAnchorOutput)
 		tci.compInputPipe <- map[gpa.NodeID]gpa.Input{nodeID: cons.NewInputStateMgrProposalConfirmed()}
 		tci.handledNeedStateMgrStateProposal[nodeID] = true
 	}
@@ -680,7 +680,7 @@ func (tci *testConsInst) tryHandledNeedMempoolRequests(nodeID gpa.NodeID, out *c
 
 func (tci *testConsInst) tryHandledNeedStateMgrDecidedState(nodeID gpa.NodeID, out *cons.Output, inp *testInstInput) {
 	if out.NeedStateMgrDecidedState != nil && !tci.handledNeedStateMgrDecidedState[nodeID] {
-		if out.NeedStateMgrDecidedState.OutputID() == inp.baseAccountOutput.OutputID() {
+		if out.NeedStateMgrDecidedState.OutputID() == inp.baseAnchorOutput.OutputID() {
 			tci.compInputPipe <- map[gpa.NodeID]gpa.Input{nodeID: cons.NewInputStateMgrDecidedVirtualState(inp.baseState)}
 		} else {
 			tci.t.Error("we have to sync between state managers, should not happen in this test")

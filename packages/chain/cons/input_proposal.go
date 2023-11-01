@@ -13,17 +13,17 @@ import (
 
 // That's the main/initial input for the consensus.
 type inputProposal struct {
-	baseAccountOutput *isc.AccountOutputWithID
+	baseAnchorOutput *isc.AnchorOutputWithID
 }
 
-func NewInputProposal(baseAccountOutput *isc.AccountOutputWithID) gpa.Input {
-	return &inputProposal{baseAccountOutput: baseAccountOutput}
+func NewInputProposal(baseAnchorOutput *isc.AnchorOutputWithID) gpa.Input {
+	return &inputProposal{baseAnchorOutput: baseAnchorOutput}
 }
 
 func (ip *inputProposal) String() string {
-	l1Commitment, err := transaction.L1CommitmentFromAccountOutput(ip.baseAccountOutput.GetAccountOutput())
+	l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(ip.baseAnchorOutput.GetAnchorOutput())
 	if err != nil {
 		panic(fmt.Errorf("cannot extract L1 commitment from alias output: %w", err))
 	}
-	return fmt.Sprintf("{cons.inputProposal: baseAccountOutput=%v, l1Commitment=%v}", ip.baseAccountOutput, l1Commitment)
+	return fmt.Sprintf("{cons.inputProposal: baseAnchorOutput=%v, l1Commitment=%v}", ip.baseAnchorOutput, l1Commitment)
 }

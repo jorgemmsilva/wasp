@@ -14,7 +14,7 @@ import (
 
 type BatchProposal struct {
 	nodeIndex               uint16                 // Just for a double-check.
-	baseAccountOutput         *isc.AccountOutputWithID // Proposed Base AccountOutput to use.
+	baseAnchorOutput         *isc.AnchorOutputWithID // Proposed Base AnchorOutput to use.
 	dssIndexProposal        util.BitVector         // DSS Index proposal.
 	timeData                time.Time              // Our view of time.
 	validatorFeeDestination isc.AgentID            // Proposed destination for fees.
@@ -23,7 +23,7 @@ type BatchProposal struct {
 
 func NewBatchProposal(
 	nodeIndex uint16,
-	baseAccountOutput *isc.AccountOutputWithID,
+	baseAnchorOutput *isc.AnchorOutputWithID,
 	dssIndexProposal util.BitVector,
 	timeData time.Time,
 	validatorFeeDestination isc.AgentID,
@@ -31,7 +31,7 @@ func NewBatchProposal(
 ) *BatchProposal {
 	return &BatchProposal{
 		nodeIndex:               nodeIndex,
-		baseAccountOutput:         baseAccountOutput,
+		baseAnchorOutput:         baseAnchorOutput,
 		dssIndexProposal:        dssIndexProposal,
 		timeData:                timeData,
 		validatorFeeDestination: validatorFeeDestination,
@@ -46,8 +46,8 @@ func (b *BatchProposal) Bytes() []byte {
 func (b *BatchProposal) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	b.nodeIndex = rr.ReadUint16()
-	b.baseAccountOutput = new(isc.AccountOutputWithID)
-	rr.Read(b.baseAccountOutput)
+	b.baseAnchorOutput = new(isc.AnchorOutputWithID)
+	rr.Read(b.baseAnchorOutput)
 	b.dssIndexProposal = util.NewFixedSizeBitVector(0)
 	rr.Read(b.dssIndexProposal)
 	b.timeData = time.Unix(0, rr.ReadInt64())
@@ -65,7 +65,7 @@ func (b *BatchProposal) Read(r io.Reader) error {
 func (b *BatchProposal) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteUint16(b.nodeIndex)
-	ww.Write(b.baseAccountOutput)
+	ww.Write(b.baseAnchorOutput)
 	ww.Write(b.dssIndexProposal)
 	ww.WriteInt64(b.timeData.UnixNano())
 	ww.Write(b.validatorFeeDestination)

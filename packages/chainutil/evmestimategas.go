@@ -20,7 +20,7 @@ var evmErrOutOfGasRegex = regexp.MustCompile("out of gas|intrinsic gas too low")
 
 // EVMEstimateGas executes the given request and discards the resulting chain state. It is useful
 // for estimating gas.
-func EVMEstimateGas(ch chaintypes.ChainCore, accountOutput *isc.AccountOutputWithID, call ethereum.CallMsg) (uint64, error) { //nolint:gocyclo
+func EVMEstimateGas(ch chaintypes.ChainCore, chainOutputs *isc.ChainOutputs, call ethereum.CallMsg) (uint64, error) { //nolint:gocyclo
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
 		lo     uint64 = params.TxGas - 1
@@ -48,7 +48,7 @@ func EVMEstimateGas(ch chaintypes.ChainCore, accountOutput *isc.AccountOutputWit
 		call.Gas = gas
 		iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 		timestamp := time.Now()
-		res, err := runISCRequest(ch, accountOutput, timestamp, iscReq, true)
+		res, err := runISCRequest(ch, chainOutputs, timestamp, iscReq, true)
 		if err != nil {
 			return true, nil, err
 		}

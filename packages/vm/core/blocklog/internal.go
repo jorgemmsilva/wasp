@@ -11,7 +11,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/state"
 )
 
 // SaveNextBlockInfo appends block info and returns its index
@@ -21,7 +20,7 @@ func SaveNextBlockInfo(partition kv.KVStore, blockInfo *BlockInfo) {
 }
 
 // UpdateLatestBlockInfo is called before producing the next block to save anchor tx id and commitment data of the previous one
-func UpdateLatestBlockInfo(partition kv.KVStore, anchorTxID iotago.TransactionID, accountOutput *isc.AccountOutputWithID, l1commitment *state.L1Commitment) {
+func UpdateLatestBlockInfo(partition kv.KVStore, anchorTxID iotago.TransactionID) {
 	updateUnprocessableRequestsOutputID(partition, anchorTxID)
 }
 
@@ -250,14 +249,6 @@ func getRequestRecordDataByRef(partition kv.KVStoreReader, blockIndex uint32, re
 		return nil, false
 	}
 	return recBin, true
-}
-
-func GetOutputID(stateR kv.KVStoreReader, stateIndex uint32, outputIndex uint16) (iotago.OutputID, bool) {
-	blockInfo, ok := GetBlockInfo(stateR, stateIndex+1)
-	if !ok {
-		return iotago.OutputID{}, false
-	}
-	return iotago.OutputIDFromTransactionIDAndIndex(blockInfo.PreviousAccountOutput.TransactionID(), outputIndex), true
 }
 
 // tries to get block index from ParamBlockIndex, if no parameter is provided, returns the latest block index

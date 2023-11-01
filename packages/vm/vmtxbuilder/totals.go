@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -29,15 +31,19 @@ type TransactionTotals struct {
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
-	anchorInputSD, err := parameters.Storage().MinDeposit(txb.anchorOutput)
-	if err != nil {
-		panic(err)
+	api := parameters.L1Provider().APIForSlot(txb.inputs.AnchorOutputID.CreationSlot())
+	total := txb.inputs.AnchorOutput.BaseTokenAmount()
+	sd := lo.Must(api.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
+	if _, out, ok := txb.inputs.AccountOutput(); ok {
+		total += out.BaseTokenAmount()
+		sd += lo.Must(api.StorageScoreStructure().MinDeposit(out))
 	}
+
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     txb.anchorOutput.BaseTokenAmount() - anchorInputSD,
-		TotalBaseTokensInStorageDeposit: anchorInputSD,
+		TotalBaseTokensInL2Accounts:     total - sd,
+		TotalBaseTokensInStorageDeposit: sd,
 	}
 	// sum over native tokens which require inputs
 	for id, ntb := range txb.balanceNativeTokens {
@@ -86,16 +92,16 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	anchorOutputSD, err := parameters.Storage().MinDeposit(txb.resultAnchorOutput)
-	if err != nil {
-		panic(err)
-	}
+	total := txb.resultAnchorOutput.BaseTokenAmount()
+	sd := lo.Must(parameters.Storage().MinDeposit(txb.resultAnchorOutput))
+	total += txb.resultAccountOutput.BaseTokenAmount()
+	sd += lo.Must(parameters.Storage().MinDeposit(txb.resultAccountOutput))
 
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     txb.resultAnchorOutput.Amount - anchorOutputSD,
-		TotalBaseTokensInStorageDeposit: anchorOutputSD,
+		TotalBaseTokensInL2Accounts:     total - sd,
+		TotalBaseTokensInStorageDeposit: sd,
 		SentOutBaseTokens:               0,
 		SentOutTokenBalances:            make(iotago.NativeTokenSum),
 	}

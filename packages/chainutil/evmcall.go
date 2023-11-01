@@ -16,7 +16,7 @@ import (
 // EVMCall executes an EVM contract call and returns its output, discarding any state changes
 func EVMCall(
 	ch chaintypes.ChainCore,
-	accountOutput *isc.AccountOutputWithID,
+	chainOutputs *isc.ChainOutputs,
 	call ethereum.CallMsg,
 ) ([]byte, error) {
 	info := getChainInfo(ch)
@@ -34,7 +34,7 @@ func EVMCall(
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 	// TODO: setting EstimateGasMode = true feels wrong here
 	timestamp := time.Now()
-	res, err := runISCRequest(ch, accountOutput, timestamp, iscReq, true)
+	res, err := runISCRequest(ch, chainOutputs, timestamp, iscReq, true)
 	if err != nil {
 		return nil, err
 	}

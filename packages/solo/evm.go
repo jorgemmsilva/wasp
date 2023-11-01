@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
@@ -41,16 +40,16 @@ func (b *jsonRPCSoloBackend) EVMSendTransaction(tx *types.Transaction) error {
 	return err
 }
 
-func (b *jsonRPCSoloBackend) EVMCall(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.Chain, accountOutput, callMsg)
+func (b *jsonRPCSoloBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) ([]byte, error) {
+	return chainutil.EVMCall(b.Chain, chainOutputs, callMsg)
 }
 
-func (b *jsonRPCSoloBackend) EVMEstimateGas(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.Chain, accountOutput, callMsg)
+func (b *jsonRPCSoloBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) (uint64, error) {
+	return chainutil.EVMEstimateGas(b.Chain, chainOutputs, callMsg)
 }
 
 func (b *jsonRPCSoloBackend) EVMTraceTransaction(
-	accountOutput *isc.AccountOutputWithID,
+	chainOutputs *isc.ChainOutputs,
 	timestamp time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
@@ -58,7 +57,7 @@ func (b *jsonRPCSoloBackend) EVMTraceTransaction(
 ) error {
 	return chainutil.EVMTraceTransaction(
 		b.Chain,
-		accountOutput,
+		chainOutputs,
 		timestamp,
 		iscRequestsInBlock,
 		txIndex,
@@ -70,12 +69,12 @@ func (b *jsonRPCSoloBackend) ISCCallView(chainState state.State, scName, funName
 	return b.Chain.CallViewAtState(chainState, scName, funName, args)
 }
 
-func (b *jsonRPCSoloBackend) ISCLatestAccountOutput() (*isc.AccountOutputWithID, error) {
-	latestAccountOutput, err := b.Chain.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
+func (b *jsonRPCSoloBackend) ISCLatestChainOutputs() (*isc.ChainOutputs, error) {
+	latestAnchorOutput, err := b.Chain.LatestChainOutputs(chaintypes.ActiveOrCommittedState)
 	if err != nil {
-		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
+		return nil, fmt.Errorf("could not get latest AnchorOutput: %w", err)
 	}
-	return latestAccountOutput, nil
+	return latestAnchorOutput, nil
 }
 
 func (b *jsonRPCSoloBackend) ISCLatestState() state.State {
@@ -116,13 +115,23 @@ func (b *jsonRPCSoloBackend) TakeSnapshot() (int, error) {
 	return len(b.snapshots) - 1, nil
 }
 
+/*
+indexDbEngine hivedb.Engine,
+indexDbPath string,
+db, err := database.DatabaseWithDefaultSettings(indexDbPath, true, indexDbEngine, false)
+
+	if err != nil {
+		panic(err)
+	}
+
+path.Join(indexDbPath, backend.ISCChainID().String())
+*/
 func (ch *Chain) EVM() *jsonrpc.EVMChain {
 	return jsonrpc.NewEVMChain(
 		newJSONRPCSoloBackend(ch, parameters.BaseToken()),
 		ch.Env.publisher,
 		true,
-		hivedb.EngineMapDB,
-		"",
+		ch.Env.getDB(dbKindEVMJSONRPCIndex, ch.ChainID),
 		ch.log,
 	)
 }

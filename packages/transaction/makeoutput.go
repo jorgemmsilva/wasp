@@ -155,6 +155,7 @@ func AssetsAndManaFromOutput(
 		parameters.Storage(),
 		slotIndex,
 		vm.InputSet{oID: o},
+		vm.RewardsInputSet{},
 	)
 	if err != nil {
 		return nil, err
@@ -175,7 +176,7 @@ func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
 		return out
 	}
 	switch out := iotago.Output(out).(type) {
-	case *iotago.AccountOutput:
+	case *iotago.AnchorOutput:
 		out.Amount = storageDeposit
 	case *iotago.BasicOutput:
 		out.Amount = storageDeposit

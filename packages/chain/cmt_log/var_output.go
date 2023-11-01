@@ -12,14 +12,14 @@ type VarOutput interface {
 	StatusString() string
 	Value() *Output
 	LogIndexAgreed(li LogIndex)
-	TipAOChanged(ao *isc.AccountOutputWithID)
+	TipAOChanged(ao *isc.AnchorOutputWithID)
 	CanPropose()
 	Suspended(suspended bool)
 }
 
 type varOutputImpl struct {
 	candidateLI LogIndex
-	candidateAO *isc.AccountOutputWithID
+	candidateAO *isc.AnchorOutputWithID
 	canPropose  bool
 	suspended   bool
 	outValue    *Output
@@ -58,7 +58,7 @@ func (vo *varOutputImpl) LogIndexAgreed(li LogIndex) {
 	vo.tryOutput()
 }
 
-func (vo *varOutputImpl) TipAOChanged(ao *isc.AccountOutputWithID) {
+func (vo *varOutputImpl) TipAOChanged(ao *isc.AnchorOutputWithID) {
 	vo.candidateAO = ao
 	vo.tryOutput()
 }

@@ -47,24 +47,24 @@ func NewConsensusID(cmtAddr *iotago.Ed25519Address, logIndex *cmt_log.LogIndex) 
 }
 
 type Mempool interface {
-	ConsensusProposalAsync(ctx context.Context, accountOutput *isc.AccountOutputWithID, consensusID ConsensusID) <-chan []*isc.RequestRef
+	ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.AnchorOutputWithID, consensusID ConsensusID) <-chan []*isc.RequestRef
 	ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc.RequestRef) <-chan []isc.Request
 }
 
 // State manager has to implement this interface.
 type StateMgr interface {
 	// State manager has to return a signal via the return channel when it
-	// ensures all the needed blocks for the specified AccountOutput is present
+	// ensures all the needed blocks for the specified AnchorOutput is present
 	// in the database. Context is used to cancel a request.
 	ConsensusStateProposal(
 		ctx context.Context,
-		accountOutput *isc.AccountOutputWithID,
+		anchorOutput *isc.AnchorOutputWithID,
 	) <-chan interface{}
 	// State manager has to ensure all the data needed for the specified alias
-	// output (presented as accountOutputID+stateCommitment) is present in the DB.
+	// output (presented as anchorOutputID+stateCommitment) is present in the DB.
 	ConsensusDecidedState(
 		ctx context.Context,
-		accountOutput *isc.AccountOutputWithID,
+		anchorOutput *isc.AnchorOutputWithID,
 	) <-chan state.State
 	// State manager has to persistently store the block and respond only after
 	// the block was flushed to the disk. A WAL can be used for that as well.
@@ -91,7 +91,7 @@ func (o *Output) String() string {
 }
 
 type input struct {
-	baseAccountOutput *isc.AccountOutputWithID
+	baseAnchorOutput *isc.AnchorOutputWithID
 	outputCB          func(*Output)
 	recoverCB         func()
 }
@@ -211,13 +211,13 @@ func New(
 	return cgr
 }
 
-func (cgr *ConsGr) Input(baseAccountOutput *isc.AccountOutputWithID, outputCB func(*Output), recoverCB func()) {
+func (cgr *ConsGr) Input(baseAnchorOutput *isc.AnchorOutputWithID, outputCB func(*Output), recoverCB func()) {
 	wasReceivedBefore := cgr.inputReceived.Swap(true)
 	if wasReceivedBefore {
-		panic(fmt.Errorf("duplicate input: %v", baseAccountOutput))
+		panic(fmt.Errorf("duplicate input: %v", baseAnchorOutput))
 	}
 	inp := &input{
-		baseAccountOutput: baseAccountOutput,
+		baseAnchorOutput: baseAnchorOutput,
 		outputCB:          outputCB,
 		recoverCB:         recoverCB,
 	}
@@ -263,7 +263,7 @@ func (cgr *ConsGr) run() { //nolint:gocyclo,funlen
 			printStatusCh = time.After(cgr.printStatusPeriod)
 			cgr.outputCB = inp.outputCB
 			cgr.recoverCB = inp.recoverCB
-			cgr.handleConsInput(cons.NewInputProposal(inp.baseAccountOutput))
+			cgr.handleConsInput(cons.NewInputProposal(inp.baseAnchorOutput))
 		case t, ok := <-cgr.inputTimeCh:
 			if !ok {
 				cgr.inputTimeCh = nil

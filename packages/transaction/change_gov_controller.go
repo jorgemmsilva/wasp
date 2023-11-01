@@ -9,23 +9,23 @@ import (
 )
 
 func NewChangeGovControllerTx(
-	chainID iotago.AccountID,
+	chainID iotago.AnchorID,
 	newGovController iotago.Address,
 	utxos iotago.OutputSet,
 	wallet *cryptolib.KeyPair,
 	creationSlot iotago.SlotIndex,
 ) (*iotago.SignedTransaction, error) {
 	// find the correct chain UTXO
-	var chainOutput *iotago.AccountOutput
+	var chainOutput *iotago.AnchorOutput
 	var chainOutputID iotago.OutputID
 	for id, o := range utxos {
-		ao, ok := o.(*iotago.AccountOutput)
+		ao, ok := o.(*iotago.AnchorOutput)
 		if !ok {
 			continue
 		}
-		if util.AccountIDFromAccountOutput(ao, id) == chainID {
+		if util.AnchorIDFromAnchorOutput(ao, id) == chainID {
 			chainOutputID = id
-			chainOutput = ao.Clone().(*iotago.AccountOutput)
+			chainOutput = ao.Clone().(*iotago.AnchorOutput)
 			break
 		}
 	}
@@ -33,7 +33,7 @@ func NewChangeGovControllerTx(
 		return nil, fmt.Errorf("unable to find UTXO for chain (%s) in owned UTXOs", chainID.String())
 	}
 
-	newConditions := make(iotago.AccountOutputUnlockConditions, len(chainOutput.Conditions))
+	newConditions := make(iotago.AnchorOutputUnlockConditions, len(chainOutput.Conditions))
 	for i, c := range chainOutput.Conditions {
 		if _, ok := c.(*iotago.GovernorAddressUnlockCondition); ok {
 			// change the gov unlock condiiton to the new owner
@@ -45,7 +45,7 @@ func NewChangeGovControllerTx(
 		newConditions[i] = c
 	}
 	chainOutput.Conditions = newConditions
-	chainOutput.AccountID = chainID // in case right after mint where outputID is still 0
+	chainOutput.AnchorID = chainID // in case right after mint where outputID is still 0
 
 	inputIDs := iotago.OutputIDs{chainOutputID}
 	outputs := iotago.TxEssenceOutputs{chainOutput}

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 )
@@ -52,10 +53,16 @@ var (
 		iotago.WithCongestionControlOptions(500, 500, 500, 8*schedulerRate, 5*schedulerRate, schedulerRate, 1000, 100),
 	)
 
-	TestAPI = iotago.V3API(testProtoParams)
+	TestAPI         = iotago.V3API(testProtoParams)
+	TestAPIProvider = api.SingleVersionProvider(TestAPI)
 )
 
-// L1Params describes parameters coming from the L1 node
+type L1ProviderParams struct {
+	iotago.APIProvider
+	BaseToken *BaseTokenInfo
+}
+
+// L1Params describes parameters coming from the L1 node at a given epoch
 type L1Params struct {
 	Protocol  iotago.ProtocolParameters `json:"protocol" swagger:"required"`
 	BaseToken *BaseTokenInfo            `json:"baseToken" swagger:"required"`
@@ -64,35 +71,42 @@ type L1Params struct {
 func isTestContext() bool {
 	return strings.HasSuffix(os.Args[0], ".test") ||
 		strings.HasSuffix(os.Args[0], ".test.exe") ||
-		strings.Contains(os.Args[0], "__debug_bin")
+		strings.Contains(os.Args[0], "__debug_bin") ||
+		strings.Contains(os.Args[0], "debug.test")
 }
 
-var L1ForTesting = &L1Params{
-	Protocol:  TestAPI.ProtocolParameters(),
-	BaseToken: TestBaseToken,
-}
-
-var L1 = sync.OnceValue(func() *L1Params {
+var L1Provider = sync.OnceValue(func() *L1ProviderParams {
 	if !isTestContext() {
 		panic("call InitL1() first")
 	}
-	return L1ForTesting
+	return &L1ProviderParams{
+		APIProvider: TestAPIProvider,
+		BaseToken:   TestBaseToken,
+	}
 })
 
 // InitL1Lazy sets a function to be called the first time L1() is called.
-func InitL1Lazy(f func() *L1Params) {
-	L1 = sync.OnceValue(f)
+func InitL1Lazy(f func() *L1ProviderParams) {
+	L1Provider = sync.OnceValue(f)
 }
 
-func InitL1(l1 *L1Params) {
-	L1 = func() *L1Params {
+func InitL1(l1 *L1ProviderParams) {
+	L1Provider = func() *L1ProviderParams {
 		return l1
 	}
 }
 
-var L1API = sync.OnceValue(func() iotago.API {
-	return iotago.V3API(L1().Protocol)
-})
+func L1() *L1Params {
+	provider := L1Provider()
+	return &L1Params{
+		Protocol:  provider.LatestAPI().ProtocolParameters(),
+		BaseToken: provider.BaseToken,
+	}
+}
+
+func L1API() iotago.API {
+	return L1Provider().LatestAPI()
+}
 
 func Storage() *iotago.StorageScoreStructure {
 	return L1API().StorageScoreStructure()

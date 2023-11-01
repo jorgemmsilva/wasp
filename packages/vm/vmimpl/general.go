@@ -22,11 +22,11 @@ func (reqctx *requestContext) ChainID() isc.ChainID {
 
 func (vmctx *vmContext) ChainID() isc.ChainID {
 	var chainID isc.ChainID
-	if vmctx.task.AnchorOutput.StateIndex == 0 {
+	if vmctx.task.Inputs.AnchorOutput.StateIndex == 0 {
 		// origin
-		chainID = isc.ChainIDFromAccountID(iotago.AccountIDFromOutputID(vmctx.task.AnchorOutputID))
+		chainID = isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(vmctx.task.Inputs.AnchorOutputID))
 	} else {
-		chainID = isc.ChainIDFromAccountID(vmctx.task.AnchorOutput.AccountID)
+		chainID = isc.ChainIDFromAnchorID(vmctx.task.Inputs.AnchorOutput.AnchorID)
 	}
 	return chainID
 }
@@ -128,8 +128,7 @@ func (reqctx *requestContext) transferAllowedFunds(target isc.AgentID, transfer 
 }
 
 func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
-	var nilAccountID iotago.AccountID
-	blockset := vmctx.task.AnchorOutput.FeatureSet()
+	blockset := vmctx.task.Inputs.AnchorOutput.FeatureSet()
 	senderBlock := blockset.SenderFeature()
 	var sender iotago.Address
 	if senderBlock != nil {
@@ -138,13 +137,13 @@ func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
 	return &isc.StateAnchor{
 		ChainID:              vmctx.ChainID(),
 		Sender:               sender,
-		IsOrigin:             vmctx.task.AnchorOutput.AccountID == nilAccountID,
-		StateController:      vmctx.task.AnchorOutput.StateController(),
-		GovernanceController: vmctx.task.AnchorOutput.GovernorAddress(),
-		StateIndex:           vmctx.task.AnchorOutput.StateIndex,
-		OutputID:             vmctx.task.AnchorOutputID,
-		StateData:            vmctx.task.AnchorOutput.StateMetadata,
-		Deposit:              vmctx.task.AnchorOutput.Amount,
+		IsOrigin:             vmctx.task.Inputs.AnchorOutput.AnchorID == iotago.EmptyAnchorID,
+		StateController:      vmctx.task.Inputs.AnchorOutput.StateController(),
+		GovernanceController: vmctx.task.Inputs.AnchorOutput.GovernorAddress(),
+		StateIndex:           vmctx.task.Inputs.AnchorOutput.StateIndex,
+		OutputID:             vmctx.task.Inputs.AnchorOutputID,
+		StateData:            vmctx.task.Inputs.AnchorOutput.StateMetadata,
+		Deposit:              vmctx.task.Inputs.AnchorOutput.Amount,
 	}
 }
 

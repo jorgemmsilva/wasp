@@ -33,7 +33,7 @@ type StateMgr interface {
 	// indexes.
 	ChainFetchStateDiff(
 		ctx context.Context,
-		prevAO, nextAO *isc.AccountOutputWithID,
+		prevAO, nextAO *isc.AnchorOutputWithID,
 	) <-chan *sm_inputs.ChainFetchStateDiffResults
 	// Invoked by the chain when a set of server (access⁻¹) nodes has changed.
 	// These nodes should be used to perform block replication.
@@ -179,7 +179,7 @@ func New(
 // Implementations for chain package
 // -------------------------------------
 
-func (smT *stateManager) ChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.AccountOutputWithID) <-chan *sm_inputs.ChainFetchStateDiffResults {
+func (smT *stateManager) ChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.AnchorOutputWithID) <-chan *sm_inputs.ChainFetchStateDiffResults {
 	input, resultCh := sm_inputs.NewChainFetchStateDiff(ctx, prevAO, nextAO)
 	smT.addInput(input)
 	return resultCh
@@ -206,17 +206,17 @@ func (smT *stateManager) PreliminaryBlock(block state.Block) error {
 // Implementations of consGR.StateMgr
 // -------------------------------------
 
-// ConsensusStateProposal asks State manager to ensure that all the blocks for accountOutput are available.
-// `nil` is sent via the returned channel upon successful retrieval of every block for accountOutput.
-func (smT *stateManager) ConsensusStateProposal(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan interface{} {
-	input, resultCh := sm_inputs.NewConsensusStateProposal(ctx, accountOutput)
+// ConsensusStateProposal asks State manager to ensure that all the blocks for anchorOutput are available.
+// `nil` is sent via the returned channel upon successful retrieval of every block for anchorOutput.
+func (smT *stateManager) ConsensusStateProposal(ctx context.Context, anchorOutput *isc.AnchorOutputWithID) <-chan interface{} {
+	input, resultCh := sm_inputs.NewConsensusStateProposal(ctx, anchorOutput)
 	smT.addInput(input)
 	return resultCh
 }
 
 // ConsensusDecidedState asks State manager to return a virtual state with stateCommitment as its state commitment
-func (smT *stateManager) ConsensusDecidedState(ctx context.Context, accountOutput *isc.AccountOutputWithID) <-chan state.State {
-	input, resultCh := sm_inputs.NewConsensusDecidedState(ctx, accountOutput)
+func (smT *stateManager) ConsensusDecidedState(ctx context.Context, anchorOutput *isc.AnchorOutputWithID) <-chan state.State {
+	input, resultCh := sm_inputs.NewConsensusDecidedState(ctx, anchorOutput)
 	smT.addInput(input)
 	return resultCh
 }

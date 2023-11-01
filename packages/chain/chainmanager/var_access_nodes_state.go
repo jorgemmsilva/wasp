@@ -18,26 +18,26 @@ import (
 // committee should be used. The algorithm itself is similar to the `varLocalView`
 // in the `cmtLog`.
 type VarAccessNodeState interface {
-	Tip() *isc.AccountOutputWithID
+	Tip() *isc.AnchorOutputWithID
 	// Considers the produced (not yet confirmed) block / TX and returns new tip AO.
 	// The returned bool indicates if the tip has changed because of this call.
 	// This function should return L1 commitment, if the corresponding block should be added to the store.
-	BlockProduced(tx *iotago.Transaction) (*isc.AccountOutputWithID, bool, *state.L1Commitment)
+	BlockProduced(tx *iotago.Transaction) (*isc.AnchorOutputWithID, bool, *state.L1Commitment)
 	// Considers a confirmed AO and returns new tip AO.
 	// The returned bool indicates if the tip has changed because of this call.
-	BlockConfirmed(ao *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool)
+	BlockConfirmed(ao *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool)
 }
 
 type varAccessNodeStateImpl struct {
 	chainID   isc.ChainID
-	tipAO     *isc.AccountOutputWithID                                         // Will point to the latest known good state while the chain don't have the current good state.
-	confirmed *isc.AccountOutputWithID                                         // Latest known confirmed AO.
+	tipAO     *isc.AnchorOutputWithID                                         // Will point to the latest known good state while the chain don't have the current good state.
+	confirmed *isc.AnchorOutputWithID                                         // Latest known confirmed AO.
 	pending   *shrinkingmap.ShrinkingMap[uint32, []*varAccessNodeStateEntry] // A set of unconfirmed outputs (StateIndex => TX).
 	log       *logger.Logger                                                 // Will write this just for the alignment.
 }
 
 type varAccessNodeStateEntry struct {
-	output   *isc.AccountOutputWithID // The published AO.
+	output   *isc.AnchorOutputWithID // The published AO.
 	consumed iotago.OutputID        // The AO used as an input for the TX.
 }
 
@@ -51,11 +51,11 @@ func NewVarAccessNodeState(chainID isc.ChainID, log *logger.Logger) VarAccessNod
 	}
 }
 
-func (vas *varAccessNodeStateImpl) Tip() *isc.AccountOutputWithID {
+func (vas *varAccessNodeStateImpl) Tip() *isc.AnchorOutputWithID {
 	return vas.tipAO
 }
 
-func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.AccountOutputWithID, bool, *state.L1Commitment) {
+func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.AnchorOutputWithID, bool, *state.L1Commitment) {
 	txID, err := tx.ID()
 	if err != nil {
 		vas.log.Debugf("BlockProduced: Ignoring, cannot extract txID: %v", err)
@@ -76,7 +76,7 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.A
 	if !ok {
 		entries = []*varAccessNodeStateEntry{}
 	}
-	publishedL1Commitment, err := transaction.L1CommitmentFromAccountOutput(published.GetAccountOutput())
+	publishedL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(published.GetAnchorOutput())
 	if err != nil {
 		vas.log.Warnf("Cannot extract L1Commitment from the published AO: %v", err)
 		publishedL1Commitment = nil // Will ignore it.
@@ -101,15 +101,15 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.A
 	return vas.tipAO, false, publishedL1Commitment
 }
 
-func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
+func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
 	vas.log.Debugf("BlockConfirmed: confirmed=%v", confirmed)
 	stateIndex := confirmed.GetStateIndex()
 	vas.confirmed = confirmed
-	if vas.isAccountOutputPending(confirmed) {
+	if vas.isAnchorOutputPending(confirmed) {
 		// Clean all the outputs that are older (by StateIndex) than the new confirmed output.
 		// Also, clean all the blocks that have the higher index, but are known to be based
 		// on a block from a losing branch.
-		losing := []*isc.AccountOutputWithID{}
+		losing := []*isc.AnchorOutputWithID{}
 		vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 			if si == stateIndex {
 				for _, e := range es {
@@ -154,7 +154,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AccountOutputWi
 	return vas.outputIfChanged(vas.findLatestPending())
 }
 
-func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
+func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
 	if vas.tipAO == nil && newTip == nil {
 		vas.log.Debugf("⊳ Tip remains nil.")
 		return vas.tipAO, false
@@ -177,7 +177,7 @@ func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.AccountOutputWith
 	return vas.tipAO, true
 }
 
-func (vas *varAccessNodeStateImpl) isAccountOutputPending(ao *isc.AccountOutputWithID) bool {
+func (vas *varAccessNodeStateImpl) isAnchorOutputPending(ao *isc.AnchorOutputWithID) bool {
 	found := false
 	vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 		found = lo.ContainsBy(es, func(e *varAccessNodeStateEntry) bool {
@@ -188,7 +188,7 @@ func (vas *varAccessNodeStateImpl) isAccountOutputPending(ao *isc.AccountOutputW
 	return found
 }
 
-func (vas *varAccessNodeStateImpl) findLatestPending() *isc.AccountOutputWithID {
+func (vas *varAccessNodeStateImpl) findLatestPending() *isc.AnchorOutputWithID {
 	if vas.confirmed == nil {
 		return nil
 	}
@@ -211,9 +211,9 @@ func (vas *varAccessNodeStateImpl) findLatestPending() *isc.AccountOutputWithID 
 	return latest
 }
 
-func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transaction) (iotago.OutputID, *isc.AccountOutputWithID, error) {
+func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transaction) (iotago.OutputID, *isc.AnchorOutputWithID, error) {
 	var consumed iotago.OutputID
-	var published *isc.AccountOutputWithID
+	var published *isc.AnchorOutputWithID
 	var err error
 	if vas.confirmed == nil {
 		return consumed, nil, fmt.Errorf("don't have the confirmed AO")
@@ -225,7 +225,7 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 	// Validate the TX:
 	//   - Signature is valid and is by the latest known confirmed state controller.
 	//   - Previous known AO is among the TX inputs.
-	published, err = isc.AccountOutputWithIDFromTx(tx, vas.chainID.AsAddress())
+	published, err = isc.AnchorOutputWithIDFromTx(tx, vas.chainID.AsAddress())
 	if err != nil {
 		return consumed, nil, fmt.Errorf("cannot extract alias output from the block: %v", err)
 	}

@@ -323,8 +323,8 @@ func TestWasmTypes(t *testing.T) {
 
 	// check account address
 	scAccountAddress := scChainID.Address()
-	aliasAddress := chainID.AsAddress()
-	checkAddress(t, ctx, scAccountAddress, aliasAddress)
+	anchorAddress := chainID.AsAddress()
+	checkAddress(t, ctx, scAccountAddress, anchorAddress)
 
 	// check ed25519 address
 	scEd25519Address := ctx.Originator().ScAgentID().Address()
@@ -343,7 +343,7 @@ func TestWasmTypes(t *testing.T) {
 
 	// check agent id of account address (hname zero)
 	scAgentID := wasmtypes.ScAgentIDFromAddress(scAccountAddress)
-	agentID := isc.NewAgentID(aliasAddress)
+	agentID := isc.NewAgentID(anchorAddress)
 	checkAgentID(t, ctx, scAgentID, agentID)
 
 	// check agent id of ed25519 address (hname zero)

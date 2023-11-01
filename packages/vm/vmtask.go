@@ -15,12 +15,11 @@ import (
 )
 
 // VMTask is task context (for batch of requests). It is used to pass parameters and take results
-// It is assumed that all requests/inputs are unlock-able by aliasAddress of provided AnchorOutput
+// It is assumed that all requests/inputs are unlock-able by anchorAddress of provided AnchorOutput
 // at timestamp = Timestamp + len(Requests) nanoseconds
 type VMTask struct {
 	Processors         *processors.Cache
-	AnchorOutput       *iotago.AccountOutput
-	AnchorOutputID     iotago.OutputID
+	Inputs             *isc.ChainOutputs
 	Store              state.Store
 	Requests           []isc.Request
 	Timestamp          time.Time

@@ -45,7 +45,7 @@ func (m *mockAccountContractRead) Read() AccountsContractRead {
 	}
 }
 
-func newMockAccountsContractRead(anchor *iotago.AccountOutput) *mockAccountContractRead {
+func newMockAccountsContractRead(anchor *iotago.AnchorOutput) *mockAccountContractRead {
 	anchorMinSD, err := parameters.Storage().MinDeposit(anchor)
 	if err != nil {
 		panic(err)
@@ -60,30 +60,48 @@ func newMockAccountsContractRead(anchor *iotago.AccountOutput) *mockAccountContr
 func TestTxBuilderBasic(t *testing.T) {
 	const initialTotalBaseTokens = 10 * isc.Million
 	addr := tpkg.RandEd25519Address()
-	aliasID := testiotago.RandAccountID()
-	anchor := &iotago.AccountOutput{
-		Amount:    initialTotalBaseTokens,
-		AccountID: aliasID,
-		Conditions: iotago.AccountOutputUnlockConditions{
+	anchorID := testiotago.RandAnchorID()
+	anchor := &iotago.AnchorOutput{
+		Amount:   initialTotalBaseTokens,
+		AnchorID: anchorID,
+		Conditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
-		StateIndex:     0,
-		StateMetadata:  dummyStateMetadata,
-		FoundryCounter: 0,
-		Features: iotago.AccountOutputFeatures{
+		StateIndex:    0,
+		StateMetadata: dummyStateMetadata,
+		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
-				Address: aliasID.ToAddress(),
+				Address: anchorID.ToAddress(),
 			},
 		},
 	}
-	anchorID := tpkg.RandOutputID(0)
+	anchorOutputID := tpkg.RandOutputID(0)
+
+	accountID := testiotago.RandAccountID()
+	account := &iotago.AccountOutput{
+		AccountID:      accountID,
+		FoundryCounter: 0,
+		Conditions: iotago.AccountOutputUnlockConditions{
+			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
+		},
+		Features: iotago.AccountOutputFeatures{
+			&iotago.SenderFeature{Address: anchorID.ToAddress()},
+		},
+	}
+	account.Amount = lo.Must(parameters.Storage().MinDeposit(account))
+	anchor.Amount -= account.Amount
+	accountOutputID := tpkg.RandOutputID(1)
+
 	t.Run("deposits", func(t *testing.T) {
 		mockedAccounts := newMockAccountsContractRead(anchor)
 		txb := NewAnchorTransactionBuilder(
-			anchor,
-			anchorID,
-			lo.Must(parameters.Storage().MinDeposit(anchor)),
+			isc.NewChainOuptuts(
+				anchor,
+				anchorOutputID,
+				account,
+				accountOutputID,
+			),
 			mockedAccounts.Read(),
 		)
 		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
@@ -140,31 +158,48 @@ func TestTxBuilderBasic(t *testing.T) {
 func TestTxBuilderConsistency(t *testing.T) {
 	const initialTotalBaseTokens = 10000 * isc.Million
 	addr := tpkg.RandEd25519Address()
-	aliasID := testiotago.RandAccountID()
-	anchor := &iotago.AccountOutput{
-		Amount:    initialTotalBaseTokens,
-		AccountID: aliasID,
-		Conditions: iotago.AccountOutputUnlockConditions{
+	anchorID := testiotago.RandAnchorID()
+	anchor := &iotago.AnchorOutput{
+		Amount:   initialTotalBaseTokens,
+		AnchorID: anchorID,
+		Conditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
-		StateIndex:     0,
-		StateMetadata:  dummyStateMetadata,
-		FoundryCounter: 0,
-		Features: iotago.AccountOutputFeatures{
+		StateIndex:    0,
+		StateMetadata: dummyStateMetadata,
+		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
-				Address: aliasID.ToAddress(),
+				Address: anchorID.ToAddress(),
 			},
 		},
 	}
-	anchorID := tpkg.RandOutputID(0)
+	anchorOutputID := tpkg.RandOutputID(0)
+
+	accountID := testiotago.RandAccountID()
+	account := &iotago.AccountOutput{
+		AccountID:      accountID,
+		FoundryCounter: 0,
+		Conditions: iotago.AccountOutputUnlockConditions{
+			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
+		},
+		Features: iotago.AccountOutputFeatures{
+			&iotago.SenderFeature{Address: anchorID.ToAddress()},
+		},
+	}
+	account.Amount = lo.Must(parameters.Storage().MinDeposit(account))
+	anchor.Amount -= account.Amount
+	accountOutputID := tpkg.RandOutputID(1)
 
 	initTest := func(numTokenIDs int) (*AnchorTransactionBuilder, *mockAccountContractRead, []iotago.NativeTokenID) {
 		mockedAccounts := newMockAccountsContractRead(anchor)
 		txb := NewAnchorTransactionBuilder(
-			anchor,
-			anchorID,
-			lo.Must(parameters.Storage().MinDeposit(anchor)),
+			isc.NewChainOuptuts(
+				anchor,
+				anchorOutputID,
+				account,
+				accountOutputID,
+			),
 			mockedAccounts.Read(),
 		)
 
@@ -178,7 +213,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	// return deposit in BaseToken
 	consumeUTXO := func(t *testing.T, txb *AnchorTransactionBuilder, id iotago.NativeTokenID, amountNative uint64, mockedAccounts *mockAccountContractRead) {
 		out := transaction.MakeBasicOutput(
-			txb.anchorOutput.AccountID.ToAddress(),
+			txb.inputs.AnchorOutput.AnchorID.ToAddress(),
 			nil,
 			(isc.NewAssets(0, []*iotago.NativeTokenFeature{{ID: id, Amount: big.NewInt(int64(amountNative))}})).WithMana(0),
 			nil,
@@ -203,7 +238,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			}},
 		)
 		out := transaction.BasicOutputFromPostData(
-			txb.anchorOutput.AccountID.ToAddress(),
+			txb.inputs.AnchorOutput.AnchorID.ToAddress(),
 			isc.ContractIdentityFromHname(isc.Hn("test")),
 			isc.RequestParameters{
 				TargetAddress:                 tpkg.RandEd25519Address(),
@@ -334,7 +369,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		setNativeTokenAccountsBalance := func(id iotago.NativeTokenID, amount int64) {
 			mockedAccounts.assets.AddNativeTokens(id, amount)
 			// create internal accounting outputs with 0 base tokens (they must be updated in the output side)
-			out := txb.newInternalTokenOutput(aliasID, id)
+			out := txb.newInternalTokenOutput(anchorID, id)
 			out.FeatureSet().NativeToken().Amount = new(big.Int).SetInt64(amount)
 			mockedAccounts.nativeTokenOutputs[id] = out
 		}
@@ -374,24 +409,38 @@ func TestTxBuilderConsistency(t *testing.T) {
 func TestFoundries(t *testing.T) {
 	const initialTotalBaseTokens = 10*isc.Million + governance.DefaultMinBaseTokensOnCommonAccount
 	addr := tpkg.RandEd25519Address()
-	aliasID := testiotago.RandAccountID()
-	anchor := &iotago.AccountOutput{
-		Amount:    initialTotalBaseTokens,
-		AccountID: aliasID,
-		Conditions: iotago.AccountOutputUnlockConditions{
+	anchorID := testiotago.RandAnchorID()
+	anchor := &iotago.AnchorOutput{
+		Amount:   initialTotalBaseTokens,
+		AnchorID: anchorID,
+		Conditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
-		StateIndex:     0,
-		StateMetadata:  dummyStateMetadata,
-		FoundryCounter: 0,
-		Features: iotago.AccountOutputFeatures{
+		StateIndex:    0,
+		StateMetadata: dummyStateMetadata,
+		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
-				Address: aliasID.ToAddress(),
+				Address: anchorID.ToAddress(),
 			},
 		},
 	}
-	anchorID := tpkg.RandOutputID(0)
+	anchorOutputID := tpkg.RandOutputID(0)
+
+	accountID := testiotago.RandAccountID()
+	account := &iotago.AccountOutput{
+		AccountID:      accountID,
+		FoundryCounter: 0,
+		Conditions: iotago.AccountOutputUnlockConditions{
+			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
+		},
+		Features: iotago.AccountOutputFeatures{
+			&iotago.SenderFeature{Address: anchorID.ToAddress()},
+		},
+	}
+	account.Amount = lo.Must(parameters.Storage().MinDeposit(account))
+	anchor.Amount -= account.Amount
+	accountOutputID := tpkg.RandOutputID(1)
 
 	var nativeTokenIDs []iotago.NativeTokenID
 	var txb *AnchorTransactionBuilder
@@ -401,9 +450,12 @@ func TestFoundries(t *testing.T) {
 	initTest := func() {
 		mockedAccounts = newMockAccountsContractRead(anchor)
 		txb = NewAnchorTransactionBuilder(
-			anchor,
-			anchorID,
-			lo.Must(parameters.Storage().MinDeposit(anchor)),
+			isc.NewChainOuptuts(
+				anchor,
+				anchorOutputID,
+				account,
+				accountOutputID,
+			),
 			mockedAccounts.Read(),
 		)
 

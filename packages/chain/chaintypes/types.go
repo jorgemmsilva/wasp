@@ -65,7 +65,7 @@ type ChainCore interface {
 	// The active AO can be ahead of the confirmed one by several blocks.
 	// Both values can be nil, if the node haven't received an output from
 	// L1 yet (after a restart or a chain activation).
-	LatestAccountOutput(freshness StateFreshness) (*isc.AccountOutputWithID, error)
+	LatestChainOutputs(freshness StateFreshness) (*isc.ChainOutputs, error)
 	LatestState(freshness StateFreshness) (state.State, error)
 	GetCommitteeInfo() *CommitteeInfo // TODO: Review, maybe we can reorganize the CommitteeInfo structure.
 	Store() indexedstore.IndexedStore // Use LatestState whenever possible. That will work faster.

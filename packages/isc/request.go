@@ -25,7 +25,7 @@ type Request interface {
 }
 
 type Calldata interface {
-	Allowance() *Assets // transfer of assets to the smart contract. Debited from sender account
+	Allowance() *Assets // transfer of assets to the smart contract. Debited from sender anchor
 	Assets() *Assets    // attached assets for the UTXO request, nil for off-ledger. All goes to sender
 	CallTarget() CallTarget
 	GasBudget() (gas uint64, isEVM bool)
@@ -109,11 +109,11 @@ func RequestsInTransaction(tx *iotago.Transaction) (map[ChainID][]Request, error
 		}
 
 		addr := odata.TargetAddress()
-		if addr.Type() != iotago.AddressAccount {
+		if addr.Type() != iotago.AddressAnchor {
 			continue
 		}
 
-		chainID := ChainIDFromAccountID(addr.(*iotago.AccountAddress).AccountID())
+		chainID := ChainIDFromAnchorID(addr.(*iotago.AnchorAddress).AnchorID())
 
 		if odata.IsInternalUTXO(chainID) {
 			continue

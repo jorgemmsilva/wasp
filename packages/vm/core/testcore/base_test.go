@@ -45,7 +45,7 @@ func TestInitLoad(t *testing.T) {
 
 	cassets := ch.L2CommonAccountAssets()
 	require.EqualValues(t,
-		originAmount-lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput())),
+		originAmount-lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput)),
 		cassets.BaseTokens)
 	require.EqualValues(t, 0, len(cassets.NativeTokens))
 
@@ -77,10 +77,10 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	env.AssertL1BaseTokens(ch.OriginatorAddress, utxodb.FundsFromFaucetAmount-10*isc.Million)
 
 	// check if there's a single alias output on chain's address
-	accountOutputs := env.L1Ledger().GetAccountOutputs(ch.ChainID.AsAddress())
-	require.EqualValues(t, 1, len(accountOutputs))
-	var aliasOut *iotago.AccountOutput
-	for _, out := range accountOutputs {
+	anchorOutputs := env.L1Ledger().GetAnchorOutputs(ch.ChainID.AsAddress())
+	require.EqualValues(t, 1, len(anchorOutputs))
+	var aliasOut *iotago.AnchorOutput
+	for _, out := range anchorOutputs {
 		aliasOut = out
 	}
 
@@ -99,8 +99,8 @@ func TestLedgerBaseConsistency(t *testing.T) {
 
 	someUserWallet, _ := env.NewKeyPairWithFunds()
 	ch.DepositBaseTokensToL2(1*isc.Million, someUserWallet)
-	// AccountOutput minCommonAccountBalance changes from block #0 to block #1 because the "state metadata" part gets bigger
-	totalAccountedL2Tokens += originAOSD - lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+	// AnchorOutput minCommonAccountBalance changes from block #0 to block #1 because the "state metadata" part gets bigger
+	totalAccountedL2Tokens += originAOSD - lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 	ch.AssertL2TotalBaseTokens(totalAccountedL2Tokens + 1*isc.Million)
 	ch.AssertControlAddresses()
 }
@@ -110,7 +110,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
 		originatorsL2BaseTokensBefore := ch.L2BaseTokens(ch.OriginatorAgentID)
@@ -127,7 +127,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 		changeInAOminCommonAccountBalance := newAOSD - oldAOSD
 
 		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
@@ -144,7 +144,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID := isc.NewAgentID(senderAddr)
@@ -165,7 +165,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 		changeInAOminCommonAccountBalance := newAOSD - oldAOSD
 
 		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
@@ -187,7 +187,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no EP,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
 		originatorsL2BaseTokensBefore := ch.L2BaseTokens(ch.OriginatorAgentID)
@@ -206,7 +206,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 		changeInAOminCommonAccountBalance := newAOSD - oldAOSD
 
 		// total base tokens on chain increase by the storage deposit from the request tx
@@ -221,7 +221,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no EP,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		oldAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID := isc.NewAgentID(senderAddr)
@@ -242,7 +242,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetAnchorOutputFromL1().GetAccountOutput()))
+		newAOSD := lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))
 		changeInAOminCommonAccountBalance := newAOSD - oldAOSD
 
 		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]

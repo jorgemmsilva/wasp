@@ -19,7 +19,7 @@ var _ MappedNullable = &NodeMessageMetrics{}
 
 // NodeMessageMetrics struct for NodeMessageMetrics
 type NodeMessageMetrics struct {
-	InAccountOutput AccountOutputMetricItem `json:"inAccountOutput"`
+	InAnchorOutput AnchorOutputMetricItem `json:"inAnchorOutput"`
 	InMilestone MilestoneMetricItem `json:"inMilestone"`
 	InOnLedgerRequest OnLedgerRequestMetricItem `json:"inOnLedgerRequest"`
 	InOutput InOutputMetricItem `json:"inOutput"`
@@ -37,9 +37,9 @@ type NodeMessageMetrics struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewNodeMessageMetrics(inAccountOutput AccountOutputMetricItem, inMilestone MilestoneMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem, registeredChainIDs []string) *NodeMessageMetrics {
+func NewNodeMessageMetrics(inAnchorOutput AnchorOutputMetricItem, inMilestone MilestoneMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem, registeredChainIDs []string) *NodeMessageMetrics {
 	this := NodeMessageMetrics{}
-	this.InAccountOutput = inAccountOutput
+	this.InAnchorOutput = inAnchorOutput
 	this.InMilestone = inMilestone
 	this.InOnLedgerRequest = inOnLedgerRequest
 	this.InOutput = inOutput
@@ -62,28 +62,28 @@ func NewNodeMessageMetricsWithDefaults() *NodeMessageMetrics {
 	return &this
 }
 
-// GetInAccountOutput returns the InAccountOutput field value
-func (o *NodeMessageMetrics) GetInAccountOutput() AccountOutputMetricItem {
+// GetInAnchorOutput returns the InAnchorOutput field value
+func (o *NodeMessageMetrics) GetInAnchorOutput() AnchorOutputMetricItem {
 	if o == nil {
-		var ret AccountOutputMetricItem
+		var ret AnchorOutputMetricItem
 		return ret
 	}
 
-	return o.InAccountOutput
+	return o.InAnchorOutput
 }
 
-// GetInAccountOutputOk returns a tuple with the InAccountOutput field value
+// GetInAnchorOutputOk returns a tuple with the InAnchorOutput field value
 // and a boolean to check if the value has been set.
-func (o *NodeMessageMetrics) GetInAccountOutputOk() (*AccountOutputMetricItem, bool) {
+func (o *NodeMessageMetrics) GetInAnchorOutputOk() (*AnchorOutputMetricItem, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.InAccountOutput, true
+	return &o.InAnchorOutput, true
 }
 
-// SetInAccountOutput sets field value
-func (o *NodeMessageMetrics) SetInAccountOutput(v AccountOutputMetricItem) {
-	o.InAccountOutput = v
+// SetInAnchorOutput sets field value
+func (o *NodeMessageMetrics) SetInAnchorOutput(v AnchorOutputMetricItem) {
+	o.InAnchorOutput = v
 }
 
 // GetInMilestone returns the InMilestone field value
@@ -360,7 +360,7 @@ func (o NodeMessageMetrics) MarshalJSON() ([]byte, error) {
 
 func (o NodeMessageMetrics) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["inAccountOutput"] = o.InAccountOutput
+	toSerialize["inAnchorOutput"] = o.InAnchorOutput
 	toSerialize["inMilestone"] = o.InMilestone
 	toSerialize["inOnLedgerRequest"] = o.InOnLedgerRequest
 	toSerialize["inOutput"] = o.InOutput

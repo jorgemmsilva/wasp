@@ -194,7 +194,7 @@ func testMempoolBasic(t *testing.T, n, f int, reliable bool) {
 	}
 }
 
-func blockFn(te *testEnv, reqs []isc.Request, ao *isc.AccountOutputWithID, tangleTime time.Time) *isc.AccountOutputWithID {
+func blockFn(te *testEnv, reqs []isc.Request, ao *isc.AnchorOutputWithID, tangleTime time.Time) *isc.AnchorOutputWithID {
 	// sort reqs by nonce
 	slices.SortFunc(reqs, func(a, b isc.Request) int {
 		return int(a.(isc.OffLedgerRequest).Nonce() - b.(isc.OffLedgerRequest).Nonce())
@@ -203,7 +203,7 @@ func blockFn(te *testEnv, reqs []isc.Request, ao *isc.AccountOutputWithID, tangl
 	store := te.stores[0]
 	vmTask := &vm.VMTask{
 		Processors:           processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
-		AnchorOutput:         ao.GetAccountOutput(),
+		AnchorOutput:         ao.GetAnchorOutput(),
 		AnchorOutputID:       ao.OutputID(),
 		Store:                store,
 		Requests:             reqs,
@@ -512,7 +512,7 @@ func TestMempoolsNonceGaps(t *testing.T) {
 	}
 	time.Sleep(200 * time.Millisecond) // give some time for the requests to reach the pool
 
-	askProposalExpectReqs := func(ao *isc.AccountOutputWithID, reqs ...isc.Request) *isc.AccountOutputWithID {
+	askProposalExpectReqs := func(ao *isc.AnchorOutputWithID, reqs ...isc.Request) *isc.AnchorOutputWithID {
 		t.Log("Ask for proposals")
 		proposals := make([]<-chan []*isc.RequestRef, len(te.mempools))
 		for i, node := range te.mempools {
@@ -540,7 +540,7 @@ func TestMempoolsNonceGaps(t *testing.T) {
 		return blockFn(te, nodeDecidedReqs, ao, tangleTime)
 	}
 
-	emptyProposalFn := func(ao *isc.AccountOutputWithID) {
+	emptyProposalFn := func(ao *isc.AnchorOutputWithID) {
 		// ask again, nothing to be proposed
 		//
 		// Ask proposals for the next
@@ -745,7 +745,7 @@ type testEnv struct {
 	tcl              *testchain.TestChainLedger
 	cmtAddress       iotago.Address
 	chainID          isc.ChainID
-	originAO         *isc.AccountOutputWithID
+	originAO         *isc.AnchorOutputWithID
 	mempools         []mempool.Mempool
 	stores           []state.Store
 }
@@ -789,7 +789,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.stores = make([]state.Store, len(te.peerIdentities))
 	for i := range te.peerIdentities {
 		te.stores[i] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAccountOutput(te.stores[i], te.originAO)
+		_, err := origin.InitChainByAnchorOutput(te.stores[i], te.originAO)
 		require.NoError(t, err)
 		chainMetrics := metrics.NewChainMetricsProvider().GetChainMetrics(isc.EmptyChainID())
 		te.mempools[i] = mempool.New(
@@ -807,8 +807,8 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	return te
 }
 
-func (te *testEnv) stateForAO(i int, ao *isc.AccountOutputWithID) state.State {
-	l1Commitment, err := transaction.L1CommitmentFromAccountOutput(ao.GetAccountOutput())
+func (te *testEnv) stateForAO(i int, ao *isc.AnchorOutputWithID) state.State {
+	l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(ao.GetAnchorOutput())
 	require.NoError(te.t, err)
 	st, err := te.stores[i].StateByTrieRoot(l1Commitment.TrieRoot())
 	require.NoError(te.t, err)

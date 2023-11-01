@@ -110,7 +110,7 @@ func TestIncWith1Post(t *testing.T) {
 	require.NoError(t, err)
 
 	// advance logical clock to unlock that timelocked request
-	env.AdvanceClockBy(6 * time.Second)
+	env.AdvanceTime(6 * time.Second)
 	require.True(t, chain.WaitForRequestsThrough(2))
 
 	checkCounter(chain, 19)

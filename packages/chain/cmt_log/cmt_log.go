@@ -11,7 +11,7 @@
 // >   - Propose to go to the next log index when
 // >       - a) consensus for the latest known LogIndex has terminated (confirmed | rejected | skip | recover).
 // >            All the previous can be left uncompleted.
-// >       - b) confirmed alias output is received from L1, that we haven't posted in this node.
+// >       - b) confirmed anchor output is received from L1, that we haven't posted in this node.
 // >       - and we have a tip AO (from the local view).
 // >   - If there is a single clean chain, we can use pipelining (consider consDone event
 // >     instead of waiting for confirmed | rejected).
@@ -24,10 +24,10 @@
 // >     Let prevLI <- TRY restoring the last started LogIndex ELSE 0
 // >     MinLI <- prevLI + 1
 // >     LogIndex.Start(prevLI)
-// > UPON AccountOutput (AO) {Confirmed | Rejected} by L1:
+// > UPON AnchorOutput (AO) {Confirmed | Rejected} by L1:
 // >     LocalView.Update(AO)
 // >     IF LocalView changed THEN
-// >         LogIndex.L1ReplacedBaseAccountOutput()
+// >         LogIndex.L1ReplacedBaseAnchorOutput()
 // >         TryProposeConsensus()
 //
 // > ON Startup:
@@ -35,10 +35,10 @@
 // >     MinLI <- prevLI + 1
 // >     LogIndex.Start(prevLI)
 // >     TryProposeConsensus()
-// > UPON AccountOutput (AO) {Confirmed | Rejected} by L1:
+// > UPON AnchorOutput (AO) {Confirmed | Rejected} by L1:
 // >     LocalView.Update(AO)
 // >     IF LocalView changed THEN
-// >         LogIndex.L1ReplacedBaseAccountOutput()
+// >         LogIndex.L1ReplacedBaseAnchorOutput()
 // >         TryProposeConsensus()
 // > ON ConsensusOutput/DONE (CD)
 // >     LocalView.Update(CD)
@@ -75,15 +75,15 @@
 //   - Here only a single consensus instance will be considered needed for this node at a time.
 //     Other instances may continue running, but their results will be ignored. That's
 //     because a consensus takes an input from the previous consensus output (the base
-//     alias ID and other parts that depend on it).
+//     anchor ID and other parts that depend on it).
 //   - A consensus is started when we have new log index greater than that we have
-//     crashed with, and there is an alias output received.
+//     crashed with, and there is an anchor output received.
 //
 // ## Summary.
 //
 // Inputs expected:
 //   - Consensus: Start -> Done | Timeout.
-//   - AccountOutput: Confirmed | Rejected -> {}.
+//   - AnchorOutput: Confirmed | Rejected -> {}.
 //   - Suspend.
 //
 // Messages exchanged:
@@ -125,26 +125,26 @@ var ErrCmtLogStateNotFound = errors.New("errCmtLogStateNotFound")
 
 // Output for this protocol indicates, what instance of a consensus
 // is currently required to be run. The unique identifier here is the
-// logIndex (there will be no different baseAccountOutputs for the same logIndex).
+// logIndex (there will be no different baseAnchorOutputs for the same logIndex).
 type Output struct {
-	logIndex        LogIndex
-	baseAccountOutput *isc.AccountOutputWithID
+	logIndex         LogIndex
+	baseAnchorOutput *isc.AnchorOutputWithID
 }
 
-func makeOutput(logIndex LogIndex, baseAccountOutput *isc.AccountOutputWithID) *Output {
-	return &Output{logIndex: logIndex, baseAccountOutput: baseAccountOutput}
+func makeOutput(logIndex LogIndex, baseAnchorOutput *isc.AnchorOutputWithID) *Output {
+	return &Output{logIndex: logIndex, baseAnchorOutput: baseAnchorOutput}
 }
 
 func (o *Output) GetLogIndex() LogIndex {
 	return o.logIndex
 }
 
-func (o *Output) GetBaseAccountOutput() *isc.AccountOutputWithID {
-	return o.baseAccountOutput
+func (o *Output) GetBaseAnchorOutput() *isc.AnchorOutputWithID {
+	return o.baseAnchorOutput
 }
 
 func (o *Output) String() string {
-	return fmt.Sprintf("{Output, logIndex=%v, baseAccountOutput=%v}", o.logIndex, o.baseAccountOutput)
+	return fmt.Sprintf("{Output, logIndex=%v, baseAnchorOutput=%v}", o.logIndex, o.baseAnchorOutput)
 }
 
 // Protocol implementation.
@@ -153,7 +153,7 @@ type cmtLogImpl struct {
 	cmtAddr                iotago.Address         // Address of the committee running this chain.
 	consensusStateRegistry ConsensusStateRegistry // Persistent storage.
 	varLogIndex            VarLogIndex            // Calculates the current log index.
-	varLocalView           VarLocalView           // Tracks the pending alias outputs.
+	varLocalView           VarLocalView           // Tracks the pending anchor outputs.
 	varOutput              VarOutput              // Calculate the output.
 	asGPA                  gpa.GPA                // This object, just with all the needed wrappers.
 	log                    *logger.Logger
@@ -244,8 +244,8 @@ func (cl *cmtLogImpl) AsGPA() gpa.GPA {
 func (cl *cmtLogImpl) Input(input gpa.Input) gpa.OutMessages {
 	cl.log.Debugf("Input %T: %+v", input, input)
 	switch input := input.(type) {
-	case *inputAccountOutputConfirmed:
-		return cl.handleInputAccountOutputConfirmed(input)
+	case *inputAnchorOutputConfirmed:
+		return cl.handleInputAnchorOutputConfirmed(input)
 	case *inputConsensusOutputDone:
 		return cl.handleInputConsensusOutputDone(input)
 	case *inputConsensusOutputSkip:
@@ -276,16 +276,16 @@ func (cl *cmtLogImpl) Message(msg gpa.Message) gpa.OutMessages {
 	return cl.handleMsgNextLogIndex(msgNLI)
 }
 
-// > UPON AccountOutput (AO) {Confirmed | Rejected} by L1:
+// > UPON AnchorOutput (AO) {Confirmed | Rejected} by L1:
 // >   ...
-func (cl *cmtLogImpl) handleInputAccountOutputConfirmed(input *inputAccountOutputConfirmed) gpa.OutMessages {
-	_, tipUpdated, cnfLogIndex := cl.varLocalView.AccountOutputConfirmed(input.accountOutput)
+func (cl *cmtLogImpl) handleInputAnchorOutputConfirmed(input *inputAnchorOutputConfirmed) gpa.OutMessages {
+	_, tipUpdated, cnfLogIndex := cl.varLocalView.AnchorOutputConfirmed(input.anchorOutput)
 	if tipUpdated {
 		cl.varOutput.Suspended(false)
-		return cl.varLogIndex.L1ReplacedBaseAccountOutput()
+		return cl.varLogIndex.L1ReplacedBaseAnchorOutput()
 	}
 	if !cnfLogIndex.IsNil() {
-		return cl.varLogIndex.L1ConfirmedAccountOutput(cnfLogIndex)
+		return cl.varLogIndex.L1ConfirmedAnchorOutput(cnfLogIndex)
 	}
 	return nil
 }
@@ -299,8 +299,8 @@ func (cl *cmtLogImpl) handleInputConsensusOutputConfirmed(input *inputConsensusO
 func (cl *cmtLogImpl) handleInputConsensusOutputRejected(input *inputConsensusOutputRejected) gpa.OutMessages {
 	msgs := gpa.NoMessages()
 	msgs.AddAll(cl.varLogIndex.ConsensusOutputReceived(input.logIndex)) // This should be superfluous, always follows handleInputConsensusOutputDone.
-	if _, tipUpdated := cl.varLocalView.AccountOutputRejected(input.accountOutput); tipUpdated {
-		return msgs.AddAll(cl.varLogIndex.L1ReplacedBaseAccountOutput())
+	if _, tipUpdated := cl.varLocalView.AnchorOutputRejected(input.anchorOutput); tipUpdated {
+		return msgs.AddAll(cl.varLogIndex.L1ReplacedBaseAnchorOutput())
 	}
 	return msgs
 }
@@ -308,7 +308,7 @@ func (cl *cmtLogImpl) handleInputConsensusOutputRejected(input *inputConsensusOu
 // > ON ConsensusOutput/DONE (CD)
 // >   ...
 func (cl *cmtLogImpl) handleInputConsensusOutputDone(input *inputConsensusOutputDone) gpa.OutMessages {
-	cl.varLocalView.ConsensusOutputDone(input.logIndex, input.baseAccountOutputID, input.nextAccountOutput)
+	cl.varLocalView.ConsensusOutputDone(input.logIndex, input.baseAnchorOutputID, input.nextAnchorOutput)
 	return cl.varLogIndex.ConsensusOutputReceived(input.logIndex)
 }
 

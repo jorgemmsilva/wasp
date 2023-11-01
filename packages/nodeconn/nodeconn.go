@@ -460,12 +460,12 @@ func (nc *nodeConnection) triggerChainCallbacks(ledgerUpdate *ledgerUpdate) erro
 	nc.chainsLock.RLock()
 	defer nc.chainsLock.RUnlock()
 
-	trackedAccountOutputsCreatedSortedMapByChainID, trackedAccountOutputsCreatedMapByOutputID, err := filterAndSortAccountOutputs(nc.chainsMap, ledgerUpdate)
+	trackedAnchorOutputsCreatedSortedMapByChainID, trackedAnchorOutputsCreatedMapByOutputID, err := filterAndSortAnchorOutputs(nc.chainsMap, ledgerUpdate)
 	if err != nil {
 		return err
 	}
 
-	otherOutputsCreatedMapByChainID := filterOtherOutputs(nc.chainsMap, ledgerUpdate.outputsCreatedMap, trackedAccountOutputsCreatedMapByOutputID)
+	otherOutputsCreatedMapByChainID := filterOtherOutputs(nc.chainsMap, ledgerUpdate.outputsCreatedMap, trackedAnchorOutputsCreatedMapByOutputID)
 
 	// fire milestone events for every chain
 	nc.chainsMap.ForEach(func(_ isc.ChainID, chain *ncChain) bool {
@@ -475,15 +475,15 @@ func (nc *nodeConnection) triggerChainCallbacks(ledgerUpdate *ledgerUpdate) erro
 	})
 
 	// fire the alias output events in order
-	for chainID, accountOutputsSorted := range trackedAccountOutputsCreatedSortedMapByChainID {
+	for chainID, anchorOutputsSorted := range trackedAnchorOutputsCreatedSortedMapByChainID {
 		ncChain, exists := nc.chainsMap.Get(chainID)
 		if !exists {
 			continue
 		}
 
-		for _, accountOutputInfo := range accountOutputsSorted {
+		for _, anchorOutputInfo := range anchorOutputsSorted {
 			// the callbacks have to be fired synchronously, we can't guarantee the order of execution of go routines
-			ncChain.HandleAccountOutput(ledgerUpdate.milestoneIndex, accountOutputInfo)
+			ncChain.HandleAnchorOutput(ledgerUpdate.milestoneIndex, anchorOutputInfo)
 		}
 	}
 
@@ -882,7 +882,7 @@ func (nc *nodeConnection) AttachChain(
 	ctx context.Context, // ctx is the context given by a backgroundworker with PriorityChains, it might get canceled by shutdown signal or "Chains.Deactivate"
 	chainID isc.ChainID,
 	recvRequestCB chain.RequestOutputHandler,
-	recvAccountOutput chain.AccountOutputHandler,
+	recvAnchorOutput chain.AnchorOutputHandler,
 	recvMilestone chain.MilestoneHandler,
 	onChainConnect func(),
 	onChainDisconnect func(),
@@ -893,7 +893,7 @@ func (nc *nodeConnection) AttachChain(
 		nc.chainsLock.Lock()
 		defer nc.chainsLock.Unlock()
 
-		chain := newNCChain(ctx, nc, chainID, recvRequestCB, recvAccountOutput, recvMilestone)
+		chain := newNCChain(ctx, nc, chainID, recvRequestCB, recvAnchorOutput, recvMilestone)
 
 		// the chain is added to the map, even if not synchronzied yet,
 		// so we can track all pending ledger updates until the chain is synchronized.

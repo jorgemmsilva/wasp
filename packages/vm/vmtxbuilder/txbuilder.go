@@ -35,15 +35,13 @@ type AccountsContractRead struct {
 // AnchorTransactionBuilder represents structure which handles all the data needed to eventually
 // build an essence of the anchor transaction
 type AnchorTransactionBuilder struct {
-	// anchorOutput output of the chain
-	anchorOutput               *iotago.AccountOutput
-	anchorOutputStorageDeposit iotago.BaseToken
+	// anchor output of the chain
+	inputs *isc.ChainOutputs
 
 	// result new AO of the chain, filled by "BuildTransactionEssence"
-	resultAnchorOutput *iotago.AccountOutput
+	resultAnchorOutput  *iotago.AnchorOutput
+	resultAccountOutput *iotago.AccountOutput
 
-	// anchorOutputID is the ID of the anchor output
-	anchorOutputID iotago.OutputID
 	// already consumed outputs, specified by entire Request. It is needed for checking validity
 	consumed []isc.OnLedgerRequest
 
@@ -64,37 +62,28 @@ type AnchorTransactionBuilder struct {
 
 // NewAnchorTransactionBuilder creates new AnchorTransactionBuilder object
 func NewAnchorTransactionBuilder(
-	anchorOutput *iotago.AccountOutput,
-	anchorOutputID iotago.OutputID,
-	anchorOutputStorageDeposit iotago.BaseToken, // because we don't know what L1 parameters were used to calculate the last AO, we need to infer it from the accounts state
+	inputs *isc.ChainOutputs,
 	accounts AccountsContractRead,
 ) *AnchorTransactionBuilder {
 	return &AnchorTransactionBuilder{
-		anchorOutput:               anchorOutput,
-		anchorOutputID:             anchorOutputID,
-		anchorOutputStorageDeposit: anchorOutputStorageDeposit,
-		accountsView:               accounts,
-		consumed:                   make([]isc.OnLedgerRequest, 0, iotago.MaxInputsCount-1),
-		balanceNativeTokens:        make(map[iotago.NativeTokenID]*nativeTokenBalance),
-		postedOutputs:              make(iotago.TxEssenceOutputs, 0, iotago.MaxOutputsCount-1),
-		invokedFoundries:           make(map[uint32]*foundryInvoked),
-		nftsIncluded:               make(map[iotago.NFTID]*nftIncluded),
-		nftsMinted:                 make(iotago.TxEssenceOutputs, 0),
+		inputs:              inputs,
+		accountsView:        accounts,
+		consumed:            make([]isc.OnLedgerRequest, 0, iotago.MaxInputsCount-1),
+		balanceNativeTokens: make(map[iotago.NativeTokenID]*nativeTokenBalance),
+		postedOutputs:       make(iotago.TxEssenceOutputs, 0, iotago.MaxOutputsCount-1),
+		invokedFoundries:    make(map[uint32]*foundryInvoked),
+		nftsIncluded:        make(map[iotago.NFTID]*nftIncluded),
+		nftsMinted:          make(iotago.TxEssenceOutputs, 0),
 	}
 }
 
 // Clone clones the AnchorTransactionBuilder object. Used to snapshot/recover
 func (txb *AnchorTransactionBuilder) Clone() *AnchorTransactionBuilder {
-	anchorOutputID := iotago.OutputID{}
-	copy(anchorOutputID[:], txb.anchorOutputID[:])
-
 	return &AnchorTransactionBuilder{
-		anchorOutput:               txb.anchorOutput.Clone().(*iotago.AccountOutput),
-		anchorOutputID:             anchorOutputID,
-		anchorOutputStorageDeposit: txb.anchorOutputStorageDeposit,
-		accountsView:               txb.accountsView,
-		consumed:                   util.CloneSlice(txb.consumed),
-		balanceNativeTokens:        util.CloneMap(txb.balanceNativeTokens),
+		inputs:              txb.inputs,
+		accountsView:        txb.accountsView,
+		consumed:            util.CloneSlice(txb.consumed),
+		balanceNativeTokens: util.CloneMap(txb.balanceNativeTokens),
 		postedOutputs: lo.Map(txb.postedOutputs, func(o iotago.TxEssenceOutput, _ int) iotago.TxEssenceOutput {
 			return o.Clone()
 		}),
@@ -162,7 +151,7 @@ func (txb *AnchorTransactionBuilder) Consume(req isc.OnLedgerRequest) iotago.Bas
 func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerRequest) int {
 	defer txb.assertLimits()
 	txb.consumed = append(txb.consumed, req)
-	txb.postedOutputs = append(txb.postedOutputs, retryOutputFromOnLedgerRequest(req, txb.anchorOutput.AccountID))
+	txb.postedOutputs = append(txb.postedOutputs, retryOutputFromOnLedgerRequest(req, txb.inputs.AnchorOutput.AnchorID))
 	return len(txb.postedOutputs) - 1
 }
 
@@ -199,7 +188,7 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 
 // BuildTransactionEssence builds transaction essence from tx builder data
 func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) *iotago.Transaction {
-	inputs, inputIDs := txb.inputs()
+	inputs, inputIDs := txb.buildInputs()
 	return &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
@@ -211,18 +200,24 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 	}
 }
 
-// inputIDs generates a deterministic list of inputs for the transaction essence
+// buildInputs generates a deterministic list of inputs for the transaction essence
 // - index 0 is always alias output
 // - then goes consumed external BasicOutput UTXOs, the requests, in the order of processing
 // - then goes inputs of native token UTXOs, sorted by token id
 // - then goes inputs of foundries sorted by serial number
-func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputIDs) {
+func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.OutputIDs) {
 	outputIDs := make(iotago.OutputIDs, 0, len(txb.consumed)+len(txb.balanceNativeTokens)+len(txb.invokedFoundries))
 	inputs := make(iotago.OutputSet)
 
-	// alias output
-	outputIDs = append(outputIDs, txb.anchorOutputID)
-	inputs[txb.anchorOutputID] = txb.anchorOutput
+	// anchor output
+	outputIDs = append(outputIDs, txb.inputs.AnchorOutputID)
+	inputs[txb.inputs.AnchorOutputID] = txb.inputs.AnchorOutput
+
+	// account output
+	if id, out, ok := txb.inputs.AccountOutput(); ok {
+		outputIDs = append(outputIDs, id)
+		inputs[id] = out
+	}
 
 	// consumed on-ledger requests
 	for i := range txb.consumed {
@@ -231,7 +226,7 @@ func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputID
 		output := req.Output()
 		if retrReq, ok := req.(*isc.RetryOnLedgerRequest); ok {
 			outputID = retrReq.RetryOutputID()
-			output = retryOutputFromOnLedgerRequest(req, txb.anchorOutput.AccountID)
+			output = retryOutputFromOnLedgerRequest(req, txb.inputs.AnchorOutput.AnchorID)
 		}
 		outputIDs = append(outputIDs, outputID)
 		inputs[outputID] = output
@@ -270,55 +265,58 @@ func (txb *AnchorTransactionBuilder) inputs() (iotago.OutputSet, iotago.OutputID
 	return inputs, outputIDs
 }
 
-func (txb *AnchorTransactionBuilder) CreateAnchorOutput(
+func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 	stateMetadata []byte,
 	creationSlot iotago.SlotIndex,
 	inputs iotago.OutputSet,
-) *iotago.AccountOutput {
-	aliasID := txb.anchorOutput.AccountID
-	if aliasID.Empty() {
-		aliasID = iotago.AccountIDFromOutputID(txb.anchorOutputID)
+) (*iotago.AnchorOutput, *iotago.AccountOutput) {
+	anchorID := txb.inputs.AnchorOutput.AnchorID
+	if anchorID.Empty() {
+		anchorID = iotago.AnchorIDFromOutputID(txb.inputs.AnchorOutputID)
 	}
-	anchorOutput := &iotago.AccountOutput{
-		Amount:         0,
-		AccountID:      aliasID,
-		StateIndex:     txb.anchorOutput.StateIndex + 1,
-		StateMetadata:  stateMetadata,
+	anchorOutput := &iotago.AnchorOutput{
+		Amount:        0,
+		AnchorID:      anchorID,
+		StateIndex:    txb.inputs.AnchorOutput.StateIndex + 1,
+		StateMetadata: stateMetadata,
+		Conditions: iotago.AnchorOutputUnlockConditions{
+			&iotago.StateControllerAddressUnlockCondition{Address: txb.inputs.AnchorOutput.StateController()},
+			&iotago.GovernorAddressUnlockCondition{Address: txb.inputs.AnchorOutput.GovernorAddress()},
+		},
+		Features: iotago.AnchorOutputFeatures{
+			&iotago.SenderFeature{Address: anchorID.ToAddress()},
+		},
+		Mana: lo.Must(vm.TotalManaIn(
+			parameters.L1API().ManaDecayProvider(),
+			parameters.Storage(),
+			creationSlot,
+			vm.InputSet(inputs),
+			vm.RewardsInputSet{},
+		)),
+	}
+	if metadata := txb.inputs.AnchorOutput.FeatureSet().Metadata(); metadata != nil {
+		anchorOutput.Features = append(anchorOutput.Features, &iotago.MetadataFeature{Data: metadata.Data})
+	}
+	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(parameters.Storage().MinDeposit(anchorOutput))
+
+	accountOutput := &iotago.AccountOutput{
 		FoundryCounter: txb.nextFoundryCounter(),
 		Conditions: iotago.AccountOutputUnlockConditions{
-			&iotago.StateControllerAddressUnlockCondition{Address: txb.anchorOutput.StateController()},
-			&iotago.GovernorAddressUnlockCondition{Address: txb.anchorOutput.GovernorAddress()},
+			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
 		},
 		Features: iotago.AccountOutputFeatures{
-			&iotago.SenderFeature{
-				Address: aliasID.ToAddress(),
-			},
+			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	if metadata := txb.anchorOutput.FeatureSet().Metadata(); metadata != nil {
-		anchorOutput.Features = append(anchorOutput.Features,
-			&iotago.MetadataFeature{
-				Data: metadata.Data,
-			},
-		)
+	if id, out, ok := txb.inputs.AccountOutput(); ok {
+		accountOutput.AccountID = out.AccountID
+		if accountOutput.AccountID.Empty() {
+			accountOutput.AccountID = iotago.AccountIDFromOutputID(id)
+		}
 	}
+	accountOutput.Amount = lo.Must(parameters.Storage().MinDeposit(accountOutput))
 
-	minSD, err := parameters.Storage().MinDeposit(anchorOutput)
-	if err != nil {
-		panic(err)
-	}
-	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + minSD
-	mana, err := vm.TotalManaIn(
-		parameters.L1API().ManaDecayProvider(),
-		parameters.Storage(),
-		creationSlot,
-		vm.InputSet(inputs),
-	)
-	if err != nil {
-		panic(err)
-	}
-	anchorOutput.Mana = mana
-	return anchorOutput
+	return anchorOutput, accountOutput
 }
 
 // outputs generates outputs for the transaction essence
@@ -336,8 +334,8 @@ func (txb *AnchorTransactionBuilder) outputs(
 ) iotago.TxEssenceOutputs {
 	ret := make(iotago.TxEssenceOutputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
 
-	txb.resultAnchorOutput = txb.CreateAnchorOutput(stateMetadata, creationSlot, inputs)
-	ret = append(ret, txb.resultAnchorOutput)
+	txb.resultAnchorOutput, txb.resultAccountOutput = txb.CreateAnchorAndAccountOutputs(stateMetadata, creationSlot, inputs)
+	ret = append(ret, txb.resultAnchorOutput, txb.resultAccountOutput)
 
 	// creating outputs for updated internal accounts
 	nativeTokensToBeUpdated, _ := txb.NativeTokenRecordsToBeUpdated()
@@ -366,6 +364,9 @@ func (txb *AnchorTransactionBuilder) outputs(
 // numInputs number of inputs in the future transaction
 func (txb *AnchorTransactionBuilder) numInputs() int {
 	ret := len(txb.consumed) + 1 // + 1 for anchor UTXO
+	if _, _, ok := txb.inputs.AccountOutput(); ok {
+		ret += 1
+	}
 	for _, v := range txb.balanceNativeTokens {
 		if v.requiresExistingAccountingUTXOAsInput() {
 			ret++
@@ -407,19 +408,15 @@ func (txb *AnchorTransactionBuilder) outputsAreFull() bool {
 	return txb.numOutputs() >= iotago.MaxOutputsCount
 }
 
-func (txb *AnchorTransactionBuilder) AnchorOutputStorageDeposit() iotago.BaseToken {
-	return txb.anchorOutputStorageDeposit
-}
-
-func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAccountID iotago.AccountID) iotago.Output {
+func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAnchorID iotago.AnchorID) iotago.Output {
 	out := req.Output().Clone()
 
 	feature := &iotago.SenderFeature{
-		Address: chainAccountID.ToAddress(), // must have the chain as the sender, so its recognized as an internalUTXO
+		Address: chainAnchorID.ToAddress(), // must have the chain as the sender, so its recognized as an internalUTXO
 	}
 
 	unlock := &iotago.AddressUnlockCondition{
-		Address: chainAccountID.ToAddress(),
+		Address: chainAnchorID.ToAddress(),
 	}
 
 	// cleanup features and unlock conditions except metadata
@@ -430,9 +427,9 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAccountID iota
 	case *iotago.NFTOutput:
 		o.Features = iotago.NFTOutputFeatures{feature}
 		o.Conditions = iotago.NFTOutputUnlockConditions{unlock}
-	case *iotago.AccountOutput:
-		o.Features = iotago.AccountOutputFeatures{feature}
-		o.Conditions = iotago.AccountOutputUnlockConditions{unlock}
+	case *iotago.AnchorOutput:
+		o.Features = iotago.AnchorOutputFeatures{feature}
+		o.Conditions = iotago.AnchorOutputUnlockConditions{unlock}
 	default:
 		panic("unexpected output type")
 	}
@@ -440,5 +437,5 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAccountID iota
 }
 
 func (txb *AnchorTransactionBuilder) chainAddress() iotago.Address {
-	return txb.anchorOutput.AccountID.ToAddress()
+	return txb.inputs.AnchorOutput.AnchorID.ToAddress()
 }

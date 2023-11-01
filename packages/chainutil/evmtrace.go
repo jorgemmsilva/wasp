@@ -11,7 +11,7 @@ import (
 
 func EVMTraceTransaction(
 	ch chaintypes.ChainCore,
-	accountOutput *isc.AccountOutputWithID,
+	chainOutputs *isc.ChainOutputs,
 	timestamp time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
@@ -19,7 +19,7 @@ func EVMTraceTransaction(
 ) error {
 	_, err := runISCTask(
 		ch,
-		accountOutput,
+		chainOutputs,
 		timestamp,
 		iscRequestsInBlock,
 		false,

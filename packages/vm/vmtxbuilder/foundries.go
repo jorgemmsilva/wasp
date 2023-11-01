@@ -33,7 +33,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 		TokenScheme:  scheme,
 		Conditions: iotago.FoundryOutputUnlockConditions{
 			&iotago.ImmutableAccountUnlockCondition{
-				Address: util.AccountIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID).ToAddress().(*iotago.AccountAddress),
+				Address: util.AnchorIDFromAnchorOutput(txb.inputs.AnchorOutput, txb.inputs.AnchorOutputID).ToAddress().(*iotago.AccountAddress),
 			},
 		},
 	}
@@ -135,7 +135,10 @@ func (txb *AnchorTransactionBuilder) nextFoundryCounter() uint32 {
 			numNew++
 		}
 	}
-	return txb.anchorOutput.FoundryCounter + numNew
+	if _, accountOutput, ok := txb.inputs.AccountOutput(); ok {
+		return accountOutput.FoundryCounter + numNew
+	}
+	return numNew
 }
 
 func (txb *AnchorTransactionBuilder) foundriesSorted() []*foundryInvoked {

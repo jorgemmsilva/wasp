@@ -19,7 +19,7 @@ import (
 type StateTracker interface {
 	//
 	// The main functions provided by this component.
-	TrackAccountOutput(ao *isc.AccountOutputWithID, strict bool)
+	TrackAnchorOutput(ao *isc.AnchorOutputWithID, strict bool)
 	AwaitRequestReceipt(query *awaitReceiptReq)
 	//
 	// The following 2 functions are only to move the channel receive loop to the main ChainNode thread.
@@ -27,15 +27,15 @@ type StateTracker interface {
 	ChainNodeStateMgrResponse(*sm_inputs.ChainFetchStateDiffResults)
 }
 
-type StateTrackerStepCB = func(st state.State, from, till *isc.AccountOutputWithID, added, removed []state.Block)
+type StateTrackerStepCB = func(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block)
 
 type stateTrackerImpl struct {
 	ctx                    context.Context
 	stateMgr               statemanager.StateMgr
 	haveLatestCB           StateTrackerStepCB
 	haveAOState            state.State
-	haveAO                 *isc.AccountOutputWithID // We have a state ready for this AO.
-	nextAO                 *isc.AccountOutputWithID // For this state a query was made, but the response not received yet.
+	haveAO                 *isc.AnchorOutputWithID // We have a state ready for this AO.
+	nextAO                 *isc.AnchorOutputWithID // For this state a query was made, but the response not received yet.
 	nextAOCancel           context.CancelFunc     // Cancel for a context used to query for the nextAO state.
 	nextAOWaitCh           <-chan *sm_inputs.ChainFetchStateDiffResults
 	awaitReceipt           AwaitReceipt
@@ -70,8 +70,8 @@ func NewStateTracker(
 	}
 }
 
-func (sti *stateTrackerImpl) TrackAccountOutput(ao *isc.AccountOutputWithID, strict bool) {
-	sti.log.Debugf("TrackAccountOutput[strict=%v], ao=%v, haveAO=%v, nextAO=%v", strict, ao, sti.haveAO, sti.nextAO)
+func (sti *stateTrackerImpl) TrackAnchorOutput(ao *isc.AnchorOutputWithID, strict bool) {
+	sti.log.Debugf("TrackAnchorOutput[strict=%v], ao=%v, haveAO=%v, nextAO=%v", strict, ao, sti.haveAO, sti.nextAO)
 	if !strict && sti.haveAO != nil && sti.haveAO.GetStateIndex() >= ao.GetStateIndex() {
 		return
 	}

@@ -65,10 +65,10 @@ type VarLogIndex interface {
 	ConsensusRecoverReceived(consensusLI LogIndex) gpa.OutMessages
 
 	// This is called when we have to move to the next log index based on the AO received from L1.
-	L1ReplacedBaseAccountOutput() gpa.OutMessages
+	L1ReplacedBaseAnchorOutput() gpa.OutMessages
 
 	// This is called, if an AO is confirmed for which we know a log index (was pending).
-	L1ConfirmedAccountOutput(li LogIndex) gpa.OutMessages
+	L1ConfirmedAnchorOutput(li LogIndex) gpa.OutMessages
 
 	// Messages are exchanged, so this function handles them.
 	MsgNextLogIndexReceived(msg *MsgNextLogIndex) gpa.OutMessages
@@ -127,7 +127,7 @@ type VarLogIndex interface {
 // > UPON Reception of ConsensusTimeout(consensusLI):
 // >   // TODO: ...
 // >
-// > UPON Reception of L1ReplacedBaseAccountOutput(nextAO):
+// > UPON Reception of L1ReplacedBaseAnchorOutput(nextAO):
 // >   // TODO: ...
 // >
 type varLogIndexImpl struct {
@@ -209,8 +209,8 @@ func (vli *varLogIndexImpl) ConsensusRecoverReceived(consensusLI LogIndex) gpa.O
 	return msgs
 }
 
-func (vli *varLogIndexImpl) L1ReplacedBaseAccountOutput() gpa.OutMessages {
-	vli.log.Debugf("L1ReplacedBaseAccountOutput")
+func (vli *varLogIndexImpl) L1ReplacedBaseAnchorOutput() gpa.OutMessages {
+	vli.log.Debugf("L1ReplacedBaseAnchorOutput")
 	msgs := gpa.NoMessages()
 	//
 	// Send the boot time recovery, if it was not sent yet.
@@ -230,8 +230,8 @@ func (vli *varLogIndexImpl) L1ReplacedBaseAccountOutput() gpa.OutMessages {
 	return msgs
 }
 
-func (vli *varLogIndexImpl) L1ConfirmedAccountOutput(li LogIndex) gpa.OutMessages {
-	vli.log.Debugf("L1ConfirmedAccountOutput")
+func (vli *varLogIndexImpl) L1ConfirmedAnchorOutput(li LogIndex) gpa.OutMessages {
+	vli.log.Debugf("L1ConfirmedAnchorOutput")
 	//
 	// Vote for this LI, if have not voted for any higher.
 	msgs := gpa.NoMessages()

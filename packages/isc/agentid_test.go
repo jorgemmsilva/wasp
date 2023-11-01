@@ -19,7 +19,7 @@ func TestAgentIDSerialization(t *testing.T) {
 	rwutil.StringTest(t, AgentID(a), AgentIDFromString)
 	rwutil.StringTest(t, a, addressAgentIDFromString)
 
-	chainID := ChainIDFromAddress(tpkg.RandAccountAddress())
+	chainID := ChainIDFromAddress(tpkg.RandAnchorAddress())
 	c := NewContractAgentID(chainID, 42)
 	rwutil.BytesTest(t, AgentID(c), AgentIDFromBytes)
 	rwutil.StringTest(t, AgentID(c), AgentIDFromString)

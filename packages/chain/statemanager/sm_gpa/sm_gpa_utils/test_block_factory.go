@@ -29,7 +29,7 @@ type BlockFactory struct {
 	chainID             isc.ChainID
 	chainInitParams     dict.Dict
 	lastBlockCommitment *state.L1Commitment
-	accountOutputs        map[state.BlockHash]*isc.AccountOutputWithID
+	anchorOutputs        map[state.BlockHash]*isc.AnchorOutputWithID
 }
 
 func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *BlockFactory {
@@ -39,11 +39,11 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 	} else {
 		chainInitParams = nil
 	}
-	accountOutput0ID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(t), 0)
-	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(accountOutput0ID))
+	anchorOutput0ID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(t), 0)
+	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(anchorOutput0ID))
 	stateAddress := cryptolib.NewKeyPair().GetPublicKey().AsEd25519Address()
 	originCommitment := origin.L1Commitment(chainInitParams, 0)
-	accountOutput0 := &iotago.AccountOutput{
+	anchorOutput0 := &iotago.AnchorOutput{
 		Amount:        tpkg.TestTokenSupply,
 		AccountID:       chainID.AsAliasID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
 		StateMetadata: testutil.DummyStateMetadata(originCommitment).Bytes(),
@@ -57,9 +57,9 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 			},
 		},
 	}
-	accountOutputs := make(map[state.BlockHash]*isc.AccountOutputWithID)
-	originOutput := isc.NewAccountOutputWithID(accountOutput0, accountOutput0ID)
-	accountOutputs[originCommitment.BlockHash()] = originOutput
+	anchorOutputs := make(map[state.BlockHash]*isc.AnchorOutputWithID)
+	originOutput := isc.NewAnchorOutputWithID(anchorOutput0, anchorOutput0ID)
+	anchorOutputs[originCommitment.BlockHash()] = originOutput
 	chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
 	origin.InitChain(chainStore, chainInitParams, 0)
 	return &BlockFactory{
@@ -68,7 +68,7 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 		chainID:             chainID,
 		chainInitParams:     chainInitParams,
 		lastBlockCommitment: originCommitment,
-		accountOutputs:        accountOutputs,
+		anchorOutputs:        anchorOutputs,
 	}
 }
 
@@ -80,8 +80,8 @@ func (bfT *BlockFactory) GetChainInitParameters() dict.Dict {
 	return bfT.chainInitParams
 }
 
-func (bfT *BlockFactory) GetOriginOutput() *isc.AccountOutputWithID {
-	return bfT.GetAccountOutput(origin.L1Commitment(bfT.chainInitParams, 0))
+func (bfT *BlockFactory) GetOriginOutput() *isc.AnchorOutputWithID {
+	return bfT.GetAnchorOutput(origin.L1Commitment(bfT.chainInitParams, 0))
 }
 
 func (bfT *BlockFactory) GetOriginBlock() state.Block {
@@ -146,21 +146,21 @@ func (bfT *BlockFactory) GetNextBlock(
 	// require.EqualValues(t, stateDraft.BlockIndex(), block.BlockIndex())
 	newCommitment := block.L1Commitment()
 
-	consumedAccountOutput := bfT.GetAccountOutput(commitment).GetAccountOutput()
+	consumedAnchorOutput := bfT.GetAnchorOutput(commitment).GetAnchorOutput()
 
-	accountOutput := &iotago.AccountOutput{
-		Amount:         consumedAccountOutput.Amount,
-		NativeTokens:   consumedAccountOutput.NativeTokens,
-		AccountID:        consumedAccountOutput.AccountID,
-		StateIndex:     consumedAccountOutput.StateIndex + 1,
+	anchorOutput := &iotago.AnchorOutput{
+		Amount:         consumedAnchorOutput.Amount,
+		NativeTokens:   consumedAnchorOutput.NativeTokens,
+		AccountID:        consumedAnchorOutput.AccountID,
+		StateIndex:     consumedAnchorOutput.StateIndex + 1,
 		StateMetadata:  testutil.DummyStateMetadata(newCommitment).Bytes(),
-		FoundryCounter: consumedAccountOutput.FoundryCounter,
-		Conditions:     consumedAccountOutput.Conditions,
-		Features:       consumedAccountOutput.Features,
+		FoundryCounter: consumedAnchorOutput.FoundryCounter,
+		Conditions:     consumedAnchorOutput.Conditions,
+		Features:       consumedAnchorOutput.Features,
 	}
-	accountOutputID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(bfT.t), 0)
-	accountOutputWithID := isc.NewAccountOutputWithID(accountOutput, accountOutputID)
-	bfT.accountOutputs[newCommitment.BlockHash()] = accountOutputWithID
+	anchorOutputID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(bfT.t), 0)
+	anchorOutputWithID := isc.NewAnchorOutputWithID(anchorOutput, anchorOutputID)
+	bfT.anchorOutputs[newCommitment.BlockHash()] = anchorOutputWithID
 
 	return block
 }
@@ -176,8 +176,8 @@ func (bfT *BlockFactory) GetStateDraft(block state.Block) state.StateDraft {
 	return result
 }
 
-func (bfT *BlockFactory) GetAccountOutput(commitment *state.L1Commitment) *isc.AccountOutputWithID {
-	result, ok := bfT.accountOutputs[commitment.BlockHash()]
+func (bfT *BlockFactory) GetAnchorOutput(commitment *state.L1Commitment) *isc.AnchorOutputWithID {
+	result, ok := bfT.anchorOutputs[commitment.BlockHash()]
 	require.True(bfT.t, ok)
 	return result
 }

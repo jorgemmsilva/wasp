@@ -52,7 +52,7 @@
 //   - The Ethereum transaction is wrapped into an ISC off-ledger request by
 //     calling [isc.NewEVMOffLedgerTxRequest], and sent to the mempool for later
 //     processing by the ISC chain, by calling
-//     [chain.ChainRequests.ReceiveOffLedgerRequest].
+//     [chaintypes.ChainRequests.ReceiveOffLedgerRequest].
 //
 //   - Some time later the ISC request is picked up by the consensus, and
 //     consequently processed by the ISC VM. The `evmOffLedgerTxRequest` acts as
@@ -118,7 +118,7 @@ package evmdoc
 import (
 	"github.com/ethereum/go-ethereum/core"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -137,6 +137,6 @@ var (
 	_ *jsonrpc.EthService
 	_ = isc.NewEVMOffLedgerTxRequest
 	_ = chainutil.EVMEstimateGas
-	_ chain.ChainRequests
+	_ chaintypes.ChainRequests
 	_ core.BlockChain
 )

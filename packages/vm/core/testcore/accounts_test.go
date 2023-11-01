@@ -33,7 +33,7 @@ import (
 const BaseTokensDepositFee = 100
 
 func TestDeposit(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
 	sender, _ := env.NewKeyPairWithFunds(env.NewSeedFromIndex(11))
 	ch := env.NewChain()
 
@@ -499,7 +499,7 @@ func TestAccountBalances(t *testing.T) {
 			l1BaseTokens(chainOwnerAddr)+l1BaseTokens(senderAddr)+l1BaseTokens(ch.ChainID.AsAddress()),
 		)
 
-		anchor := ch.GetAnchorOutputFromL1().GetAccountOutput()
+		anchor := ch.GetChainOutputsFromL1().AnchorOutput
 		require.EqualValues(t, l1BaseTokens(ch.ChainID.AsAddress()), anchor.BaseTokenAmount())
 
 		require.LessOrEqual(t, len(ch.L2Accounts()), 3)

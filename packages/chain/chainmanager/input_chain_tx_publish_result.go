@@ -13,27 +13,27 @@ type inputChainTxPublishResult struct {
 	committeeAddr iotago.Ed25519Address
 	logIndex      cmt_log.LogIndex
 	txID          iotago.TransactionID
-	accountOutput   *isc.AccountOutputWithID
+	anchorOutput   *isc.AnchorOutputWithID
 	confirmed     bool
 }
 
-func NewInputChainTxPublishResult(committeeAddr iotago.Ed25519Address, logIndex cmt_log.LogIndex, txID iotago.TransactionID, accountOutput *isc.AccountOutputWithID, confirmed bool) gpa.Input {
+func NewInputChainTxPublishResult(committeeAddr iotago.Ed25519Address, logIndex cmt_log.LogIndex, txID iotago.TransactionID, anchorOutput *isc.AnchorOutputWithID, confirmed bool) gpa.Input {
 	return &inputChainTxPublishResult{
 		committeeAddr: committeeAddr,
 		logIndex:      logIndex,
 		txID:          txID,
-		accountOutput:   accountOutput,
+		anchorOutput:   anchorOutput,
 		confirmed:     confirmed,
 	}
 }
 
 func (i *inputChainTxPublishResult) String() string {
 	return fmt.Sprintf(
-		"{chainMgr.inputChainTxPublishResult, committeeAddr=%v, logIndex=%v, txID=%v, accountOutput=%v, confirmed=%v}",
+		"{chainMgr.inputChainTxPublishResult, committeeAddr=%v, logIndex=%v, txID=%v, anchorOutput=%v, confirmed=%v}",
 		i.committeeAddr.String(),
 		i.logIndex,
 		i.txID.ToHex(),
-		i.accountOutput,
+		i.anchorOutput,
 		i.confirmed,
 	)
 }

@@ -10,7 +10,7 @@
 // if a reorg or a rollback has happened and adjust the request set accordingly.
 // For this to work the mempool has to maintain not only the requests, but also
 // the latest state for which it has provided the proposal. Let's say the mempool
-// has provided proposals for PrevAO (AO≡AccountOutput).
+// has provided proposals for PrevAO (AO≡AnchorOutput).
 //
 // Upon reception of the proposal query (ConsensusProposalAsync) for NextAO
 // from the consensus, it asks the StateMgr for the virtual state VS(NextAO)
@@ -85,7 +85,7 @@ type Mempool interface {
 	// It can mean simple advance of the chain, or a rollback or a reorg.
 	// This function is guaranteed to be called in the order, which is
 	// considered the chain block order by the ChainMgr.
-	TrackNewChainHead(st state.State, from, till *isc.AccountOutputWithID, added, removed []state.Block) <-chan bool
+	TrackNewChainHead(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block) <-chan bool
 	// Invoked by the chain when a new off-ledger request is received from a node user.
 	// Inter-node off-ledger dissemination is NOT performed via this function.
 	ReceiveOnLedgerRequest(request isc.OnLedgerRequest)
@@ -128,7 +128,7 @@ type mempoolImpl struct {
 	onLedgerPool                   RequestPool[isc.OnLedgerRequest]
 	offLedgerPool                  *TypedPoolByNonce[isc.OffLedgerRequest]
 	distSync                       gpa.GPA
-	chainHeadAO                    *isc.AccountOutputWithID
+	chainHeadAO                    *isc.AnchorOutputWithID
 	chainHeadState                 state.State
 	serverNodesUpdatedPipe         pipe.Pipe[*reqServerNodesUpdated]
 	serverNodes                    []*cryptolib.PublicKey
@@ -178,7 +178,7 @@ type reqConsensusInstancesUpdated struct {
 
 type reqConsensusProposal struct {
 	ctx            context.Context
-	accoountOutput *isc.AccountOutputWithID
+	accoountOutput *isc.AnchorOutputWithID
 	consensusID    consGR.ConsensusID
 	responseCh     chan<- []*isc.RequestRef
 }
@@ -196,8 +196,8 @@ type reqConsensusRequests struct {
 
 type reqTrackNewChainHead struct {
 	st         state.State
-	from       *isc.AccountOutputWithID
-	till       *isc.AccountOutputWithID
+	from       *isc.AnchorOutputWithID
+	till       *isc.AnchorOutputWithID
 	added      []state.Block
 	removed    []state.Block
 	responseCh chan<- bool // only for tests, shouldn't be used in the chain package
@@ -282,7 +282,7 @@ func (mpi *mempoolImpl) TangleTimeUpdated(tangleTime time.Time) {
 	mpi.reqTangleTimeUpdatedPipe.In() <- tangleTime
 }
 
-func (mpi *mempoolImpl) TrackNewChainHead(st state.State, from, till *isc.AccountOutputWithID, added, removed []state.Block) <-chan bool {
+func (mpi *mempoolImpl) TrackNewChainHead(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block) <-chan bool {
 	responseCh := make(chan bool)
 	mpi.reqTrackNewChainHeadPipe.In() <- &reqTrackNewChainHead{st, from, till, added, removed, responseCh}
 	return responseCh
@@ -320,11 +320,11 @@ func (mpi *mempoolImpl) ConsensusInstancesUpdated(activeConsensusInstances []con
 	}
 }
 
-func (mpi *mempoolImpl) ConsensusProposalAsync(ctx context.Context, accountOutput *isc.AccountOutputWithID, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
+func (mpi *mempoolImpl) ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.AnchorOutputWithID, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
 	res := make(chan []*isc.RequestRef, 1)
 	req := &reqConsensusProposal{
 		ctx:           ctx,
-		accountOutput: accountOutput,
+		anchorOutput: anchorOutput,
 		consensusID:   consensusID,
 		responseCh:    res,
 	}
@@ -560,12 +560,12 @@ func (mpi *mempoolImpl) handleAccessNodesUpdated(recv *reqAccessNodesUpdated) {
 // This implementation only tracks a single branch. So, we will only respond
 // to the request matching the TrackNewChainHead call.
 func (mpi *mempoolImpl) handleConsensusProposal(recv *reqConsensusProposal) {
-	if mpi.chainHeadAO == nil || !recv.accountOutput.Equals(mpi.chainHeadAO) {
-		mpi.log.Debugf("handleConsensusProposal, have to wait for chain head to become %v", recv.accountOutput)
+	if mpi.chainHeadAO == nil || !recv.anchorOutput.Equals(mpi.chainHeadAO) {
+		mpi.log.Debugf("handleConsensusProposal, have to wait for chain head to become %v", recv.anchorOutput)
 		mpi.waitChainHead = append(mpi.waitChainHead, recv)
 		return
 	}
-	mpi.log.Debugf("handleConsensusProposal, already have the chain head %v", recv.accountOutput)
+	mpi.log.Debugf("handleConsensusProposal, already have the chain head %v", recv.anchorOutput)
 	mpi.handleConsensusProposalForChainHead(recv)
 }
 
@@ -841,7 +841,7 @@ func (mpi *mempoolImpl) handleTrackNewChainHead(req *reqTrackNewChainHead) {
 			if waiting.ctx.Err() != nil {
 				continue // Drop it.
 			}
-			if waiting.accountOutput.Equals(mpi.chainHeadAO) {
+			if waiting.anchorOutput.Equals(mpi.chainHeadAO) {
 				mpi.handleConsensusProposalForChainHead(waiting)
 				continue // Drop it from wait queue.
 			}

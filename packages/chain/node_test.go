@@ -104,10 +104,10 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 
 	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(te.originTx)
 	require.NoError(t, err)
-	deployBaseAO := isc.NewAccountOutputWithID(deployBaseAONoID, deployBaseAnchor.OutputID)
+	deployBaseAO := isc.NewAnchorOutputWithID(deployBaseAONoID, deployBaseAnchor.OutputID)
 	for _, tnc := range te.nodeConns {
-		tnc.recvAccountOutput(
-			isc.NewOutputInfo(deployBaseAO.OutputID(), deployBaseAO.GetAccountOutput(), iotago.TransactionID{}),
+		tnc.recvAnchorOutput(
+			isc.NewOutputInfo(deployBaseAO.OutputID(), deployBaseAO.GetAnchorOutput(), iotago.TransactionID{}),
 		)
 	}
 
@@ -177,7 +177,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 					latestTX := te.nodeConns[i].published[len(te.nodeConns[i].published)-1]
 					_, latestAONoID, err := transaction.GetAnchorFromTransaction(latestTX)
 					require.NoError(t, err)
-					latestL1Commitment, err := transaction.L1CommitmentFromAccountOutput(latestAONoID)
+					latestL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(latestAONoID)
 					require.NoError(t, err)
 					st, err := node.GetStateReader().StateByTrieRoot(latestL1Commitment.GetTrieRoot())
 					require.NoError(t, err)
@@ -203,14 +203,14 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		// Check if LastAccountOutput() works as expected.
-		awaitPredicate(te, ctxTimeout, "LatestAccountOutput", func() bool {
-			confirmedAO, err := node.LatestAccountOutput(chaintypes.ConfirmedState)
+		// Check if LastAnchorOutput() works as expected.
+		awaitPredicate(te, ctxTimeout, "LatestAnchorOutput", func() bool {
+			confirmedAO, err := node.LatestAnchorOutput(chaintypes.ConfirmedState)
 			require.NoError(t, err)
-			activeAO, err := node.LatestAccountOutput(chaintypes.ActiveState)
+			activeAO, err := node.LatestAnchorOutput(chaintypes.ActiveState)
 			require.NoError(t, err)
 			lastPublishedTX := te.nodeConns[i].published[len(te.nodeConns[i].published)-1]
-			lastPublishedAO, err := isc.AccountOutputWithIDFromTx(lastPublishedTX, te.chainID.AsAddress())
+			lastPublishedAO, err := isc.AnchorOutputWithIDFromTx(lastPublishedTX, te.chainID.AsAddress())
 			require.NoError(t, err)
 			if !lastPublishedAO.Equals(confirmedAO) { // In this test we confirm outputs immediately.
 				te.log.Debugf("lastPublishedAO(%v) != confirmedAO(%v)", lastPublishedAO, confirmedAO)
@@ -276,7 +276,7 @@ type testNodeConn struct {
 	chainID           isc.ChainID
 	published         []*iotago.Transaction
 	recvRequestCB     chain.RequestOutputHandler
-	recvAccountOutput chain.AccountOutputHandler
+	recvAnchorOutput chain.AnchorOutputHandler
 	recvMilestone     chain.MilestoneHandler
 	attachWG          *sync.WaitGroup
 }
@@ -321,7 +321,7 @@ func (tnc *testNodeConn) PublishTX(
 	if err != nil {
 		return err
 	}
-	tnc.recvAccountOutput(
+	tnc.recvAnchorOutput(
 		isc.NewOutputInfo(stateAnchor.OutputID, aoNoID, iotago.TransactionID{}),
 	)
 
@@ -332,7 +332,7 @@ func (tnc *testNodeConn) AttachChain(
 	ctx context.Context,
 	chainID isc.ChainID,
 	recvRequestCB chain.RequestOutputHandler,
-	recvAccountOutput chain.AccountOutputHandler,
+	recvAnchorOutput chain.AnchorOutputHandler,
 	recvMilestone chain.MilestoneHandler,
 	onChainConnect func(),
 	onChainDisconnect func(),
@@ -342,7 +342,7 @@ func (tnc *testNodeConn) AttachChain(
 	}
 	tnc.chainID = chainID
 	tnc.recvRequestCB = recvRequestCB
-	tnc.recvAccountOutput = recvAccountOutput
+	tnc.recvAnchorOutput = recvAnchorOutput
 	tnc.recvMilestone = recvMilestone
 	tnc.attachWG.Done()
 }
@@ -390,7 +390,7 @@ type testEnv struct {
 	tcl              *testchain.TestChainLedger
 	cmtAddress       iotago.Address
 	chainID          isc.ChainID
-	originAO         *isc.AccountOutputWithID
+	originAO         *isc.AnchorOutputWithID
 	originTx         *iotago.Transaction
 	nodeConns        []*testNodeConn
 	nodes            []chaintypes.Chain

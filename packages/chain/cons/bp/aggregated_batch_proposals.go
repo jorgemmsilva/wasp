@@ -20,7 +20,7 @@ type AggregatedBatchProposals struct {
 	shouldBeSkipped        bool
 	batchProposalSet       batchProposalSet
 	decidedIndexProposals  map[gpa.NodeID][]int
-	decidedBaseAccountOutput *isc.AccountOutputWithID
+	decidedBaseAnchorOutput *isc.AnchorOutputWithID
 	decidedRequestRefs     []*isc.RequestRef
 	aggregatedTime         time.Time
 }
@@ -49,18 +49,18 @@ func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID,
 		return &AggregatedBatchProposals{shouldBeSkipped: true}
 	}
 	aggregatedTime := bps.aggregatedTime(f)
-	decidedBaseAccountOutput := bps.decidedBaseAccountOutput(f)
+	decidedBaseAnchorOutput := bps.decidedBaseAnchorOutput(f)
 	abp := &AggregatedBatchProposals{
 		batchProposalSet:       bps,
 		decidedIndexProposals:  bps.decidedDSSIndexProposals(),
-		decidedBaseAccountOutput: decidedBaseAccountOutput,
-		decidedRequestRefs:     bps.decidedRequestRefs(f, decidedBaseAccountOutput),
+		decidedBaseAnchorOutput: decidedBaseAnchorOutput,
+		decidedRequestRefs:     bps.decidedRequestRefs(f, decidedBaseAnchorOutput),
 		aggregatedTime:         aggregatedTime,
 	}
-	if abp.decidedBaseAccountOutput == nil || len(abp.decidedRequestRefs) == 0 || abp.aggregatedTime.IsZero() {
+	if abp.decidedBaseAnchorOutput == nil || len(abp.decidedRequestRefs) == 0 || abp.aggregatedTime.IsZero() {
 		log.Debugf(
-			"Cant' aggregate batch proposal: decidedBaseAccountOutput=%v, |decidedRequestRefs|=%v, aggregatedTime=%v",
-			abp.decidedBaseAccountOutput, len(abp.decidedRequestRefs), abp.aggregatedTime,
+			"Cant' aggregate batch proposal: decidedBaseAnchorOutput=%v, |decidedRequestRefs|=%v, aggregatedTime=%v",
+			abp.decidedBaseAnchorOutput, len(abp.decidedRequestRefs), abp.aggregatedTime,
 		)
 		abp.shouldBeSkipped = true
 	}
@@ -78,11 +78,11 @@ func (abp *AggregatedBatchProposals) DecidedDSSIndexProposals() map[gpa.NodeID][
 	return abp.decidedIndexProposals
 }
 
-func (abp *AggregatedBatchProposals) DecidedBaseAccountOutput() *isc.AccountOutputWithID {
+func (abp *AggregatedBatchProposals) DecidedBaseAnchorOutput() *isc.AnchorOutputWithID {
 	if abp.shouldBeSkipped {
 		panic("trying to use aggregated proposal marked to be skipped")
 	}
-	return abp.decidedBaseAccountOutput
+	return abp.decidedBaseAnchorOutput
 }
 
 func (abp *AggregatedBatchProposals) AggregatedTime() time.Time {

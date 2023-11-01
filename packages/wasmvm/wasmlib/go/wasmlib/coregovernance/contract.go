@@ -223,7 +223,7 @@ func (sc Funcs) SetGasLimits(ctx wasmlib.ScFuncClientContext) *SetGasLimitsCall 
 	return f
 }
 
-// Changes optional extra metadata that is appended to the L1 AccountOutput.
+// Changes optional extra metadata that is appended to the L1 AnchorOutput.
 func (sc Funcs) SetMetadata(ctx wasmlib.ScFuncClientContext) *SetMetadataCall {
 	f := &SetMetadataCall{Func: wasmlib.NewScFunc(ctx, HScName, HFuncSetMetadata)}
 	f.Params.Proxy = wasmlib.NewCallParamsProxy(&f.Func.ScView)
@@ -309,7 +309,7 @@ func (sc Funcs) GetMaintenanceStatus(ctx wasmlib.ScViewClientContext) *GetMainte
 	return f
 }
 
-// Returns the extra metadata that is added to the chain AccountOutput.
+// Returns the extra metadata that is added to the chain AnchorOutput.
 func (sc Funcs) GetMetadata(ctx wasmlib.ScViewClientContext) *GetMetadataCall {
 	f := &GetMetadataCall{Func: wasmlib.NewScView(ctx, HScName, HViewGetMetadata)}
 	wasmlib.NewCallResultsProxy(f.Func, &f.Results.Proxy)

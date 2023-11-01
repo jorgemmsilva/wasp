@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Here we implement the local view of a chain, maintained by a committee to decide which
-// alias output to propose to the ACS. The alias output decided by the ACS will be used
+// anchor output to propose to the ACS. The anchor output decided by the ACS will be used
 // as an input for TX we build.
 //
-// The LocalView maintains a list of Alias Outputs (AOs). The are chained based on consumed/produced
-// AOs in a transaction we publish. The goal here is to tract the unconfirmed alias outputs, update
+// The LocalView maintains a list of Anchor Outputs (AOs). The are chained based on consumed/produced
+// AOs in a transaction we publish. The goal here is to tract the unconfirmed anchor outputs, update
 // the list based on confirmations/rejections from the L1.
 //
 // In overall, the LocalView acts as a filter between the L1 and LogIndex assignment in varLogIndex.
@@ -15,12 +15,12 @@
 //
 // We have several inputs:
 //
-//   - **Alias Output Confirmed**.
+//   - **Anchor Output Confirmed**.
 //     It can be AO posted by this committee,
 //     as well as by other committee (e.g. chain was rotated to other committee and then back)
 //     or a user (e.g. external rotation TX).
 //
-//   - **Alias Output Rejected**.
+//   - **Anchor Output Rejected**.
 //     These events are always for TXes posted by this committee.
 //     We assume for each TX we will get either Confirmation or Rejection.
 //
@@ -80,30 +80,30 @@ import (
 
 type VarLocalView interface {
 	//
-	// Returns alias output to produce next transaction on, or nil if we should wait.
+	// Returns anchor output to produce next transaction on, or nil if we should wait.
 	// In the case of nil, we either wait for the first AO to receive, or we are
 	// still recovering from a TX rejection.
-	Value() *isc.AccountOutputWithID
+	Value() *isc.AnchorOutputWithID
 	//
 	// Corresponds to the `tx_posted` event in the specification.
-	// Returns true, if the proposed BaseAccountOutput has changed.
-	ConsensusOutputDone(logIndex LogIndex, consumed iotago.OutputID, published *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) // TODO: Recheck, if consumed AO is the decided one.
+	// Returns true, if the proposed BaseAnchorOutput has changed.
+	ConsensusOutputDone(logIndex LogIndex, consumed iotago.OutputID, published *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) // TODO: Recheck, if consumed AO is the decided one.
 	//
 	// Corresponds to the `ao_received` event in the specification.
-	// Returns true, if the proposed BaseAccountOutput has changed.
+	// Returns true, if the proposed BaseAnchorOutput has changed.
 	// Also it returns confirmed log index, if a received AO confirms it, or NIL otherwise.
-	AccountOutputConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool, LogIndex)
+	AnchorOutputConfirmed(confirmed *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool, LogIndex)
 	//
 	// Corresponds to the `tx_rejected` event in the specification.
-	// Returns true, if the proposed BaseAccountOutput has changed.
-	AccountOutputRejected(rejected *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool)
+	// Returns true, if the proposed BaseAnchorOutput has changed.
+	AnchorOutputRejected(rejected *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool)
 	//
 	// Support functions.
 	StatusString() string
 }
 
 type varLocalViewEntry struct {
-	output   *isc.AccountOutputWithID // The AO published.
+	output   *isc.AnchorOutputWithID // The AO published.
 	consumed iotago.OutputID        // The AO used as an input for the TX.
 	rejected bool                   // True, if the AO as rejected. We keep them to detect the other rejected AOs.
 	logIndex LogIndex               // LogIndex of the consensus produced the output, if any.
@@ -113,7 +113,7 @@ type varLocalViewImpl struct {
 	// The latest confirmed AO, as received from L1.
 	// All the pending entries are built on top of this one.
 	// It can be nil, if the latest AO is unclear (either not received yet, or some rejections happened).
-	confirmed *isc.AccountOutputWithID
+	confirmed *isc.AnchorOutputWithID
 	// AOs produced by this committee, but not confirmed yet.
 	// It is possible to have several AOs for a StateIndex in the case of
 	// Recovery/Timeout notices. Then the next consensus is started o build a TX.
@@ -123,12 +123,12 @@ type varLocalViewImpl struct {
 	// -1 -- infinite, 0 -- disabled, x -- up to x TXes ahead.
 	pipeliningLimit int
 	// Callback for the TIP changes.
-	tipUpdatedCB func(ao *isc.AccountOutputWithID)
+	tipUpdatedCB func(ao *isc.AnchorOutputWithID)
 	// Just a logger.
 	log *logger.Logger
 }
 
-func NewVarLocalView(pipeliningLimit int, tipUpdatedCB func(ao *isc.AccountOutputWithID), log *logger.Logger) VarLocalView {
+func NewVarLocalView(pipeliningLimit int, tipUpdatedCB func(ao *isc.AnchorOutputWithID), log *logger.Logger) VarLocalView {
 	log.Debugf("NewVarLocalView, pipeliningLimit=%v", pipeliningLimit)
 	return &varLocalViewImpl{
 		confirmed:       nil,
@@ -141,11 +141,11 @@ func NewVarLocalView(pipeliningLimit int, tipUpdatedCB func(ao *isc.AccountOutpu
 
 // Return latest AO to be used as an input for the following TX.
 // nil means we have to wait: either we have no AO, or we have some rejections and waiting until a re-sync.
-func (lvi *varLocalViewImpl) Value() *isc.AccountOutputWithID {
+func (lvi *varLocalViewImpl) Value() *isc.AnchorOutputWithID {
 	return lvi.findLatestPending()
 }
 
-func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iotago.OutputID, published *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
+func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iotago.OutputID, published *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
 	lvi.log.Debugf("ConsensusOutputDone: logIndex=%v, consumed.ID=%v, published=%v", logIndex, consumed.ToHex(), published)
 	stateIndex := published.GetStateIndex()
 	prevLatest := lvi.findLatestPending()
@@ -192,13 +192,13 @@ func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iot
 // A confirmed AO is received from L1. Base on that, we either truncate our local
 // history until the received AO (if we know it was posted before), or we replace
 // the entire history with an unseen AO (probably produced not by this chain×cmt).
-func (lvi *varLocalViewImpl) AccountOutputConfirmed(confirmed *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool, LogIndex) {
-	lvi.log.Debugf("AccountOutputConfirmed: confirmed=%v", confirmed)
+func (lvi *varLocalViewImpl) AnchorOutputConfirmed(confirmed *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool, LogIndex) {
+	lvi.log.Debugf("AnchorOutputConfirmed: confirmed=%v", confirmed)
 	cnfLogIndex := NilLogIndex()
 	stateIndex := confirmed.GetStateIndex()
 	oldTip := lvi.findLatestPending()
 	lvi.confirmed = confirmed
-	if lvi.isAccountOutputPending(confirmed) {
+	if lvi.isAnchorOutputPending(confirmed) {
 		lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 			if si <= stateIndex {
 				for _, e := range es {
@@ -227,8 +227,8 @@ func (lvi *varLocalViewImpl) AccountOutputConfirmed(confirmed *isc.AccountOutput
 
 // Mark the specified AO as rejected.
 // Trim the suffix of rejected AOs.
-func (lvi *varLocalViewImpl) AccountOutputRejected(rejected *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
-	lvi.log.Debugf("AccountOutputRejected: rejected=%v", rejected)
+func (lvi *varLocalViewImpl) AnchorOutputRejected(rejected *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
+	lvi.log.Debugf("AnchorOutputRejected: rejected=%v", rejected)
 	stateIndex := rejected.GetStateIndex()
 	oldTip := lvi.findLatestPending()
 	//
@@ -248,7 +248,7 @@ func (lvi *varLocalViewImpl) AccountOutputRejected(rejected *isc.AccountOutputWi
 	return lvi.outputIfChanged(oldTip, lvi.findLatestPending())
 }
 
-func (lvi *varLocalViewImpl) markDependentAsRejected(ao *isc.AccountOutputWithID) {
+func (lvi *varLocalViewImpl) markDependentAsRejected(ao *isc.AnchorOutputWithID) {
 	accRejected := map[iotago.OutputID]struct{}{ao.OutputID(): {}}
 	for si := ao.GetStateIndex() + 1; ; si++ {
 		es, esFound := lvi.pending.Get(si)
@@ -279,7 +279,7 @@ func (lvi *varLocalViewImpl) clearPendingIfAllRejected() {
 	})
 }
 
-func (lvi *varLocalViewImpl) outputIfChanged(oldTip, newTip *isc.AccountOutputWithID) (*isc.AccountOutputWithID, bool) {
+func (lvi *varLocalViewImpl) outputIfChanged(oldTip, newTip *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
 	if oldTip == nil && newTip == nil {
 		lvi.log.Debugf("⊳ Tip remains nil.")
 		return nil, false
@@ -305,7 +305,7 @@ func (lvi *varLocalViewImpl) StatusString() string {
 // Latest pending AO is only considered existing, if the current pending
 // set of AOs is a chain, with no gaps, or alternatives, and all the AOs
 // are not rejected.
-func (lvi *varLocalViewImpl) findLatestPending() *isc.AccountOutputWithID {
+func (lvi *varLocalViewImpl) findLatestPending() *isc.AnchorOutputWithID {
 	if lvi.confirmed == nil {
 		return nil
 	}
@@ -337,7 +337,7 @@ func (lvi *varLocalViewImpl) findLatestPending() *isc.AccountOutputWithID {
 	return latest
 }
 
-func (lvi *varLocalViewImpl) isAccountOutputPending(ao *isc.AccountOutputWithID) bool {
+func (lvi *varLocalViewImpl) isAnchorOutputPending(ao *isc.AnchorOutputWithID) bool {
 	found := false
 	lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 		found = lo.ContainsBy(es, func(e *varLocalViewEntry) bool {

@@ -43,8 +43,8 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 	defer log.Sync()
 	//
 	// Chain identifiers.
-	aliasID := testiotago.RandAliasID()
-	chainID := isc.ChainIDFromAliasID(aliasID)
+	anchorID := testiotago.RandAnchorID()
+	chainID := isc.ChainIDFromAnchorID(anchorID)
 	governor := cryptolib.NewKeyPair()
 	//
 	// Node identities.
@@ -71,10 +71,10 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 	gpaTC.RunAll()
 	gpaTC.PrintAllStatusStrings("Initial", t.Logf)
 	//
-	// Provide first alias output. Consensus should be sent now.
-	ao1 := randomAccountOutputWithID(aliasID, governor.Address(), committeeAddress, 1)
+	// Provide first anchor output. Consensus should be sent now.
+	ao1 := randomAnchorOutputWithID(anchorID, governor.Address(), committeeAddress, 1)
 	t.Logf("AO1=%v", ao1)
-	gpaTC.WithInputs(inputAccountOutputConfirmed(gpaNodes, ao1)).RunAll()
+	gpaTC.WithInputs(inputAnchorOutputConfirmed(gpaNodes, ao1)).RunAll()
 	gpaTC.PrintAllStatusStrings("After AO1Recv", t.Logf)
 	cons1 := gpaNodes[gpaNodeIDs[0]].Output().(*cmt_log.Output)
 	for _, n := range gpaNodes {
@@ -83,21 +83,21 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 	}
 	//
 	// Consensus results received (consumed ao1, produced ao2).
-	ao2 := randomAccountOutputWithID(aliasID, governor.Address(), committeeAddress, 2)
+	ao2 := randomAnchorOutputWithID(anchorID, governor.Address(), committeeAddress, 2)
 	t.Logf("AO2=%v", ao2)
 	gpaTC.WithInputs(inputConsensusOutput(gpaNodes, cons1, ao2)).RunAll()
 	gpaTC.PrintAllStatusStrings("After gpaMsgsAO2Cons", t.Logf)
 	cons2 := gpaNodes[gpaNodeIDs[0]].Output().(*cmt_log.Output)
 	t.Logf("cons2=%v", cons2)
 	require.Equal(t, cons1.GetLogIndex().Next(), cons2.GetLogIndex())
-	require.Equal(t, ao2, cons2.GetBaseAccountOutput())
+	require.Equal(t, ao2, cons2.GetBaseAnchorOutput())
 	for _, n := range gpaNodes {
 		require.NotNil(t, n.Output())
 		require.Equal(t, cons2, n.Output())
 	}
 	//
 	// AO Confirmed received (nothing changes, we are ahead of it)
-	gpaTC.WithInputs(inputAccountOutputConfirmed(gpaNodes, ao2)).RunAll()
+	gpaTC.WithInputs(inputAnchorOutputConfirmed(gpaNodes, ao2)).RunAll()
 	gpaTC.PrintAllStatusStrings("After gpaMsgsAO2Recv", t.Logf)
 	for _, n := range gpaNodes {
 		require.NotNil(t, n.Output())
@@ -110,31 +110,31 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 ////////////////////////////////////////////////////////////////////////////////
 // Helper functions.
 
-func inputAccountOutputConfirmed(gpaNodes map[gpa.NodeID]gpa.GPA, ao *isc.AccountOutputWithID) map[gpa.NodeID]gpa.Input {
+func inputAnchorOutputConfirmed(gpaNodes map[gpa.NodeID]gpa.GPA, ao *isc.AnchorOutputWithID) map[gpa.NodeID]gpa.Input {
 	inputs := map[gpa.NodeID]gpa.Input{}
 	for n := range gpaNodes {
-		inputs[n] = cmt_log.NewInputAccountOutputConfirmed(ao)
+		inputs[n] = cmt_log.NewInputAnchorOutputConfirmed(ao)
 	}
 	return inputs
 }
 
-func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Output, nextAO *isc.AccountOutputWithID) map[gpa.NodeID]gpa.Input {
+func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Output, nextAO *isc.AnchorOutputWithID) map[gpa.NodeID]gpa.Input {
 	inputs := map[gpa.NodeID]gpa.Input{}
 	for n := range gpaNodes {
-		inputs[n] = cmt_log.NewInputConsensusOutputDone(consReq.GetLogIndex(), consReq.GetBaseAccountOutput().OutputID(), consReq.GetBaseAccountOutput().OutputID(), nextAO)
+		inputs[n] = cmt_log.NewInputConsensusOutputDone(consReq.GetLogIndex(), consReq.GetBaseAnchorOutput().OutputID(), consReq.GetBaseAnchorOutput().OutputID(), nextAO)
 	}
 	return inputs
 }
 
-func randomAccountOutputWithID(aliasID iotago.AccountID, governorAddress, stateAddress iotago.Address, stateIndex uint32) *isc.AccountOutputWithID {
+func randomAnchorOutputWithID(anchorID iotago.AnchorID, governorAddress, stateAddress iotago.Address, stateIndex uint32) *isc.AnchorOutputWithID {
 	outputID := testiotago.RandOutputID()
-	accountOutput := &iotago.AccountOutput{
-		AccountID:    aliasID,
+	anchorOutput := &iotago.AnchorOutput{
+		AnchorID:    anchorID,
 		StateIndex: stateIndex,
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governorAddress},
 		},
 	}
-	return isc.NewAccountOutputWithID(accountOutput, outputID)
+	return isc.NewAnchorOutputWithID(anchorOutput, outputID)
 }

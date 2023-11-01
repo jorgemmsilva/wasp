@@ -14,11 +14,11 @@ func SimulateRequest(
 	req isc.Request,
 	estimateGas bool,
 ) (*blocklog.RequestReceipt, error) {
-	accountOutput, err := ch.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
+	chainOutputs, err := ch.LatestChainOutputs(chaintypes.ActiveOrCommittedState)
 	if err != nil {
-		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
+		return nil, fmt.Errorf("could not get latest AnchorOutput: %w", err)
 	}
-	res, err := runISCRequest(ch, accountOutput, time.Now(), req, estimateGas)
+	res, err := runISCRequest(ch, chainOutputs, time.Now(), req, estimateGas)
 	if err != nil {
 		return nil, err
 	}

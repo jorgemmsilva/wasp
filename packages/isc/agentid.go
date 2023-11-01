@@ -61,11 +61,11 @@ func HnameFromAgentID(a AgentID) Hname {
 	return HnameNil
 }
 
-// NewAgentID creates an AddressAgentID if the address is not an AccountAddress;
+// NewAgentID creates an AddressAgentID if the address is not an AnchorAddress;
 // otherwise a ContractAgentID with hname = HnameNil.
 func NewAgentID(addr iotago.Address) AgentID {
-	if addr.Type() == iotago.AddressAccount {
-		chainID := ChainIDFromAddress(addr.(*iotago.AccountAddress))
+	if addr.Type() == iotago.AddressAnchor {
+		chainID := ChainIDFromAddress(addr.(*iotago.AnchorAddress))
 		return NewContractAgentID(chainID, HnameNil)
 	}
 	return NewAddressAgentID(addr)

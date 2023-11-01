@@ -74,16 +74,16 @@ func (b *WaspEVMBackend) EVMSendTransaction(tx *types.Transaction) error {
 	return nil
 }
 
-func (b *WaspEVMBackend) EVMCall(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.chain, accountOutput, callMsg)
+func (b *WaspEVMBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) ([]byte, error) {
+	return chainutil.EVMCall(b.chain, chainOutputs, callMsg)
 }
 
-func (b *WaspEVMBackend) EVMEstimateGas(accountOutput *isc.AccountOutputWithID, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.chain, accountOutput, callMsg)
+func (b *WaspEVMBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) (uint64, error) {
+	return chainutil.EVMEstimateGas(b.chain, chainOutputs, callMsg)
 }
 
 func (b *WaspEVMBackend) EVMTraceTransaction(
-	accountOutput *isc.AccountOutputWithID,
+	chainOutputs *isc.ChainOutputs,
 	timestamp time.Time,
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
@@ -91,7 +91,7 @@ func (b *WaspEVMBackend) EVMTraceTransaction(
 ) error {
 	return chainutil.EVMTraceTransaction(
 		b.chain,
-		accountOutput,
+		chainOutputs,
 		timestamp,
 		iscRequestsInBlock,
 		txIndex,
@@ -107,12 +107,12 @@ func (b *WaspEVMBackend) BaseToken() *parameters.BaseTokenInfo {
 	return b.baseToken
 }
 
-func (b *WaspEVMBackend) ISCLatestAccountOutput() (*isc.AccountOutputWithID, error) {
-	latestAccountOutput, err := b.chain.LatestAccountOutput(chaintypes.ActiveOrCommittedState)
+func (b *WaspEVMBackend) ISCLatestChainOutputs() (*isc.ChainOutputs, error) {
+	latestChainOutputs, err := b.chain.LatestChainOutputs(chaintypes.ActiveOrCommittedState)
 	if err != nil {
-		return nil, fmt.Errorf("could not get latest AccountOutput: %w", err)
+		return nil, fmt.Errorf("could not get latest ChainOutputs: %w", err)
 	}
-	return latestAccountOutput, nil
+	return latestChainOutputs, nil
 }
 
 func (b *WaspEVMBackend) ISCLatestState() state.State {

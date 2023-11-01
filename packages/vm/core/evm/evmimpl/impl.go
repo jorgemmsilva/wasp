@@ -283,29 +283,23 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	if ctx.ChainID().Equals(caller.ChainID()) {
 		panic(errFoundryMustBeOffChain)
 	}
-	account := caller.ChainID().AsAccountAddress()
+	account := caller.ChainID().AsAnchorAddress()
 
 	name := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenName))
 	tickerSymbol := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenTickerSymbol))
 	decimals := codec.MustDecodeUint8(ctx.Params().Get(evm.FieldTokenDecimals))
 
-	// TODO: We should somehow inspect the real FoundryOutput, but it is on L1.
-	// Here we reproduce it from the given params (which we assume to be correct)
-	// in order to derive the FoundryID
 	foundrySN := codec.MustDecodeUint32(ctx.Params().Get(evm.FieldFoundrySN))
 	tokenScheme := codec.MustDecodeTokenScheme(ctx.Params().Get(evm.FieldFoundryTokenScheme))
 	simpleTS, ok := tokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {
 		panic(errUnsupportedTokenScheme)
 	}
-	f := &iotago.FoundryOutput{
-		SerialNumber: foundrySN,
-		TokenScheme:  tokenScheme,
-		Conditions: iotago.FoundryOutputUnlockConditions{&iotago.ImmutableAccountUnlockCondition{
-			Address: &account,
-		}},
-	}
-	nativeTokenID := f.MustNativeTokenID()
+	nativeTokenID := lo.Must(iotago.FoundryIDFromAddressAndSerialNumberAndTokenScheme(
+		&account,
+		foundrySN,
+		tokenScheme.Type(),
+	))
 
 	_, ok = getERC20ExternalNativeTokensAddress(ctx, nativeTokenID)
 	if ok {

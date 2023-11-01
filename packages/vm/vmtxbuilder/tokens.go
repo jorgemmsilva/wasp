@@ -110,7 +110,7 @@ func cloneInternalBasicOutputOrNil(o *iotago.BasicOutput) *iotago.BasicOutput {
 	return o.Clone().(*iotago.BasicOutput)
 }
 
-func (txb *AnchorTransactionBuilder) newInternalTokenOutput(accountID iotago.AccountID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
+func (txb *AnchorTransactionBuilder) newInternalTokenOutput(accountID iotago.AnchorID, nativeTokenID iotago.NativeTokenID) *iotago.BasicOutput {
 	out := &iotago.BasicOutput{
 		Amount: 0,
 		Conditions: iotago.BasicOutputUnlockConditions{
@@ -215,7 +215,7 @@ func (txb *AnchorTransactionBuilder) ensureNativeTokenBalance(nativeTokenID iota
 
 	var basicOutputOut *iotago.BasicOutput
 	if basicOutputIn == nil {
-		basicOutputOut = txb.newInternalTokenOutput(util.AccountIDFromAccountOutput(txb.anchorOutput, txb.anchorOutputID), nativeTokenID)
+		basicOutputOut = txb.newInternalTokenOutput(util.AnchorIDFromAnchorOutput(txb.inputs.AnchorOutput, txb.inputs.AnchorOutputID), nativeTokenID)
 	} else {
 		basicOutputOut = cloneInternalBasicOutputOrNil(basicOutputIn)
 	}

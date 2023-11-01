@@ -3,6 +3,8 @@ package vmimpl
 import (
 	"time"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -27,8 +29,7 @@ import (
 // The vmContext is created from immutable vm.VMTask object and UTXO state of the
 // chain address contained in the statetxbuilder.Builder
 type vmContext struct {
-	task *vm.VMTask
-
+	task       *vm.VMTask
 	stateDraft state.StateDraft
 	txbuilder  *vmtxbuilder.AnchorTransactionBuilder
 	chainInfo  *isc.ChainInfo
@@ -149,7 +150,7 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 		TotalRequests:         numRequests,
 		NumSuccessfulRequests: numSuccess,
 		NumOffLedgerRequests:  numOffLedger,
-		PreviousAccountOutput: isc.NewAccountOutputWithID(vmctx.task.AnchorOutput, vmctx.task.AnchorOutputID),
+		PreviousChainOutputs:  vmctx.task.Inputs,
 		GasBurned:             vmctx.blockGas.burned,
 		GasFeeCharged:         vmctx.blockGas.feeCharged,
 	}
@@ -172,20 +173,17 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 // 5. unprocessable requests
 func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	// create a mock AO, with a nil statecommitment, just to calculate changes in the minimum SD
-	mockAO := vmctx.txbuilder.CreateAnchorOutput(
+	mockAnchor, mockAccount := vmctx.txbuilder.CreateAnchorAndAccountOutputs(
 		vmctx.stateMetadata(state.L1CommitmentNil),
 		vmctx.CreationSlot(),
-		iotago.OutputSet{vmctx.task.AnchorOutputID: vmctx.task.AnchorOutput},
+		iotago.OutputSet{vmctx.task.Inputs.AnchorOutputID: vmctx.task.Inputs.AnchorOutput},
 	)
-	newMinSD, err := parameters.Storage().MinDeposit(mockAO)
-	if err != nil {
-		panic(err)
-	}
-	oldMinSD := vmctx.txbuilder.AnchorOutputStorageDeposit()
-	changeInSD := int64(oldMinSD) - int64(newMinSD)
+	newSD := lo.Must(parameters.Storage().MinDeposit(mockAnchor)) + mockAccount.Amount
+	oldSD := vmctx.getSDInChainOutputs()
+	changeInSD := int64(oldSD) - int64(newSD)
 
 	if changeInSD != 0 {
-		vmctx.task.Log.Debugf("adjusting commonAccount because AO SD cost changed, old:%d new:%d", oldMinSD, newMinSD)
+		vmctx.task.Log.Debugf("adjusting commonAccount because AO SD cost changed, old:%d new:%d", oldSD, newSD)
 		// update the commonAccount with the change in SD cost
 		withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
 			accounts.AdjustAccountBaseTokens(s, accounts.CommonAccount(), changeInSD, vmctx.ChainID())

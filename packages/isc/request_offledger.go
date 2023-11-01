@@ -97,7 +97,7 @@ func (req *OffLedgerRequestData) writeEssence(ww *rwutil.Writer) {
 	ww.Write(req.allowance)
 }
 
-// Allowance from the sender's account to the target smart contract. Nil mean no Allowance
+// Allowance from the sender's anchor to the target smart contract. Nil mean no Allowance
 func (req *OffLedgerRequestData) Allowance() *Assets {
 	return req.allowance
 }

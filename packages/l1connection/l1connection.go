@@ -39,11 +39,11 @@ type Client interface {
 	// requests funds from faucet, waits for confirmation
 	RequestFunds(addr iotago.Address, timeout ...time.Duration) error
 	// sends a tx (including tipselection and local PoW if necessary) and waits for confirmation
-	PostTxAndWaitUntilConfirmation(tx *iotago.Transaction, timeout ...time.Duration) (iotago.BlockID, error)
+	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, timeout ...time.Duration) (iotago.BlockID, error)
 	// returns the outputs owned by a given address
 	OutputMap(myAddress iotago.Address, timeout ...time.Duration) (iotago.OutputSet, error)
 	// output
-	GetAccountOutput(aliasID iotago.AccountID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error)
+	GetAnchorOutput(aliasID iotago.AccountID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error)
 	// used to query the health endpoint of the node
 	Health(timeout ...time.Duration) (bool, error)
 }
@@ -161,7 +161,7 @@ func (c *l1client) postTx(ctx context.Context, tx *iotago.Transaction) (iotago.B
 }
 
 // PostTxAndWaitUntilConfirmation sends a tx (including tipselection and local PoW if necessary) and waits for confirmation.
-func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.Transaction, timeout ...time.Duration) (iotago.BlockID, error) {
+func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, timeout ...time.Duration) (iotago.BlockID, error) {
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
 
@@ -302,7 +302,7 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 	}
 }
 
-func (c *l1client) GetAccountOutput(aliasID iotago.AccountID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error) {
+func (c *l1client) GetAnchorOutput(aliasID iotago.AccountID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error) {
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	outputID, stateOutput, _, err := c.indexerClient.Alias(ctxWithTimeout, aliasID)
 	cancelContext()

@@ -9,7 +9,6 @@ import (
 
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -17,7 +16,6 @@ import (
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
-	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
@@ -183,44 +181,47 @@ func TestDictBytes(t *testing.T) {
 // TODO: update test values
 func TestMismatchOriginCommitment(t *testing.T) {
 	t.SkipNow()
+	/*
+	   store := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
+	   oid, err := iotago.OutputIDFromHexString("0xcf72dd6a8c8cd76eab93c80ae192677a17c554b91334a41bed5079eff37effc40000")
+	   require.NoError(t, err)
+	   originMetadata, err := hexutil.DecodeHex("0x03016102e607016204ffffffff016322010024ed2ed9d3682c9c4b801dd15103f73d1fe877224cb51c8b3def6f91b67f5067")
+	   require.NoError(t, err)
+	   aoStateMetadata, err := hexutil.DecodeHex("0x01000000006e55672af085d73ea0ed646f280a26e0eba053df10f439378fe4e99e0fb8774600761da7c0402da8640000000100000000010000000100000000")
+	   require.NoError(t, err)
+	   _, sender, err := iotago.ParseBech32("rms1qqjw6tke6d5ze8ztsqwaz5gr7u73l6rhyfxt28yt8hhklydk0agxwgerk65")
+	   require.NoError(t, err)
+	   _, stateController, err := iotago.ParseBech32("rms1qrkrlggl2plwfvxyuuyj55gw48ws0xwtteydez8y8e03elm3xf38gf7eq5r")
+	   require.NoError(t, err)
+	   _, govController, err := iotago.ParseBech32("rms1qqjw6tke6d5ze8ztsqwaz5gr7u73l6rhyfxt28yt8hhklydk0agxwgerk65")
+	   require.NoError(t, err)
+	   _, chainAccountAddress, err := iotago.ParseBech32("rms1pr27d4mr9wgesv8je5j6zkequhw0ysx55ftxt04z55dm9hc9yxkauqtukfl")
+	   require.NoError(t, err)
 
-	store := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-	oid, err := iotago.OutputIDFromHexString("0xcf72dd6a8c8cd76eab93c80ae192677a17c554b91334a41bed5079eff37effc40000")
-	require.NoError(t, err)
-	originMetadata, err := hexutil.DecodeHex("0x03016102e607016204ffffffff016322010024ed2ed9d3682c9c4b801dd15103f73d1fe877224cb51c8b3def6f91b67f5067")
-	require.NoError(t, err)
-	aoStateMetadata, err := hexutil.DecodeHex("0x01000000006e55672af085d73ea0ed646f280a26e0eba053df10f439378fe4e99e0fb8774600761da7c0402da8640000000100000000010000000100000000")
-	require.NoError(t, err)
-	_, sender, err := iotago.ParseBech32("rms1qqjw6tke6d5ze8ztsqwaz5gr7u73l6rhyfxt28yt8hhklydk0agxwgerk65")
-	require.NoError(t, err)
-	_, stateController, err := iotago.ParseBech32("rms1qrkrlggl2plwfvxyuuyj55gw48ws0xwtteydez8y8e03elm3xf38gf7eq5r")
-	require.NoError(t, err)
-	_, govController, err := iotago.ParseBech32("rms1qqjw6tke6d5ze8ztsqwaz5gr7u73l6rhyfxt28yt8hhklydk0agxwgerk65")
-	require.NoError(t, err)
-	_, chainAccountAddress, err := iotago.ParseBech32("rms1pr27d4mr9wgesv8je5j6zkequhw0ysx55ftxt04z55dm9hc9yxkauqtukfl")
-	require.NoError(t, err)
+	   ao := isc.NewAnchorOutputWithID(
 
-	ao := isc.NewAccountOutputWithID(
-		&iotago.AccountOutput{
-			Amount:         10000000,
-			AccountID:      chainAccountAddress.(*iotago.AccountAddress).AccountID(),
-			StateIndex:     0,
-			StateMetadata:  aoStateMetadata,
-			FoundryCounter: 0,
-			Conditions: iotago.AccountOutputUnlockConditions{
-				&iotago.StateControllerAddressUnlockCondition{Address: stateController},
-				&iotago.GovernorAddressUnlockCondition{Address: govController},
-			},
-			Features: []iotago.Feature{
-				&iotago.SenderFeature{
-					Address: sender,
-				},
-				&iotago.MetadataFeature{Data: originMetadata},
-			},
-		},
-		oid,
-	)
+	   	&iotago.AnchorOutput{
+	   		Amount:         10000000,
+	   		AccountID:      chainAccountAddress.(*iotago.AccountAddress).AccountID(),
+	   		StateIndex:     0,
+	   		StateMetadata:  aoStateMetadata,
+	   		FoundryCounter: 0,
+	   		Conditions: iotago.AnchorOutputUnlockConditions{
+	   			&iotago.StateControllerAddressUnlockCondition{Address: stateController},
+	   			&iotago.GovernorAddressUnlockCondition{Address: govController},
+	   		},
+	   		Features: []iotago.Feature{
+	   			&iotago.SenderFeature{
+	   				Address: sender,
+	   			},
+	   			&iotago.MetadataFeature{Data: originMetadata},
+	   		},
+	   	},
+	   	oid,
 
-	_, err = origin.InitChainByAccountOutput(store, ao)
-	testmisc.RequireErrorToBe(t, err, "l1Commitment mismatch between originAO / originBlock")
+	   )
+
+	   _, err = origin.InitChainByAnchorOutput(store, ao)
+	   testmisc.RequireErrorToBe(t, err, "l1Commitment mismatch between originAO / originBlock")
+	*/
 }

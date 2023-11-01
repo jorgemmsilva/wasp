@@ -32,7 +32,7 @@ require (
 	github.com/iotaledger/hive.go/web v0.0.0-20231010133617-cdbd5387e2af
 	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231005201410-a7eb4f4ced96
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231005201531-0b3ecef60a91
-	github.com/iotaledger/iota.go/v4 v4.0.0-20231026103349-c270c7ed4d27
+	github.com/iotaledger/iota.go/v4 v4.0.0-20231031113109-5d7d59311967
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
 	github.com/labstack/echo/v4 v4.11.2

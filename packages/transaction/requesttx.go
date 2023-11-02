@@ -13,7 +13,9 @@ import (
 
 // NewTransferTransaction creates a basic output transaction that sends L1 Token to another L1 address
 func NewTransferTransaction(
-	assets *isc.AssetsWithMana,
+	baseTokens iotago.BaseToken,
+	nativeToken *isc.NativeTokenAmount,
+	mana iotago.Mana,
 	senderAddress iotago.Address,
 	senderKeyPair *cryptolib.KeyPair,
 	targetAddress iotago.Address,
@@ -25,7 +27,9 @@ func NewTransferTransaction(
 	output := MakeBasicOutput(
 		targetAddress,
 		senderAddress,
-		assets,
+		baseTokens,
+		nativeToken,
+		mana,
 		nil,
 		unlockConditions,
 	)
@@ -42,10 +46,14 @@ func NewTransferTransaction(
 			ErrNotEnoughBaseTokensForStorageDeposit, output.BaseTokenAmount(), storageDeposit)
 	}
 
+	assets := isc.NewAssets(baseTokens, nil)
+	if nativeToken != nil {
+		assets.AddNativeTokens(nativeToken.ID, nativeToken.Amount)
+	}
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
 		senderAddress,
 		unspentOutputs,
-		assets,
+		NewAssetsWithMana(assets, mana),
 		creationSlot,
 	)
 	if err != nil {
@@ -91,7 +99,7 @@ func NewRequestTransaction(
 			ErrNotEnoughBaseTokensForStorageDeposit, out.BaseTokenAmount(), storageDeposit)
 	}
 	outputs = append(outputs, out)
-	outputAssets := AssetsFromOutput(out).WithMana(out.StoredMana())
+	outputAssets := NewAssetsWithMana(AssetsFromOutput(out), out.StoredMana())
 
 	outputs, outputAssets = updateOutputsWhenSendingOnBehalfOf(
 		senderKeyPair,
@@ -136,7 +144,9 @@ func MakeRequestTransactionOutput(
 	out = MakeBasicOutput(
 		req.TargetAddress,
 		senderAddress,
-		assets.WithMana(0),
+		assets.BaseTokens,
+		MustSingleNativeToken(assets.FungibleTokens),
+		0,
 		&isc.RequestMetadata{
 			SenderContract: isc.EmptyContractIdentity(),
 			TargetContract: req.Metadata.TargetContract,
@@ -147,10 +157,7 @@ func MakeRequestTransactionOutput(
 		},
 		req.UnlockConditions,
 	)
-	if len(assets.NFTs) > 0 {
-		if len(assets.NFTs) > 1 {
-			panic("at most 1 NFT is supported")
-		}
+	if nft != nil {
 		out = NFTOutputFromBasicOutput(out.(*iotago.BasicOutput), nft)
 	}
 	return out
@@ -186,11 +193,11 @@ func updateOutputsWhenSendingOnBehalfOf(
 	senderAddress iotago.Address,
 	unspentOutputs iotago.OutputSet,
 	outputs iotago.TxEssenceOutputs,
-	outputAssets *isc.AssetsWithMana,
+	outputAssets *AssetsWithMana,
 	creationSlot iotago.SlotIndex,
 ) (
 	iotago.TxEssenceOutputs,
-	*isc.AssetsWithMana,
+	*AssetsWithMana,
 ) {
 	if senderAddress.Equal(senderKeyPair.Address()) {
 		return outputs, outputAssets
@@ -210,7 +217,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 		}
 		// found the needed output
 		outputs = append(outputs, out)
-		assets, err := AssetsAndManaFromOutput(outID, out, creationSlot)
+		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot)
 		if err != nil {
 			panic(err)
 		}

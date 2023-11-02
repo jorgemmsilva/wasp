@@ -1,13 +1,9 @@
 package transaction
 
 import (
-	"fmt"
 	"math/big"
 
-	"github.com/samber/lo"
-
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
@@ -29,7 +25,9 @@ func BasicOutputFromPostData(
 	ret := MakeBasicOutput(
 		par.TargetAddress,
 		senderAddress,
-		par.Assets.WithMana(0),
+		par.Assets.BaseTokens,
+		MustSingleNativeToken(par.Assets.FungibleTokens),
+		0,
 		&isc.RequestMetadata{
 			SenderContract: senderContract,
 			TargetContract: metadata.TargetContract,
@@ -50,19 +48,18 @@ func BasicOutputFromPostData(
 func MakeBasicOutput(
 	targetAddress iotago.Address,
 	senderAddress iotago.Address,
-	assets *isc.AssetsWithMana,
+	baseTokens iotago.BaseToken,
+	nativeToken *isc.NativeTokenAmount,
+	mana iotago.Mana,
 	metadata *isc.RequestMetadata,
 	unlockConditions []iotago.UnlockCondition,
 ) *iotago.BasicOutput {
-	if assets == nil {
-		assets = isc.NewEmptyAssetsWithMana()
-	}
 	out := &iotago.BasicOutput{
-		Amount: assets.BaseTokens,
+		Amount: baseTokens,
 		Conditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: targetAddress},
 		},
-		Mana: assets.Mana,
+		Mana: mana,
 	}
 	if senderAddress != nil {
 		out.Features = append(out.Features, &iotago.SenderFeature{
@@ -74,14 +71,10 @@ func MakeBasicOutput(
 			Data: metadata.Bytes(),
 		})
 	}
-	if len(assets.NativeTokens) > 1 {
-		panic("BasicOutput can include at most 1 native token")
-	}
-	if len(assets.NativeTokens) > 0 && assets.NativeTokens[0].Amount.Cmp(util.Big0) > 0 {
-		nt := assets.NativeTokens[0]
+	if nativeToken != nil && nativeToken.Amount.Cmp(util.Big0) > 0 {
 		out.Features = append(out.Features, &iotago.NativeTokenFeature{
-			ID:     nt.ID,
-			Amount: new(big.Int).Set(nt.Amount),
+			ID:     nativeToken.ID,
+			Amount: new(big.Int).Set(nativeToken.Amount),
 		})
 	}
 	for _, c := range unlockConditions {
@@ -130,63 +123,6 @@ func NFTOutputFromBasicOutput(o *iotago.BasicOutput, nft *isc.NFT) *iotago.NFTOu
 	}
 	for _, c := range o.Conditions {
 		out.Conditions = append(out.Conditions, c)
-	}
-	return out
-}
-
-func AssetsFromOutput(o iotago.Output) *isc.Assets {
-	assets := isc.NewAssets(o.BaseTokenAmount(), nil)
-	if nt := o.FeatureSet().NativeToken(); nt != nil {
-		assets.NativeTokens = append(assets.NativeTokens, &isc.NativeTokenAmount{
-			ID:     nt.ID,
-			Amount: new(big.Int).Set(nt.Amount),
-		})
-	}
-	if o, ok := o.(*iotago.NFTOutput); ok {
-		assets.NFTs = append(assets.NFTs, o.NFTID)
-	}
-	return assets
-}
-
-func AssetsAndManaFromOutput(
-	oID iotago.OutputID,
-	o iotago.Output,
-	slotIndex iotago.SlotIndex,
-) (*isc.AssetsWithMana, error) {
-	assets := AssetsFromOutput(o)
-	mana, err := vm.TotalManaIn(
-		parameters.L1API().ManaDecayProvider(),
-		parameters.Storage(),
-		slotIndex,
-		vm.InputSet{oID: o},
-		vm.RewardsInputSet{},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return isc.NewAssetsWithMana(assets, mana), nil
-}
-
-func AssetsAndStoredManaFromOutput(o iotago.Output) *isc.AssetsWithMana {
-	return AssetsFromOutput(o).WithMana(o.StoredMana())
-}
-
-func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
-	storageDeposit := lo.Must(parameters.Storage().MinDeposit(out))
-	if out.BaseTokenAmount() >= storageDeposit {
-		return out
-	}
-	switch out := iotago.Output(out).(type) {
-	case *iotago.AnchorOutput:
-		out.Amount = storageDeposit
-	case *iotago.BasicOutput:
-		out.Amount = storageDeposit
-	case *iotago.FoundryOutput:
-		out.Amount = storageDeposit
-	case *iotago.NFTOutput:
-		out.Amount = storageDeposit
-	default:
-		panic(fmt.Sprintf("no handler for output type %T", out))
 	}
 	return out
 }

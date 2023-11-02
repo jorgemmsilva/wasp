@@ -57,6 +57,7 @@ func TestDoubleSpend(t *testing.T) {
 		u.api.StorageScoreStructure(),
 		u.SlotIndex(),
 		vm.InputSet{inputID: input},
+		vm.RewardsInputSet{},
 	)
 
 	spend2, err := u.TxBuilder().

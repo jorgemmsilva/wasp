@@ -655,10 +655,12 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 }
 
 // SendL1 sends base or native tokens to another L1 address
-func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.AssetsWithMana, wallet *cryptolib.KeyPair) {
+func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.Assets, wallet *cryptolib.KeyPair) {
 	allOuts := env.utxoDB.GetUnspentOutputs(wallet.Address())
 	tx, err := transaction.NewTransferTransaction(
-		assets,
+		assets.BaseTokens,
+		transaction.MustSingleNativeToken(assets.FungibleTokens),
+		0,
 		wallet.Address(),
 		wallet,
 		targetAddress,

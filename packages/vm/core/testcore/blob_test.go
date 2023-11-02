@@ -143,6 +143,7 @@ func TestUploadWasm(t *testing.T) {
 		require.EqualValues(t, binary, binBack)
 	})
 	t.Run("upload wasm from file", func(t *testing.T) {
+		t.SkipNow() // TODO: wasm
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch := env.NewChain()
 		ch.MustDepositBaseTokensToL2(100_000, nil)

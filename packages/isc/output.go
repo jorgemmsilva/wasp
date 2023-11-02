@@ -8,8 +8,11 @@ import (
 	"io"
 	"math"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/testutil/testiotago"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
@@ -74,6 +77,10 @@ func (a *ChainOutputs) GetAnchorID() iotago.AnchorID {
 	return util.AnchorIDFromAnchorOutput(a.AnchorOutput, a.AnchorOutputID)
 }
 
+func (a *ChainOutputs) HasAccountOutput() bool {
+	return a.accountOutput != nil
+}
+
 func (a *ChainOutputs) AccountOutput() (iotago.OutputID, *iotago.AccountOutput, bool) {
 	return a.accountOutputID, a.accountOutput, a.accountOutput != nil
 }
@@ -119,6 +126,14 @@ func (a *ChainOutputs) Equals(other *ChainOutputs) bool {
 
 func (a *ChainOutputs) Hash() hashing.HashValue {
 	return hashing.HashDataBlake2b(a.Bytes())
+}
+
+func (a *ChainOutputs) StorageDeposit() iotago.BaseToken {
+	sd := lo.Must(parameters.L1Provider().APIForSlot(a.AnchorOutputID.CreationSlot()).StorageScoreStructure().MinDeposit(a.AnchorOutput))
+	if a.HasAccountOutput() {
+		sd += a.accountOutput.Amount
+	}
+	return sd
 }
 
 func (a *ChainOutputs) String() string {

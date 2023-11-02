@@ -53,14 +53,14 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 func ComputeInputsAndRemainder(
 	senderAddress iotago.Address,
 	unspentOutputs iotago.OutputSet,
-	target *isc.AssetsWithMana,
+	target *AssetsWithMana,
 	slotIndex iotago.SlotIndex,
 ) (
 	inputIDs iotago.OutputIDs,
 	remainder iotago.TxEssenceOutputs,
 	err error,
 ) {
-	sum := isc.NewEmptyAssetsWithMana()
+	sum := NewEmptyAssetsWithMana()
 
 	unspentOutputIDs := lo.Keys(unspentOutputs)
 	slices.SortFunc(unspentOutputIDs, func(a, b iotago.OutputID) int {
@@ -88,7 +88,7 @@ func ComputeInputsAndRemainder(
 			continue
 		}
 		inputIDs = append(inputIDs, outputID)
-		a, err := AssetsAndManaFromOutput(outputID, output, slotIndex)
+		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -113,13 +113,13 @@ func ComputeInputsAndRemainder(
 //nolint:gocyclo
 func computeRemainderOutputs(
 	senderAddress iotago.Address,
-	available *isc.AssetsWithMana,
-	target *isc.AssetsWithMana,
+	available *AssetsWithMana,
+	target *AssetsWithMana,
 ) (ret iotago.TxEssenceOutputs, err error) {
 	if available.BaseTokens < target.BaseTokens {
 		return nil, ErrNotEnoughBaseTokens
 	}
-	excess := *isc.NewEmptyAssetsWithMana()
+	excess := *NewEmptyAssetsWithMana()
 	excess.BaseTokens = available.BaseTokens - target.BaseTokens
 
 	if available.Mana < target.Mana {

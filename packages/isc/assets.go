@@ -18,6 +18,11 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
+type Assets struct {
+	*FungibleTokens
+	NFTs []iotago.NFTID `json:"nfts"`
+}
+
 type FungibleTokens struct {
 	BaseTokens   iotago.BaseToken     `json:"baseTokens"`
 	NativeTokens []*NativeTokenAmount `json:"nativeTokens"`
@@ -44,11 +49,6 @@ func NewFungibleTokens(baseTokens iotago.BaseToken, tokens []*NativeTokenAmount)
 
 func NewEmptyFungibleTokens() *FungibleTokens {
 	return &FungibleTokens{}
-}
-
-type Assets struct {
-	*FungibleTokens
-	NFTs []iotago.NFTID `json:"nfts"`
 }
 
 var BaseTokenID = []byte{}
@@ -284,7 +284,7 @@ func (a *Assets) Geq(b *Assets) bool {
 	if !a.FungibleTokens.Geq(b.FungibleTokens) {
 		return false
 	}
-	return lo.Every(b.NFTs, a.NFTs)
+	return lo.Every(a.NFTs, b.NFTs)
 }
 
 // Spend subtracts assets from the current set.
@@ -527,45 +527,4 @@ func (a *Assets) Write(w io.Writer) error {
 		}
 	}
 	return ww.Err
-}
-
-func (a *Assets) WithMana(m iotago.Mana) *AssetsWithMana {
-	return NewAssetsWithMana(a, m)
-}
-
-type AssetsWithMana struct {
-	*Assets
-	Mana iotago.Mana
-}
-
-func NewAssetsWithMana(assets *Assets, mana iotago.Mana) *AssetsWithMana {
-	return &AssetsWithMana{Assets: assets, Mana: mana}
-}
-
-func NewEmptyAssetsWithMana() *AssetsWithMana {
-	return NewAssetsWithMana(NewEmptyAssets(), 0)
-}
-
-func (a *AssetsWithMana) String() string {
-	ret := a.Assets.String()
-	if a.Mana > 0 {
-		ret += fmt.Sprintf("\n Mana: %d", a.Mana)
-	}
-	return ret
-}
-
-func (a *AssetsWithMana) Geq(b *AssetsWithMana) bool {
-	if !a.Assets.Geq(b.Assets) {
-		return false
-	}
-	return a.Mana > b.Mana
-}
-
-func (a *AssetsWithMana) Equals(b *AssetsWithMana) bool {
-	return a.Assets.Equals(b.Assets) && a.Mana == b.Mana
-}
-
-func (a *AssetsWithMana) Add(b *AssetsWithMana) {
-	a.Assets.Add(b.Assets)
-	a.Mana += b.Mana
 }

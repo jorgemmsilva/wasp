@@ -60,7 +60,7 @@ func DeleteFoundryOutput(state kv.KVStore, sn uint32) {
 }
 
 // GetFoundryOutput returns foundry output, its block number and output index
-func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainID isc.ChainID) (*iotago.FoundryOutput, iotago.OutputID) {
+func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainAccountID iotago.AccountID) (*iotago.FoundryOutput, iotago.OutputID) {
 	data := allFoundriesMapR(state).GetAt(codec.EncodeUint32(sn))
 	if data == nil {
 		return nil, iotago.OutputID{}
@@ -72,7 +72,7 @@ func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainID isc.ChainID) (*
 		SerialNumber: sn,
 		TokenScheme:  rec.TokenScheme,
 		Conditions: iotago.FoundryOutputUnlockConditions{
-			&iotago.ImmutableAccountUnlockCondition{Address: chainID.AsAddress().(*iotago.AccountAddress)},
+			&iotago.ImmutableAccountUnlockCondition{Address: chainAccountID.ToAddress().(*iotago.AccountAddress)},
 		},
 		Features: nil,
 	}

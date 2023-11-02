@@ -89,6 +89,9 @@ const (
 
 	// state pruning
 	VarBlockKeepAmount = "b"
+
+	// AccountID of the chain's AccountOutput
+	VarChainAccountID = "A"
 )
 
 // request parameters

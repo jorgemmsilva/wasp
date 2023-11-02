@@ -104,7 +104,7 @@ func TestTxBuilderBasic(t *testing.T) {
 			),
 			mockedAccounts.Read(),
 		)
-		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 		require.EqualValues(t, 1, txb.numInputs())
 		require.EqualValues(t, 1, txb.numOutputs())
@@ -125,7 +125,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		txb.Consume(req1)
 		mockedAccounts.assets.AddBaseTokens(req1.Output().BaseTokenAmount())
 
-		essence = txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 		require.Len(t, essence.Outputs, 1)
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount())
@@ -148,7 +148,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		mockedAccounts.assets.Add(req2.Assets().FungibleTokens)
 		mockedAccounts.assets.Spend(isc.NewFungibleTokens(totalSDBaseTokensUsedToSplitAssets, nil))
 
-		essence = txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 		require.Len(t, essence.Outputs, 3) // 1 anchor AO, 1 NFT internal Output, 1 NativeTokens internal outputs
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount()-totalSDBaseTokensUsedToSplitAssets)
@@ -271,7 +271,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			consumeUTXO(t, txb, nativeTokenIDs[idx], testAmount, mockedAccounts)
 		}
 
-		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
@@ -334,7 +334,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 				addOutput(txb, 1, nativeTokenIDs[idx2], mockedAccounts)
 			}
 		}
-		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
@@ -379,7 +379,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			setNativeTokenAccountsBalance(nativeTokenIDs[i], 100)
 			addOutput(txb, 90, nativeTokenIDs[i], mockedAccounts)
 		}
-		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 
 		require.EqualValues(t, 6, len(essence.TransactionEssence.Inputs))
@@ -397,7 +397,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		addOutput(txb, 1, tokenID, mockedAccounts)
 		consumeUTXO(t, txb, tokenID, 1, mockedAccounts)
 
-		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
@@ -481,7 +481,7 @@ func TestFoundries(t *testing.T) {
 	t.Run("create foundry ok", func(t *testing.T) {
 		initTest()
 		createNFoundries(3)
-		essence := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 		essenceBytes, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)

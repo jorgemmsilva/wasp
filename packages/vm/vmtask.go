@@ -47,6 +47,9 @@ type VMTaskResult struct {
 	// Transaction is the (unsigned) transaction for the next block,
 	// or nil if the task does not produce a normal block
 	Transaction *iotago.Transaction
+	// Unlocks contains the unlocks needed for the SignedTransaction. The first item is
+	// a SignatureUnlock that should be replaced with the actual signature.
+	Unlocks iotago.Unlocks
 	// RequestResults contains one result for each non-skipped request
 	RequestResults []*RequestResult
 }

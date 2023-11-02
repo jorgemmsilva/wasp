@@ -80,6 +80,11 @@ func (s *SandboxBase) ChainID() isc.ChainID {
 	return s.Ctx.ChainID()
 }
 
+func (s *SandboxBase) ChainAccountID() (iotago.AccountID, bool) {
+	s.Ctx.GasBurn(gas.BurnCodeGetContext)
+	return s.Ctx.ChainAccountID()
+}
+
 func (s *SandboxBase) ChainOwnerID() isc.AgentID {
 	s.Ctx.GasBurn(gas.BurnCodeGetContext)
 	return s.Ctx.ChainOwnerID()

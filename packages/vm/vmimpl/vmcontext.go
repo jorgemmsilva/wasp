@@ -200,7 +200,7 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 
 	NFTOutputsToBeAdded, NFTOutputsToBeRemoved, MintedNFTOutputs := vmctx.txbuilder.NFTOutputsToBeUpdated()
 
-	outputIndex := uint16(1)
+	outputIndex := uint16(2) // anchor + account outputs are on index 0 and 1
 
 	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
 		// update native token outputs

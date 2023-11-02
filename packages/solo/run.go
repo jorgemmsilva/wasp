@@ -5,6 +5,7 @@ package solo
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -94,7 +95,13 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 	)
 	require.NoError(ch.Env.T, err)
 
-	tx := transaction.MakeAnchorTransaction(unsignedTx, sigs[0])
+	unlocks := slices.Clone(res.Unlocks)
+	unlocks[0] = &iotago.SignatureUnlock{Signature: sigs[0]}
+	tx := &iotago.SignedTransaction{
+		API:         unsignedTx.API,
+		Transaction: unsignedTx,
+		Unlocks:     unlocks,
+	}
 
 	if res.RotationAddress == nil {
 		// normal state transition

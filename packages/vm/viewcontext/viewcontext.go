@@ -151,6 +151,11 @@ func (ctx *ViewContext) ChainID() isc.ChainID {
 	return ctx.chainInfo.ChainID
 }
 
+func (ctx *ViewContext) ChainAccountID() (iotago.AccountID, bool) {
+	accountID := ctx.chainInfo.ChainAccountID
+	return accountID, accountID != iotago.EmptyAccountID
+}
+
 func (ctx *ViewContext) ChainOwnerID() isc.AgentID {
 	return ctx.chainInfo.ChainOwnerID
 }

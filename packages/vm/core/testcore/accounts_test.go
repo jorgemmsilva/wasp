@@ -23,6 +23,7 @@ import (
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -87,8 +88,16 @@ func TestWithdrawEverything(t *testing.T) {
 	l2balance := ch.L2BaseTokens(senderAgentID)
 
 	// construct request with low allowance (just sufficient for storage deposit balance), so its possible to estimate the gas fees
+	sd := lo.Must(parameters.Storage().MinDeposit(transaction.BasicOutputFromPostData(
+		&iotago.AnchorAddress{},
+		isc.ContractIdentityFromHname(accounts.Contract.Hname()),
+		isc.RequestParameters{
+			TargetAddress: &iotago.Ed25519Address{},
+			Assets:        isc.NewAssetsBaseTokens(100),
+		},
+	)))
 	req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncWithdraw.Name).
-		WithFungibleTokens(isc.NewAssetsBaseTokens(l2balance)).AddAllowance(isc.NewAssetsBaseTokens(5200))
+		WithFungibleTokens(isc.NewAssetsBaseTokens(l2balance)).AddAllowance(isc.NewAssetsBaseTokens(sd))
 
 	gasEstimate, fee, err := ch.EstimateGasOffLedger(req, sender, true)
 	require.NoError(t, err)
@@ -119,7 +128,7 @@ func TestFoundries(t *testing.T) {
 	var senderAgentID isc.AgentID
 
 	initTest := func() {
-		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
+		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
 		ch, _ = env.NewChainExt(nil, 10*isc.Million, initMana, "chain1")
 		senderKeyPair, senderAddr = env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID = isc.NewAgentID(senderAddr)
@@ -128,7 +137,7 @@ func TestFoundries(t *testing.T) {
 	}
 	t.Run("newFoundry fails when no allowance is provided", func(t *testing.T) {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ = env.NewChainExt(nil, 100_000, initMana, "chain1")
+		ch = env.NewChain()
 
 		req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
 			accounts.ParamTokenScheme, codec.EncodeTokenScheme(
@@ -143,7 +152,7 @@ func TestFoundries(t *testing.T) {
 	})
 	t.Run("newFoundry overrides bad melted/minted token counters in tokenscheme", func(t *testing.T) {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ = env.NewChainExt(nil, 100_000, initMana, "chain1")
+		ch = env.NewChain()
 
 		req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
 			accounts.ParamTokenScheme, codec.EncodeTokenScheme(
@@ -499,23 +508,25 @@ func TestAccountBalances(t *testing.T) {
 			l1BaseTokens(chainOwnerAddr)+l1BaseTokens(senderAddr)+l1BaseTokens(ch.ChainID.AsAddress()),
 		)
 
-		anchor := ch.GetChainOutputsFromL1().AnchorOutput
-		require.EqualValues(t, l1BaseTokens(ch.ChainID.AsAddress()), anchor.BaseTokenAmount())
+		chainOutputs := ch.GetChainOutputsFromL1()
+		require.Equal(t, l1BaseTokens(ch.ChainID.AsAddress()), chainOutputs.AnchorOutput.BaseTokenAmount()+chainOutputs.MustAccountOutput().BaseTokenAmount())
 
 		require.LessOrEqual(t, len(ch.L2Accounts()), 3)
 
 		bi := ch.GetLatestBlockInfo()
 
-		anchorSD := lo.Must(parameters.Storage().MinDeposit(anchor))
+		anchorSD := lo.Must(parameters.Storage().MinDeposit(chainOutputs.AnchorOutput))
+		accountSD := lo.Must(parameters.Storage().MinDeposit(chainOutputs.MustAccountOutput()))
+
 		require.EqualValues(t,
-			anchor.BaseTokenAmount(),
+			chainOutputs.AnchorOutput.BaseTokenAmount(),
 			anchorSD+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(senderAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
 		)
 
 		totalGasFeeCharged += bi.GasFeeCharged
 		require.EqualValues(t,
-			utxodb.FundsFromFaucetAmount+totalGasFeeCharged-anchorSD,
-			l1BaseTokens(chainOwnerAddr)+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
+			utxodb.FundsFromFaucetAmount,
+			anchorSD+accountSD-totalGasFeeCharged+l1BaseTokens(chainOwnerAddr)+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
 		)
 		require.EqualValues(t,
 			utxodb.FundsFromFaucetAmount-totalGasFeeCharged,

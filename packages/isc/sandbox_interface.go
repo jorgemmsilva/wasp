@@ -24,6 +24,8 @@ type SandboxBase interface {
 	Params() *Params
 	// ChainID returns the chain ID
 	ChainID() ChainID
+	// ChainAccountID returns the AccountID of the chain's AccountOutput
+	ChainAccountID() (iotago.AccountID, bool)
 	// ChainOwnerID returns the AgentID of the current owner of the chain
 	ChainOwnerID() AgentID
 	// ChainInfo returns information and configuration parameters of the chain

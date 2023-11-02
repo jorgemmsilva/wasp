@@ -15,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -95,7 +96,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 
 	if rotationAddr == nil {
 		// rotation does not happen
-		taskResult.Transaction = vmctx.BuildTransactionEssence(l1Commitment, true)
+		taskResult.Transaction, taskResult.Unlocks = vmctx.BuildTransactionEssence(l1Commitment, true)
 		vmctx.task.Log.Debugf("runTask OUT. block index: %d", blockIndex)
 	} else {
 		// rotation happens
@@ -113,6 +114,18 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 		migrationScheme := vmctx.getMigrations()
 		vmctx.runMigrations(chainState, migrationScheme)
 	})
+
+	// save the AccountID of the AccountOutput
+	if id, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
+		vmctx.withStateUpdate(func(chainState kv.KVStore) {
+			withContractState(chainState, governance.Contract, func(s kv.KVStore) {
+				governance.SetChainAccountID(
+					s,
+					util.AccountIDFromAccountOutput(out, id),
+				)
+			})
+		})
+	}
 
 	// save the anchor tx ID of the current state
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {

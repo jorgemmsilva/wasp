@@ -36,13 +36,13 @@ func (vmctx *vmContext) CreationSlot() iotago.SlotIndex {
 	return parameters.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
 }
 
-func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) *iotago.Transaction {
+func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) (*iotago.Transaction, iotago.Unlocks) {
 	stateMetadata := vmctx.stateMetadata(stateCommitment)
-	essence := vmctx.txbuilder.BuildTransactionEssence(stateMetadata, vmctx.CreationSlot())
+	essence, unlocks := vmctx.txbuilder.BuildTransactionEssence(stateMetadata, vmctx.CreationSlot())
 	if assertTxbuilderBalanced {
 		vmctx.txbuilder.MustBalanced()
 	}
-	return essence
+	return essence, unlocks
 }
 
 func (vmctx *vmContext) createTxBuilderSnapshot() *vmtxbuilder.AnchorTransactionBuilder {
@@ -62,7 +62,7 @@ func (vmctx *vmContext) loadNativeTokenOutput(nativeTokenID iotago.NativeTokenID
 
 func (vmctx *vmContext) loadFoundry(serNum uint32) (out *iotago.FoundryOutput, id iotago.OutputID) {
 	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.ChainID())
+		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.MustChainAccountID())
 	})
 	return
 }

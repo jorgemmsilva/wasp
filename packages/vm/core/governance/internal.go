@@ -53,6 +53,8 @@ func GetChainInfo(state kv.KVStoreReader, chainID isc.ChainID) (*isc.ChainInfo, 
 		return nil, err
 	}
 
+	ret.ChainAccountID, _ = GetChainAccountID(state)
+
 	return ret, nil
 }
 
@@ -125,6 +127,22 @@ func GetMetadata(state kv.KVStoreReader) (*isc.PublicChainMetadata, error) {
 		return &isc.PublicChainMetadata{}, nil
 	}
 	return isc.PublicChainMetadataFromBytes(metadataBytes)
+}
+
+func SetChainAccountID(state kv.KVStore, accountID iotago.AccountID) {
+	state.Set(VarChainAccountID, accountID[:])
+}
+
+func GetChainAccountID(state kv.KVStoreReader) (iotago.AccountID, bool) {
+	b := state.Get(VarChainAccountID)
+	if b == nil {
+		return iotago.AccountID{}, false
+	}
+	ret, _, err := iotago.AccountIDFromBytes(b)
+	if err != nil {
+		panic(err)
+	}
+	return ret, true
 }
 
 func MustGetMetadata(state kv.KVStoreReader) *isc.PublicChainMetadata {

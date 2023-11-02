@@ -9,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
@@ -21,14 +22,31 @@ func (reqctx *requestContext) ChainID() isc.ChainID {
 }
 
 func (vmctx *vmContext) ChainID() isc.ChainID {
-	var chainID isc.ChainID
 	if vmctx.task.Inputs.AnchorOutput.StateIndex == 0 {
 		// origin
-		chainID = isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(vmctx.task.Inputs.AnchorOutputID))
-	} else {
-		chainID = isc.ChainIDFromAnchorID(vmctx.task.Inputs.AnchorOutput.AnchorID)
+		return isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(vmctx.task.Inputs.AnchorOutputID))
 	}
-	return chainID
+	return isc.ChainIDFromAnchorID(vmctx.task.Inputs.AnchorOutput.AnchorID)
+}
+
+func (reqctx *requestContext) ChainAccountID() (iotago.AccountID, bool) {
+	return reqctx.vm.ChainAccountID()
+}
+
+func (vmctx *vmContext) MustChainAccountID() iotago.AccountID {
+	accountiD, ok := vmctx.ChainAccountID()
+	if !ok {
+		panic("chain AccountID unknown")
+	}
+	return accountiD
+}
+
+func (vmctx *vmContext) ChainAccountID() (iotago.AccountID, bool) {
+	id, out, ok := vmctx.task.Inputs.AccountOutput()
+	if !ok {
+		return iotago.AccountID{}, false
+	}
+	return util.AccountIDFromAccountOutput(out, id), true
 }
 
 func (reqctx *requestContext) ChainInfo() *isc.ChainInfo {

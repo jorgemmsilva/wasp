@@ -193,34 +193,11 @@ func computeRemainderOutputs(
 
 func MakeSignatureAndReferenceUnlocks(totalInputs int, sig iotago.Signature) iotago.Unlocks {
 	ret := make(iotago.Unlocks, totalInputs)
-	for i := range ret {
-		if i == 0 {
-			ret[0] = &iotago.SignatureUnlock{Signature: sig}
-			continue
-		}
+	ret[0] = &iotago.SignatureUnlock{Signature: sig}
+	for i := 1; i < totalInputs; i++ {
 		ret[i] = &iotago.ReferenceUnlock{Reference: 0}
 	}
 	return ret
-}
-
-func MakeSignatureAndAnchorUnlockFeatures(totalInputs int, sig iotago.Signature) iotago.Unlocks {
-	ret := make(iotago.Unlocks, totalInputs)
-	for i := range ret {
-		if i == 0 {
-			ret[0] = &iotago.SignatureUnlock{Signature: sig}
-			continue
-		}
-		ret[i] = &iotago.AnchorUnlock{Reference: 0}
-	}
-	return ret
-}
-
-func MakeAnchorTransaction(tx *iotago.Transaction, sig iotago.Signature) *iotago.SignedTransaction {
-	return &iotago.SignedTransaction{
-		API:         parameters.L1API(),
-		Transaction: tx,
-		Unlocks:     MakeSignatureAndAnchorUnlockFeatures(len(tx.TransactionEssence.Inputs), sig),
-	}
 }
 
 func CreateAndSignTx(

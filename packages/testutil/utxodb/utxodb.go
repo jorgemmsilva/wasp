@@ -272,7 +272,7 @@ func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 	}
 	for outID := range inputs {
 		if _, ok := u.utxo[outID]; !ok {
-			return errors.New("referenced output is not unspent")
+			return fmt.Errorf("referenced output is not unspent: %s", outID.ToHex())
 		}
 	}
 

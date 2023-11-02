@@ -187,8 +187,8 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 }
 
 // BuildTransactionEssence builds transaction essence from tx builder data
-func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) *iotago.Transaction {
-	inputs, inputIDs := txb.buildInputs()
+func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) (*iotago.Transaction, iotago.Unlocks) {
+	inputs, inputIDs, unlocks := txb.buildInputs()
 	return &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
@@ -196,8 +196,8 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 			NetworkID:    parameters.Protocol().NetworkID(),
 			Inputs:       inputIDs.UTXOInputs(),
 		},
-		Outputs: txb.outputs(stateMetadata, creationSlot, inputs),
-	}
+		Outputs: txb.buildOutputs(stateMetadata, creationSlot, inputs),
+	}, unlocks
 }
 
 // buildInputs generates a deterministic list of inputs for the transaction essence
@@ -205,18 +205,21 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 // - then goes consumed external BasicOutput UTXOs, the requests, in the order of processing
 // - then goes inputs of native token UTXOs, sorted by token id
 // - then goes inputs of foundries sorted by serial number
-func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.OutputIDs) {
+func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.OutputIDs, iotago.Unlocks) {
 	outputIDs := make(iotago.OutputIDs, 0, len(txb.consumed)+len(txb.balanceNativeTokens)+len(txb.invokedFoundries))
 	inputs := make(iotago.OutputSet)
+	unlocks := make(iotago.Unlocks, 0, len(outputIDs))
 
 	// anchor output
 	outputIDs = append(outputIDs, txb.inputs.AnchorOutputID)
 	inputs[txb.inputs.AnchorOutputID] = txb.inputs.AnchorOutput
+	unlocks = append(unlocks, &iotago.SignatureUnlock{}) // to be filled with the actual signature
 
 	// account output
 	if id, out, ok := txb.inputs.AccountOutput(); ok {
 		outputIDs = append(outputIDs, id)
 		inputs[id] = out
+		unlocks = append(unlocks, &iotago.AnchorUnlock{Reference: 0})
 	}
 
 	// consumed on-ledger requests
@@ -230,6 +233,7 @@ func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.Out
 		}
 		outputIDs = append(outputIDs, outputID)
 		inputs[outputID] = output
+		unlocks = append(unlocks, &iotago.AnchorUnlock{Reference: 0})
 	}
 
 	// internal native token outputs
@@ -238,6 +242,7 @@ func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.Out
 			outputID := nativeTokenBalance.accountingInputID
 			outputIDs = append(outputIDs, outputID)
 			inputs[outputID] = nativeTokenBalance.accountingInput
+			unlocks = append(unlocks, &iotago.AnchorUnlock{Reference: 0})
 		}
 	}
 
@@ -247,6 +252,7 @@ func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.Out
 			outputID := foundry.accountingInputID
 			outputIDs = append(outputIDs, outputID)
 			inputs[outputID] = foundry.accountingInput
+			unlocks = append(unlocks, &iotago.AccountUnlock{Reference: 1})
 		}
 	}
 
@@ -256,13 +262,14 @@ func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.Out
 			outputID := nft.accountingInputID
 			outputIDs = append(outputIDs, outputID)
 			inputs[outputID] = nft.accountingInput
+			unlocks = append(unlocks, &iotago.AccountUnlock{Reference: 1})
 		}
 	}
 
 	if len(outputIDs) != txb.numInputs() {
 		panic(fmt.Sprintf("AnchorTransactionBuilder.inputs: internal inconsistency. expected: %d actual:%d", len(outputIDs), txb.numInputs()))
 	}
-	return inputs, outputIDs
+	return inputs, outputIDs, unlocks
 }
 
 func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
@@ -327,7 +334,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 // 3. received NFTs
 // 4. minted NFTs
 // 5. other outputs (posted from requests)
-func (txb *AnchorTransactionBuilder) outputs(
+func (txb *AnchorTransactionBuilder) buildOutputs(
 	stateMetadata []byte,
 	creationSlot iotago.SlotIndex,
 	inputs iotago.OutputSet,

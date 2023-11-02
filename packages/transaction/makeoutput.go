@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -168,10 +170,7 @@ func AssetsAndStoredManaFromOutput(o iotago.Output) *isc.AssetsWithMana {
 }
 
 func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
-	storageDeposit, err := parameters.Storage().MinDeposit(out)
-	if err != nil {
-		panic(err)
-	}
+	storageDeposit := lo.Must(parameters.Storage().MinDeposit(out))
 	if out.BaseTokenAmount() >= storageDeposit {
 		return out
 	}

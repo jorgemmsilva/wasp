@@ -27,13 +27,19 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 		panic(vm.ErrCreateFoundryMaxSupplyTooBig)
 	}
 
+	id, out, ok := txb.inputs.AccountOutput()
+	if !ok {
+		panic("AccountID unknown")
+	}
+	accountID := util.AccountIDFromAccountOutput(out, id)
+
 	f := &iotago.FoundryOutput{
 		Amount:       0,
 		SerialNumber: txb.nextFoundrySerialNumber(),
 		TokenScheme:  scheme,
 		Conditions: iotago.FoundryOutputUnlockConditions{
 			&iotago.ImmutableAccountUnlockCondition{
-				Address: util.AnchorIDFromAnchorOutput(txb.inputs.AnchorOutput, txb.inputs.AnchorOutputID).ToAddress().(*iotago.AccountAddress),
+				Address: accountID.ToAddress().(*iotago.AccountAddress),
 			},
 		},
 	}

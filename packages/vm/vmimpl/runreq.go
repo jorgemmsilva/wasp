@@ -14,7 +14,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/state"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -463,10 +462,19 @@ func (vmctx *vmContext) loadChainConfig() {
 	vmctx.chainInfo = governance.NewStateAccess(vmctx.stateDraft).ChainInfo(vmctx.ChainID())
 }
 
+func makeSignedTx(tx *iotago.Transaction, unlocks iotago.Unlocks, anchorSignature iotago.Signature) *iotago.SignedTransaction {
+	unlocks[0] = &iotago.SignatureUnlock{Signature: anchorSignature}
+	return &iotago.SignedTransaction{
+		API:         tx.API,
+		Transaction: tx,
+		Unlocks:     unlocks,
+	}
+}
+
 // checkTransactionSize panics with ErrMaxTransactionSizeExceeded if the estimated transaction size exceeds the limit
 func (vmctx *vmContext) checkTransactionSize() error {
-	essence := vmctx.BuildTransactionEssence(state.L1CommitmentNil, false)
-	tx := transaction.MakeAnchorTransaction(essence, &iotago.Ed25519Signature{})
+	essence, unlocks := vmctx.BuildTransactionEssence(state.L1CommitmentNil, false)
+	tx := makeSignedTx(essence, unlocks, &iotago.Ed25519Signature{})
 	if tx.Size() > iotago.MaxPayloadSize {
 		return vmexceptions.ErrMaxTransactionSizeExceeded
 	}

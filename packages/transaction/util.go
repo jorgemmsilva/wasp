@@ -182,7 +182,8 @@ func computeRemainderOutputs(
 
 	if excess.Mana > 0 {
 		if len(ret) == 0 {
-			return nil, ErrNotEnoughBaseTokensForStorageDeposit
+			// cannot place excess mana into a remainder output
+			return nil, ErrExcessMana
 		}
 		out := ret[len(ret)-1].(*iotago.BasicOutput)
 		out.Mana = excess.Mana

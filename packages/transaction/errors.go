@@ -7,4 +7,5 @@ var (
 	ErrNotEnoughBaseTokensForStorageDeposit = errors.New("not enough base tokens for storage deposit")
 	ErrNotEnoughNativeTokens                = errors.New("not enough native tokens")
 	ErrNotEnoughMana                        = errors.New("not enough mana")
+	ErrExcessMana                           = errors.New("excess mana")
 )

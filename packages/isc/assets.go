@@ -545,6 +545,14 @@ func NewEmptyAssetsWithMana() *AssetsWithMana {
 	return NewAssetsWithMana(NewEmptyAssets(), 0)
 }
 
+func (a *AssetsWithMana) String() string {
+	ret := a.Assets.String()
+	if a.Mana > 0 {
+		ret += fmt.Sprintf("\n Mana: %d", a.Mana)
+	}
+	return ret
+}
+
 func (a *AssetsWithMana) Geq(b *AssetsWithMana) bool {
 	if !a.Assets.Geq(b.Assets) {
 		return false

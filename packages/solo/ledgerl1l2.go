@@ -327,12 +327,10 @@ func (ch *Chain) TransferAllowanceTo(
 ) error {
 	callParams := NewCallParams(
 		accounts.Contract.Name, accounts.FuncTransferAllowanceTo.Name,
-		dict.Dict{
-			accounts.ParamAgentID: codec.EncodeAgentID(targetAccount),
-		}).
+		dict.Dict{accounts.ParamAgentID: codec.EncodeAgentID(targetAccount)}).
 		WithAllowance(allowance).
 		WithFungibleTokens(allowance.Clone().AddBaseTokens(TransferAllowanceToGasBudgetBaseTokens)).
-		WithGasBudget(math.MaxUint64)
+		WithMaxAffordableGasBudget()
 
 	if len(nft) > 0 {
 		callParams.WithNFT(nft[0])

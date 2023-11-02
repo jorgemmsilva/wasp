@@ -236,7 +236,7 @@ type IRC27NFT struct {
 
 // ISCAssets matches the struct definition in ISCTypes.sol
 type ISCAssets struct {
-	BaseTokens   iotago.BaseToken
+	BaseTokens   uint64
 	NativeTokens []NativeToken
 	Nfts         []NFTID
 }
@@ -254,7 +254,7 @@ func WrapISCAssets(a *isc.Assets) ISCAssets {
 		nfts[i] = WrapNFTID(id)
 	}
 	return ISCAssets{
-		BaseTokens:   a.BaseTokens,
+		BaseTokens:   uint64(a.BaseTokens),
 		NativeTokens: tokens,
 		Nfts:         nfts,
 	}
@@ -269,7 +269,7 @@ func (a ISCAssets) Unwrap() *isc.Assets {
 	for i, id := range a.Nfts {
 		nfts[i] = id.Unwrap()
 	}
-	return isc.NewAssets(a.BaseTokens, tokens, nfts...)
+	return isc.NewAssets(iotago.BaseToken(a.BaseTokens), tokens, nfts...)
 }
 
 // ISCDictItem matches the struct definition in ISCTypes.sol

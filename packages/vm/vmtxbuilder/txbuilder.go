@@ -265,7 +265,7 @@ func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.Out
 			outputID := nft.accountingInputID
 			outputIDs = append(outputIDs, outputID)
 			inputs[outputID] = nft.accountingInput
-			unlocks = append(unlocks, &iotago.AccountUnlock{Reference: 1})
+			unlocks = append(unlocks, &iotago.AnchorUnlock{Reference: 0})
 		}
 	}
 
@@ -273,6 +273,14 @@ func (txb *AnchorTransactionBuilder) buildInputs() (iotago.OutputSet, iotago.Out
 		panic(fmt.Sprintf("AnchorTransactionBuilder.inputs: internal inconsistency. expected: %d actual:%d", len(outputIDs), txb.numInputs()))
 	}
 	return inputs, outputIDs, unlocks
+}
+
+func (txb *AnchorTransactionBuilder) AccountID() iotago.AccountID {
+	id, out, ok := txb.inputs.AccountOutput()
+	if !ok {
+		panic("AccountID unknown")
+	}
+	return util.AccountIDFromAccountOutput(out, id)
 }
 
 func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(

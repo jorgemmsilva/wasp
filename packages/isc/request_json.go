@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"strconv"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -105,14 +104,14 @@ type NativeTokenJSON struct {
 	Amount string `json:"amount" swagger:"required"`
 }
 
-func NativeTokenToJSONObject(token *iotago.NativeTokenFeature) *NativeTokenJSON {
+func NativeTokenToJSONObject(token *NativeTokenAmount) *NativeTokenJSON {
 	return &NativeTokenJSON{
 		ID:     token.ID.ToHex(),
 		Amount: token.Amount.String(),
 	}
 }
 
-func NativeTokensToJSONObject(tokens []*iotago.NativeTokenFeature) []*NativeTokenJSON {
+func NativeTokensToJSONObject(tokens []*NativeTokenAmount) []*NativeTokenJSON {
 	nativeTokens := make([]*NativeTokenJSON, len(tokens))
 
 	for k, v := range tokens {

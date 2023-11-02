@@ -67,11 +67,6 @@ func MakeBasicOutput(
 	if len(assets.NativeTokens) > 1 {
 		panic("at most 1 native token is supported")
 	}
-	if len(assets.NativeTokens) > 0 && assets.NativeTokens[0].Amount.Cmp(util.Big0) > 0 {
-		nt := assets.NativeTokens[0]
-		out.Features = append(out.Features, nt.Clone())
-	}
-
 	if senderAddress != nil {
 		out.Features = append(out.Features, &iotago.SenderFeature{
 			Address: senderAddress,
@@ -80,6 +75,13 @@ func MakeBasicOutput(
 	if metadata != nil {
 		out.Features = append(out.Features, &iotago.MetadataFeature{
 			Data: metadata.Bytes(),
+		})
+	}
+	if len(assets.NativeTokens) > 0 && assets.NativeTokens[0].Amount.Cmp(util.Big0) > 0 {
+		nt := assets.NativeTokens[0]
+		out.Features = append(out.Features, &iotago.NativeTokenFeature{
+			ID:     nt.ID,
+			Amount: new(big.Int).Set(nt.Amount),
 		})
 	}
 	for _, c := range unlockConditions {
@@ -135,7 +137,7 @@ func NFTOutputFromBasicOutput(o *iotago.BasicOutput, nft *isc.NFT) *iotago.NFTOu
 func AssetsFromOutput(o iotago.Output) *isc.Assets {
 	assets := isc.NewAssets(o.BaseTokenAmount(), nil)
 	if nt := o.FeatureSet().NativeToken(); nt != nil {
-		assets.NativeTokens = append(assets.NativeTokens, &iotago.NativeTokenFeature{
+		assets.NativeTokens = append(assets.NativeTokens, &isc.NativeTokenAmount{
 			ID:     nt.ID,
 			Amount: new(big.Int).Set(nt.Amount),
 		})

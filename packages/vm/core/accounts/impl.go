@@ -324,7 +324,7 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 		// take tokens to destroy from allowance
 		accountID := ctx.AccountID()
 		ctx.TransferAllowedFunds(accountID,
-			isc.NewAssets(0, []*iotago.NativeTokenFeature{
+			isc.NewAssets(0, []*isc.NativeTokenAmount{
 				{
 					ID:     nativeTokenID,
 					Amount: delta,

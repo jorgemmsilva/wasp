@@ -19,11 +19,23 @@ import (
 )
 
 type FungibleTokens struct {
-	BaseTokens   iotago.BaseToken             `json:"baseTokens"`
-	NativeTokens []*iotago.NativeTokenFeature `json:"nativeTokens"`
+	BaseTokens   iotago.BaseToken     `json:"baseTokens"`
+	NativeTokens []*NativeTokenAmount `json:"nativeTokens"`
 }
 
-func NewFungibleTokens(baseTokens iotago.BaseToken, tokens []*iotago.NativeTokenFeature) *FungibleTokens {
+type NativeTokenAmount struct {
+	ID     iotago.NativeTokenID `json:"id"`
+	Amount *big.Int             `json:"amount"`
+}
+
+func (n *NativeTokenAmount) Clone() *NativeTokenAmount {
+	return &NativeTokenAmount{
+		ID:     n.ID,
+		Amount: new(big.Int).Set(n.Amount),
+	}
+}
+
+func NewFungibleTokens(baseTokens iotago.BaseToken, tokens []*NativeTokenAmount) *FungibleTokens {
 	return &FungibleTokens{
 		BaseTokens:   baseTokens,
 		NativeTokens: tokens,
@@ -41,7 +53,7 @@ type Assets struct {
 
 var BaseTokenID = []byte{}
 
-func NewAssets(baseTokens iotago.BaseToken, tokens []*iotago.NativeTokenFeature, nfts ...iotago.NFTID) *Assets {
+func NewAssets(baseTokens iotago.BaseToken, tokens []*NativeTokenAmount, nfts ...iotago.NFTID) *Assets {
 	ret := &Assets{FungibleTokens: NewFungibleTokens(baseTokens, tokens)}
 	if len(nfts) != 0 {
 		ret.AddNFTs(nfts...)
@@ -75,7 +87,7 @@ func FungibleTokensFromDict(d dict.Dict) (*FungibleTokens, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Assets: %w", err)
 		}
-		token := &iotago.NativeTokenFeature{
+		token := &NativeTokenAmount{
 			ID:     id,
 			Amount: new(big.Int).SetBytes(val),
 		}
@@ -88,7 +100,7 @@ func FungibleTokensFromNativeTokenSum(baseTokens iotago.BaseToken, tokens iotago
 	ret := NewEmptyFungibleTokens()
 	ret.BaseTokens = baseTokens
 	for id, val := range tokens {
-		ret.NativeTokens = append(ret.NativeTokens, &iotago.NativeTokenFeature{
+		ret.NativeTokens = append(ret.NativeTokens, &NativeTokenAmount{
 			ID:     id,
 			Amount: val,
 		})
@@ -101,7 +113,7 @@ func FungibleTokensFromOutput(o iotago.Output) *FungibleTokens {
 		BaseTokens: o.BaseTokenAmount(),
 	}
 	if o.FeatureSet().HasNativeTokenFeature() {
-		ret.NativeTokens = []*iotago.NativeTokenFeature{o.FeatureSet().NativeToken()}
+		ret.NativeTokens = []*NativeTokenAmount{(*NativeTokenAmount)(o.FeatureSet().NativeToken())}
 	}
 	return ret
 }
@@ -142,8 +154,8 @@ func (a *FungibleTokens) Clone() *FungibleTokens {
 	}
 	return NewFungibleTokens(
 		a.BaseTokens,
-		lo.Map(a.NativeTokens, func(item *iotago.NativeTokenFeature, index int) *iotago.NativeTokenFeature {
-			return item.Clone().(*iotago.NativeTokenFeature)
+		lo.Map(a.NativeTokens, func(item *NativeTokenAmount, index int) *NativeTokenAmount {
+			return item.Clone()
 		}),
 	)
 }
@@ -372,7 +384,7 @@ func (a *Assets) AddBaseTokens(amount iotago.BaseToken) *Assets {
 }
 
 func (a *FungibleTokens) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *FungibleTokens {
-	b := NewFungibleTokens(0, []*iotago.NativeTokenFeature{
+	b := NewFungibleTokens(0, []*NativeTokenAmount{
 		{
 			ID:     nativeTokenID,
 			Amount: util.ToBigInt(amount),
@@ -414,13 +426,13 @@ func (a *Assets) fillEmptyNFTIDs(output iotago.Output, outputID iotago.OutputID)
 	return a
 }
 
-func nativeTokensFromSet(set iotago.NativeTokenSum) []*iotago.NativeTokenFeature {
-	ret := make([]*iotago.NativeTokenFeature, 0, len(set))
+func nativeTokensFromSet(set iotago.NativeTokenSum) []*NativeTokenAmount {
+	ret := make([]*NativeTokenAmount, 0, len(set))
 	for id, amt := range set {
 		if amt.Sign() == 0 {
 			continue
 		}
-		ret = append(ret, &iotago.NativeTokenFeature{
+		ret = append(ret, &NativeTokenAmount{
 			ID:     id,
 			Amount: amt,
 		})
@@ -454,9 +466,9 @@ func (a *Assets) Read(r io.Reader) error {
 	}
 	if (flags & hasNativeTokens) != 0 {
 		size := rr.ReadSize16()
-		a.NativeTokens = make([]*iotago.NativeTokenFeature, size)
+		a.NativeTokens = make([]*NativeTokenAmount, size)
 		for i := range a.NativeTokens {
-			nativeToken := new(iotago.NativeTokenFeature)
+			nativeToken := new(NativeTokenAmount)
 			a.NativeTokens[i] = nativeToken
 			rr.ReadN(nativeToken.ID[:])
 			nativeToken.Amount = rr.ReadUint256()

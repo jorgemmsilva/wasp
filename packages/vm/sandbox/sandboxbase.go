@@ -51,7 +51,7 @@ func (s *SandboxBase) BalanceNativeToken(nativeTokenID iotago.NativeTokenID) *bi
 	return s.Ctx.GetNativeTokenBalance(s.AccountID(), nativeTokenID)
 }
 
-func (s *SandboxBase) BalanceNativeTokens() []*iotago.NativeTokenFeature {
+func (s *SandboxBase) BalanceNativeTokens() []*isc.NativeTokenAmount {
 	s.Ctx.GasBurn(gas.BurnCodeGetBalance)
 	return s.Ctx.GetNativeTokens(s.AccountID())
 }

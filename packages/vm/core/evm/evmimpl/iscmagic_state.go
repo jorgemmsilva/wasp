@@ -78,8 +78,8 @@ func setAllowanceNativeTokens(ctx isc.Sandbox, from, to common.Address, nativeTo
 	withAllowance(ctx, from, to, func(allowance *isc.Assets) {
 		ntSet := allowance.NativeTokenSum()
 		ntSet[nativeTokenID.MustUnwrap()] = numTokens
-		allowance.NativeTokens = lo.MapToSlice(ntSet, func(id iotago.FoundryID, v *big.Int) *iotago.NativeTokenFeature {
-			return &iotago.NativeTokenFeature{ID: id, Amount: v}
+		allowance.NativeTokens = lo.MapToSlice(ntSet, func(id iotago.FoundryID, v *big.Int) *isc.NativeTokenAmount {
+			return &isc.NativeTokenAmount{ID: id, Amount: v}
 		})
 	})
 }

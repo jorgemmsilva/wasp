@@ -276,7 +276,7 @@ func (ch *Chain) DestroyTokensOnL2(nativeTokenID iotago.NativeTokenID, amount in
 		accounts.ParamSupplyDeltaAbs, util.ToBigInt(amount),
 		accounts.ParamDestroyTokens, true,
 	).WithAllowance(
-		isc.NewAssets(0, []*iotago.NativeTokenFeature{
+		isc.NewAssets(0, []*isc.NativeTokenAmount{
 			{
 				ID:     nativeTokenID,
 				Amount: util.ToBigInt(amount),

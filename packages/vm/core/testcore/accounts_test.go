@@ -656,7 +656,7 @@ func TestWithdrawDepositNativeTokens(t *testing.T) {
 	})
 	t.Run("withdraw not enough for storage deposit", func(t *testing.T) {
 		v := initWithdrawTest(t, 2*isc.Million)
-		v.req.AddAllowanceNativeTokensVect(&iotago.NativeTokenFeature{
+		v.req.AddAllowanceNativeTokensVect(&isc.NativeTokenAmount{
 			ID:     v.nativeTokenID,
 			Amount: new(big.Int).SetUint64(10),
 		})
@@ -816,7 +816,7 @@ func TestWithdrawDepositNativeTokens(t *testing.T) {
 		})
 
 		// deposit 1 native token from L1 into ch2
-		err := ch2.DepositAssetsToL2(isc.NewAssets(1*isc.Million, []*iotago.NativeTokenFeature{
+		err := ch2.DepositAssetsToL2(isc.NewAssets(1*isc.Million, []*isc.NativeTokenAmount{
 			{ID: v.nativeTokenID, Amount: big.NewInt(1)},
 		}), v.user)
 		require.NoError(t, err)
@@ -829,7 +829,7 @@ func TestWithdrawDepositNativeTokens(t *testing.T) {
 		}
 
 		// deposit 1 more after the initial deposit block has been prunned
-		err = ch2.DepositAssetsToL2(isc.NewAssets(1*isc.Million, []*iotago.NativeTokenFeature{
+		err = ch2.DepositAssetsToL2(isc.NewAssets(1*isc.Million, []*isc.NativeTokenAmount{
 			{ID: v.nativeTokenID, Amount: big.NewInt(1)},
 		}), v.user)
 		require.NoError(t, err)
@@ -912,7 +912,7 @@ func TestTransferPartialAssets(t *testing.T) {
 	err = v.ch.SendFromL2ToL2Account(
 		isc.NewAssets(
 			baseTokensToSend,
-			[]*iotago.NativeTokenFeature{
+			[]*isc.NativeTokenAmount{
 				{
 					ID:     nativeTokenID,
 					Amount: big.NewInt(9),
@@ -1087,7 +1087,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	_, nativeTokenID3 := v.createFoundryAndMint(1, 1)
 	_, nativeTokenID4 := v.createFoundryAndMint(1, 1)
 
-	assets := isc.NewAssets(1*isc.Million, []*iotago.NativeTokenFeature{
+	assets := isc.NewAssets(1*isc.Million, []*isc.NativeTokenAmount{
 		{ID: nativeTokenID1, Amount: big.NewInt(1)},
 		{ID: nativeTokenID2, Amount: big.NewInt(1)},
 		{ID: nativeTokenID3, Amount: big.NewInt(1)},
@@ -1111,8 +1111,8 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	require.NoError(t, err)
 
 	newuserL1NativeTokens := v.env.L1Assets(newUserAddress).NativeTokens
-	assetsContain := func(tokens []*iotago.NativeTokenFeature, nativeTokenID iotago.NativeTokenID) bool {
-		return lo.ContainsBy(tokens, func(nt *iotago.NativeTokenFeature) bool {
+	assetsContain := func(tokens []*isc.NativeTokenAmount, nativeTokenID iotago.NativeTokenID) bool {
+		return lo.ContainsBy(tokens, func(nt *isc.NativeTokenAmount) bool {
 			return nt.ID == nativeTokenID
 		})
 	}
@@ -1235,7 +1235,7 @@ func TestAllowanceNotEnoughFunds(t *testing.T) {
 		// test base token
 		isc.NewAssetsBaseTokens(1000 * isc.Million),
 		// test fungible tokens
-		isc.NewAssets(0, []*iotago.NativeTokenFeature{{
+		isc.NewAssets(0, []*isc.NativeTokenAmount{{
 			ID:     [38]byte{0x1},
 			Amount: big.NewInt(10),
 		}}),

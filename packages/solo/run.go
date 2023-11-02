@@ -7,6 +7,7 @@ import (
 	"errors"
 	"slices"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -108,6 +110,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 		ch.settleStateTransition(tx, res.StateDraft)
 	}
 
+	ch.Log().Debugf("runRequestsNolock: adding tx to L1: %s", string(lo.Must(parameters.L1API().JSONEncode(tx))))
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(ch.Env.T, err)
 

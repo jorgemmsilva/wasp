@@ -215,7 +215,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		out := transaction.MakeBasicOutput(
 			txb.inputs.AnchorOutput.AnchorID.ToAddress(),
 			nil,
-			(isc.NewAssets(0, []*iotago.NativeTokenFeature{{ID: id, Amount: big.NewInt(int64(amountNative))}})).WithMana(0),
+			(isc.NewAssets(0, []*isc.NativeTokenAmount{{ID: id, Amount: big.NewInt(int64(amountNative))}})).WithMana(0),
 			nil,
 			nil,
 		)
@@ -232,7 +232,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	addOutput := func(txb *AnchorTransactionBuilder, amount uint64, nativeTokenID iotago.NativeTokenID, mockedAccounts *mockAccountContractRead) {
 		outAssets := isc.NewFungibleTokens(
 			1*isc.Million,
-			[]*iotago.NativeTokenFeature{{
+			[]*isc.NativeTokenAmount{{
 				ID:     nativeTokenID,
 				Amount: new(big.Int).SetUint64(amount),
 			}},

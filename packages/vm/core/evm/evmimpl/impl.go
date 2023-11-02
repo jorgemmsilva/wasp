@@ -205,7 +205,7 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 }
 
 var (
-	errTargetMustBeAccount = coreerrors.Register("target must be account address")
+	errTargetMustBeAnchor  = coreerrors.Register("target must be anchor address")
 	errOutputMustBeFoundry = coreerrors.Register("expected foundry output")
 )
 
@@ -215,8 +215,8 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 	tickerSymbol := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenTickerSymbol))
 	decimals := codec.MustDecodeUint8(ctx.Params().Get(evm.FieldTokenDecimals))
 	target := codec.MustDecodeAddress(ctx.Params().Get(evm.FieldTargetAddress))
-	if target.Type() != iotago.AddressAccount {
-		panic(errTargetMustBeAccount)
+	if target.Type() != iotago.AddressAnchor {
+		panic(errTargetMustBeAnchor)
 	}
 
 	{

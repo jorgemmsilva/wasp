@@ -461,6 +461,7 @@ func (a *Assets) Read(r io.Reader) error {
 	if flags == 0x00 {
 		return rr.Err
 	}
+	a.FungibleTokens = new(FungibleTokens)
 	if (flags & hasBaseTokens) != 0 {
 		a.BaseTokens = iotago.BaseToken(rr.ReadAmount64())
 	}

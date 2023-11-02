@@ -8,6 +8,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -302,6 +303,7 @@ func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.K
 	if err != nil {
 		return nil, isc.RequestID{}, err
 	}
+	ch.Log().Debugf("RequestFromParamsToLedger: adding tx to L1: %s", string(lo.Must(parameters.L1API().JSONEncode(tx))))
 	err = ch.Env.AddToLedger(tx)
 	// once we created transaction successfully, it should be added to the ledger smoothly
 	require.NoError(ch.Env.T, err)

@@ -64,9 +64,6 @@ func MakeBasicOutput(
 		},
 		Mana: assets.Mana,
 	}
-	if len(assets.NativeTokens) > 1 {
-		panic("at most 1 native token is supported")
-	}
 	if senderAddress != nil {
 		out.Features = append(out.Features, &iotago.SenderFeature{
 			Address: senderAddress,
@@ -76,6 +73,9 @@ func MakeBasicOutput(
 		out.Features = append(out.Features, &iotago.MetadataFeature{
 			Data: metadata.Bytes(),
 		})
+	}
+	if len(assets.NativeTokens) > 1 {
+		panic("BasicOutput can include at most 1 native token")
 	}
 	if len(assets.NativeTokens) > 0 && assets.NativeTokens[0].Amount.Cmp(util.Big0) > 0 {
 		nt := assets.NativeTokens[0]

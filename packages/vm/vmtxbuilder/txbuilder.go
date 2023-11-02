@@ -195,6 +195,9 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 			CreationSlot: creationSlot,
 			NetworkID:    parameters.Protocol().NetworkID(),
 			Inputs:       inputIDs.UTXOInputs(),
+			Capabilities: iotago.TransactionCapabilitiesBitMaskWithCapabilities(
+				iotago.WithTransactionCanDestroyFoundryOutputs(true),
+			),
 		},
 		Outputs: txb.buildOutputs(stateMetadata, creationSlot, inputs),
 	}, unlocks

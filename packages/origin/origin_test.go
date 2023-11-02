@@ -178,9 +178,8 @@ func TestDictBytes(t *testing.T) {
 }
 
 // example values taken from a test on the testnet
-// TODO: update test values
 func TestMismatchOriginCommitment(t *testing.T) {
-	t.SkipNow()
+	t.SkipNow() // TODO: update test values
 	/*
 	   store := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
 	   oid, err := iotago.OutputIDFromHexString("0xcf72dd6a8c8cd76eab93c80ae192677a17c554b91334a41bed5079eff37effc40000")

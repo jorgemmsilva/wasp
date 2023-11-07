@@ -246,6 +246,7 @@ func New(
 	validatorAgentID isc.AgentID,
 	smParameters sm_gpa.StateManagerParameters,
 	mempoolTTL time.Duration,
+	mempoolBroadcastInterval time.Duration,
 ) (chaintypes.Chain, error) {
 	log.Debugf("Starting the chain, chainID=%v", chainID)
 	if listener == nil {
@@ -394,6 +395,7 @@ func New(
 		chainMetrics.Pipe,
 		cni.listener,
 		mempoolTTL,
+		mempoolBroadcastInterval,
 	)
 	cni.chainMgr = gpa.NewAckHandler(cni.me, chainMgr.AsGPA(), RedeliveryPeriod)
 	cni.stateMgr = stateMgr

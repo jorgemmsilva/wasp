@@ -151,6 +151,7 @@ type mempoolImpl struct {
 	net                            peering.NetworkProvider
 	activeConsensusInstances       []consGR.ConsensusID
 	ttl                            time.Duration // time to live (how much time requests are allowed to sit in the pool without being processed)
+	broadcastInterval              time.Duration // how often requests should be rebroadcasted
 	log                            *logger.Logger
 	metrics                        *metrics.ChainMempoolMetrics
 	listener                       mempooltypes.ChainListener
@@ -213,6 +214,7 @@ func New(
 	pipeMetrics *metrics.ChainPipeMetrics,
 	listener mempooltypes.ChainListener,
 	ttl time.Duration,
+	broadcastInterval time.Duration,
 ) Mempool {
 	netPeeringID := peering.HashPeeringIDFromBytes(chainID.Bytes(), []byte("Mempool")) // ChainID × Mempool
 	waitReq := NewWaitReq(waitRequestCleanupEvery)
@@ -243,6 +245,7 @@ func New(
 		consensusInstancesUpdatedPipe:  pipe.NewInfinitePipe[*reqConsensusInstancesUpdated](),
 		activeConsensusInstances:       []consGR.ConsensusID{},
 		ttl:                            ttl,
+		broadcastInterval:              broadcastInterval,
 		log:                            log,
 		metrics:                        metrics,
 		listener:                       listener,
@@ -878,15 +881,16 @@ func (mpi *mempoolImpl) handleDistSyncTimeTick() {
 // Re-send off-ledger messages that are hanging here for a long time.
 // Probably not a lot of nodes have them.
 func (mpi *mempoolImpl) handleRePublishTimeTick() {
-	mpi.log.Debugf("Skipping the re-publish step.") // TODO: Temporarily disabled.
-
-	// retryOlder := time.Now().Add(-distShareRePublishTick)
-	// mpi.offLedgerPool.Filter(func(request isc.OffLedgerRequest, ts time.Time) bool {
-	// 	if ts.Before(retryOlder) {
-	// 		mpi.sendMessages(mpi.distSync.Input(distsync.NewInputPublishRequest(request)))
-	// 	}
-	// 	return true
-	// })
+	if mpi.broadcastInterval == 0 {
+		return // re-broadcasting is disabled
+	}
+	retryOlder := time.Now().Add(-mpi.broadcastInterval)
+	mpi.offLedgerPool.Filter(func(request isc.OffLedgerRequest, ts time.Time) bool {
+		if ts.Before(retryOlder) {
+			mpi.sendMessages(mpi.distSync.Input(distsync.NewInputPublishRequest(request)))
+		}
+		return true
+	})
 }
 
 func (mpi *mempoolImpl) handleForceCleanMempool() {

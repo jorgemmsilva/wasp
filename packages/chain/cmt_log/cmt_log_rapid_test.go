@@ -86,6 +86,7 @@ func (sm *cmtLogTestRapidSM) nextAnchorOutputWithID(stateIndex uint32) *isc.Anch
 	anchorOutput := &iotago.AnchorOutput{
 		AnchorID:   sm.anchorID,
 		StateIndex: stateIndex,
+		StateMetadata: []byte{},
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: sm.stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: sm.governorAddress},

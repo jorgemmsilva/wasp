@@ -26,6 +26,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/onchangemap"
 	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/tcrypto/bls"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -521,8 +522,6 @@ func (s *dkShareImpl) BLSVerifySigShare(data []byte, sigshare tbls.SigShare) err
 
 // BLSRecoverFullSignature generates (recovers) master signature from partial sigshares.
 // returns signature as defined in the value Tangle
-/*
-	TODO: package bls no longer exists
 func (s *dkShareImpl) BLSRecoverMasterSignature(sigShares [][]byte, data []byte) (*bls.SignatureWithPublicKey, error) {
 	var err error
 	var recoveredSignatureBin []byte
@@ -543,7 +542,6 @@ func (s *dkShareImpl) BLSRecoverMasterSignature(sigShares [][]byte, data []byte)
 	ret := bls.NewSignatureWithPublicKey(bls.PublicKey{Point: s.blsSharedPublic}, sig)
 	return &ret, nil
 }
-*/
 
 // BLSVerifyMasterSignature checks signature against master public key
 // NOTE: Not used. // TODO: Has to be used.

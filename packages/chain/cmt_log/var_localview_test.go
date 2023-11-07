@@ -19,7 +19,9 @@ func TestVarLocalView(t *testing.T) {
 	defer log.Sync()
 	j := cmt_log.NewVarLocalView(-1, func(ao *isc.AnchorOutputWithID) {}, log)
 	require.Nil(t, j.Value())
-	tipAO, ok, _ := j.AnchorOutputConfirmed(isc.NewAnchorOutputWithID(&iotago.AnchorOutput{}, iotago.OutputID{}))
+	tipAO, ok, _ := j.AnchorOutputConfirmed(isc.NewAnchorOutputWithID(&iotago.AnchorOutput{
+		StateMetadata: []byte{},
+	}, iotago.OutputID{}))
 	require.True(t, ok)
 	require.NotNil(t, tipAO)
 	require.NotNil(t, j.Value())

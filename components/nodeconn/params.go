@@ -2,7 +2,7 @@ package nodeconn
 
 import (
 	"github.com/iotaledger/hive.go/app"
-	"github.com/iotaledger/inx-app/components/inx"
+	"github.com/iotaledger/inx-app/core/inx"
 )
 
 var ParamsINX = &inx.ParametersINX{}

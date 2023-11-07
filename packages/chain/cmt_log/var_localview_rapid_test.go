@@ -178,7 +178,10 @@ func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AnchorOutputWithID) *isc.AnchorO
 	} else {
 		stateIndex = uint32(sm.utxoIDCounter)
 	}
-	return isc.NewAnchorOutputWithID(&iotago.AnchorOutput{StateIndex: stateIndex}, utxoInput.ID())
+	return isc.NewAnchorOutputWithID(&iotago.AnchorOutput{
+		StateIndex: stateIndex,
+		StateMetadata: []byte{},
+	}, utxoInput.ID())
 }
 
 // Anchor output can be proposed, if there is at least one AO confirmed and there is no

@@ -15,6 +15,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/onchangemap"
+	"github.com/iotaledger/wasp/packages/tcrypto/bls"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -58,7 +59,7 @@ type DKShare interface {
 	BLSPublicShares() []kyber.Point
 	BLSSignShare(data []byte) (tbls.SigShare, error)
 	BLSVerifySigShare(data []byte, sigshare tbls.SigShare) error
-	// TODO BLSRecoverMasterSignature(sigShares [][]byte, data []byte) (*bls.SignatureWithPublicKey, error)
+	BLSRecoverMasterSignature(sigShares [][]byte, data []byte) (*bls.SignatureWithPublicKey, error)
 	BLSVerifyMasterSignature(data, signature []byte) error
 	BLSSign(data []byte) ([]byte, error)                        // Non-threshold variant.
 	BLSVerify(signer kyber.Point, data, signature []byte) error // Non-threshold variant.

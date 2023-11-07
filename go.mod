@@ -19,25 +19,27 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/iancoleman/orderedmap v0.3.0
-	github.com/iotaledger/hive.go/app v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/constraints v0.0.0-20231019122130-383150822505
-	github.com/iotaledger/hive.go/crypto v0.0.0-20231019122130-383150822505
-	github.com/iotaledger/hive.go/ds v0.0.0-20231019081410-32f61b05bebe
-	github.com/iotaledger/hive.go/kvstore v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/lo v0.0.0-20231019122130-383150822505
-	github.com/iotaledger/hive.go/logger v0.0.0-20231010133617-cdbd5387e2af
+	github.com/iotaledger/hive.go/app v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/constraints v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/crypto v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/ds v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/kvstore v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/lo v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/logger v0.0.0-20231106113411-94ac829adbb2
 	github.com/iotaledger/hive.go/objectstorage v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/runtime v0.0.0-20231019122130-383150822505
-	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231019122130-383150822505
-	github.com/iotaledger/hive.go/web v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231005201410-a7eb4f4ced96
-	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231005201531-0b3ecef60a91
+	github.com/iotaledger/hive.go/runtime v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231106113411-94ac829adbb2
+	github.com/iotaledger/hive.go/web v0.0.0-20231106113411-94ac829adbb2
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20230417131029-0bfe891d7c4a
+	github.com/iotaledger/inx/go v1.0.0-rc.2
 	github.com/iotaledger/iota.go/v4 v4.0.0-20231031113109-5d7d59311967
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
 	github.com/labstack/echo/v4 v4.11.2
 	github.com/labstack/gommon v0.4.0
 	github.com/libp2p/go-libp2p v0.30.0
+	github.com/mr-tron/base58 v1.2.0
 	github.com/multiformats/go-multiaddr v0.11.0
 	github.com/pangpanglabs/echoswagger/v2 v2.4.1
 	github.com/pingcap/go-ycsb v1.0.1
@@ -89,7 +91,7 @@ require (
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/flynn/noise v1.0.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
-	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gammazero/deque v0.2.1 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/getsentry/sentry-go v0.23.0 // indirect
@@ -118,8 +120,9 @@ require (
 	github.com/huin/goupnp v1.2.0 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
 	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231019122130-383150822505 // indirect
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20231019122130-383150822505 // indirect
-	github.com/iotaledger/hive.go/stringify v0.0.0-20231019122130-383150822505 // indirect
+	github.com/iotaledger/hive.go/stringify v0.0.0-20231106113411-94ac829adbb2 // indirect
+	github.com/iotaledger/iota.go v1.0.0 // indirect
+	github.com/iotaledger/iota.go/v3 v3.0.0-rc.2 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
@@ -153,7 +156,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
-	github.com/mr-tron/base58 v1.2.0 // indirect
 	github.com/multiformats/go-base32 v0.1.0 // indirect
 	github.com/multiformats/go-base36 v0.2.0 // indirect
 	github.com/multiformats/go-multiaddr-dns v0.3.1 // indirect
@@ -205,12 +207,12 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
-	google.golang.org/grpc v1.58.2 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/grpc v1.57.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

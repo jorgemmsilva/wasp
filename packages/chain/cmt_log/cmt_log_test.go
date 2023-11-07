@@ -131,6 +131,7 @@ func randomAnchorOutputWithID(anchorID iotago.AnchorID, governorAddress, stateAd
 	anchorOutput := &iotago.AnchorOutput{
 		AnchorID:    anchorID,
 		StateIndex: stateIndex,
+		StateMetadata: []byte{},
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governorAddress},

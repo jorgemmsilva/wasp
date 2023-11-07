@@ -18,7 +18,7 @@ func TestAnchorOutputWithIDSerialization(t *testing.T) {
 		Amount:     iotago.BaseToken(mathrand.Uint64()),
 		StateIndex: mathrand.Uint32(),
 		// serix deserializes with empty slices instead of nil
-		StateMetadata:     make([]byte, 0),
+		StateMetadata:     []byte{},
 		Conditions:        make(iotago.AnchorOutputUnlockConditions, 0),
 		Features:          make(iotago.AnchorOutputFeatures, 0),
 		ImmutableFeatures: make(iotago.AnchorOutputImmFeatures, 0),

@@ -44,8 +44,7 @@ type VMTaskResult struct {
 	StateDraft state.StateDraft
 	// RotationAddress is the next address after a rotation, or nil if there is no rotation
 	RotationAddress iotago.Address
-	// Transaction is the (unsigned) transaction for the next block,
-	// or nil if the task does not produce a normal block
+	// Transaction is the (unsigned) transaction for the next block, or the rotation transaction if RotationAddress != nil
 	Transaction *iotago.Transaction
 	// Unlocks contains the unlocks needed for the SignedTransaction. The first item is
 	// a SignatureUnlock that should be replaced with the actual signature.

@@ -5,7 +5,6 @@ package solo
 
 import (
 	"errors"
-	"slices"
 
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
@@ -14,7 +13,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
@@ -82,27 +80,18 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 
 	res := ch.runTaskNoLock(reqs, false)
 
-	unsignedTx := res.Transaction
-	if res.RotationAddress != nil {
-		var err error
-		unsignedTx, err = rotate.MakeRotateStateControllerTransaction(
-			res.RotationAddress,
-			res.Task.Inputs,
-			ch.Env.SlotIndex(),
-		)
-		require.NoError(ch.Env.T, err)
-	}
-	sigs, err := unsignedTx.Sign(
+	sigs, err := res.Transaction.Sign(
 		ch.StateControllerKeyPair.GetPrivateKey().AddressKeys(ch.StateControllerAddress),
 	)
 	require.NoError(ch.Env.T, err)
 
-	unlocks := slices.Clone(res.Unlocks)
-	unlocks[0] = &iotago.SignatureUnlock{Signature: sigs[0]}
+	// the first unlock is a SignatureUnlock, but it does not have the signature yet
+	res.Unlocks[0].(*iotago.SignatureUnlock).Signature = sigs[0]
+
 	tx := &iotago.SignedTransaction{
-		API:         unsignedTx.API,
-		Transaction: unsignedTx,
-		Unlocks:     unlocks,
+		API:         res.Transaction.API,
+		Transaction: res.Transaction,
+		Unlocks:     res.Unlocks,
 	}
 
 	if res.RotationAddress == nil {

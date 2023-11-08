@@ -30,7 +30,7 @@ func MakeRotateStateControllerTransaction(
 	nextAddr iotago.Address,
 	chainInputs *isc.ChainOutputs,
 	creationSlot iotago.SlotIndex,
-) (*iotago.Transaction, error) {
+) (*iotago.Transaction, iotago.Unlocks, error) {
 	anchorOutput := func() *iotago.AnchorOutput {
 		output := chainInputs.AnchorOutput.Clone().(*iotago.AnchorOutput)
 		for i := range output.Conditions {
@@ -42,50 +42,33 @@ func MakeRotateStateControllerTransaction(
 				output.Conditions[i] = &iotago.GovernorAddressUnlockCondition{Address: nextAddr}
 			}
 		}
-
-		// remove any "sender feature"
-		var newFeatures iotago.AnchorOutputFeatures
-		for t, feature := range chainInputs.AnchorOutput.FeatureSet() {
-			if t != iotago.FeatureSender {
-				newFeatures = append(newFeatures, feature)
-			}
-		}
-		output.Features = newFeatures
 		return output
 	}()
 
-	accountOutput := func() *iotago.AccountOutput {
-		output := chainInputs.MustAccountOutput().Clone().(*iotago.AccountOutput)
-		for i := range output.Conditions {
-			if _, ok := output.Conditions[i].(*iotago.AddressUnlockCondition); ok {
-				output.Conditions[i] = &iotago.AddressUnlockCondition{Address: nextAddr}
-			}
-		}
+	accountOutput := chainInputs.MustAccountOutput().Clone().(*iotago.AccountOutput)
 
-		// remove any "sender feature"
-		var newFeatures iotago.AccountOutputFeatures
-		for t, feature := range chainInputs.AnchorOutput.FeatureSet() {
-			if t != iotago.FeatureSender {
-				newFeatures = append(newFeatures, feature)
-			}
-		}
-		output.Features = newFeatures
-		return output
-	}()
+	inputs := iotago.TxEssenceInputs{
+		chainInputs.AnchorOutputID.UTXOInput(),
+		chainInputs.MustAccountOutputID().UTXOInput(),
+	}
 
-	return &iotago.Transaction{
+	unlocks := iotago.Unlocks{
+		&iotago.SignatureUnlock{}, // to be filled with the actual signature
+		&iotago.AnchorUnlock{Reference: 0},
+	}
+
+	tx := &iotago.Transaction{
 		API: parameters.L1API(),
 		TransactionEssence: &iotago.TransactionEssence{
-			NetworkID: parameters.L1().Protocol.NetworkID(),
-			Inputs: iotago.TxEssenceInputs{
-				chainInputs.AnchorOutputID.UTXOInput(),
-				chainInputs.MustAccountOutputID().UTXOInput(),
-			},
+			NetworkID:    parameters.L1().Protocol.NetworkID(),
+			Inputs:       inputs,
 			CreationSlot: creationSlot,
 		},
 		Outputs: iotago.TxEssenceOutputs{
 			anchorOutput,
 			accountOutput,
 		},
-	}, nil
+	}
+
+	return tx, unlocks, nil
 }

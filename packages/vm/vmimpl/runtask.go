@@ -2,6 +2,7 @@ package vmimpl
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"slices"
 
@@ -11,6 +12,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
@@ -94,14 +96,21 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 	vmctx.task.Log.Debugf("closed vmContext: block index: %d, state hash: %s timestamp: %v, rotationAddr: %v",
 		blockIndex, l1Commitment, timestamp, rotationAddr)
 
-	if rotationAddr == nil {
+	taskResult.RotationAddress = rotationAddr
+	if taskResult.RotationAddress == nil {
 		// rotation does not happen
 		taskResult.Transaction, taskResult.Unlocks = vmctx.BuildTransactionEssence(l1Commitment, true)
 		vmctx.task.Log.Debugf("runTask OUT. block index: %d", blockIndex)
 	} else {
 		// rotation happens
-		taskResult.RotationAddress = rotationAddr
-		taskResult.Transaction = nil
+		taskResult.Transaction, taskResult.Unlocks, err = rotate.MakeRotateStateControllerTransaction(
+			taskResult.RotationAddress,
+			vmctx.task.Inputs,
+			vmctx.CreationSlot(),
+		)
+		if err != nil {
+			panic(fmt.Sprintf("MakeRotateStateControllerTransaction: %s", err.Error()))
+		}
 		vmctx.task.Log.Debugf("runTask OUT: rotate to address %s", rotationAddr.String())
 	}
 	return taskResult

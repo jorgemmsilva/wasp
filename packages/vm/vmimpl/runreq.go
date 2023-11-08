@@ -396,7 +396,7 @@ func (reqctx *requestContext) chargeGasFee() {
 
 	sender := reqctx.req.SenderAccount()
 	if sendToValidator != 0 {
-		transferToValidator := &isc.Assets{}
+		transferToValidator := isc.NewEmptyAssets()
 		transferToValidator.BaseTokens = sendToValidator
 		mustMoveBetweenAccounts(
 			reqctx.uncommittedState,

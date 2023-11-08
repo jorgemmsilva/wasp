@@ -459,7 +459,6 @@ func TestISCCallView(t *testing.T) {
 }
 
 func TestISCNFTData(t *testing.T) {
-	t.SkipNow() // TODO: how to "send on behalf of NFT"?
 	env := InitEVM(t)
 	ethKey, _ := env.Chain.NewEthereumAccountWithL2Funds()
 
@@ -832,7 +831,6 @@ func TestERC721NFTs(t *testing.T) {
 }
 
 func TestERC721NFTCollection(t *testing.T) {
-	t.SkipNow() // TODO: how do NFT collections work on iota 2.0?
 	env := InitEVM(t)
 
 	collectionOwner, collectionOwnerAddr := env.solo.NewKeyPairWithFunds()
@@ -1254,7 +1252,6 @@ func TestERC20NativeTokens(t *testing.T) {
 }
 
 func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
-	t.SkipNow() // TODO: cross-chain not working?
 	env := InitEVM(t)
 
 	const (
@@ -1269,6 +1266,8 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 
 	// need an alias to create a foundry; the easiest way is to create a "disposable" ISC chain
 	foundryChain, _ := env.solo.NewChainExt(foundryOwner, 10*isc.Million, 0, "foundryChain")
+	t.Log("env.chain: ", env.Chain.ChainID)
+	t.Log("foundryChain: ", foundryChain.ChainID)
 	err = foundryChain.DepositBaseTokensToL2(env.solo.L1BaseTokens(foundryOwnerAddr)/3, foundryOwner)
 	require.NoError(t, err)
 	supply := big.NewInt(int64(10 * isc.Million))

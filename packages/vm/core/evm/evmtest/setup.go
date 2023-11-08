@@ -336,7 +336,7 @@ func (e *SoloChainEnv) registerERC20ExternalNativeToken(
 		evm.FieldTargetAddress:     codec.EncodeAddress(e.Chain.ChainID.AsAddress()),
 	}).
 		// to cover sd and gas fee for the 'FuncRegisterERC20ExternalNativeToken' func call in 'FuncRegisterERC20NativeTokenOnRemoteChain'
-		WithAllowance(isc.NewAssetsBaseTokens(iotago.BaseToken(20*gas.LimitsDefault.MinGasPerRequest))).
+		WithAllowance(isc.NewAssetsBaseTokens(iotago.BaseToken(1000*gas.LimitsDefault.MinGasPerRequest))).
 		WithGasBudget(10*gas.LimitsDefault.MinGasPerRequest),
 		fromChain.OriginatorPrivateKey)
 	if err != nil {

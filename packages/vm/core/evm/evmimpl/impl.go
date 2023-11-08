@@ -240,6 +240,9 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 		return foundryOutput.TokenScheme
 	}()
 
+	accountID, ok := ctx.ChainAccountID()
+	ctx.Requiref(ok, "unknown chain account address")
+
 	// FIXME: gas budget and assets for gas fee should be calculated independently or passed as parameters,
 	// since they are for the target chain
 	gasBudget := 50 * gas.LimitsDefault.MinGasPerRequest
@@ -257,13 +260,17 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 				evm.FieldTokenTickerSymbol:  codec.EncodeString(tickerSymbol),
 				evm.FieldTokenDecimals:      codec.EncodeUint8(decimals),
 				evm.FieldFoundryTokenScheme: codec.EncodeTokenScheme(tokenScheme),
+				evm.FieldTargetAddress:      codec.EncodeAddress(accountID.ToAddress()),
 			},
 			GasBudget: gasBudget,
 		},
 	}
 	sd := ctx.EstimateRequiredStorageDeposit(req)
-	ctx.TransferAllowedFunds(ctx.AccountID(), isc.NewAssetsBaseTokens(sd))
-	req.Assets.AddBaseTokens(sd)
+	if req.Assets.BaseTokens < sd {
+		missingSD := sd - req.Assets.BaseTokens
+		req.Assets.AddBaseTokens(missingSD)
+	}
+	ctx.TransferAllowedFunds(ctx.AccountID(), req.Assets)
 	ctx.Send(req)
 
 	return nil
@@ -283,7 +290,6 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	if ctx.ChainID().Equals(caller.ChainID()) {
 		panic(errFoundryMustBeOffChain)
 	}
-	account := caller.ChainID().AsAnchorAddress()
 
 	name := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenName))
 	tickerSymbol := codec.MustDecodeString(ctx.Params().Get(evm.FieldTokenTickerSymbol))
@@ -295,8 +301,10 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	if !ok {
 		panic(errUnsupportedTokenScheme)
 	}
+	accountAddress := codec.MustDecodeAddress(ctx.Params().Get(evm.FieldTargetAddress))
+
 	nativeTokenID := lo.Must(iotago.FoundryIDFromAddressAndSerialNumberAndTokenScheme(
-		&account,
+		accountAddress,
 		foundrySN,
 		tokenScheme.Type(),
 	))

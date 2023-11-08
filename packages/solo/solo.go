@@ -326,7 +326,7 @@ func (env *Solo) deployChain(
 	anchor, _, err := transaction.GetAnchorFromTransaction(originTx.Transaction)
 	require.NoError(env.T, err)
 
-	err = env.utxoDB.AddToLedger(originTx)
+	err = env.AddToLedger(originTx)
 	require.NoError(env.T, err)
 	env.AssertL1BaseTokens(originatorAddr, initialL1Balance-anchor.Deposit)
 
@@ -419,6 +419,10 @@ func (env *Solo) addChain(chData chainData) *Chain {
 // AddToLedger adds (synchronously confirms) transaction to the UTXODB ledger. Return error if it is
 // invalid or double spend
 func (env *Solo) AddToLedger(tx *iotago.SignedTransaction) error {
+	env.logger.Debugf("adding tx to L1 (ID: %s) %s",
+		lo.Must(tx.Transaction.ID()).ToHex(),
+		string(lo.Must(parameters.L1API().JSONEncode(tx))),
+	)
 	return env.utxoDB.AddToLedger(tx)
 }
 
@@ -460,7 +464,10 @@ func (env *Solo) EnqueueRequests(tx *iotago.SignedTransaction) {
 			env.logger.Infof("dispatching requests. Unknown chain: %s", chainID.String())
 			continue
 		}
-		ch.mempool.ReceiveRequests(reqs...)
+		if len(reqs) > 0 {
+			env.logger.Infof("dispatching %d requests to chain %s", len(reqs), chainID)
+			ch.mempool.ReceiveRequests(reqs...)
+		}
 	}
 }
 

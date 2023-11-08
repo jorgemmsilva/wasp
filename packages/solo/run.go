@@ -6,7 +6,6 @@ package solo
 import (
 	"errors"
 
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -99,14 +97,12 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 		ch.settleStateTransition(tx, res.StateDraft)
 	}
 
-	ch.Log().Debugf("runRequestsNolock: adding tx to L1: %s", string(lo.Must(parameters.L1API().JSONEncode(tx))))
 	err = ch.Env.AddToLedger(tx)
 	require.NoError(ch.Env.T, err)
 
-	anchor, _, err := transaction.GetAnchorFromTransaction(tx.Transaction)
-	require.NoError(ch.Env.T, err)
-
 	if res.RotationAddress != nil {
+		anchor, _, err := transaction.GetAnchorFromTransaction(tx.Transaction)
+		require.NoError(ch.Env.T, err)
 		ch.Log().Infof("ROTATED STATE CONTROLLER to %s", anchor.StateController)
 	}
 

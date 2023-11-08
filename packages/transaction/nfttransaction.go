@@ -30,6 +30,9 @@ func NewMintNFTsTransaction(
 		}
 		out.Amount = d
 		outputAssets.BaseTokens += d
+		if out.NFTID != iotago.EmptyNFTID() {
+			outputAssets.AddNFTs(out.NFTID)
+		}
 		outputs = append(outputs, out)
 	}
 

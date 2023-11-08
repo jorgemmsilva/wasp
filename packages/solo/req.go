@@ -8,7 +8,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -303,7 +302,6 @@ func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.K
 	if err != nil {
 		return nil, isc.RequestID{}, err
 	}
-	ch.Log().Debugf("RequestFromParamsToLedger: adding tx to L1: %s", string(lo.Must(parameters.L1API().JSONEncode(tx))))
 	err = ch.Env.AddToLedger(tx)
 	// once we created transaction successfully, it should be added to the ledger smoothly
 	require.NoError(ch.Env.T, err)
@@ -456,7 +454,7 @@ func (ch *Chain) CallView(scName, funName string, params ...interface{}) (dict.D
 }
 
 func (ch *Chain) CallViewAtState(chainState state.State, scName, funName string, params ...interface{}) (dict.Dict, error) {
-	ch.Log().Debugf("callView: %s::%s", scName, funName)
+	// ch.Log().Debugf("callView: %s::%s", scName, funName)
 	return ch.callViewByHnameAtState(chainState, isc.Hn(scName), isc.Hn(funName), params...)
 }
 
@@ -467,7 +465,7 @@ func (ch *Chain) CallViewByHname(hContract, hFunction isc.Hname, params ...inter
 }
 
 func (ch *Chain) callViewByHnameAtState(chainState state.State, hContract, hFunction isc.Hname, params ...interface{}) (dict.Dict, error) {
-	ch.Log().Debugf("callView: %s::%s", hContract.String(), hFunction.String())
+	// ch.Log().Debugf("callView: %s::%s", hContract.String(), hFunction.String())
 
 	p := parseParams(params)
 

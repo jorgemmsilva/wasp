@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -93,8 +94,11 @@ func TestNoSenderFeature(t *testing.T) {
 			// skip if not the request output
 			continue
 		}
-		customOut := out.Clone().(*iotago.NFTOutput)                                     // must be NFT output because we're sending an NFT
-		customOut.Features = iotago.NFTOutputFeatures{customOut.FeatureSet().Metadata()} // keep metadata feature only
+		customOut := out.Clone().(*iotago.NFTOutput) // must be NFT output because we're sending an NFT
+		customOut.Features = lo.Filter(out.(*iotago.NFTOutput).Features, func(f iotago.Feature, _ int) bool {
+			_, ok := f.(*iotago.SenderFeature)
+			return !ok
+		})
 		tx.Transaction.Outputs[i] = customOut
 	}
 

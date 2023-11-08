@@ -106,13 +106,13 @@ func TestTxBuilderBasic(t *testing.T) {
 		)
 		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
-		require.EqualValues(t, 1, txb.numInputs())
-		require.EqualValues(t, 1, txb.numOutputs())
+		require.EqualValues(t, 2, txb.numInputs())
+		require.EqualValues(t, 2, txb.numOutputs())
 		require.False(t, txb.InputsAreFull())
 		require.False(t, txb.outputsAreFull())
 
-		require.EqualValues(t, 1, len(essence.TransactionEssence.Inputs))
-		require.EqualValues(t, 1, len(essence.Outputs))
+		require.EqualValues(t, 2, len(essence.TransactionEssence.Inputs))
+		require.EqualValues(t, 2, len(essence.Outputs))
 
 		_, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestTxBuilderBasic(t *testing.T) {
 
 		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
-		require.Len(t, essence.Outputs, 1)
+		require.Len(t, essence.Outputs, 2)
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount())
 
 		// consume a request that sends 1Mi, 1 NFT, and 4 native tokens
@@ -150,7 +150,7 @@ func TestTxBuilderBasic(t *testing.T) {
 
 		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
-		require.Len(t, essence.Outputs, 3) // 1 anchor AO, 1 NFT internal Output, 1 NativeTokens internal outputs
+		require.Len(t, essence.Outputs, 4) // 1 anchor AO, 1 account AO, 1 NFT internal Output, 1 NativeTokens internal outputs
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount()-totalSDBaseTokensUsedToSplitAssets)
 	})
 }
@@ -215,7 +215,9 @@ func TestTxBuilderConsistency(t *testing.T) {
 		out := transaction.MakeBasicOutput(
 			txb.inputs.AnchorOutput.AnchorID.ToAddress(),
 			nil,
-			(isc.NewAssets(0, []*isc.NativeTokenAmount{{ID: id, Amount: big.NewInt(int64(amountNative))}})).WithMana(0),
+			0,
+			&isc.NativeTokenAmount{ID: id, Amount: big.NewInt(int64(amountNative))},
+			0,
 			nil,
 			nil,
 		)
@@ -382,8 +384,8 @@ func TestTxBuilderConsistency(t *testing.T) {
 		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
 		txb.MustBalanced()
 
-		require.EqualValues(t, 6, len(essence.TransactionEssence.Inputs))
-		require.EqualValues(t, 11, len(essence.Outputs)) // 6 + 5 internal outputs with the 10 remaining tokens
+		require.EqualValues(t, 7, len(essence.TransactionEssence.Inputs))
+		require.EqualValues(t, 12, len(essence.Outputs)) // 6 + 5 internal outputs with the 10 remaining tokens
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)
@@ -499,11 +501,12 @@ func TestSerDe(t *testing.T) {
 			Allowance:      isc.NewEmptyAssets(),
 			GasBudget:      0,
 		}
-		assets := isc.NewEmptyAssetsWithMana()
 		out := transaction.AdjustToMinimumStorageDeposit(transaction.MakeBasicOutput(
 			&iotago.Ed25519Address{},
 			&iotago.Ed25519Address{1, 2, 3},
-			assets,
+			0,
+			nil,
+			0,
 			&reqMetadata,
 			nil,
 		))

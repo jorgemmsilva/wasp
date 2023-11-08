@@ -405,7 +405,7 @@ func (txb *AnchorTransactionBuilder) numInputs() int {
 
 // numOutputs in the transaction
 func (txb *AnchorTransactionBuilder) numOutputs() int {
-	ret := 1 // for chain output
+	ret := 2 // for chain output + account output
 	for _, v := range txb.balanceNativeTokens {
 		if v.producesAccountingOutput() {
 			ret++

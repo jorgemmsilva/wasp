@@ -190,7 +190,7 @@ func NewChainOriginTransaction(
 	txInputs, remainder, err := transaction.ComputeInputsAndRemainder(
 		walletAddr,
 		unspentOutputs,
-		transaction.NewAssetsWithMana(transaction.AssetsFromOutput(anchorOutput), anchorOutput.StoredMana()),
+		transaction.NewAssetsWithMana(isc.FungibleTokensFromOutput(anchorOutput).ToAssets(), anchorOutput.StoredMana()),
 		creationSlot,
 	)
 	if err != nil {

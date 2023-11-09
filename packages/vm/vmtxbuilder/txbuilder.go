@@ -168,10 +168,10 @@ func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 		panic(fmt.Errorf("%v: available %d < required %d base tokens",
 			transaction.ErrNotEnoughBaseTokensForStorageDeposit, o.BaseTokenAmount(), storageDeposit))
 	}
-	assets := transaction.AssetsFromOutput(o)
+	fts := isc.FungibleTokensFromOutput(o)
 
 	sdAdjustment := int64(0)
-	for _, nativeToken := range assets.NativeTokens {
+	for _, nativeToken := range fts.NativeTokens {
 		sdAdjustment += txb.addNativeTokenBalanceDelta(nativeToken.ID, new(big.Int).Neg(nativeToken.Amount))
 	}
 	if nftout, ok := o.(*iotago.NFTOutput); ok {
@@ -440,13 +440,13 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAnchorID iotag
 	// cleanup features and unlock conditions except metadata
 	switch o := out.(type) {
 	case *iotago.BasicOutput:
-		o.Features = iotago.BasicOutputFeatures{feature}
+		o.Features.Upsert(feature)
 		o.Conditions = iotago.BasicOutputUnlockConditions{unlock}
 	case *iotago.NFTOutput:
-		o.Features = iotago.NFTOutputFeatures{feature}
+		o.Features.Upsert(feature)
 		o.Conditions = iotago.NFTOutputUnlockConditions{unlock}
 	case *iotago.AnchorOutput:
-		o.Features = iotago.AnchorOutputFeatures{feature}
+		o.Features.Upsert(feature)
 		o.Conditions = iotago.AnchorOutputUnlockConditions{unlock}
 	default:
 		panic("unexpected output type")

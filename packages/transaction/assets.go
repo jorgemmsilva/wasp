@@ -2,7 +2,6 @@ package transaction
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/samber/lo"
 
@@ -59,26 +58,12 @@ func MustSingleNativeToken(a *isc.FungibleTokens) *isc.NativeTokenAmount {
 	return a.NativeTokens[0]
 }
 
-func AssetsFromOutput(o iotago.Output) *isc.Assets {
-	assets := isc.NewAssets(o.BaseTokenAmount(), nil)
-	if nt := o.FeatureSet().NativeToken(); nt != nil {
-		assets.NativeTokens = append(assets.NativeTokens, &isc.NativeTokenAmount{
-			ID:     nt.ID,
-			Amount: new(big.Int).Set(nt.Amount),
-		})
-	}
-	if o, ok := o.(*iotago.NFTOutput); ok {
-		assets.NFTs = append(assets.NFTs, o.NFTID)
-	}
-	return assets
-}
-
 func AssetsAndAvailableManaFromOutput(
 	oID iotago.OutputID,
 	o iotago.Output,
 	slotIndex iotago.SlotIndex,
 ) (*AssetsWithMana, error) {
-	assets := AssetsFromOutput(o)
+	assets := isc.AssetsFromOutput(o, oID)
 	mana, err := vm.TotalManaIn(
 		parameters.L1API().ManaDecayProvider(),
 		parameters.Storage(),

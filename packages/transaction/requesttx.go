@@ -99,7 +99,7 @@ func NewRequestTransaction(
 			ErrNotEnoughBaseTokensForStorageDeposit, out.BaseTokenAmount(), storageDeposit)
 	}
 	outputs = append(outputs, out)
-	outputAssets := NewAssetsWithMana(AssetsFromOutput(out), out.StoredMana())
+	outputAssets := NewAssetsWithMana(isc.AssetsFromOutput(out, iotago.OutputID{}), out.StoredMana())
 
 	outputs, outputAssets = updateOutputsWhenSendingOnBehalfOf(
 		senderKeyPair,
@@ -216,7 +216,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 			continue
 		}
 		// found the needed output
-		outputs = append(outputs, out)
+		outputs = append(outputs, updateID(out, outID))
 		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot)
 		if err != nil {
 			panic(err)
@@ -225,4 +225,23 @@ func updateOutputsWhenSendingOnBehalfOf(
 		return outputs, outputAssets
 	}
 	panic("unable to build tx, 'sendAs' output not found")
+}
+
+func updateID(out iotago.Output, outID iotago.OutputID) iotago.Output {
+	if out, ok := out.(*iotago.NFTOutput); ok && out.NFTID == iotago.EmptyNFTID() {
+		out = out.Clone().(*iotago.NFTOutput)
+		out.NFTID = util.NFTIDFromNFTOutput(out, outID)
+		return out
+	}
+	if out, ok := out.(*iotago.AnchorOutput); ok && out.AnchorID == iotago.EmptyAnchorID {
+		out = out.Clone().(*iotago.AnchorOutput)
+		out.AnchorID = util.AnchorIDFromAnchorOutput(out, outID)
+		return out
+	}
+	if out, ok := out.(*iotago.AccountOutput); ok && out.AccountID == iotago.EmptyAccountID {
+		out = out.Clone().(*iotago.AccountOutput)
+		out.AccountID = util.AccountIDFromAccountOutput(out, outID)
+		return out
+	}
+	return out
 }

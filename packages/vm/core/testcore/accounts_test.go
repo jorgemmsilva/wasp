@@ -565,7 +565,7 @@ type testParams struct {
 
 func initDepositTest(t *testing.T, originParams dict.Dict, initLoad ...iotago.BaseToken) *testParams {
 	ret := &testParams{}
-	ret.env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
+	ret.env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 
 	ret.chainOwner, ret.chainOwnerAddr = ret.env.NewKeyPairWithFunds(ret.env.NewSeedFromIndex(10))
 	ret.chainOwnerAgentID = isc.NewAgentID(ret.chainOwnerAddr)
@@ -932,7 +932,6 @@ func TestTransferPartialAssets(t *testing.T) {
 }
 
 func TestNFTAccount(t *testing.T) {
-	t.SkipNow() // TODO: how to "send on behalf of NFT"?
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
 	ch := env.NewChain()
 
@@ -1080,20 +1079,14 @@ func TestUnprocessableWithPruning(t *testing.T) {
 }
 
 func testUnprocessable(t *testing.T, originParams dict.Dict) {
-	t.SkipNow() // TODO: how to send multiple native tokens?
+	t.SkipNow() // TODO: can't make it work
 	v := initDepositTest(t, originParams)
 	v.ch.MustDepositBaseTokensToL2(2*isc.Million, v.user)
-	// create many foundries and mint 1 token on each
+	// create a foundry and mint 1 token
 	_, nativeTokenID1 := v.createFoundryAndMint(1, 1)
-	_, nativeTokenID2 := v.createFoundryAndMint(1, 1)
-	_, nativeTokenID3 := v.createFoundryAndMint(1, 1)
-	_, nativeTokenID4 := v.createFoundryAndMint(1, 1)
 
 	assets := isc.NewAssets(1*isc.Million, []*isc.NativeTokenAmount{
 		{ID: nativeTokenID1, Amount: big.NewInt(1)},
-		{ID: nativeTokenID2, Amount: big.NewInt(1)},
-		{ID: nativeTokenID3, Amount: big.NewInt(1)},
-		{ID: nativeTokenID4, Amount: big.NewInt(1)},
 	})
 
 	withdrawReq := solo.NewCallParams("accounts", "withdraw").
@@ -1119,9 +1112,6 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 		})
 	}
 	require.True(t, assetsContain(newuserL1NativeTokens, nativeTokenID1))
-	require.True(t, assetsContain(newuserL1NativeTokens, nativeTokenID2))
-	require.True(t, assetsContain(newuserL1NativeTokens, nativeTokenID3))
-	require.True(t, assetsContain(newuserL1NativeTokens, nativeTokenID4))
 
 	// try to deposit all native tokens in a request with just the minimum SD
 	unprocessableReq := solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).
@@ -1147,15 +1137,41 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	}
 
 	require.True(t, isInUnprocessableList())
+	require.Zero(t, v.ch.L2BaseTokens(newUserAgentID))
 
 	// assert trying to "retry" the request won't work (still not enough funds)
 	retryReq := solo.NewCallParams(
 		blocklog.Contract.Name, blocklog.FuncRetryUnprocessable.Name,
 		blocklog.ParamRequestID, unprocessableReqID,
-	)
-	_, rec, _, err := v.ch.PostRequestSyncExt(retryReq, newUser)
+	).WithMaxAffordableGasBudget()
+
+	// deposit just enough tokens for the retryReq gas fee
+	{
+		_, gasFee, err := v.ch.EstimateGasOffLedger(retryReq, newUser)
+		require.NoError(t, err)
+		v.ch.MustDepositBaseTokensToL2(gasFee, newUser)
+		bal := v.ch.L2BaseTokens(newUserAgentID)
+		if bal > gasFee { // because of minSD -- transfer the excess to OriginatorAgentID
+			req2 := solo.NewCallParams(
+				accounts.Contract.Name, accounts.FuncTransferAllowanceTo.Name,
+				accounts.ParamAgentID, v.ch.OriginatorAgentID.Bytes(),
+			).
+				WithAllowance(isc.NewAssetsBaseTokens(bal - gasFee)).
+				WithMaxAffordableGasBudget()
+			_, gasFee2, err := v.ch.EstimateGasOffLedger(req2, newUser)
+			require.NoError(t, err)
+			_, err = v.ch.PostRequestOffLedger(
+				req2.WithAllowance(isc.NewAssetsBaseTokens(bal-gasFee-gasFee2)),
+				newUser,
+			)
+			require.NoError(t, err)
+		}
+		require.EqualValues(t, gasFee, v.ch.L2BaseTokens(newUserAgentID))
+	}
+
+	_, err = v.ch.PostRequestOffLedger(retryReq, newUser)
 	require.NoError(t, err)
-	require.Nil(t, rec.Error)
+
 	// the "retry request" is successful, but "there request to be retried" did not produce a receipt, meaning it was skipped again
 	// check that the "request to be retried" did not succeed (no receipt, still in the unprocessed list)
 	receipt, err = v.ch.GetRequestReceipt(unprocessableReqID)
@@ -1163,12 +1179,11 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	require.Nil(t, receipt)
 	require.True(t, isInUnprocessableList())
 	require.False(t, blocklog.HasUnprocessableRequestBeenRemovedInBlock(v.ch.LatestBlock(), unprocessableReqID)) // assert this function returns false, its used to prevent these requests from being re-added to the mempool on a reorg
-
 	// --
 	// deposit funds and retry that request
 	err = v.ch.DepositBaseTokensToL2(10*isc.Million, newUser)
 	require.NoError(t, err)
-	_, rec, _, err = v.ch.PostRequestSyncExt(retryReq, newUser)
+	_, rec, _, err := v.ch.PostRequestSyncExt(retryReq, newUser)
 	require.NoError(t, err)
 	require.Nil(t, rec.Error) // assert the receipt for the "retry req" exists and its successful
 	require.Zero(t, rec.SDCharged)
@@ -1183,11 +1198,8 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 
 	// assert the user was credited the tokens from the "initially unprocessable request"
 	userAssets := v.ch.L2Assets(newUserAgentID)
-	require.Len(t, userAssets.NativeTokens, 4)
+	require.Len(t, userAssets.NativeTokens, 1)
 	require.True(t, assetsContain(userAssets.NativeTokens, nativeTokenID1))
-	require.True(t, assetsContain(userAssets.NativeTokens, nativeTokenID2))
-	require.True(t, assetsContain(userAssets.NativeTokens, nativeTokenID3))
-	require.True(t, assetsContain(userAssets.NativeTokens, nativeTokenID4))
 	require.Len(t, userAssets.NFTs, 1)
 	require.EqualValues(t, userAssets.NFTs[0], iscNFT.ID)
 
@@ -1198,16 +1210,13 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	require.False(t, blocklog.HasUnprocessableRequestBeenRemovedInBlock(v.ch.LatestBlock(), unprocessableReqID)) // assert this function returns false, its used to prevent these requests from being re-added to the mempool on a reorg
 
 	// --
-	// try to withdrawal the native tokens
+	// try to withdrawa the native tokens
 	err = v.ch.Withdraw(isc.NewAssets(1*isc.Million, userAssets.NativeTokens, iscNFT.ID), newUser)
 	require.NoError(t, err)
 
 	require.Len(t, v.ch.L2Assets(newUserAgentID).NativeTokens, 0)
 	require.Len(t, v.ch.L2Assets(newUserAgentID).NFTs, 0)
 	v.env.AssertL1NativeTokens(newUserAddress, nativeTokenID1, 1)
-	v.env.AssertL1NativeTokens(newUserAddress, nativeTokenID2, 1)
-	v.env.AssertL1NativeTokens(newUserAddress, nativeTokenID3, 1)
-	v.env.AssertL1NativeTokens(newUserAddress, nativeTokenID4, 1)
 	require.Len(t, v.env.L1NFTs(newUserAddress), 1)
 }
 

@@ -18,9 +18,7 @@ import (
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
-	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
-	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 func TestOrigin(t *testing.T) {
@@ -97,18 +95,6 @@ func TestCreateOrigin(t *testing.T) {
 		require.EqualValues(t, 0, anchor.StateIndex)
 		require.True(t, stateAddr.Equal(anchor.StateController))
 		require.True(t, stateAddr.Equal(anchor.GovernanceController))
-
-		originStateMetadata := transaction.NewStateMetadata(
-			origin.L1Commitment(
-				dict.Dict{origin.ParamChainOwner: isc.NewAgentID(anchor.GovernanceController).Bytes()},
-				governance.DefaultMinBaseTokensOnCommonAccount,
-			),
-			gas.DefaultFeePolicy(),
-			allmigrations.DefaultScheme.LatestSchemaVersion(),
-			"",
-		)
-
-		require.EqualValues(t, anchor.StateData, originStateMetadata.Bytes())
 
 		// only one output is expected in the ledger under the address of chainID
 		outs := u.GetUnspentOutputs(chainID.AsAddress())

@@ -12,7 +12,7 @@ func TestNFTSerialization(t *testing.T) {
 	nft := &NFT{
 		ID:       iotago.NFTID{123},
 		Issuer:   tpkg.RandEd25519Address(),
-		Metadata: []byte("foobar"),
+		Metadata: iotago.MetadataFeatureEntries{"": []byte("foobar")},
 	}
 	rwutil.ReadWriteTest(t, nft, new(NFT))
 	rwutil.BytesTest(t, nft, NFTFromBytes)

@@ -139,10 +139,10 @@ type Sandbox interface {
 // Privileged is a sub-interface for core contracts. Should not be called by VM plugins
 type Privileged interface {
 	TryLoadContract(programHash hashing.HashValue) error
-	CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, iotago.BaseToken)
+	CreateNewFoundry(scheme iotago.TokenScheme, metadata iotago.MetadataFeatureEntries) (uint32, iotago.BaseToken)
 	DestroyFoundry(uint32) iotago.BaseToken
 	ModifyFoundrySupply(serNum uint32, delta *big.Int) int64
-	MintNFT(addr iotago.Address, immutableMetadata []byte, issuer iotago.Address) (uint16, *iotago.NFTOutput)
+	MintNFT(addr iotago.Address, immutableMetadata iotago.MetadataFeatureEntries, issuer iotago.Address) (uint16, *iotago.NFTOutput)
 	GasBurnEnable(enable bool)
 	GasBurnEnabled() bool
 	MustMoveBetweenAccounts(fromAgentID, toAgentID AgentID, assets *Assets)

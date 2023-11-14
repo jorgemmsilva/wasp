@@ -38,20 +38,20 @@ func NewRotateChainStateControllerTx(
 	newChainOutput := chainOutput.Clone().(*iotago.AnchorOutput)
 	newChainOutput.AnchorID = resolvedAnchorID
 	oldUnlockConditions := newChainOutput.UnlockConditionSet()
-	newChainOutput.Conditions = make(iotago.AnchorOutputUnlockConditions, len(oldUnlockConditions))
+	newChainOutput.UnlockConditions = make(iotago.AnchorOutputUnlockConditions, len(oldUnlockConditions))
 
 	// update the unlock conditions to the new state controller
 	i := 0
 	for t, condition := range oldUnlockConditions {
-		newChainOutput.Conditions[i] = condition.Clone()
+		newChainOutput.UnlockConditions[i] = condition.Clone()
 		if t == iotago.UnlockConditionStateControllerAddress {
 			// found the condition to alter
-			c, ok := newChainOutput.Conditions[i].(*iotago.StateControllerAddressUnlockCondition)
+			c, ok := newChainOutput.UnlockConditions[i].(*iotago.StateControllerAddressUnlockCondition)
 			if !ok {
 				return nil, errors.New("unexpected error trying to get StateControllerAddressUnlockCondition")
 			}
 			c.Address = newStateController
-			newChainOutput.Conditions[i] = c.Clone()
+			newChainOutput.UnlockConditions[i] = c.Clone()
 		}
 		i++
 	}

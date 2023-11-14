@@ -1,10 +1,12 @@
 package isc
 
 import (
+	"context"
 	"encoding/json"
 	"strconv"
 
-	"github.com/iotaledger/iota.go/v4/hexutil"
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
 )
@@ -73,10 +75,10 @@ func assetsToJSONObject(assets *Assets) *AssetsJSON {
 // ----------------------------------------------------------------------------
 
 type NFTJSON struct {
-	ID       string `json:"id" swagger:"required"`
-	Issuer   string `json:"issuer" swagger:"required"`
-	Metadata string `json:"metadata" swagger:"required"`
-	Owner    string `json:"owner" swagger:"required"`
+	ID       string         `json:"id" swagger:"required"`
+	Issuer   string         `json:"issuer" swagger:"required"`
+	Metadata map[string]any `json:"metadata" swagger:"required"`
+	Owner    string         `json:"owner" swagger:"required"`
 }
 
 func NFTToJSONObject(nft *NFT) *NFTJSON {
@@ -92,7 +94,7 @@ func NFTToJSONObject(nft *NFT) *NFTJSON {
 	return &NFTJSON{
 		ID:       nft.ID.ToHex(),
 		Issuer:   nft.Issuer.String(),
-		Metadata: hexutil.EncodeHex(nft.Metadata),
+		Metadata: lo.Must(parameters.L1API().Underlying().MapEncode(context.Background(), nft.Metadata)).Values(),
 		Owner:    ownerString,
 	}
 }

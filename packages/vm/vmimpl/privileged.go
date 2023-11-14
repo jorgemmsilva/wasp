@@ -30,7 +30,7 @@ func (reqctx *requestContext) TryLoadContract(programHash hashing.HashValue) err
 	return reqctx.vm.task.Processors.NewProcessor(programHash, programBinary, vmtype)
 }
 
-func (reqctx *requestContext) CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, iotago.BaseToken) {
+func (reqctx *requestContext) CreateNewFoundry(scheme iotago.TokenScheme, metadata iotago.MetadataFeatureEntries) (uint32, iotago.BaseToken) {
 	reqctx.mustBeCalledFromContract(accounts.Contract)
 	return reqctx.vm.txbuilder.CreateNewFoundry(scheme, metadata)
 }
@@ -50,7 +50,7 @@ func (reqctx *requestContext) ModifyFoundrySupply(sn uint32, delta *big.Int) int
 	return reqctx.vm.txbuilder.ModifyNativeTokenSupply(nativeTokenID, delta)
 }
 
-func (reqctx *requestContext) MintNFT(addr iotago.Address, immutableMetadata []byte, issuer iotago.Address) (uint16, *iotago.NFTOutput) {
+func (reqctx *requestContext) MintNFT(addr iotago.Address, immutableMetadata iotago.MetadataFeatureEntries, issuer iotago.Address) (uint16, *iotago.NFTOutput) {
 	reqctx.mustBeCalledFromContract(accounts.Contract)
 	return reqctx.vm.txbuilder.MintNFT(addr, immutableMetadata, issuer)
 }

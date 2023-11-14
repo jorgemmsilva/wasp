@@ -939,7 +939,7 @@ func TestNFTAccount(t *testing.T) {
 	ownerWallet, ownerAddress := ch.Env.NewKeyPairWithFunds()
 	ownerBalance := ch.Env.L1BaseTokens(ownerAddress)
 
-	_, nftInfo, err := ch.Env.MintNFTL1(issuerWallet, ownerAddress, []byte("foobar"))
+	_, nftInfo, err := ch.Env.MintNFTL1(issuerWallet, ownerAddress, iotago.MetadataFeatureEntries{"": []byte("foobar")})
 	require.NoError(t, err)
 	nftAddress := nftInfo.NFTID.ToAddress()
 
@@ -1000,7 +1000,7 @@ func TestTransferNFTAllowance(t *testing.T) {
 	initialOwnerWallet, initialOwnerAddress := ch.Env.NewKeyPairWithFunds()
 	initialOwnerAgentID := isc.NewAgentID(initialOwnerAddress)
 
-	nft, _, err := ch.Env.MintNFTL1(issuerWallet, initialOwnerAddress, []byte("foobar"))
+	nft, _, err := ch.Env.MintNFTL1(issuerWallet, initialOwnerAddress, iotago.MetadataFeatureEntries{"": []byte("foobar")})
 	require.NoError(t, err)
 
 	// deposit the NFT to the chain to the initial owner's account
@@ -1058,7 +1058,7 @@ func TestDepositNFTWithMinStorageDeposit(t *testing.T) {
 
 	issuerWallet, issuerAddress := env.NewKeyPairWithFunds()
 
-	nft, _, err := env.MintNFTL1(issuerWallet, issuerAddress, []byte("foobar"))
+	nft, _, err := env.MintNFTL1(issuerWallet, issuerAddress, iotago.MetadataFeatureEntries{"": []byte("foobar")})
 	require.NoError(t, err)
 	req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).
 		WithNFT(nft).
@@ -1102,7 +1102,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	newUserAgentID := isc.NewAgentID(newUserAddress)
 	v.env.SendL1(newUserAddress, assets, v.user)
 	// also create an NFT
-	iscNFT, _, err := v.ch.Env.MintNFTL1(v.user, newUserAddress, []byte("foobar"))
+	iscNFT, _, err := v.ch.Env.MintNFTL1(v.user, newUserAddress, iotago.MetadataFeatureEntries{"": []byte("foobar")})
 	require.NoError(t, err)
 
 	newuserL1NativeTokens := v.env.L1Assets(newUserAddress).NativeTokens

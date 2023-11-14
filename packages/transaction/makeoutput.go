@@ -56,7 +56,7 @@ func MakeBasicOutput(
 ) *iotago.BasicOutput {
 	out := &iotago.BasicOutput{
 		Amount: baseTokens,
-		Conditions: iotago.BasicOutputUnlockConditions{
+		UnlockConditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: targetAddress},
 		},
 		Mana: mana,
@@ -68,7 +68,7 @@ func MakeBasicOutput(
 	}
 	if metadata != nil {
 		out.Features = append(out.Features, &iotago.MetadataFeature{
-			Data: metadata.Bytes(),
+			Entries: iotago.MetadataFeatureEntries{"": metadata.Bytes()},
 		})
 	}
 	if nativeToken != nil && nativeToken.Amount.Cmp(util.Big0) > 0 {
@@ -78,7 +78,7 @@ func MakeBasicOutput(
 		})
 	}
 	for _, c := range unlockConditions {
-		out.Conditions = append(out.Conditions, c)
+		out.UnlockConditions = append(out.UnlockConditions, c)
 	}
 	return out
 }
@@ -115,14 +115,14 @@ func NFTOutputFromBasicOutput(o *iotago.BasicOutput, nft *isc.NFT) *iotago.NFTOu
 		NFTID:  nft.ID,
 		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.IssuerFeature{Address: nft.Issuer},
-			&iotago.MetadataFeature{Data: nft.Metadata},
+			&iotago.MetadataFeature{Entries: nft.Metadata},
 		},
 	}
 	for _, f := range o.Features {
 		out.Features = append(out.Features, f)
 	}
-	for _, c := range o.Conditions {
-		out.Conditions = append(out.Conditions, c)
+	for _, c := range o.UnlockConditions {
+		out.UnlockConditions = append(out.UnlockConditions, c)
 	}
 	return out
 }

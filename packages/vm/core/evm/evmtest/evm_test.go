@@ -464,7 +464,7 @@ func TestISCNFTData(t *testing.T) {
 
 	// mint an NFT and send it to the chain
 	issuerWallet, issuerAddress := env.solo.NewKeyPairWithFunds()
-	metadata := []byte("foobar")
+	metadata := iotago.MetadataFeatureEntries{"": []byte("foobar")}
 	nft, _, err := env.solo.MintNFTL1(issuerWallet, issuerAddress, metadata)
 	require.NoError(t, err)
 	_, err = env.Chain.PostRequestSync(
@@ -726,7 +726,8 @@ func TestSendNFT(t *testing.T) {
 
 	iscTest := env.deployISCTestContract(ethKey)
 
-	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorPrivateKey, env.Chain.OriginatorAddress, []byte("foobar"))
+	metadata := iotago.MetadataFeatureEntries{"": []byte("foobar")}
+	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorPrivateKey, env.Chain.OriginatorAddress, metadata)
 	require.NoError(t, err)
 	env.Chain.MustDepositNFT(nft, ethAgentID, env.Chain.OriginatorPrivateKey)
 
@@ -776,7 +777,8 @@ func TestERC721NFTs(t *testing.T) {
 		require.EqualValues(t, 0, n.Uint64())
 	}
 
-	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorPrivateKey, env.Chain.OriginatorAddress, []byte("foobar"))
+	metadata := iotago.MetadataFeatureEntries{"": []byte("foobar")}
+	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorPrivateKey, env.Chain.OriginatorAddress, metadata)
 	require.NoError(t, err)
 	env.Chain.MustDepositNFT(nft, ethAgentID, env.Chain.OriginatorPrivateKey)
 
@@ -846,7 +848,8 @@ func TestERC721NFTCollection(t *testing.T) {
 		"a string that is longer than 32 bytes",
 	)
 
-	collection, collectionInfo, err := env.solo.MintNFTL1(collectionOwner, collectionOwnerAddr, collectionMetadata.Bytes())
+	metadataEntries := iotago.MetadataFeatureEntries{"": collectionMetadata.Bytes()}
+	collection, collectionInfo, err := env.solo.MintNFTL1(collectionOwner, collectionOwnerAddr, metadataEntries)
 	require.NoError(t, err)
 
 	nftMetadatas := []*isc.IRC27NFTMetadata{
@@ -862,8 +865,8 @@ func TestERC721NFTCollection(t *testing.T) {
 		),
 	}
 	allNFTs, _, err := env.solo.MintNFTsL1(collectionOwner, collectionOwnerAddr, &collectionInfo.OutputID,
-		lo.Map(nftMetadatas, func(item *isc.IRC27NFTMetadata, index int) []byte {
-			return item.Bytes()
+		lo.Map(nftMetadatas, func(item *isc.IRC27NFTMetadata, index int) iotago.MetadataFeatureEntries {
+			return iotago.MetadataFeatureEntries{"": item.Bytes()}
 		}),
 	)
 	require.NoError(t, err)
@@ -892,7 +895,7 @@ func TestERC721NFTCollection(t *testing.T) {
 
 	// minted NFTs are in random order; find the first one in nftMetadatas
 	nft, ok := lo.Find(nfts, func(item *isc.NFT) bool {
-		metadata, err2 := isc.IRC27NFTMetadataFromBytes(item.Metadata)
+		metadata, err2 := isc.IRC27NFTMetadataFromBytes(item.Metadata[""])
 		require.NoError(t, err2)
 		return metadata.URI == nftMetadatas[0].URI
 	})

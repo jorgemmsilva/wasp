@@ -102,7 +102,7 @@ func GetNFTData(state kv.KVStoreReader, nftID iotago.NFTID) *isc.NFT {
 	return &isc.NFT{
 		ID:       util.NFTIDFromNFTOutput(o, oID),
 		Issuer:   o.ImmutableFeatureSet().Issuer().Address,
-		Metadata: o.ImmutableFeatureSet().Metadata().Data,
+		Metadata: o.ImmutableFeatureSet().Metadata().Entries,
 		Owner:    owner,
 	}
 }

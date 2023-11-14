@@ -9,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -152,6 +153,10 @@ func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
 	if senderBlock != nil {
 		sender = senderBlock.Address
 	}
+	stateData, err := transaction.StateMetadataBytesFromAnchorOutput(vmctx.task.Inputs.AnchorOutput)
+	if err != nil {
+		panic(err)
+	}
 	return &isc.StateAnchor{
 		ChainID:              vmctx.ChainID(),
 		Sender:               sender,
@@ -160,7 +165,7 @@ func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
 		GovernanceController: vmctx.task.Inputs.AnchorOutput.GovernorAddress(),
 		StateIndex:           vmctx.task.Inputs.AnchorOutput.StateIndex,
 		OutputID:             vmctx.task.Inputs.AnchorOutputID,
-		StateData:            vmctx.task.Inputs.AnchorOutput.StateMetadata,
+		StateData:            stateData,
 		Deposit:              vmctx.task.Inputs.AnchorOutput.Amount,
 	}
 }

@@ -138,7 +138,7 @@ func (s *contractSandbox) TryLoadContract(programHash hashing.HashValue) error {
 	return s.reqctx.TryLoadContract(programHash)
 }
 
-func (s *contractSandbox) CreateNewFoundry(scheme iotago.TokenScheme, metadata []byte) (uint32, iotago.BaseToken) {
+func (s *contractSandbox) CreateNewFoundry(scheme iotago.TokenScheme, metadata iotago.MetadataFeatureEntries) (uint32, iotago.BaseToken) {
 	return s.reqctx.CreateNewFoundry(scheme, metadata)
 }
 
@@ -150,7 +150,7 @@ func (s *contractSandbox) ModifyFoundrySupply(sn uint32, delta *big.Int) int64 {
 	return s.reqctx.ModifyFoundrySupply(sn, delta)
 }
 
-func (s *contractSandbox) MintNFT(addr iotago.Address, immutableMetadata []byte, issuer iotago.Address) (uint16, *iotago.NFTOutput) {
+func (s *contractSandbox) MintNFT(addr iotago.Address, immutableMetadata iotago.MetadataFeatureEntries, issuer iotago.Address) (uint16, *iotago.NFTOutput) {
 	return s.reqctx.MintNFT(addr, immutableMetadata, issuer)
 }
 

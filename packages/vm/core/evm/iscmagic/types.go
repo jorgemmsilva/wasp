@@ -4,12 +4,16 @@
 package iscmagic
 
 import (
+	"errors"
 	"math/big"
+
+	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 // ISCChainID matches the type definition in ISCTypes.sol
@@ -180,7 +184,7 @@ func WrapISCNFT(n *isc.NFT) ISCNFT {
 	r := ISCNFT{
 		ID:       WrapNFTID(n.ID),
 		Issuer:   WrapL1Address(n.Issuer),
-		Metadata: n.Metadata,
+		Metadata: lo.Must(parameters.L1API().Encode(n.Metadata)),
 	}
 	if n.Owner != nil {
 		r.Owner = WrapISCAgentID(n.Owner)
@@ -193,10 +197,18 @@ func (n ISCNFT) Unwrap() (*isc.NFT, error) {
 	if err != nil {
 		return nil, err
 	}
+	var metadata iotago.MetadataFeatureEntries
+	nr, err := parameters.L1API().Decode(n.Metadata, &metadata)
+	if err != nil {
+		return nil, err
+	}
+	if nr != len(n.Metadata) {
+		return nil, errors.New("cannot decode metadata: excess bytes")
+	}
 	return &isc.NFT{
 		ID:       n.ID.Unwrap(),
 		Issuer:   issuer,
-		Metadata: n.Metadata,
+		Metadata: metadata,
 		Owner:    n.Owner.MustUnwrap(),
 	}, nil
 }

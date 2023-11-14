@@ -66,7 +66,7 @@ func (u *UtxoDB) genesisInit() {
 			Input: &iotago.BasicOutput{
 				Amount: u.Supply(),
 				Mana:   iotago.MaxMana / 2,
-				Conditions: iotago.BasicOutputUnlockConditions{
+				UnlockConditions: iotago.BasicOutputUnlockConditions{
 					&iotago.AddressUnlockCondition{Address: genesisAddress},
 				},
 			},
@@ -74,7 +74,7 @@ func (u *UtxoDB) genesisInit() {
 		AddOutput(&iotago.BasicOutput{
 			Amount: u.Supply(),
 			Mana:   iotago.MaxMana / 2,
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: genesisAddress},
 			},
 		}).
@@ -193,14 +193,14 @@ func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotag
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: fundsAmount,
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: target},
 			},
 			Mana: ManaFromFaucetAmount,
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: input.Amount - fundsAmount,
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: genesisAddress},
 			},
 			Mana: mana - ManaFromFaucetAmount,

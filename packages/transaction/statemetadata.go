@@ -1,6 +1,7 @@
 package transaction
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -81,8 +82,31 @@ func (s *StateMetadata) Write(w io.Writer) error {
 
 /////////////// avoiding circular imports: state <-> transaction //////////////////
 
+func StateMetadataBytesFromAnchorOutput(ao *iotago.AnchorOutput) ([]byte, error) {
+	if ao.FeatureSet().StateMetadata() == nil {
+		return nil, errors.New("missing StateMetadata feature in AnchorOutput")
+	}
+	r := ao.FeatureSet().StateMetadata().Entries[""]
+	if len(r) == 0 {
+		return nil, errors.New("missing StateMetadata feature in AnchorOutput")
+	}
+	return r, nil
+}
+
+func StateMetadataFromAnchorOutput(ao *iotago.AnchorOutput) (*StateMetadata, error) {
+	b, err := StateMetadataBytesFromAnchorOutput(ao)
+	if err != nil {
+		return nil, err
+	}
+	s, err := StateMetadataFromBytes(b)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
 func L1CommitmentFromAnchorOutput(ao *iotago.AnchorOutput) (*state.L1Commitment, error) {
-	s, err := StateMetadataFromBytes(ao.StateMetadata)
+	s, err := StateMetadataFromAnchorOutput(ao)
 	if err != nil {
 		return nil, err
 	}

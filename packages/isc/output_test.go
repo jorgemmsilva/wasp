@@ -18,8 +18,7 @@ func TestAnchorOutputWithIDSerialization(t *testing.T) {
 		Amount:     iotago.BaseToken(mathrand.Uint64()),
 		StateIndex: mathrand.Uint32(),
 		// serix deserializes with empty slices instead of nil
-		StateMetadata:     []byte{},
-		Conditions:        make(iotago.AnchorOutputUnlockConditions, 0),
+		UnlockConditions:  make(iotago.AnchorOutputUnlockConditions, 0),
 		Features:          make(iotago.AnchorOutputFeatures, 0),
 		ImmutableFeatures: make(iotago.AnchorOutputImmFeatures, 0),
 	}
@@ -29,7 +28,7 @@ func TestAnchorOutputWithIDSerialization(t *testing.T) {
 
 	accountOutput := iotago.AccountOutput{
 		Amount:            iotago.BaseToken(mathrand.Uint64()),
-		Conditions:        make(iotago.AccountOutputUnlockConditions, 0),
+		UnlockConditions:  make(iotago.AccountOutputUnlockConditions, 0),
 		Features:          make(iotago.AccountOutputFeatures, 0),
 		ImmutableFeatures: make(iotago.AccountOutputImmFeatures, 0),
 	}

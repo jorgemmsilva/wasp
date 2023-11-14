@@ -222,7 +222,7 @@ func requestMetadataFromFeatureSet(set iotago.FeatureSet) (*RequestMetadata, err
 		// IMPORTANT: this cannot return an empty `&RequestMetadata{}` object because that could cause `isInternalUTXO` check to fail
 		return nil, nil
 	}
-	return RequestMetadataFromBytes(metadataFeatBlock.Data)
+	return RequestMetadataFromBytes(metadataFeatBlock.Entries[""])
 }
 
 func RequestMetadataFromBytes(data []byte) (*RequestMetadata, error) {

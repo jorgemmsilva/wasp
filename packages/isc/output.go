@@ -58,7 +58,11 @@ func NewChainOuptuts(
 // only for testing
 func RandomChainOutputs() *ChainOutputs {
 	return NewChainOuptuts(
-		&iotago.AnchorOutput{StateMetadata: []byte{}},
+		&iotago.AnchorOutput{
+			Features: iotago.AnchorOutputFeatures{
+				&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{}},
+			},
+		},
 		testiotago.RandOutputID(),
 		&iotago.AccountOutput{},
 		testiotago.RandOutputID(),

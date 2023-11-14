@@ -293,16 +293,16 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		anchorID = iotago.AnchorIDFromOutputID(txb.inputs.AnchorOutputID)
 	}
 	anchorOutput := &iotago.AnchorOutput{
-		Amount:        0,
-		AnchorID:      anchorID,
-		StateIndex:    txb.inputs.AnchorOutput.StateIndex + 1,
-		StateMetadata: stateMetadata,
-		Conditions: iotago.AnchorOutputUnlockConditions{
+		Amount:     0,
+		AnchorID:   anchorID,
+		StateIndex: txb.inputs.AnchorOutput.StateIndex + 1,
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: txb.inputs.AnchorOutput.StateController()},
 			&iotago.GovernorAddressUnlockCondition{Address: txb.inputs.AnchorOutput.GovernorAddress()},
 		},
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
+			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{"": stateMetadata}},
 		},
 		Mana: lo.Must(vm.TotalManaIn(
 			parameters.L1API().ManaDecayProvider(),
@@ -313,13 +313,14 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		)),
 	}
 	if metadata := txb.inputs.AnchorOutput.FeatureSet().Metadata(); metadata != nil {
-		anchorOutput.Features = append(anchorOutput.Features, &iotago.MetadataFeature{Data: metadata.Data})
+		anchorOutput.Features.Upsert(&iotago.MetadataFeature{Entries: metadata.Entries})
+		anchorOutput.Features.Sort()
 	}
 	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(parameters.Storage().MinDeposit(anchorOutput))
 
 	accountOutput := &iotago.AccountOutput{
 		FoundryCounter: txb.nextFoundryCounter(),
-		Conditions: iotago.AccountOutputUnlockConditions{
+		UnlockConditions: iotago.AccountOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
 		},
 		Features: iotago.AccountOutputFeatures{
@@ -441,13 +442,13 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAnchorID iotag
 	switch o := out.(type) {
 	case *iotago.BasicOutput:
 		o.Features.Upsert(feature)
-		o.Conditions = iotago.BasicOutputUnlockConditions{unlock}
+		o.UnlockConditions = iotago.BasicOutputUnlockConditions{unlock}
 	case *iotago.NFTOutput:
 		o.Features.Upsert(feature)
-		o.Conditions = iotago.NFTOutputUnlockConditions{unlock}
+		o.UnlockConditions = iotago.NFTOutputUnlockConditions{unlock}
 	case *iotago.AnchorOutput:
 		o.Features.Upsert(feature)
-		o.Conditions = iotago.AnchorOutputUnlockConditions{unlock}
+		o.UnlockConditions = iotago.AnchorOutputUnlockConditions{unlock}
 	default:
 		panic("unexpected output type")
 	}

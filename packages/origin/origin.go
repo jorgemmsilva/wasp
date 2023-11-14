@@ -82,7 +82,7 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 	var initParams dict.Dict
 	if originMetadata := chainOutputs.AnchorOutput.FeatureSet().Metadata(); originMetadata != nil {
 		var err error
-		initParams, err = dict.FromBytes(originMetadata.Data)
+		initParams, err = dict.FromBytes(originMetadata.Entries[""])
 		if err != nil {
 			return nil, fmt.Errorf("invalid parameters on origin AO, %w", err)
 		}
@@ -92,7 +92,7 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 	commonAccountAmount := chainOutputs.AnchorOutput.Amount - anchorSD
 	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
 
-	originAOStateMetadata, err := transaction.StateMetadataFromBytes(chainOutputs.AnchorOutput.StateMetadata)
+	originAOStateMetadata, err := transaction.StateMetadataFromAnchorOutput(chainOutputs.AnchorOutput)
 	if err != nil {
 		return nil, fmt.Errorf("invalid state metadata on origin AO: %w", err)
 	}
@@ -128,7 +128,7 @@ func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToke
 // (which will be created on state index #1)
 func accountOutputSD(api iotago.API) iotago.BaseToken {
 	mockOutput := &iotago.AccountOutput{
-		Conditions: iotago.AccountOutputUnlockConditions{
+		UnlockConditions: iotago.AccountOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: &iotago.AnchorAddress{}},
 		},
 		Features: iotago.AccountOutputFeatures{
@@ -162,9 +162,8 @@ func NewChainOriginTransaction(
 	}
 
 	anchorOutput := &iotago.AnchorOutput{
-		Amount:        deposit,
-		StateMetadata: calcStateMetadata(initParams, deposit, schemaVersion), // NOTE: Updated below.
-		Conditions: iotago.AnchorOutputUnlockConditions{
+		Amount: deposit,
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateControllerAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governanceControllerAddress},
 		},
@@ -172,7 +171,10 @@ func NewChainOriginTransaction(
 			// SenderFeature included so that SD calculation keeps stable.
 			// SenderFeature will be set to AnchorAddress in the first VM run.
 			&iotago.SenderFeature{Address: walletAddr},
-			&iotago.MetadataFeature{Data: initParams.Bytes()},
+			&iotago.MetadataFeature{Entries: iotago.MetadataFeatureEntries{"": initParams.Bytes()}},
+			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{
+				"": calcStateMetadata(initParams, deposit, schemaVersion), // NOTE: Updated below.
+			}},
 		},
 		Mana: depositMana,
 	}
@@ -185,7 +187,11 @@ func NewChainOriginTransaction(
 	}
 
 	// update the L1 commitment to not include the minimumSD -- should not affect the SD needed
-	anchorOutput.StateMetadata = calcStateMetadata(initParams, anchorOutput.Amount-anchorSD, schemaVersion)
+	anchorOutput.Features.Upsert(
+		&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{
+			"": calcStateMetadata(initParams, anchorOutput.Amount-anchorSD, schemaVersion),
+		}},
+	)
 
 	txInputs, remainder, err := transaction.ComputeInputsAndRemainder(
 		walletAddr,

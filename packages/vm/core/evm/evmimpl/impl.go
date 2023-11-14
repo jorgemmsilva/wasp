@@ -362,7 +362,7 @@ func registerERC721NFTCollection(ctx isc.Sandbox) dict.Dict {
 		return collection
 	}()
 
-	metadata, err := isc.IRC27NFTMetadataFromBytes(collection.Metadata)
+	metadata, err := isc.IRC27NFTMetadataFromBytes(collection.Metadata[""])
 	ctx.RequireNoError(err, "cannot decode IRC27 collection NFT metadata")
 
 	// deploy the contract to the EVM state

@@ -11,7 +11,7 @@ func NewMintNFTsTransaction(
 	issuerKeyPair *cryptolib.KeyPair,
 	collectionOutputID *iotago.OutputID,
 	target iotago.Address,
-	immutableMetadata [][]byte,
+	immutableMetadata []iotago.MetadataFeatureEntries,
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
 ) (*iotago.SignedTransaction, error) {
@@ -51,12 +51,12 @@ func NewMintNFTsTransaction(
 	for _, immutableMetadata := range immutableMetadata {
 		addOutput(&iotago.NFTOutput{
 			NFTID: iotago.NFTID{},
-			Conditions: iotago.NFTOutputUnlockConditions{
+			UnlockConditions: iotago.NFTOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: target},
 			},
 			ImmutableFeatures: iotago.NFTOutputImmFeatures{
 				&iotago.IssuerFeature{Address: issuerAddress},
-				&iotago.MetadataFeature{Data: immutableMetadata},
+				&iotago.MetadataFeature{Entries: immutableMetadata},
 			},
 		})
 	}

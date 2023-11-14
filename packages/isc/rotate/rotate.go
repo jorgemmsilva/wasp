@@ -33,13 +33,13 @@ func MakeRotateStateControllerTransaction(
 ) (*iotago.Transaction, iotago.Unlocks, error) {
 	anchorOutput := func() *iotago.AnchorOutput {
 		output := chainInputs.AnchorOutput.Clone().(*iotago.AnchorOutput)
-		for i := range output.Conditions {
-			if _, ok := output.Conditions[i].(*iotago.StateControllerAddressUnlockCondition); ok {
-				output.Conditions[i] = &iotago.StateControllerAddressUnlockCondition{Address: nextAddr}
+		for i := range output.UnlockConditions {
+			if _, ok := output.UnlockConditions[i].(*iotago.StateControllerAddressUnlockCondition); ok {
+				output.UnlockConditions[i] = &iotago.StateControllerAddressUnlockCondition{Address: nextAddr}
 			}
 			// TODO: it is probably not the correct way to do the governance transition
-			if _, ok := output.Conditions[i].(*iotago.GovernorAddressUnlockCondition); ok {
-				output.Conditions[i] = &iotago.GovernorAddressUnlockCondition{Address: nextAddr}
+			if _, ok := output.UnlockConditions[i].(*iotago.GovernorAddressUnlockCondition); ok {
+				output.UnlockConditions[i] = &iotago.GovernorAddressUnlockCondition{Address: nextAddr}
 			}
 		}
 		return output

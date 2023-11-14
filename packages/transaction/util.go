@@ -35,6 +35,10 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 		isOrigin = true
 		anchorID = iotago.AnchorIDFromOutputID(iotago.OutputIDFromTransactionIDAndIndex(txid, 0))
 	}
+	stateData, err := StateMetadataBytesFromAnchorOutput(anchorOutput)
+	if err != nil {
+		return nil, nil, err
+	}
 	return &isc.StateAnchor{
 		IsOrigin:             isOrigin,
 		OutputID:             iotago.OutputIDFromTransactionIDAndIndex(txid, 0),
@@ -42,7 +46,7 @@ func GetAnchorFromTransaction(tx *iotago.Transaction) (*isc.StateAnchor, *iotago
 		StateController:      anchorOutput.StateController(),
 		GovernanceController: anchorOutput.GovernorAddress(),
 		StateIndex:           anchorOutput.StateIndex,
-		StateData:            anchorOutput.StateMetadata,
+		StateData:            stateData,
 		Deposit:              anchorOutput.Amount,
 	}, anchorOutput, nil
 }
@@ -147,7 +151,7 @@ func computeRemainderOutputs(
 			Features: iotago.BasicOutputFeatures{
 				&iotago.NativeTokenFeature{ID: nt.ID, Amount: nt.Amount},
 			},
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
@@ -166,7 +170,7 @@ func computeRemainderOutputs(
 	if excess.BaseTokens > 0 {
 		out := &iotago.BasicOutput{
 			Amount: excess.BaseTokens,
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}

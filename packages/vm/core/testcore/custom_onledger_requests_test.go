@@ -57,7 +57,7 @@ func TestNoSenderFeature(t *testing.T) {
 		wallet)
 	require.NoError(t, err)
 
-	nft, _, err := ch.Env.MintNFTL1(wallet, addr, []byte("foobar"))
+	nft, _, err := ch.Env.MintNFTL1(wallet, addr, iotago.MetadataFeatureEntries{"": []byte("foobar")})
 	require.NoError(t, err)
 
 	// ----------------------------------------------------------------
@@ -185,7 +185,8 @@ func TestSendBack(t *testing.T) {
 			ReturnAddress: addr,
 			Amount:        1 * isc.Million,
 		}
-		customOut.Conditions = append(customOut.Conditions, sendBackCondition)
+		customOut.UnlockConditions.Upsert(sendBackCondition)
+		customOut.UnlockConditions.Sort()
 		tx.Transaction.Outputs[i] = customOut
 	}
 
@@ -249,7 +250,7 @@ func TestBadMetadata(t *testing.T) {
 		customOut := out.Clone().(*iotago.BasicOutput)
 		for ii, f := range customOut.Features {
 			if mf, ok := f.(*iotago.MetadataFeature); ok {
-				mf.Data = []byte("foobar")
+				mf.Entries = iotago.MetadataFeatureEntries{"": []byte("foobar")}
 				customOut.Features[ii] = mf
 			}
 		}

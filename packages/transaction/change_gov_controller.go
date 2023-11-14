@@ -33,8 +33,8 @@ func NewChangeGovControllerTx(
 		return nil, fmt.Errorf("unable to find UTXO for chain (%s) in owned UTXOs", chainID.String())
 	}
 
-	newConditions := make(iotago.AnchorOutputUnlockConditions, len(chainOutput.Conditions))
-	for i, c := range chainOutput.Conditions {
+	newConditions := make(iotago.AnchorOutputUnlockConditions, len(chainOutput.UnlockConditions))
+	for i, c := range chainOutput.UnlockConditions {
 		if _, ok := c.(*iotago.GovernorAddressUnlockCondition); ok {
 			// change the gov unlock condiiton to the new owner
 			newConditions[i] = &iotago.GovernorAddressUnlockCondition{
@@ -44,7 +44,7 @@ func NewChangeGovControllerTx(
 		}
 		newConditions[i] = c
 	}
-	chainOutput.Conditions = newConditions
+	chainOutput.UnlockConditions = newConditions
 	chainOutput.AnchorID = chainID // in case right after mint where outputID is still 0
 
 	inputIDs := iotago.OutputIDs{chainOutputID}

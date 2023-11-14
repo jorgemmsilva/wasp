@@ -137,7 +137,7 @@ func mintNFT(ctx isc.Sandbox) dict.Dict {
 
 	positionInMintedList, nftOutput := ctx.Privileged().MintNFT(
 		params.targetAddress,
-		params.immutableMetadata,
+		iotago.MetadataFeatureEntries{"": params.immutableMetadata},
 		params.issuerAddress,
 	)
 

@@ -15,7 +15,7 @@ import (
 
 func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 	scheme iotago.TokenScheme,
-	metadata []byte,
+	metadata iotago.MetadataFeatureEntries,
 ) (sn uint32, deposit iotago.BaseToken) {
 	// must check for valid token scheme to not create invalid transactions
 	simpleTokenScheme := util.MustTokenScheme(scheme)
@@ -31,7 +31,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 		Amount:       0,
 		SerialNumber: txb.nextFoundrySerialNumber(),
 		TokenScheme:  scheme,
-		Conditions: iotago.FoundryOutputUnlockConditions{
+		UnlockConditions: iotago.FoundryOutputUnlockConditions{
 			&iotago.ImmutableAccountUnlockCondition{
 				Address: txb.AccountID().ToAddress().(*iotago.AccountAddress),
 			},
@@ -39,7 +39,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 	}
 	if len(metadata) > 0 {
 		f.Features = iotago.FoundryOutputFeatures{&iotago.MetadataFeature{
-			Data: metadata,
+			Entries: metadata,
 		}}
 	}
 	f.Amount = lo.Must(parameters.Storage().MinDeposit(f))

@@ -68,7 +68,7 @@ func TestDoubleSpend(t *testing.T) {
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: FundsFromFaucetAmount,
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: addr2},
 			},
 			Mana: mana,
@@ -86,7 +86,7 @@ func TestDoubleSpend(t *testing.T) {
 		}).
 		AddOutput(&iotago.BasicOutput{
 			Amount: FundsFromFaucetAmount,
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: addr3},
 			},
 			Mana: mana,

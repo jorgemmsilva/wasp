@@ -36,13 +36,13 @@ func TestRequestDataSerialization(t *testing.T) {
 			Amount: 123,
 			Features: iotago.BasicOutputFeatures{
 				&iotago.SenderFeature{Address: sender},
-				&iotago.MetadataFeature{Data: requestMetadata.Bytes()},
+				&iotago.MetadataFeature{Entries: iotago.MetadataFeatureEntries{"": requestMetadata.Bytes()}},
 				&iotago.NativeTokenFeature{
 					ID:     [iotago.NativeTokenIDLength]byte{1},
 					Amount: big.NewInt(100),
 				},
 			},
-			Conditions: iotago.BasicOutputUnlockConditions{
+			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: sender},
 			},
 		}

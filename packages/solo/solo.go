@@ -599,8 +599,8 @@ type NFTMintedInfo struct {
 
 // MintNFTL1 mints a single NFT with the `issuer` account and sends it to a `target` account.
 // Base tokens in the NFT output are sent to the minimum storage deposit and are taken from the issuer account.
-func (env *Solo) MintNFTL1(issuer *cryptolib.KeyPair, target iotago.Address, immutableMetadata []byte) (*isc.NFT, *NFTMintedInfo, error) {
-	nfts, infos, err := env.MintNFTsL1(issuer, target, nil, [][]byte{immutableMetadata})
+func (env *Solo) MintNFTL1(issuer *cryptolib.KeyPair, target iotago.Address, immutableMetadata iotago.MetadataFeatureEntries) (*isc.NFT, *NFTMintedInfo, error) {
+	nfts, infos, err := env.MintNFTsL1(issuer, target, nil, []iotago.MetadataFeatureEntries{immutableMetadata})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -615,7 +615,7 @@ func (env *Solo) MintNFTL1(issuer *cryptolib.KeyPair, target iotago.Address, imm
 // See: https://github.com/iotaledger/tips/blob/main/tips/TIP-0027/tip-0027.md
 //
 // Base tokens in the NFT outputs are sent to the minimum storage deposit and are taken from the issuer account.
-func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, collectionOutputID *iotago.OutputID, immutableMetadata [][]byte) ([]*isc.NFT, []*NFTMintedInfo, error) {
+func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, collectionOutputID *iotago.OutputID, immutableMetadata []iotago.MetadataFeatureEntries) ([]*isc.NFT, []*NFTMintedInfo, error) {
 	allOuts := env.utxoDB.GetUnspentOutputs(issuer.Address())
 
 	tx, err := transaction.NewMintNFTsTransaction(
@@ -652,7 +652,7 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 			nft := &isc.NFT{
 				ID:       info.NFTID,
 				Issuer:   out.ImmutableFeatureSet().Issuer().Address,
-				Metadata: out.ImmutableFeatureSet().Metadata().Data,
+				Metadata: out.ImmutableFeatureSet().Metadata().Entries,
 			}
 			nfts = append(nfts, nft)
 			infos = append(infos, info)

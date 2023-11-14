@@ -37,7 +37,7 @@ func (h *magicContractHandler) GetNFTData(nftID iscmagic.NFTID) iscmagic.ISCNFT 
 // handler for ISCSandbox::getIRC27NFTData
 func (h *magicContractHandler) GetIRC27NFTData(nftID iscmagic.NFTID) iscmagic.IRC27NFT {
 	nft := h.ctx.GetNFTData(nftID.Unwrap())
-	metadata, err := isc.IRC27NFTMetadataFromBytes(nft.Metadata)
+	metadata, err := isc.IRC27NFTMetadataFromBytes(nft.Metadata[""])
 	h.ctx.RequireNoError(err)
 	return iscmagic.IRC27NFT{
 		Nft:      iscmagic.WrapISCNFT(nft),

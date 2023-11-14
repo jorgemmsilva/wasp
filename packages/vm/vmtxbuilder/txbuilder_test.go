@@ -64,15 +64,17 @@ func TestTxBuilderBasic(t *testing.T) {
 	anchor := &iotago.AnchorOutput{
 		Amount:   initialTotalBaseTokens,
 		AnchorID: anchorID,
-		Conditions: iotago.AnchorOutputUnlockConditions{
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
-		StateIndex:    0,
-		StateMetadata: dummyStateMetadata,
+		StateIndex: 0,
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
 				Address: anchorID.ToAddress(),
+			},
+			&iotago.StateMetadataFeature{
+				Entries: iotago.StateMetadataFeatureEntries{"": dummyStateMetadata},
 			},
 		},
 	}
@@ -82,7 +84,7 @@ func TestTxBuilderBasic(t *testing.T) {
 	account := &iotago.AccountOutput{
 		AccountID:      accountID,
 		FoundryCounter: 0,
-		Conditions: iotago.AccountOutputUnlockConditions{
+		UnlockConditions: iotago.AccountOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
 		},
 		Features: iotago.AccountOutputFeatures{
@@ -162,15 +164,17 @@ func TestTxBuilderConsistency(t *testing.T) {
 	anchor := &iotago.AnchorOutput{
 		Amount:   initialTotalBaseTokens,
 		AnchorID: anchorID,
-		Conditions: iotago.AnchorOutputUnlockConditions{
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
-		StateIndex:    0,
-		StateMetadata: dummyStateMetadata,
+		StateIndex: 0,
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
 				Address: anchorID.ToAddress(),
+			},
+			&iotago.StateMetadataFeature{
+				Entries: iotago.StateMetadataFeatureEntries{"": dummyStateMetadata},
 			},
 		},
 	}
@@ -180,7 +184,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	account := &iotago.AccountOutput{
 		AccountID:      accountID,
 		FoundryCounter: 0,
-		Conditions: iotago.AccountOutputUnlockConditions{
+		UnlockConditions: iotago.AccountOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
 		},
 		Features: iotago.AccountOutputFeatures{
@@ -415,15 +419,17 @@ func TestFoundries(t *testing.T) {
 	anchor := &iotago.AnchorOutput{
 		Amount:   initialTotalBaseTokens,
 		AnchorID: anchorID,
-		Conditions: iotago.AnchorOutputUnlockConditions{
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
 			&iotago.GovernorAddressUnlockCondition{Address: addr},
 		},
-		StateIndex:    0,
-		StateMetadata: dummyStateMetadata,
+		StateIndex: 0,
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
 				Address: anchorID.ToAddress(),
+			},
+			&iotago.StateMetadataFeature{
+				Entries: iotago.StateMetadataFeatureEntries{"": dummyStateMetadata},
 			},
 		},
 	}
@@ -433,7 +439,7 @@ func TestFoundries(t *testing.T) {
 	account := &iotago.AccountOutput{
 		AccountID:      accountID,
 		FoundryCounter: 0,
-		Conditions: iotago.AccountOutputUnlockConditions{
+		UnlockConditions: iotago.AccountOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: anchorID.ToAddress()},
 		},
 		Features: iotago.AccountOutputFeatures{
@@ -515,8 +521,8 @@ func TestSerDe(t *testing.T) {
 		outBack := &iotago.BasicOutput{}
 		_, err = parameters.L1API().Decode(data, &outBack)
 		require.NoError(t, err)
-		condSet := out.Conditions.MustSet()
-		condSetBack := outBack.Conditions.MustSet()
+		condSet := out.UnlockConditions.MustSet()
+		condSetBack := outBack.UnlockConditions.MustSet()
 		require.True(t, condSet[iotago.UnlockConditionAddress].Equal(condSetBack[iotago.UnlockConditionAddress]))
 		require.EqualValues(t, out.BaseTokenAmount(), outBack.Amount)
 		require.Nil(t, outBack.FeatureSet().NativeToken())
@@ -524,7 +530,7 @@ func TestSerDe(t *testing.T) {
 	})
 	t.Run("serde FoundryOutput", func(t *testing.T) {
 		out := &iotago.FoundryOutput{
-			Conditions: iotago.FoundryOutputUnlockConditions{
+			UnlockConditions: iotago.FoundryOutputUnlockConditions{
 				&iotago.ImmutableAccountUnlockCondition{Address: tpkg.RandAccountAddress()},
 			},
 			Amount:       1337,

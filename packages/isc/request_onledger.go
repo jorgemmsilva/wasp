@@ -180,7 +180,7 @@ func (req *onLedgerRequestData) NFT() *NFT {
 			ret.Issuer = block.Address
 		}
 		if block, ok := featureBlock.(*iotago.MetadataFeature); ok {
-			ret.Metadata = block.Data
+			ret.Metadata = block.Entries
 		}
 	}
 

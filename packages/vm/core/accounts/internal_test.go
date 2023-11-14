@@ -307,14 +307,14 @@ func TestTransferNFTs(t *testing.T) {
 	NFT1 := &isc.NFT{
 		ID:       iotago.NFTID{123},
 		Issuer:   tpkg.RandEd25519Address(),
-		Metadata: []byte("foobar"),
+		Metadata: iotago.MetadataFeatureEntries{"": []byte("foobar")},
 	}
 	CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
 		Amount: 0,
 		NFTID:  NFT1.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
-			&iotago.MetadataFeature{Data: NFT1.Metadata},
+			&iotago.MetadataFeature{Entries: NFT1.Metadata},
 		},
 	}, isc.ChainID{})
 	// nft is credited
@@ -328,7 +328,7 @@ func TestTransferNFTs(t *testing.T) {
 		NFTID:  NFT1.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
-			&iotago.MetadataFeature{Data: NFT1.Metadata},
+			&iotago.MetadataFeature{Entries: NFT1.Metadata},
 		},
 	}, 0)
 
@@ -380,14 +380,14 @@ func TestCreditDebitNFT1(t *testing.T) {
 	nft := isc.NFT{
 		ID:       iotago.NFTID{123},
 		Issuer:   tpkg.RandEd25519Address(),
-		Metadata: []byte("foobar"),
+		Metadata: iotago.MetadataFeatureEntries{"": []byte("foobar")},
 	}
 	CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
 		Amount: 0,
 		NFTID:  nft.ID,
 		ImmutableFeatures: []iotago.Feature{
 			&iotago.IssuerFeature{Address: nft.Issuer},
-			&iotago.MetadataFeature{Data: nft.Metadata},
+			&iotago.MetadataFeature{Entries: nft.Metadata},
 		},
 	}, isc.ChainID{})
 

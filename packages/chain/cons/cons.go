@@ -586,6 +586,7 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 		tx, _, err := rotate.MakeRotationTransactionForSelfManagedChain(
 			vmResult.RotationAddress,
 			vmResult.Task.Inputs,
+			// TODO: <lmoe> Guess this call could be placed into a separate module? It seems to be used by a few components already.
 			parameters.L1API().TimeProvider().SlotFromTime(vmResult.Task.Timestamp),
 		)
 		if err != nil {
@@ -650,7 +651,7 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 		Block:            block,
 	}
 	c.output.Status = Completed
-	c.log.Infof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.AnchorOutputID.ToHex())
+	c.log.Infof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.Inputs.AnchorOutputID.ToHex())
 	c.term.haveOutputProduced()
 	return nil
 }

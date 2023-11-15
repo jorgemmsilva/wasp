@@ -430,24 +430,30 @@ func (txb *AnchorTransactionBuilder) outputsAreFull() bool {
 func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAnchorID iotago.AnchorID) iotago.Output {
 	out := req.Output().Clone()
 
-	feature := &iotago.SenderFeature{
-		Address: chainAnchorID.ToAddress(), // must have the chain as the sender, so its recognized as an internalUTXO
+	features := []iotago.Feature{
+		&iotago.SenderFeature{
+			Address: chainAnchorID.ToAddress(), // must have the chain as the sender, so its recognized as an internalUTXO
+		},
+	}
+	ntFeature := out.FeatureSet().NativeToken()
+	if ntFeature != nil {
+		features = append(features, ntFeature.Clone()) // keep NT feature, if it exists
 	}
 
 	unlock := &iotago.AddressUnlockCondition{
 		Address: chainAnchorID.ToAddress(),
 	}
 
-	// cleanup features and unlock conditions except metadata
+	// cleanup features and unlock conditions
 	switch o := out.(type) {
 	case *iotago.BasicOutput:
-		o.Features.Upsert(feature)
+		o.Features = features
 		o.UnlockConditions = iotago.BasicOutputUnlockConditions{unlock}
 	case *iotago.NFTOutput:
-		o.Features.Upsert(feature)
+		o.Features = features
 		o.UnlockConditions = iotago.NFTOutputUnlockConditions{unlock}
 	case *iotago.AnchorOutput:
-		o.Features.Upsert(feature)
+		o.Features = features
 		o.UnlockConditions = iotago.AnchorOutputUnlockConditions{unlock}
 	default:
 		panic("unexpected output type")

@@ -177,8 +177,12 @@ func (reqctx *requestContext) writeReceiptToBlockLog(vmError *isc.VMError) *bloc
 }
 
 func (vmctx *vmContext) storeUnprocessable(chainState kv.KVStore, unprocessable []isc.OnLedgerRequest, lastInternalAssetUTXOIndex uint16) {
+	if len(unprocessable) == 0 {
+		return
+	}
+	blockIndex := vmctx.task.Inputs.AnchorOutput.StateIndex + 1
+
 	withContractState(chainState, blocklog.Contract, func(s kv.KVStore) {
-		blockIndex := vmctx.task.Inputs.AnchorOutput.StateIndex + 1
 		for _, r := range unprocessable {
 			if r.SenderAccount() == nil {
 				continue

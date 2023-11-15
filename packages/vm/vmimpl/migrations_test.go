@@ -59,7 +59,8 @@ func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 	task := &vm.VMTask{
 		Inputs: isc.NewChainOuptuts(
 			&iotago.AnchorOutput{
-				StateIndex: stateIndex,
+				StateIndex:    stateIndex,
+				StateMetadata: []byte{},
 			},
 			iotago.OutputID{},
 			&iotago.AccountOutput{},

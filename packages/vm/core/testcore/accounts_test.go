@@ -1079,7 +1079,6 @@ func TestUnprocessableWithPruning(t *testing.T) {
 }
 
 func testUnprocessable(t *testing.T, originParams dict.Dict) {
-	t.SkipNow() // TODO: can't make it work
 	v := initDepositTest(t, originParams)
 	v.ch.MustDepositBaseTokensToL2(2*isc.Million, v.user)
 	// create a foundry and mint 1 token
@@ -1147,8 +1146,8 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 
 	// deposit just enough tokens for the retryReq gas fee
 	{
-		_, gasFee, err := v.ch.EstimateGasOffLedger(retryReq, newUser)
-		require.NoError(t, err)
+		_, gasFee, err2 := v.ch.EstimateGasOffLedger(retryReq, newUser)
+		require.NoError(t, err2)
 		v.ch.MustDepositBaseTokensToL2(gasFee, newUser)
 		bal := v.ch.L2BaseTokens(newUserAgentID)
 		if bal > gasFee { // because of minSD -- transfer the excess to OriginatorAgentID
@@ -1158,13 +1157,13 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 			).
 				WithAllowance(isc.NewAssetsBaseTokens(bal - gasFee)).
 				WithMaxAffordableGasBudget()
-			_, gasFee2, err := v.ch.EstimateGasOffLedger(req2, newUser)
-			require.NoError(t, err)
-			_, err = v.ch.PostRequestOffLedger(
+			_, gasFee2, err2 := v.ch.EstimateGasOffLedger(req2, newUser)
+			require.NoError(t, err2)
+			_, err2 = v.ch.PostRequestOffLedger(
 				req2.WithAllowance(isc.NewAssetsBaseTokens(bal-gasFee-gasFee2)),
 				newUser,
 			)
-			require.NoError(t, err)
+			require.NoError(t, err2)
 		}
 		require.EqualValues(t, gasFee, v.ch.L2BaseTokens(newUserAgentID))
 	}
@@ -1172,7 +1171,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	_, err = v.ch.PostRequestOffLedger(retryReq, newUser)
 	require.NoError(t, err)
 
-	// the "retry request" is successful, but "there request to be retried" did not produce a receipt, meaning it was skipped again
+	// the "retry request" is successful, but the "request to be retried" did not produce a receipt, meaning it was skipped again
 	// check that the "request to be retried" did not succeed (no receipt, still in the unprocessed list)
 	receipt, err = v.ch.GetRequestReceipt(unprocessableReqID)
 	require.NoError(t, err)
@@ -1180,7 +1179,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	require.True(t, isInUnprocessableList())
 	require.False(t, blocklog.HasUnprocessableRequestBeenRemovedInBlock(v.ch.LatestBlock(), unprocessableReqID)) // assert this function returns false, its used to prevent these requests from being re-added to the mempool on a reorg
 	// --
-	// deposit funds and retry that request
+	// deposit funds and retry the offending request
 	err = v.ch.DepositBaseTokensToL2(10*isc.Million, newUser)
 	require.NoError(t, err)
 	_, rec, _, err := v.ch.PostRequestSyncExt(retryReq, newUser)
@@ -1377,6 +1376,7 @@ func TestNFTMint(t *testing.T) {
 	})
 
 	t.Run("mint for another user, directly to outside the chain", func(t *testing.T) {
+		panic("TODO")
 		wallet, _ := env.NewKeyPairWithFunds()
 
 		anotherUserAddr := tpkg.RandEd25519Address()
@@ -1399,6 +1399,7 @@ func TestNFTMint(t *testing.T) {
 		require.NoError(t, err)
 		require.Len(t, ch.L2NFTs(anotherUserAgentID), 0)
 		userL1NFTs := env.L1NFTs(anotherUserAddr)
+
 		NFTID := iotago.NFTIDFromOutputID(lo.Keys(userL1NFTs)[0])
 		require.Len(t, userL1NFTs, 1)
 

@@ -9,7 +9,7 @@ import (
 )
 
 type SyncMP interface {
-	BaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	BaseAnchorOutputReceived(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	ProposalReceived(requestRefs []*isc.RequestRef) gpa.OutMessages
 	RequestsNeeded(requestRefs []*isc.RequestRef) gpa.OutMessages
 	RequestsReceived(requests []isc.Request) gpa.OutMessages
@@ -17,9 +17,9 @@ type SyncMP interface {
 }
 
 type syncMPImpl struct {
-	BaseAnchorOutput       *isc.AnchorOutputWithID
+	BaseAnchorOutput      *isc.ChainOutputs
 	DecidedRequestIDs     []isc.RequestID
-	proposalInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	proposalInputsReadyCB func(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	proposalReceived      bool
 	proposalReceivedCB    func(requestRefs []*isc.RequestRef) gpa.OutMessages
 	requestsNeeded        bool
@@ -29,7 +29,7 @@ type syncMPImpl struct {
 }
 
 func NewSyncMP(
-	proposalInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
+	proposalInputsReadyCB func(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages,
 	proposalReceivedCB func(requestRefs []*isc.RequestRef) gpa.OutMessages,
 	requestsNeededCB func(requestIDs []*isc.RequestRef) gpa.OutMessages,
 	requestsReceivedCB func(requests []isc.Request) gpa.OutMessages,
@@ -42,7 +42,7 @@ func NewSyncMP(
 	}
 }
 
-func (sub *syncMPImpl) BaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (sub *syncMPImpl) BaseAnchorOutputReceived(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	if sub.BaseAnchorOutput != nil {
 		return nil
 	}

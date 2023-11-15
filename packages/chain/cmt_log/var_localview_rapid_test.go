@@ -25,10 +25,10 @@ type varLocalViewSM struct {
 	lv cmt_log.VarLocalView
 	//
 	// Following stands for the model.
-	confirmed []*isc.AnchorOutputWithID // A chain of confirmed AOs.
-	pending   []*isc.AnchorOutputWithID // A list of AOs proposed by the chain, not confirmed yet.
-	rejected  []*isc.AnchorOutputWithID // Rejected AOs, that should not impact the output anymore.
-	rejSync   bool                     // True, if reject was done and pending was not made empty yet.
+	confirmed []*isc.ChainOutputs // A chain of confirmed AOs.
+	pending   []*isc.ChainOutputs // A list of AOs proposed by the chain, not confirmed yet.
+	rejected  []*isc.ChainOutputs // Rejected AOs, that should not impact the output anymore.
+	rejSync   bool                // True, if reject was done and pending was not made empty yet.
 	//
 	// Helpers.
 	utxoIDCounter int // To have unique UTXO IDs.
@@ -38,10 +38,10 @@ var _ rapid.StateMachine = &varLocalViewSM{}
 
 func newVarLocalViewSM(t *rapid.T) *varLocalViewSM {
 	sm := new(varLocalViewSM)
-	sm.lv = cmt_log.NewVarLocalView(-1, func(ao *isc.AnchorOutputWithID) {}, testlogger.NewLogger(t))
-	sm.confirmed = []*isc.AnchorOutputWithID{}
-	sm.pending = []*isc.AnchorOutputWithID{}
-	sm.rejected = []*isc.AnchorOutputWithID{}
+	sm.lv = cmt_log.NewVarLocalView(-1, func(ao *isc.ChainOutputs) {}, testlogger.NewLogger(t))
+	sm.confirmed = []*isc.ChainOutputs{}
+	sm.pending = []*isc.ChainOutputs{}
+	sm.rejected = []*isc.ChainOutputs{}
 	sm.rejSync = false
 	return sm
 }
@@ -63,7 +63,7 @@ func (sm *varLocalViewSM) L1ExternalAOConfirmed(t *rapid.T) {
 	sm.confirmed = append(sm.confirmed, newAO)
 	sm.rejected = append(sm.rejected, sm.pending...)
 	sm.rejSync = false
-	sm.pending = []*isc.AnchorOutputWithID{}
+	sm.pending = []*isc.ChainOutputs{}
 }
 
 // E.g. A TX proposed by the consensus was approved.
@@ -145,7 +145,7 @@ func (sm *varLocalViewSM) ConsensusOutput(t *rapid.T) {
 	prevAO := sm.lv.Value()
 	require.NotNil(t, prevAO)
 	newAO := sm.nextAO(prevAO)
-	tipAO, tipChanged := sm.lv.ConsensusOutputDone(cmt_log.NilLogIndex(), prevAO.OutputID(), newAO) // TODO: LogIndex.
+	tipAO, tipChanged := sm.lv.ConsensusOutputDone(cmt_log.NilLogIndex(), prevAO.AnchorOutputID, newAO) // TODO: LogIndex.
 	require.True(t, tipChanged)
 	require.Equal(t, newAO, tipAO)
 	require.Equal(t, newAO, sm.lv.Value())
@@ -163,7 +163,7 @@ func (sm *varLocalViewSM) Check(t *rapid.T) {
 }
 
 // We don't use randomness to generate AOs because they have to be unique.
-func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AnchorOutputWithID) *isc.AnchorOutputWithID {
+func (sm *varLocalViewSM) nextAO(prevAO ...*isc.ChainOutputs) *isc.ChainOutputs {
 	sm.utxoIDCounter++
 	txIDBytes := []byte(fmt.Sprintf("%v", sm.utxoIDCounter))
 	utxoInput := iotago.UTXOInput{}
@@ -178,10 +178,12 @@ func (sm *varLocalViewSM) nextAO(prevAO ...*isc.AnchorOutputWithID) *isc.AnchorO
 	} else {
 		stateIndex = uint32(sm.utxoIDCounter)
 	}
-	return isc.NewAnchorOutputWithID(&iotago.AnchorOutput{
-		StateIndex: stateIndex,
-		StateMetadata: []byte{},
-	}, utxoInput.ID())
+	return &isc.ChainOutputs{
+		AnchorOutput: &iotago.AnchorOutput{
+			StateIndex: stateIndex,
+		},
+		AnchorOutputID: utxoInput.OutputID(),
+	}
 }
 
 // Anchor output can be proposed, if there is at least one AO confirmed and there is no
@@ -214,12 +216,12 @@ func (sm *varLocalViewSM) propBaseAOProposedCorrect(t *rapid.T) {
 func (sm *varLocalViewSM) modelStatus() string {
 	str := fmt.Sprintf("Rejected[sync=%v]", sm.rejSync)
 	for _, e := range sm.rejected {
-		oid := e.OutputID()
+		oid := e.AnchorOutputID
 		str += fmt.Sprintf(" %v", oid[0:4])
 	}
 	str += "; Pending"
 	for _, e := range sm.pending {
-		oid := e.OutputID()
+		oid := e.AnchorOutputID
 		str += fmt.Sprintf(" %v", oid[0:4])
 	}
 	return str

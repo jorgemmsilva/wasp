@@ -11,14 +11,14 @@ import (
 )
 
 type inputConsensusOutputRejected struct {
-	anchorOutput *isc.AnchorOutputWithID
-	logIndex    LogIndex
+	anchorOutput *isc.ChainOutputs
+	logIndex     LogIndex
 }
 
-func NewInputConsensusOutputRejected(anchorOutput *isc.AnchorOutputWithID, logIndex LogIndex) gpa.Input {
+func NewInputConsensusOutputRejected(anchorOutput *isc.ChainOutputs, logIndex LogIndex) gpa.Input {
 	return &inputConsensusOutputRejected{
 		anchorOutput: anchorOutput,
-		logIndex:    logIndex,
+		logIndex:     logIndex,
 	}
 }
 

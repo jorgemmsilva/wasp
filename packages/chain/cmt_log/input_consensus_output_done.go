@@ -12,10 +12,10 @@ import (
 )
 
 type inputConsensusOutputDone struct {
-	logIndex          LogIndex
-	proposedBaseAO    iotago.OutputID        // Proposed BaseAO
-	baseAnchorOutputID iotago.OutputID        // Decided BaseAO
-	nextAnchorOutput   *isc.AnchorOutputWithID // And the next one.
+	logIndex           LogIndex
+	proposedBaseAO     iotago.OutputID   // Proposed BaseAO
+	baseAnchorOutputID iotago.OutputID   // Decided BaseAO
+	nextAnchorOutput   *isc.ChainOutputs // And the next one.
 }
 
 // This message is internal one, but should be sent by other components (e.g. consensus or the chain).
@@ -23,11 +23,11 @@ func NewInputConsensusOutputDone(
 	logIndex LogIndex,
 	proposedBaseAO iotago.OutputID,
 	baseAnchorOutputID iotago.OutputID,
-	nextAnchorOutput *isc.AnchorOutputWithID,
+	nextAnchorOutput *isc.ChainOutputs,
 ) gpa.Input {
 	return &inputConsensusOutputDone{
-		logIndex:          logIndex,
-		proposedBaseAO:    proposedBaseAO,
+		logIndex:           logIndex,
+		proposedBaseAO:     proposedBaseAO,
 		baseAnchorOutputID: baseAnchorOutputID,
 		nextAnchorOutput:   nextAnchorOutput,
 	}

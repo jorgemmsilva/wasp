@@ -21,16 +21,16 @@ type ChainFetchStateDiff struct {
 
 var _ gpa.Input = &ChainFetchStateDiff{}
 
-func NewChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.AnchorOutputWithID) (*ChainFetchStateDiff, <-chan *ChainFetchStateDiffResults) {
+func NewChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.ChainOutputs) (*ChainFetchStateDiff, <-chan *ChainFetchStateDiffResults) {
 	if prevAO == nil {
 		// Only the current state is needed, if prevAO is unknown.
 		prevAO = nextAO
 	}
-	oldCommitment, err := transaction.L1CommitmentFromAnchorOutput(prevAO.GetAnchorOutput())
+	oldCommitment, err := transaction.L1CommitmentFromAnchorOutput(prevAO.AnchorOutput)
 	if err != nil {
 		panic(fmt.Errorf("Cannot make L1 commitment from previous alias output, error: %w", err))
 	}
-	newCommitment, err := transaction.L1CommitmentFromAnchorOutput(nextAO.GetAnchorOutput())
+	newCommitment, err := transaction.L1CommitmentFromAnchorOutput(nextAO.AnchorOutput)
 	if err != nil {
 		panic(fmt.Errorf("Cannot make L1 commitment from next alias output, error: %w", err))
 	}

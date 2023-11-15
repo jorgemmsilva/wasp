@@ -77,6 +77,10 @@ func (a *ChainOutputs) Bytes() []byte {
 	return rwutil.WriteToBytes(a)
 }
 
+func (a *ChainOutputs) GetStateIndex() uint32 {
+	return a.AnchorOutput.StateIndex
+}
+
 func (a *ChainOutputs) GetAnchorID() iotago.AnchorID {
 	return util.AnchorIDFromAnchorOutput(a.AnchorOutput, a.AnchorOutputID)
 }

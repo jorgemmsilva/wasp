@@ -26,35 +26,25 @@ func NewRotateRequestOffLedger(chainID isc.ChainID, newStateAddress iotago.Addre
 	return ret.Sign(keyPair)
 }
 
-func MakeRotateStateControllerTransaction(
+// used by the VM to create a rotatation tx after a rotation request
+func MakeRotationTransactionForSelfManagedChain(
 	nextAddr iotago.Address,
 	chainInputs *isc.ChainOutputs,
 	creationSlot iotago.SlotIndex,
 ) (*iotago.Transaction, iotago.Unlocks, error) {
-	anchorOutput := func() *iotago.AnchorOutput {
-		output := chainInputs.AnchorOutput.Clone().(*iotago.AnchorOutput)
-		for i := range output.UnlockConditions {
-			if _, ok := output.UnlockConditions[i].(*iotago.StateControllerAddressUnlockCondition); ok {
-				output.UnlockConditions[i] = &iotago.StateControllerAddressUnlockCondition{Address: nextAddr}
-			}
-			// TODO: it is probably not the correct way to do the governance transition
-			if _, ok := output.UnlockConditions[i].(*iotago.GovernorAddressUnlockCondition); ok {
-				output.UnlockConditions[i] = &iotago.GovernorAddressUnlockCondition{Address: nextAddr}
-			}
-		}
-		return output
-	}()
-
-	accountOutput := chainInputs.MustAccountOutput().Clone().(*iotago.AccountOutput)
+	// The Account output cannot be consumed on this transaction (it is not a state transaction)
+	anchorOutput := chainInputs.AnchorOutput.Clone().(*iotago.AnchorOutput)
+	anchorOutput.UnlockConditions = iotago.AnchorOutputUnlockConditions{
+		&iotago.StateControllerAddressUnlockCondition{Address: nextAddr},
+		&iotago.GovernorAddressUnlockCondition{Address: nextAddr},
+	}
 
 	inputs := iotago.TxEssenceInputs{
 		chainInputs.AnchorOutputID.UTXOInput(),
-		chainInputs.MustAccountOutputID().UTXOInput(),
 	}
 
 	unlocks := iotago.Unlocks{
 		&iotago.SignatureUnlock{}, // to be filled with the actual signature
-		&iotago.AnchorUnlock{Reference: 0},
 	}
 
 	tx := &iotago.Transaction{
@@ -66,7 +56,6 @@ func MakeRotateStateControllerTransaction(
 		},
 		Outputs: iotago.TxEssenceOutputs{
 			anchorOutput,
-			accountOutput,
 		},
 	}
 

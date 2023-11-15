@@ -301,7 +301,6 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 			&iotago.GovernorAddressUnlockCondition{Address: txb.inputs.AnchorOutput.GovernorAddress()},
 		},
 		Features: iotago.AnchorOutputFeatures{
-			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{"": stateMetadata}},
 		},
 		Mana: lo.Must(vm.TotalManaIn(

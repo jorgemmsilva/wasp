@@ -103,7 +103,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 		vmctx.task.Log.Debugf("runTask OUT. block index: %d", blockIndex)
 	} else {
 		// rotation happens
-		taskResult.Transaction, taskResult.Unlocks, err = rotate.MakeRotateStateControllerTransaction(
+		taskResult.Transaction, taskResult.Unlocks, err = rotate.MakeRotationTransactionForSelfManagedChain(
 			taskResult.RotationAddress,
 			vmctx.task.Inputs,
 			vmctx.CreationSlot(),

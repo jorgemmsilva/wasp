@@ -95,7 +95,13 @@ func New(
 		return nil, fmt.Errorf("failed to get nodeclient indexer: %w", err)
 	}
 
+	inxNodeClient, err := nodeBridge.INXNodeClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get inx node client: %w", err)
+	}
+
 	syncedCtx, syncedCtxCancel := context.WithCancel(ctx)
+
 	nc := &nodeConnection{
 		WrappedLogger:   logger.NewWrappedLogger(log),
 		ctx:             nil,
@@ -108,7 +114,7 @@ func New(
 		chainsLock:    sync.RWMutex{},
 		indexerClient: indexerClient,
 		nodeBridge:    nodeBridge,
-		nodeClient:    nodeBridge.INXNodeClient(),
+		nodeClient:    inxNodeClient,
 		pendingTransactionsMap: shrinkingmap.New[iotago.TransactionID, *pendingTransaction](
 			shrinkingmap.WithShrinkingThresholdRatio(pendingTransactionsCleanupThresholdRatio),
 			shrinkingmap.WithShrinkingThresholdCount(pendingTransactionsCleanupThresholdCount),
@@ -124,7 +130,7 @@ func New(
 	if err != nil {
 		return nil, fmt.Errorf("error getting node info: %w", err)
 	}
-	nc.setL1ProtocolParams(nodeBridge.ProtocolParameters(), nodeInfo.BaseToken)
+	nc.setL1ProtocolParams(nodeInfo.ProtocolParameters, nodeInfo.BaseToken)
 
 	nc.reattachWorkerPool = workerpool.New("L1 reattachments", workerpool.WithWorkerCount(1))
 

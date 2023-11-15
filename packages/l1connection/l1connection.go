@@ -14,6 +14,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
+	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
@@ -61,7 +62,10 @@ type l1client struct {
 
 func NewClient(config Config, log *logger.Logger, timeout ...time.Duration) Client {
 	ctx, ctxCancel := context.WithCancel(context.Background())
-	nodeAPIClient := nodeclient.New(config.APIAddress)
+	nodeAPIClient, err := nodeclient.New(config.APIAddress)
+	if err != nil {
+		panic(fmt.Errorf("error creating node connection: %w", err))
+	}
 
 	ctxWithTimeout, cancelContext := newCtx(ctx, timeout...)
 	defer cancelContext()
@@ -93,10 +97,12 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 
 	bech32Addr := myAddress.Bech32(parameters.NetworkPrefix())
 	queries := []nodeclient.IndexerQuery{
-		&nodeclient.BasicOutputsQuery{AddressBech32: bech32Addr},
-		&nodeclient.FoundriesQuery{AccountAddressBech32: bech32Addr},
-		&nodeclient.NFTsQuery{AddressBech32: bech32Addr},
-		&nodeclient.AliasesQuery{GovernorBech32: bech32Addr},
+		&apimodels.BasicOutputsQuery{AddressBech32: bech32Addr},
+		&apimodels.FoundriesQuery{AccountAddressBech32: bech32Addr},
+		&apimodels.NFTsQuery{AddressBech32: bech32Addr},
+
+		// TODO: <lmoe> AliasQuery turned to AccountsQuery?
+		&apimodels.AccountsQuery{GovernorBech32: bech32Addr},
 	}
 
 	result := make(map[iotago.OutputID]iotago.Output)
@@ -107,7 +113,7 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 			return nil, fmt.Errorf("failed to query address outputs: %w", err)
 		}
 		for res.Next() {
-			outputs, err := res.Outputs()
+			outputs, err := res.Outputs(ctxWithTimeout)
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch address outputs: %w", err)
 			}
@@ -125,12 +131,12 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 func (c *l1client) postBlock(ctx context.Context, block *iotago.Block) (iotago.BlockID, error) {
 	if !c.config.UseRemotePoW {
 		if err := doBlockPow(ctx, block, c.nodeAPIClient); err != nil {
-			return iotago.EmptyBlockID(), fmt.Errorf("failed during local PoW: %w", err)
+			return iotago.EmptyBlockID, fmt.Errorf("failed during local PoW: %w", err)
 		}
 	}
-	blockID, err := c.nodeAPIClient.SubmitBlock(ctx, block, parameters.L1().Protocol)
+	blockID, err := c.nodeAPIClient.SubmitBlock(ctx, block)
 	if err != nil {
-		return iotago.EmptyBlockID(), fmt.Errorf("failed to submit block: %w", err)
+		return iotago.EmptyBlockID, fmt.Errorf("failed to submit block: %w", err)
 	}
 
 	c.log.Infof("Posted blockID %v", blockID.ToHex())
@@ -141,19 +147,19 @@ func (c *l1client) postBlock(ctx context.Context, block *iotago.Block) (iotago.B
 // PostTx sends a tx (including tipselection and local PoW if necessary).
 func (c *l1client) postTx(ctx context.Context, tx *iotago.Transaction) (iotago.BlockID, error) {
 	// Build a Block and post it.
-	block, err := builder.NewBlockBuilder().Payload(tx).Build()
+	block, err := builder.NewBasicBlockBuilder(c.nodeAPIClient.LatestAPI()).Payload(tx).Build()
 	if err != nil {
-		return iotago.EmptyBlockID(), fmt.Errorf("failed to build block: %w", err)
+		return iotago.EmptyBlockID, fmt.Errorf("failed to build block: %w", err)
 	}
 
 	blockID, err := c.postBlock(ctx, block)
 	if err != nil {
-		return iotago.EmptyBlockID(), err
+		return iotago.EmptyBlockID, err
 	}
 
 	txID, err := tx.ID()
 	if err != nil {
-		return iotago.EmptyBlockID(), err
+		return iotago.EmptyBlockID, err
 	}
 	c.log.Infof("Posted transaction id %v", txID.ToHex())
 
@@ -167,7 +173,7 @@ func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, 
 
 	blockID, err := c.postTx(ctxWithTimeout, tx)
 	if err != nil {
-		return iotago.EmptyBlockID(), err
+		return iotago.EmptyBlockID, err
 	}
 
 	return c.waitUntilBlockConfirmed(ctxWithTimeout, blockID, tx)
@@ -188,7 +194,7 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 		return nil
 	}
 
-	checkAndPromote := func(metadata *nodeclient.BlockMetadataResponse) error {
+	checkAndPromote := func(metadata *apimodels.BlockMetadataResponse) error {
 		if err := checkContext(); err != nil {
 			return err
 		}
@@ -261,13 +267,13 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 
 	for {
 		if err := checkContext(); err != nil {
-			return iotago.EmptyBlockID(), err
+			return iotago.EmptyBlockID, err
 		}
 
 		// poll the node for block confirmation state
 		metadata, err := c.nodeAPIClient.BlockMetadataByBlockID(ctx, blockID)
 		if err != nil {
-			return iotago.EmptyBlockID(), fmt.Errorf("failed to get block metadata: %w", err)
+			return iotago.EmptyBlockID, fmt.Errorf("failed to get block metadata: %w", err)
 		}
 
 		// check if block was included
@@ -284,18 +290,18 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 				}
 			}
 
-			return iotago.EmptyBlockID(), fmt.Errorf("block was not included in the ledger. IsTransaction: %t, LedgerInclusionState: %s, ConflictReason: %d",
+			return iotago.EmptyBlockID, fmt.Errorf("block was not included in the ledger. IsTransaction: %t, LedgerInclusionState: %s, ConflictReason: %d",
 				isTransactionPayload, metadata.LedgerInclusionState, metadata.ConflictReason)
 		}
 
 		// promote if needed
 		if err := checkAndPromote(metadata); err != nil {
-			return iotago.EmptyBlockID(), err
+			return iotago.EmptyBlockID, err
 		}
 
 		// reattach if needed
 		if err := checkAndReattach(metadata); err != nil {
-			return iotago.EmptyBlockID(), err
+			return iotago.EmptyBlockID, err
 		}
 
 		time.Sleep(pollConfirmedBlockInterval)

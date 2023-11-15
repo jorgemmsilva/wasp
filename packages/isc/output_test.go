@@ -36,7 +36,7 @@ func TestAnchorOutputWithIDSerialization(t *testing.T) {
 	accountOutputID := iotago.OutputID{}
 	rand.Read(accountOutputID[:])
 
-	o := isc.NewChainOuptuts(
+	o := isc.NewChainOutputs(
 		&anchorOutput,
 		anchorOutputID,
 		&accountOutput,

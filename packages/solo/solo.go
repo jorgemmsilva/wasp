@@ -478,7 +478,7 @@ func (ch *Chain) GetChainOutputsFromL1() *isc.ChainOutputs {
 	require.LessOrEqual(ch.Env.T, len(account), 1)
 	for anchorOutputID, anchorOutput := range anchor {
 		for accountOutputID, accountOutput := range account {
-			return isc.NewChainOuptuts(
+			return isc.NewChainOutputs(
 				anchorOutput,
 				anchorOutputID,
 				accountOutput,
@@ -487,7 +487,7 @@ func (ch *Chain) GetChainOutputsFromL1() *isc.ChainOutputs {
 		}
 		// state index 0 => no account output
 		require.EqualValues(ch.Env.T, 0, anchorOutput.StateIndex)
-		return isc.NewChainOuptuts(
+		return isc.NewChainOutputs(
 			anchorOutput,
 			anchorOutputID,
 			nil,

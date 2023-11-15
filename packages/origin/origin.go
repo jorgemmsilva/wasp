@@ -230,7 +230,7 @@ func NewChainOriginTransaction(
 			Transaction: tx,
 			Unlocks:     transaction.MakeSignatureAndReferenceUnlocks(len(txInputs), sigs[0]),
 		},
-		isc.NewChainOuptuts(
+		isc.NewChainOutputs(
 			anchorOutput,
 			anchorOutputID,
 			nil,

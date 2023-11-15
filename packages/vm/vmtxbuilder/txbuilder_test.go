@@ -98,7 +98,7 @@ func TestTxBuilderBasic(t *testing.T) {
 	t.Run("deposits", func(t *testing.T) {
 		mockedAccounts := newMockAccountsContractRead(anchor)
 		txb := NewAnchorTransactionBuilder(
-			isc.NewChainOuptuts(
+			isc.NewChainOutputs(
 				anchor,
 				anchorOutputID,
 				account,
@@ -198,7 +198,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 	initTest := func(numTokenIDs int) (*AnchorTransactionBuilder, *mockAccountContractRead, []iotago.NativeTokenID) {
 		mockedAccounts := newMockAccountsContractRead(anchor)
 		txb := NewAnchorTransactionBuilder(
-			isc.NewChainOuptuts(
+			isc.NewChainOutputs(
 				anchor,
 				anchorOutputID,
 				account,
@@ -458,7 +458,7 @@ func TestFoundries(t *testing.T) {
 	initTest := func() {
 		mockedAccounts = newMockAccountsContractRead(anchor)
 		txb = NewAnchorTransactionBuilder(
-			isc.NewChainOuptuts(
+			isc.NewChainOutputs(
 				anchor,
 				anchorOutputID,
 				account,

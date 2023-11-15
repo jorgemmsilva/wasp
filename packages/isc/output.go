@@ -41,7 +41,7 @@ type ChainOutputs struct {
 	accountOutputID iotago.OutputID
 }
 
-func NewChainOuptuts(
+func NewChainOutputs(
 	AnchorOutput *iotago.AnchorOutput,
 	anchorOutputID iotago.OutputID,
 	accountOutput *iotago.AccountOutput,
@@ -57,7 +57,7 @@ func NewChainOuptuts(
 
 // only for testing
 func RandomChainOutputs() *ChainOutputs {
-	return NewChainOuptuts(
+	return NewChainOutputs(
 		&iotago.AnchorOutput{
 			Features: iotago.AnchorOutputFeatures{
 				&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{}},

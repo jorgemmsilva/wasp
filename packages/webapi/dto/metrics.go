@@ -4,7 +4,6 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 )
@@ -17,7 +16,7 @@ type MetricItem[T interface{}] struct {
 
 type ChainMessageMetrics struct {
 	InStateOutput      *MetricItem[*metrics.InStateOutput]
-	InAnchorOutput      *MetricItem[*iotago.AnchorOutput]
+	InAnchorOutput     *MetricItem[*iotago.AnchorOutput]
 	InOutput           *MetricItem[*metrics.InOutput]
 	InOnLedgerRequest  *MetricItem[isc.OnLedgerRequest]
 	InTxInclusionState *MetricItem[*metrics.TxInclusionStateMsg]
@@ -32,9 +31,8 @@ type ChainMessageMetrics struct {
 type NodeMessageMetrics struct {
 	RegisteredChainIDs []isc.ChainID
 
-	InMilestone        *MetricItem[*nodeclient.MilestoneInfo]
 	InStateOutput      *MetricItem[*metrics.InStateOutput]
-	InAnchorOutput      *MetricItem[*iotago.AnchorOutput]
+	InAnchorOutput     *MetricItem[*iotago.AnchorOutput]
 	InOutput           *MetricItem[*metrics.InOutput]
 	InOnLedgerRequest  *MetricItem[isc.OnLedgerRequest]
 	InTxInclusionState *MetricItem[*metrics.TxInclusionStateMsg]

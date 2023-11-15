@@ -3,7 +3,7 @@ package controllerutils
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
@@ -35,7 +35,7 @@ func SetOperation(c echo.Context, op string) {
 	c.Set(EchoContextKeyOperation, op)
 }
 
-func ChainFromParams(c echo.Context, cs interfaces.ChainService) (chain.Chain, isc.ChainID, error) {
+func ChainFromParams(c echo.Context, cs interfaces.ChainService) (chaintypes.Chain, isc.ChainID, error) {
 	chainID, err := params.DecodeChainID(c)
 	if err != nil {
 		return nil, isc.ChainID{}, err

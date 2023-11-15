@@ -3,7 +3,6 @@ package models
 import (
 	"time"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
@@ -21,7 +20,7 @@ type BlockInfoResponse struct {
 	TotalRequests         uint16    `json:"totalRequests" swagger:"required,min(1)"`
 	NumSuccessfulRequests uint16    `json:"numSuccessfulRequests" swagger:"required,min(1)"`
 	NumOffLedgerRequests  uint16    `json:"numOffLedgerRequests" swagger:"required,min(1)"`
-	PreviousAnchorOutput   string    `json:"previousAnchorOutput" swagger:"required,min(1)"`
+	PreviousAnchorOutput  string    `json:"previousAnchorOutput" swagger:"required,min(1)"`
 	GasBurned             string    `json:"gasBurned" swagger:"required,desc(The burned gas (uint64 as string))"`
 	GasFeeCharged         string    `json:"gasFeeCharged" swagger:"required,desc(The charged gas fee (uint64 as string))"`
 }
@@ -29,19 +28,21 @@ type BlockInfoResponse struct {
 func MapBlockInfoResponse(info *blocklog.BlockInfo) *BlockInfoResponse {
 	blockindex := uint32(0)
 	prevAOStr := ""
-	if info.PreviousAnchorOutput != nil {
-		blockindex = info.PreviousAnchorOutput.GetAnchorOutput().StateIndex + 1
-		prevAOStr = hexutil.EncodeHex(info.PreviousAnchorOutput.Bytes())
+	if info.PreviousChainOutputs.AnchorOutput != nil {
+		blockindex = info.PreviousChainOutputs.AnchorOutput.StateIndex + 1
+		// TODO: <lmoe> Validate this change from previousAnchorOutput.Bytes to PreviousChainOutpts.Bytes
+		prevAOStr = hexutil.EncodeHex(info.PreviousChainOutputs.Bytes())
 	}
+
 	return &BlockInfoResponse{
 		BlockIndex:            blockindex,
-		PreviousAnchorOutput:   prevAOStr,
+		PreviousAnchorOutput:  prevAOStr,
 		Timestamp:             info.Timestamp,
 		TotalRequests:         info.TotalRequests,
 		NumSuccessfulRequests: info.NumSuccessfulRequests,
 		NumOffLedgerRequests:  info.NumOffLedgerRequests,
-		GasBurned:             iotago.EncodeUint64(info.GasBurned),
-		GasFeeCharged:         iotago.EncodeUint64(info.GasFeeCharged),
+		GasBurned:             hexutil.EncodeUint64(info.GasBurned),
+		GasFeeCharged:         hexutil.EncodeUint64(uint64(info.GasFeeCharged)),
 	}
 }
 

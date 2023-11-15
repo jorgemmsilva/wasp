@@ -25,9 +25,8 @@ func (c *MetricsService) GetNodeMessageMetrics() *dto.NodeMessageMetrics {
 	return &dto.NodeMessageMetrics{
 		RegisteredChainIDs: c.chainMetricsProvider.RegisteredChains(),
 
-		InMilestone:        dto.MapMetricItem(c.chainMetricsProvider.Message.InMilestone()),
 		InStateOutput:      dto.MapMetricItem(c.chainMetricsProvider.Message.InStateOutput()),
-		InAnchorOutput:      dto.MapMetricItem(c.chainMetricsProvider.Message.InAnchorOutput()),
+		InAnchorOutput:     dto.MapMetricItem(c.chainMetricsProvider.Message.InAnchorOutput()),
 		InOutput:           dto.MapMetricItem(c.chainMetricsProvider.Message.InOutput()),
 		InOnLedgerRequest:  dto.MapMetricItem(c.chainMetricsProvider.Message.InOnLedgerRequest()),
 		InTxInclusionState: dto.MapMetricItem(c.chainMetricsProvider.Message.InTxInclusionState()),
@@ -50,7 +49,7 @@ func (c *MetricsService) GetChainMessageMetrics(chainID isc.ChainID) *dto.ChainM
 
 	return &dto.ChainMessageMetrics{
 		InStateOutput:      dto.MapMetricItem(chainMetrics.Message.InStateOutput()),
-		InAnchorOutput:      dto.MapMetricItem(chainMetrics.Message.InAnchorOutput()),
+		InAnchorOutput:     dto.MapMetricItem(chainMetrics.Message.InAnchorOutput()),
 		InOutput:           dto.MapMetricItem(chainMetrics.Message.InOutput()),
 		InOnLedgerRequest:  dto.MapMetricItem(chainMetrics.Message.InOnLedgerRequest()),
 		InTxInclusionState: dto.MapMetricItem(chainMetrics.Message.InTxInclusionState()),

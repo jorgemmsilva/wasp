@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/dto"
 )
@@ -22,7 +22,7 @@ To not create a mapper for each type, the actual service remains using MetricIte
 This can be removed if we change to swag/echo-swagger
 */
 type (
-	AnchorOutputMetricItem         MetricItem[*Output]
+	AnchorOutputMetricItem        MetricItem[*Output]
 	OnLedgerRequestMetricItem     MetricItem[*OnLedgerRequest]
 	InOutputMetricItem            MetricItem[*InOutput]
 	InStateOutputMetricItem       MetricItem[*InStateOutput]
@@ -33,12 +33,11 @@ type (
 	InterfaceMetricItem           MetricItem[interface{}]
 	PublisherStateTransactionItem MetricItem[*StateTransaction]
 	RegisteredChainIDItems        []string
-	MilestoneMetricItem           MetricItem[*MilestoneInfo]
 )
 
 type ChainMessageMetrics struct {
 	InStateOutput      InStateOutputMetricItem       `json:"inStateOutput" swagger:"required"`
-	InAnchorOutput      AnchorOutputMetricItem         `json:"inAnchorOutput" swagger:"required"`
+	InAnchorOutput     AnchorOutputMetricItem        `json:"inAnchorOutput" swagger:"required"`
 	InOutput           InOutputMetricItem            `json:"inOutput" swagger:"required"`
 	InOnLedgerRequest  OnLedgerRequestMetricItem     `json:"inOnLedgerRequest" swagger:"required"`
 	InTxInclusionState TxInclusionStateMsgMetricItem `json:"inTxInclusionState" swagger:"required"`
@@ -53,9 +52,8 @@ type ChainMessageMetrics struct {
 type NodeMessageMetrics struct {
 	RegisteredChainIDs RegisteredChainIDItems `json:"registeredChainIDs" swagger:"required"`
 
-	InMilestone        MilestoneMetricItem           `json:"inMilestone" swagger:"required"`
 	InStateOutput      InStateOutputMetricItem       `json:"inStateOutput" swagger:"required"`
-	InAnchorOutput      AnchorOutputMetricItem         `json:"inAnchorOutput" swagger:"required"`
+	InAnchorOutput     AnchorOutputMetricItem        `json:"inAnchorOutput" swagger:"required"`
 	InOutput           InOutputMetricItem            `json:"inOutput" swagger:"required"`
 	InOnLedgerRequest  OnLedgerRequestMetricItem     `json:"inOnLedgerRequest" swagger:"required"`
 	InTxInclusionState TxInclusionStateMsgMetricItem `json:"inTxInclusionState" swagger:"required"`
@@ -88,7 +86,7 @@ func MapRegisteredChainIDs(registered []isc.ChainID) []string {
 func MapChainMessageMetrics(metrics *dto.ChainMessageMetrics) *ChainMessageMetrics {
 	return &ChainMessageMetrics{
 		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(metrics.InStateOutput.LastMessage))),
-		InAnchorOutput:      AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
+		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
 		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(metrics.InOutput.LastMessage))),
 		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(metrics.InOnLedgerRequest.LastMessage))),
 		InTxInclusionState: TxInclusionStateMsgMetricItem(MapMetricItem(metrics.InTxInclusionState, TxInclusionStateMsgFromISCTxInclusionStateMsg(metrics.InTxInclusionState.LastMessage))),
@@ -105,9 +103,8 @@ func MapNodeMessageMetrics(metrics *dto.NodeMessageMetrics) *NodeMessageMetrics 
 	return &NodeMessageMetrics{
 		RegisteredChainIDs: MapRegisteredChainIDs(metrics.RegisteredChainIDs),
 
-		InMilestone:        MilestoneMetricItem(MapMetricItem(metrics.InMilestone, MilestoneFromIotaGoMilestone(metrics.InMilestone.LastMessage))),
 		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(metrics.InStateOutput.LastMessage))),
-		InAnchorOutput:      AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
+		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
 		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(metrics.InOutput.LastMessage))),
 		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(metrics.InOnLedgerRequest.LastMessage))),
 		InTxInclusionState: TxInclusionStateMsgMetricItem(MapMetricItem(metrics.InTxInclusionState, TxInclusionStateMsgFromISCTxInclusionStateMsg(metrics.InTxInclusionState.LastMessage))),
@@ -143,7 +140,7 @@ type ConsensusWorkflowMetrics struct {
 	CurrentStateIndex uint32 `json:"currentStateIndex" swagger:"desc(Shows current state index of the consensus),min(1)"`
 }
 
-func MapConsensusWorkflowStatus(status chain.ConsensusWorkflowStatus) *ConsensusWorkflowMetrics {
+func MapConsensusWorkflowStatus(status chaintypes.ConsensusWorkflowStatus) *ConsensusWorkflowMetrics {
 	return &ConsensusWorkflowMetrics{
 		FlagStateReceived:        status.IsStateReceived(),
 		FlagBatchProposalSent:    status.IsBatchProposalSent(),
@@ -176,7 +173,7 @@ type ConsensusPipeMetrics struct {
 	EventTimerMsgPipeSize           int `json:"eventTimerMsgPipeSize" swagger:"required"`
 }
 
-func MapConsensusPipeMetrics(pipeMetrics chain.ConsensusPipeMetrics) *ConsensusPipeMetrics {
+func MapConsensusPipeMetrics(pipeMetrics chaintypes.ConsensusPipeMetrics) *ConsensusPipeMetrics {
 	return &ConsensusPipeMetrics{
 		EventStateTransitionMsgPipeSize: pipeMetrics.GetEventStateTransitionMsgPipeSize(),
 		EventPeerLogIndexMsgPipeSize:    pipeMetrics.GetEventPeerLogIndexMsgPipeSize(),

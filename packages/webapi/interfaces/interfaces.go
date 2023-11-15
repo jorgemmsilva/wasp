@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pangpanglabs/echoswagger/v2"
 
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/registry"
@@ -34,7 +34,7 @@ type ChainService interface {
 	DeactivateChain(chainID isc.ChainID) error
 	GetAllChainIDs() ([]isc.ChainID, error)
 	HasChain(chainID isc.ChainID) bool
-	GetChainByID(chainID isc.ChainID) (chain.Chain, error)
+	GetChainByID(chainID isc.ChainID) (chaintypes.Chain, error)
 	GetChainInfoByChainID(chainID isc.ChainID, blockIndexOrTrieRoot string) (*dto.ChainInfo, error)
 	GetContracts(chainID isc.ChainID, blockIndexOrTrieRoot string) (dto.ContractsMap, error)
 	GetEVMChainID(chainID isc.ChainID, blockIndexOrTrieRoot string) (uint16, error)

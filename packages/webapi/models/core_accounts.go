@@ -32,6 +32,7 @@ type NativeTokenIDRegistryResponse struct {
 }
 
 type FoundryOutputResponse struct {
-	FoundryID string         `json:"foundryId" swagger:"required"`
-	Assets    AssetsResponse `json:"assets" swagger:"required"`
+	FoundryID     string `json:"foundryId" swagger:"required"`
+	BaseTokens    string `json:"baseTokens" swagger:"required,desc(The base tokens (uint64 as string))"`
+	NativeTokenID string `json:"nativeTokenId" swagger:"required,desc(The native token id)"`
 }

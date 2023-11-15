@@ -5,7 +5,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
@@ -48,7 +49,7 @@ func (c *Controller) getTotalAssets(e echo.Context) error {
 	}
 
 	assetsResponse := &models.AssetsResponse{
-		BaseTokens:   iotago.EncodeUint64(assets.BaseTokens),
+		BaseTokens:   hexutil.EncodeUint64(uint64(assets.BaseTokens)),
 		NativeTokens: isc.NativeTokensToJSONObject(assets.NativeTokens),
 	}
 
@@ -72,7 +73,7 @@ func (c *Controller) getAccountBalance(e echo.Context) error {
 	}
 
 	assetsResponse := &models.AssetsResponse{
-		BaseTokens:   iotago.EncodeUint64(assets.BaseTokens),
+		BaseTokens:   hexutil.EncodeUint64(uint64(assets.BaseTokens)),
 		NativeTokens: isc.NativeTokensToJSONObject(assets.NativeTokens),
 	}
 
@@ -143,7 +144,7 @@ func (c *Controller) getAccountNonce(e echo.Context) error {
 	}
 
 	nonceResponse := &models.AccountNonceResponse{
-		Nonce: iotago.EncodeUint64(nonce),
+		Nonce: hexutil.EncodeUint64(nonce),
 	}
 
 	return e.JSON(http.StatusOK, nonceResponse)
@@ -208,17 +209,17 @@ func (c *Controller) getFoundryOutput(e echo.Context) error {
 		return c.handleViewCallError(err, chainID)
 	}
 
-	foundryOutputID, err := foundryOutput.ID()
+	foundryOutputID, err := foundryOutput.FoundryID()
 	if err != nil {
 		return apierrors.InvalidPropertyError("FoundryOutput.ID", err)
 	}
 
+	nativeTokenID, err := foundryOutput.NativeTokenID()
+
 	foundryOutputResponse := &models.FoundryOutputResponse{
-		FoundryID: foundryOutputID.ToHex(),
-		Assets: models.AssetsResponse{
-			BaseTokens:   iotago.EncodeUint64(foundryOutput.Amount),
-			NativeTokens: isc.NativeTokensToJSONObject(foundryOutput.NativeTokens),
-		},
+		FoundryID:     foundryOutputID.ToHex(),
+		BaseTokens:    hexutil.EncodeUint64(uint64(foundryOutput.Amount)),
+		NativeTokenID: nativeTokenID.String(),
 	}
 
 	return e.JSON(http.StatusOK, foundryOutputResponse)

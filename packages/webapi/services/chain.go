@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/hive.go/logger"
-	chainpkg "github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -118,7 +118,7 @@ func (c *ChainService) HasChain(chainID isc.ChainID) bool {
 	return storedChainRec != nil
 }
 
-func (c *ChainService) GetChainByID(chainID isc.ChainID) (chainpkg.Chain, error) {
+func (c *ChainService) GetChainByID(chainID isc.ChainID) (chaintypes.Chain, error) {
 	return c.chainsProvider().Get(chainID)
 }
 
@@ -199,7 +199,7 @@ func (c *ChainService) GetState(chainID isc.ChainID, stateKey []byte) (state []b
 		return nil, err
 	}
 
-	latestState, err := ch.LatestState(chainpkg.ActiveOrCommittedState)
+	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	if err != nil {
 		return nil, err
 	}

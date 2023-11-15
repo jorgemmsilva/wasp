@@ -2,7 +2,7 @@ package corecontracts
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
@@ -10,7 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/webapi/common"
 )
 
-func GetAllowedStateControllerAddresses(ch chain.Chain, blockIndexOrTrieRoot string) ([]iotago.Address, error) {
+func GetAllowedStateControllerAddresses(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]iotago.Address, error) {
 	res, err := common.CallView(ch, governance.Contract.Hname(), governance.ViewGetAllowedStateControllerAddresses.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func GetAllowedStateControllerAddresses(ch chain.Chain, blockIndexOrTrieRoot str
 	return ret, nil
 }
 
-func GetChainOwner(ch chain.Chain, blockIndexOrTrieRoot string) (isc.AgentID, error) {
+func GetChainOwner(ch chaintypes.Chain, blockIndexOrTrieRoot string) (isc.AgentID, error) {
 	ret, err := common.CallView(ch, governance.Contract.Hname(), governance.ViewGetChainOwner.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func GetChainOwner(ch chain.Chain, blockIndexOrTrieRoot string) (isc.AgentID, er
 	return ownerID, nil
 }
 
-func GetChainInfo(ch chain.Chain, blockIndexOrTrieRoot string) (*isc.ChainInfo, error) {
+func GetChainInfo(ch chaintypes.Chain, blockIndexOrTrieRoot string) (*isc.ChainInfo, error) {
 	ret, err := common.CallView(ch, governance.Contract.Hname(), governance.ViewGetChainInfo.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err

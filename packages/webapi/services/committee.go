@@ -39,7 +39,6 @@ func (c *CommitteeService) GetCommitteeInfo(chainID isc.ChainID) (*dto.ChainNode
 	if err != nil {
 		return nil, err
 	}
-
 	committeeInfo := chain.GetCommitteeInfo()
 	if committeeInfo == nil {
 		return nil, ErrNotInCommittee

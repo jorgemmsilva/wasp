@@ -1,18 +1,18 @@
 package corecontracts
 
 import (
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/webapi/common"
 )
 
-func GetAccounts(ch chain.Chain, blockIndexOrTrieRoot string) ([]isc.AgentID, error) {
+func GetAccounts(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]isc.AgentID, error) {
 	accountIDs, err := common.CallView(ch, accounts.Contract.Hname(), accounts.ViewAccounts.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
@@ -29,16 +29,16 @@ func GetAccounts(ch chain.Chain, blockIndexOrTrieRoot string) ([]isc.AgentID, er
 	return ret, nil
 }
 
-func GetTotalAssets(ch chain.Chain, blockIndexOrTrieRoot string) (*isc.Assets, error) {
+func GetTotalAssets(ch chaintypes.Chain, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
 	ret, err := common.CallView(ch, accounts.Contract.Hname(), accounts.ViewTotalAssets.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
 
-	return isc.AssetsFromDict(ret)
+	return isc.FungibleTokensFromDict(ret)
 }
 
-func GetAccountBalance(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) (*isc.Assets, error) {
+func GetAccountBalance(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
 	ret, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -49,10 +49,10 @@ func GetAccountBalance(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot
 		return nil, err
 	}
 
-	return isc.AssetsFromDict(ret)
+	return isc.FungibleTokensFromDict(ret)
 }
 
-func GetAccountNFTs(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]iotago.NFTID, error) {
+func GetAccountNFTs(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]iotago.NFTID, error) {
 	res, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -71,7 +71,7 @@ func GetAccountNFTs(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot st
 	return ret, nil
 }
 
-func GetAccountFoundries(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]uint32, error) {
+func GetAccountFoundries(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]uint32, error) {
 	foundrySNs, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -92,7 +92,7 @@ func GetAccountFoundries(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRo
 	return ret, nil
 }
 
-func GetAccountNonce(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) (uint64, error) {
+func GetAccountNonce(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) (uint64, error) {
 	ret, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -108,7 +108,7 @@ func GetAccountNonce(ch chain.Chain, agentID isc.AgentID, blockIndexOrTrieRoot s
 	return codec.DecodeUint64(nonce)
 }
 
-func GetNFTData(ch chain.Chain, nftID iotago.NFTID, blockIndexOrTrieRoot string) (*isc.NFT, error) {
+func GetNFTData(ch chaintypes.Chain, nftID iotago.NFTID, blockIndexOrTrieRoot string) (*isc.NFT, error) {
 	ret, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -127,7 +127,7 @@ func GetNFTData(ch chain.Chain, nftID iotago.NFTID, blockIndexOrTrieRoot string)
 	return nftData, nil
 }
 
-func GetNativeTokenIDRegistry(ch chain.Chain, blockIndexOrTrieRoot string) ([]iotago.NativeTokenID, error) {
+func GetNativeTokenIDRegistry(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]iotago.NativeTokenID, error) {
 	nativeTokenIDs, err := common.CallView(ch, accounts.Contract.Hname(), accounts.ViewGetNativeTokenIDRegistry.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func GetNativeTokenIDRegistry(ch chain.Chain, blockIndexOrTrieRoot string) ([]io
 	return ret, nil
 }
 
-func GetFoundryOutput(ch chain.Chain, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {
+func GetFoundryOutput(ch chaintypes.Chain, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {
 	res, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -158,7 +158,9 @@ func GetFoundryOutput(ch chain.Chain, serialNumber uint32, blockIndexOrTrieRoot 
 
 	outBin := res.Get(accounts.ParamFoundryOutputBin)
 	out := &iotago.FoundryOutput{}
-	_, err = out.Deserialize(outBin, serializer.DeSeriModeNoValidation, nil)
+
+	// TODO: <lmoe> Did this really change to L1API.Decode?
+	_, err = parameters.L1API().Decode(outBin, out)
 	if err != nil {
 		return nil, err
 	}

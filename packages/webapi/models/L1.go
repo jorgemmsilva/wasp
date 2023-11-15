@@ -2,12 +2,11 @@ package models
 
 import (
 	"github.com/iotaledger/hive.go/objectstorage/typeutils"
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
-	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
+	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type Output struct {
@@ -20,7 +19,9 @@ func OutputFromIotaGoOutput(output iotago.Output) *Output {
 		return nil
 	}
 
-	bytes, _ := output.Serialize(serializer.DeSeriModeNoValidation, nil)
+	// TODO: <lmoe> Did output.Serialize really change to this? / Handle error
+	bytes, _ := parameters.L1API().Encode(output)
+
 	return &Output{
 		OutputType: output.Type(),
 		Raw:        hexutil.EncodeHex(bytes),
@@ -110,24 +111,6 @@ func TxInclusionStateMsgFromISCTxInclusionStateMsg(inclusionState *metrics.TxInc
 	return &TxInclusionStateMsg{
 		State:         inclusionState.State,
 		TransactionID: inclusionState.TxID.ToHex(),
-	}
-}
-
-type MilestoneInfo struct {
-	Index       uint32 `json:"index" swagger:"min(0)"`
-	Timestamp   uint32 `json:"timestamp" swagger:"min(0)"`
-	MilestoneID string `json:"milestoneId"`
-}
-
-func MilestoneFromIotaGoMilestone(milestone *nodeclient.MilestoneInfo) *MilestoneInfo {
-	if milestone == nil {
-		return &MilestoneInfo{}
-	}
-
-	return &MilestoneInfo{
-		Index:       milestone.Index,
-		MilestoneID: milestone.MilestoneID,
-		Timestamp:   milestone.Timestamp,
 	}
 }
 

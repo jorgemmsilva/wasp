@@ -1,14 +1,14 @@
 package corecontracts
 
 import (
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/webapi/common"
 )
 
-func GetBlobInfo(ch chain.Chain, blobHash hashing.HashValue, blockIndexOrTrieRoot string) (map[string]uint32, bool, error) {
+func GetBlobInfo(ch chaintypes.Chain, blobHash hashing.HashValue, blockIndexOrTrieRoot string) (map[string]uint32, bool, error) {
 	ret, err := common.CallView(
 		ch,
 		blob.Contract.Hname(),
@@ -32,7 +32,7 @@ func GetBlobInfo(ch chain.Chain, blobHash hashing.HashValue, blockIndexOrTrieRoo
 	return blobMap, true, nil
 }
 
-func GetBlobValue(ch chain.Chain, blobHash hashing.HashValue, key string, blockIndexOrTrieRoot string) ([]byte, error) {
+func GetBlobValue(ch chaintypes.Chain, blobHash hashing.HashValue, key string, blockIndexOrTrieRoot string) ([]byte, error) {
 	ret, err := common.CallView(
 		ch,
 		blob.Contract.Hname(),
@@ -50,7 +50,7 @@ func GetBlobValue(ch chain.Chain, blobHash hashing.HashValue, key string, blockI
 	return ret[blob.ParamBytes], nil
 }
 
-func ListBlobs(ch chain.Chain, blockIndexOrTrieRoot string) (map[hashing.HashValue]uint32, error) {
+func ListBlobs(ch chaintypes.Chain, blockIndexOrTrieRoot string) (map[hashing.HashValue]uint32, error) {
 	ret, err := common.CallView(ch, blob.Contract.Hname(), blob.ViewListBlobs.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err

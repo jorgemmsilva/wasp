@@ -16,6 +16,7 @@ import (
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
@@ -38,17 +39,17 @@ import (
 
 type Provider func() *Chains // TODO: Use DI instead of that.
 
-type ChainProvider func(chainID isc.ChainID) chain.Chain
+type ChainProvider func(chainID isc.ChainID) chaintypes.Chain
 
 type Chains struct {
-	ctx                         context.Context
-	log                         *logger.Logger
-	nodeConnection              chain.NodeConnection
-	processorConfig             *processors.Config
+	ctx                        context.Context
+	log                        *logger.Logger
+	nodeConnection             chain.NodeConnection
+	processorConfig            *processors.Config
 	deriveAnchorOutputByQuorum bool
-	pipeliningLimit             int
-	consensusDelay              time.Duration
-	recoveryTimeout             time.Duration
+	pipeliningLimit            int
+	consensusDelay             time.Duration
+	recoveryTimeout            time.Duration
 
 	networkProvider              peering.NetworkProvider
 	trustedNetworkManager        peering.TrustedNetworkManager
@@ -77,7 +78,7 @@ type Chains struct {
 	dkShareRegistryProvider     registry.DKShareRegistryProvider
 	nodeIdentityProvider        registry.NodeIdentityProvider
 	consensusStateRegistry      cmt_log.ConsensusStateRegistry
-	chainListener               chain.ChainListener
+	chainListener               chaintypes.ChainListener
 
 	mutex     *sync.RWMutex
 	allChains *shrinkingmap.ShrinkingMap[isc.ChainID, *activeChain]
@@ -95,7 +96,7 @@ type Chains struct {
 }
 
 type activeChain struct {
-	chain      chain.Chain
+	chain      chaintypes.Chain
 	cancelFunc context.CancelFunc
 }
 
@@ -131,7 +132,7 @@ func New(
 	dkShareRegistryProvider registry.DKShareRegistryProvider,
 	nodeIdentityProvider registry.NodeIdentityProvider,
 	consensusStateRegistry cmt_log.ConsensusStateRegistry,
-	chainListener chain.ChainListener,
+	chainListener chaintypes.ChainListener,
 	mempoolTTL time.Duration,
 	mempoolBroadcastInterval time.Duration,
 	shutdownCoordinator *shutdown.Coordinator,
@@ -143,7 +144,7 @@ func New(
 		if err != nil {
 			panic(fmt.Errorf("error parsing validator.address: %s", err.Error()))
 		}
-		if bechPrefix != nodeConnection.GetL1Params().Protocol.Bech32HRP {
+		if bechPrefix != nodeConnection.GetL1Params().Protocol.Bech32HRP() {
 			panic(fmt.Errorf("validator.address Bech32 HRP does not match network HRP, expected: %s, got: %s", nodeConnection.GetL1Params().Protocol.Bech32HRP, bechPrefix))
 		}
 		validatorFeeAddr = addr
@@ -154,7 +155,7 @@ func New(
 		allChains:                           shrinkingmap.New[isc.ChainID, *activeChain](),
 		nodeConnection:                      nodeConnection,
 		processorConfig:                     processorConfig,
-		deriveAnchorOutputByQuorum:         deriveAnchorOutputByQuorum,
+		deriveAnchorOutputByQuorum:          deriveAnchorOutputByQuorum,
 		pipeliningLimit:                     pipeliningLimit,
 		consensusDelay:                      consensusDelay,
 		recoveryTimeout:                     recoveryTimeout,
@@ -460,7 +461,7 @@ func (c *Chains) Deactivate(chainID isc.ChainID) error {
 
 // Get returns active chain object or nil if it doesn't exist
 // lazy unsubscribing
-func (c *Chains) Get(chainID isc.ChainID) (chain.Chain, error) {
+func (c *Chains) Get(chainID isc.ChainID) (chaintypes.Chain, error) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
 

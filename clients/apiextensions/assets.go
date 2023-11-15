@@ -15,7 +15,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 		return nil, err
 	}
 
-	assets.BaseTokens = baseTokens
+	assets.BaseTokens = iotago.BaseToken(baseTokens)
 
 	for _, nativeToken := range assetsResponse.NativeTokens {
 		nativeTokenIDHex, err2 := hexutil.DecodeHex(nativeToken.Id)
@@ -33,7 +33,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 			return nil, err2
 		}
 
-		assets.NativeTokens = append(assets.NativeTokens, &iotago.NativeTokenFeature{
+		assets.NativeTokens = append(assets.NativeTokens, &isc.NativeTokenAmount{
 			ID:     nativeTokenID,
 			Amount: amount,
 		})

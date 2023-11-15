@@ -10,6 +10,7 @@ import (
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
@@ -78,8 +79,14 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 	nodePubKey := e.networkProvider.Self().PubKey()
 	backend := jsonrpc.NewWaspEVMBackend(chain, nodePubKey, parameters.BaseToken())
 
+	db, err := database.DatabaseWithDefaultSettings(e.indexDbPath, true, hivedb.EngineRocksDB, false)
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO: <lmoe> Validate if this DB approach is correct.
 	srv, err := jsonrpc.NewServer(
-		jsonrpc.NewEVMChain(backend, e.publisher, e.chainsProvider().IsArchiveNode(), hivedb.EngineRocksDB, e.indexDbPath, e.log.Named("EVMChain")),
+		jsonrpc.NewEVMChain(backend, e.publisher, e.chainsProvider().IsArchiveNode(), db.KVStore(), e.log.Named("EVMChain")),
 		jsonrpc.NewAccountManager(nil),
 		e.metrics.GetChainMetrics(chainID).WebAPI,
 		e.jsonrpcParams,

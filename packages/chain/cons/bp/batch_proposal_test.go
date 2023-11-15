@@ -27,7 +27,7 @@ func TestBatchProposal1Serialization(t *testing.T) {
 		})
 	}
 
-	batchProposal1 := NewBatchProposal(10, isc.RandomAnchorOutputWithID(), util.NewFixedSizeBitVector(11), time.Now(), isc.NewRandomAgentID(), reqRefs)
+	batchProposal1 := NewBatchProposal(10, isc.RandomChainOutputs(), util.NewFixedSizeBitVector(11), time.Now(), isc.NewRandomAgentID(), reqRefs)
 
 	b := rwutil.WriteToBytes(batchProposal1)
 	batchProposal2, err := rwutil.ReadFromBytes(b, new(BatchProposal))

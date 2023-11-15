@@ -12,11 +12,11 @@ import (
 type SyncSM interface {
 	//
 	// State proposal.
-	ProposedBaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	ProposedBaseAnchorOutputReceived(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	StateProposalConfirmedByStateMgr() gpa.OutMessages
 	//
 	// Decided state.
-	DecidedVirtualStateNeeded(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	DecidedVirtualStateNeeded(decidedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	DecidedVirtualStateReceived(chainState state.State) gpa.OutMessages
 	//
 	// Save the block.
@@ -30,14 +30,14 @@ type SyncSM interface {
 type syncSMImpl struct {
 	//
 	// Query for a proposal.
-	proposedBaseAnchorOutput         *isc.AnchorOutputWithID
-	stateProposalQueryInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	proposedBaseAnchorOutput        *isc.ChainOutputs
+	stateProposalQueryInputsReadyCB func(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	stateProposalReceived           bool
-	stateProposalReceivedCB         func(proposedAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	stateProposalReceivedCB         func(proposedAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	//
 	// Query for a decided Virtual State.
-	decidedBaseAnchorOutput         *isc.AnchorOutputWithID
-	decidedStateQueryInputsReadyCB func(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	decidedBaseAnchorOutput        *isc.ChainOutputs
+	decidedStateQueryInputsReadyCB func(decidedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	decidedStateReceived           bool
 	decidedStateReceivedCB         func(chainState state.State) gpa.OutMessages
 	//
@@ -50,9 +50,9 @@ type syncSMImpl struct {
 }
 
 func NewSyncSM(
-	stateProposalQueryInputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
-	stateProposalReceivedCB func(proposedAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
-	decidedStateQueryInputsReadyCB func(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages,
+	stateProposalQueryInputsReadyCB func(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages,
+	stateProposalReceivedCB func(proposedAnchorOutput *isc.ChainOutputs) gpa.OutMessages,
+	decidedStateQueryInputsReadyCB func(decidedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages,
 	decidedStateReceivedCB func(chainState state.State) gpa.OutMessages,
 	saveProducedBlockInputsReadyCB func(producedBlock state.StateDraft) gpa.OutMessages,
 	saveProducedBlockDoneCB func(savedBlock state.Block) gpa.OutMessages,
@@ -67,7 +67,7 @@ func NewSyncSM(
 	}
 }
 
-func (sub *syncSMImpl) ProposedBaseAnchorOutputReceived(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (sub *syncSMImpl) ProposedBaseAnchorOutputReceived(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	if sub.proposedBaseAnchorOutput != nil {
 		return nil
 	}
@@ -83,7 +83,7 @@ func (sub *syncSMImpl) StateProposalConfirmedByStateMgr() gpa.OutMessages {
 	return sub.stateProposalReceivedCB(sub.proposedBaseAnchorOutput)
 }
 
-func (sub *syncSMImpl) DecidedVirtualStateNeeded(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (sub *syncSMImpl) DecidedVirtualStateNeeded(decidedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	if sub.decidedBaseAnchorOutput != nil {
 		return nil
 	}

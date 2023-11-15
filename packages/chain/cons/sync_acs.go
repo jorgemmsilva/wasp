@@ -14,7 +14,7 @@ import (
 )
 
 type SyncACS interface {
-	StateProposalReceived(proposedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages
+	StateProposalReceived(proposedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages
 	MempoolRequestsReceived(requestRefs []*isc.RequestRef) gpa.OutMessages
 	DSSIndexProposalReceived(dssIndexProposal []int) gpa.OutMessages
 	TimeDataReceived(timeData time.Time) gpa.OutMessages
@@ -26,12 +26,12 @@ type SyncACS interface {
 // >     Produce a batch proposal.
 // >     Start the ACS.
 type syncACSImpl struct {
-	BaseAnchorOutput  *isc.AnchorOutputWithID
+	BaseAnchorOutput *isc.ChainOutputs
 	RequestRefs      []*isc.RequestRef
 	DSSIndexProposal []int
 	TimeData         time.Time
 	inputsReady      bool
-	inputsReadyCB    func(baseAnchorOutput *isc.AnchorOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages
+	inputsReadyCB    func(baseAnchorOutput *isc.ChainOutputs, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages
 	outputReady      bool
 	outputReadyCB    func(output map[gpa.NodeID][]byte) gpa.OutMessages
 	terminated       bool
@@ -39,7 +39,7 @@ type syncACSImpl struct {
 }
 
 func NewSyncACS(
-	inputsReadyCB func(baseAnchorOutput *isc.AnchorOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages,
+	inputsReadyCB func(baseAnchorOutput *isc.ChainOutputs, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages,
 	outputReadyCB func(output map[gpa.NodeID][]byte) gpa.OutMessages,
 	terminatedCB func(),
 ) SyncACS {
@@ -50,7 +50,7 @@ func NewSyncACS(
 	}
 }
 
-func (sub *syncACSImpl) StateProposalReceived(proposedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (sub *syncACSImpl) StateProposalReceived(proposedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	if sub.BaseAnchorOutput != nil {
 		return nil
 	}

@@ -17,12 +17,12 @@ import (
 
 // Here we store just an aggregated info.
 type AggregatedBatchProposals struct {
-	shouldBeSkipped        bool
-	batchProposalSet       batchProposalSet
-	decidedIndexProposals  map[gpa.NodeID][]int
-	decidedBaseAnchorOutput *isc.AnchorOutputWithID
-	decidedRequestRefs     []*isc.RequestRef
-	aggregatedTime         time.Time
+	shouldBeSkipped         bool
+	batchProposalSet        batchProposalSet
+	decidedIndexProposals   map[gpa.NodeID][]int
+	decidedBaseAnchorOutput *isc.ChainOutputs
+	decidedRequestRefs      []*isc.RequestRef
+	aggregatedTime          time.Time
 }
 
 func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID, f int, log *logger.Logger) *AggregatedBatchProposals {
@@ -51,11 +51,11 @@ func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID,
 	aggregatedTime := bps.aggregatedTime(f)
 	decidedBaseAnchorOutput := bps.decidedBaseAnchorOutput(f)
 	abp := &AggregatedBatchProposals{
-		batchProposalSet:       bps,
-		decidedIndexProposals:  bps.decidedDSSIndexProposals(),
+		batchProposalSet:        bps,
+		decidedIndexProposals:   bps.decidedDSSIndexProposals(),
 		decidedBaseAnchorOutput: decidedBaseAnchorOutput,
-		decidedRequestRefs:     bps.decidedRequestRefs(f, decidedBaseAnchorOutput),
-		aggregatedTime:         aggregatedTime,
+		decidedRequestRefs:      bps.decidedRequestRefs(f, decidedBaseAnchorOutput),
+		aggregatedTime:          aggregatedTime,
 	}
 	if abp.decidedBaseAnchorOutput == nil || len(abp.decidedRequestRefs) == 0 || abp.aggregatedTime.IsZero() {
 		log.Debugf(
@@ -78,7 +78,7 @@ func (abp *AggregatedBatchProposals) DecidedDSSIndexProposals() map[gpa.NodeID][
 	return abp.decidedIndexProposals
 }
 
-func (abp *AggregatedBatchProposals) DecidedBaseAnchorOutput() *isc.AnchorOutputWithID {
+func (abp *AggregatedBatchProposals) DecidedBaseAnchorOutput() *isc.ChainOutputs {
 	if abp.shouldBeSkipped {
 		panic("trying to use aggregated proposal marked to be skipped")
 	}

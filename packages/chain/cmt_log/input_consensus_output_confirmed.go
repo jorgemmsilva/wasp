@@ -11,14 +11,14 @@ import (
 )
 
 type inputConsensusOutputConfirmed struct {
-	anchorOutput *isc.AnchorOutputWithID
-	logIndex    LogIndex
+	anchorOutput *isc.ChainOutputs
+	logIndex     LogIndex
 }
 
-func NewInputConsensusOutputConfirmed(anchorOutput *isc.AnchorOutputWithID, logIndex LogIndex) gpa.Input {
+func NewInputConsensusOutputConfirmed(anchorOutput *isc.ChainOutputs, logIndex LogIndex) gpa.Input {
 	return &inputConsensusOutputConfirmed{
 		anchorOutput: anchorOutput,
-		logIndex:    logIndex,
+		logIndex:     logIndex,
 	}
 }
 

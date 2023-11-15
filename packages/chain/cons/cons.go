@@ -559,7 +559,7 @@ func (c *consImpl) uponVMInputsReceived(aggregatedProposals *bp.AggregatedBatchP
 		Store:      c.chainStore,
 		Requests:   aggregatedProposals.OrderedRequests(requests, *randomness),
 		// TODO: <lmoe> Is TimeAssumption->Timestamp a 1:1 change?
-		TimeAssumption:       aggregatedProposals.AggregatedTime(),
+		// (old) TimeAssumption:       aggregatedProposals.AggregatedTime(),
 		Timestamp:            aggregatedProposals.AggregatedTime(),
 		Entropy:              *randomness,
 		ValidatorFeeTarget:   aggregatedProposals.ValidatorFeeTarget(*randomness),

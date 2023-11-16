@@ -18,7 +18,6 @@ func OutputFromIotaGoOutput(output iotago.Output) *Output {
 	if typeutils.IsInterfaceNil(output) {
 		return nil
 	}
-
 	// TODO: <lmoe> Did output.Serialize really change to this? / Handle error
 	bytes, _ := parameters.L1API().Encode(output)
 

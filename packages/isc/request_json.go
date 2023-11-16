@@ -52,7 +52,7 @@ func RequestToJSON(req Request) ([]byte, error) {
 
 type AssetsJSON struct {
 	BaseTokens   string             `json:"baseTokens" swagger:"required,desc(The base tokens (uint64 as string))"`
-	NativeTokens []*NativeTokenJSON `json:"nativeTokens" swagger:"required"`
+	NativeTokens NativeTokenMapJSON `json:"nativeTokens" swagger:"required"`
 	NFTs         []string           `json:"nfts" swagger:"required"`
 }
 
@@ -63,7 +63,7 @@ func assetsToJSONObject(assets *Assets) *AssetsJSON {
 
 	ret := &AssetsJSON{
 		BaseTokens:   strconv.FormatUint(uint64(assets.BaseTokens), 10),
-		NativeTokens: NativeTokensToJSONObject(assets.NativeTokens),
+		NativeTokens: NativeTokenMapToJSONObject(assets.NativeTokens),
 		NFTs:         make([]string, len(assets.NFTs)),
 	}
 
@@ -102,19 +102,20 @@ func NFTToJSONObject(nft *NFT) *NFTJSON {
 
 // ----------------------------------------------------------------------------
 
-type NativeTokenJSON struct {
+type NativeTokenMapJSON map[string]string
+
+/*
+type NativeTokenMapJSON struct {
 	ID     string `json:"id" swagger:"required"`
 	Amount string `json:"amount" swagger:"required"`
 }
+*/
 
-func NativeTokensToJSONObject(tokens iotago.NativeTokenSum) []*NativeTokenJSON {
-	nativeTokens := make([]*NativeTokenJSON, len(tokens))
+func NativeTokenMapToJSONObject(tokens iotago.NativeTokenSum) NativeTokenMapJSON {
+	nativeTokens := NativeTokenMapJSON{}
 
 	for id, n := range tokens {
-		nativeTokens = append(nativeTokens, &NativeTokenJSON{
-			ID:     id.ToHex(),
-			Amount: n.String(),
-		})
+		nativeTokens[id.ToHex()] = n.String()
 	}
 
 	return nativeTokens

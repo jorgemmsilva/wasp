@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/iotaledger/iota.go/v4/hexutil"
-	chainpkg "github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -15,7 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
-func ParseReceipt(chain chainpkg.Chain, receipt *blocklog.RequestReceipt) (*isc.Receipt, error) {
+func ParseReceipt(chain chaintypes.Chain, receipt *blocklog.RequestReceipt) (*isc.Receipt, error) {
 	resolvedReceiptErr, err := chainutil.ResolveError(chain, receipt.Error)
 	if err != nil {
 		return nil, err
@@ -26,12 +26,12 @@ func ParseReceipt(chain chainpkg.Chain, receipt *blocklog.RequestReceipt) (*isc.
 	return iscReceipt, nil
 }
 
-func CallView(ch chainpkg.Chain, contractName, functionName isc.Hname, params dict.Dict, blockIndexOrHash string) (dict.Dict, error) {
+func CallView(ch chaintypes.Chain, contractName, functionName isc.Hname, params dict.Dict, blockIndexOrHash string) (dict.Dict, error) {
 	var chainState state.State
 	var err error
 	switch {
 	case blockIndexOrHash == "":
-		chainState, err = ch.LatestState(chainpkg.ActiveOrCommittedState)
+		chainState, err = ch.LatestState(chaintypes.ActiveOrCommittedState)
 		if err != nil {
 			return nil, fmt.Errorf("error getting latest chain state: %w", err)
 		}
@@ -61,7 +61,7 @@ func CallView(ch chainpkg.Chain, contractName, functionName isc.Hname, params di
 	return chainutil.CallView(chainState, ch, contractName, functionName, params)
 }
 
-func EstimateGas(ch chainpkg.Chain, req isc.Request) (*isc.Receipt, error) {
+func EstimateGas(ch chaintypes.Chain, req isc.Request) (*isc.Receipt, error) {
 	rec, err := chainutil.SimulateRequest(ch, req, true)
 	if err != nil {
 		return nil, err

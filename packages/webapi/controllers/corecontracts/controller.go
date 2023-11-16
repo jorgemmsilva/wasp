@@ -47,7 +47,7 @@ func (c *Controller) addAccountContractRoutes(api echoswagger.ApiGroup, mocker i
 		AddParamPath("", params.ParamAgentID, params.DescriptionAgentID).
 		AddParamQuery("", params.ParamBlockIndexOrTrieRoot, params.DescriptionBlockIndexOrTrieRoot, false).
 		AddResponse(http.StatusUnauthorized, "Unauthorized (Wrong permissions, missing token)", authentication.ValidationError{}, nil).
-		AddResponse(http.StatusOK, "All assets belonging to an account", mocker.Get(models.AssetsResponse{}), nil).
+		AddResponse(http.StatusOK, "All assets belonging to an account", mocker.Get(models.FungibleTokensResponse{}), nil).
 		SetOperationId("accountsGetAccountBalance").
 		SetSummary("Get all assets belonging to an account")
 
@@ -113,7 +113,7 @@ func (c *Controller) addAccountContractRoutes(api echoswagger.ApiGroup, mocker i
 		AddParamPath("", params.ParamChainID, params.DescriptionChainID).
 		AddParamQuery("", params.ParamBlockIndexOrTrieRoot, params.DescriptionBlockIndexOrTrieRoot, false).
 		AddResponse(http.StatusUnauthorized, "Unauthorized (Wrong permissions, missing token)", authentication.ValidationError{}, nil).
-		AddResponse(http.StatusOK, "All stored assets", mocker.Get(models.AssetsResponse{}), nil).
+		AddResponse(http.StatusOK, "All stored assets", mocker.Get(models.FungibleTokensResponse{}), nil).
 		SetOperationId("accountsGetTotalAssets").
 		SetSummary("Get all stored assets")
 }

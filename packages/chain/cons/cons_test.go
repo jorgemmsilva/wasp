@@ -24,6 +24,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -76,7 +77,7 @@ func testConsBasic(t *testing.T, n, f int) {
 	committeeAddress, dkShareProviders := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
 	//
 	// Construct the chain on L1.
-	utxoDB := utxodb.New(utxodb.DefaultInitParams())
+	utxoDB := utxodb.New(parameters.L1API())
 	//
 	// Construct the chain on L1: Create the accounts.
 	originator := cryptolib.NewKeyPair()
@@ -395,9 +396,9 @@ func testChained(t *testing.T, n, f, b int) {
 		originState, err := testNodeStates[nid].StateByTrieRoot(originL1Commitment.TrieRoot())
 		require.NoError(t, err)
 		testChainInsts[0].input(&testInstInput{
-			nodeID:          nid,
+			nodeID:           nid,
 			baseAnchorOutput: originAO,
-			baseState:       originState,
+			baseState:        originState,
 		})
 	}
 	// Wait for all the instances to output.
@@ -420,9 +421,9 @@ func testChained(t *testing.T, n, f, b int) {
 // testConsInst
 
 type testInstInput struct {
-	nodeID          gpa.NodeID
+	nodeID           gpa.NodeID
 	baseAnchorOutput *isc.AnchorOutputWithID
-	baseState       state.State // State committed with the baseAnchorOutput
+	baseState        state.State // State committed with the baseAnchorOutput
 }
 
 type testConsInst struct {
@@ -598,9 +599,9 @@ func (tci *testConsInst) tryHandleOutput(nodeID gpa.NodeID) { //nolint:gocyclo
 		resultState, err := tci.nodeStates[nodeID].StateByTrieRoot(out.Result.Block.TrieRoot())
 		require.NoError(tci.t, err)
 		tci.doneCB(&testInstInput{
-			nodeID:          nodeID,
+			nodeID:           nodeID,
 			baseAnchorOutput: out.Result.NextAnchorOutput,
-			baseState:       resultState,
+			baseState:        resultState,
 		})
 		tci.done[nodeID] = true
 		return

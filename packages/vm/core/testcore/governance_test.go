@@ -75,8 +75,6 @@ func TestGovernance1(t *testing.T) {
 }
 
 func TestRotate(t *testing.T) {
-	corecontracts.PrintWellKnownHnames()
-
 	t.Run("not allowed address", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		chain := env.NewChain()
@@ -116,6 +114,59 @@ func TestRotate(t *testing.T) {
 		req := solo.NewCallParams("dummy", "dummy").WithMaxAffordableGasBudget()
 		_, err = chain.PostRequestSync(req, nil)
 		testmisc.RequireErrorToBe(t, err, vm.ErrContractNotFound)
+	})
+
+	t.Run("rotation tx at the same time as normal requests", func(t *testing.T) {
+		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
+		chain := env.NewChain()
+
+		chain.WaitUntilMempoolIsEmpty()
+
+		newKP, newAddr := env.NewKeyPair()
+		err := chain.AddAllowedStateController(newAddr, nil)
+		require.NoError(t, err)
+		someWallet, someAddr := env.NewKeyPairWithFunds()
+		someAgentID := isc.NewAddressAgentID(someAddr)
+		chain.DepositAssetsToL2(isc.NewAssetsBaseTokens(10*isc.Million), someWallet)
+
+		rotationReq := solo.NewCallParams(governance.Contract.Name, governance.FuncRotateStateController.Name,
+			governance.ParamStateControllerAddress, newAddr,
+		).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, chain.OriginatorPrivateKey)
+		dummyReq := solo.NewCallParams("dummy", "dummy").WithNonce(0).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, someWallet)
+		dummyReq2 := solo.NewCallParams("dummy", "dummy").WithNonce(1).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, someWallet)
+
+		previousBlock := chain.GetLatestBlockInfo()
+		previousStateMetadata := chain.GetChainOutputsFromL1().AnchorOutput.FeatureSet().StateMetadata().Entries[""]
+		previousAOID := chain.GetChainOutputsFromL1().AnchorOutputID
+		previousBal := chain.L2BaseTokens(someAgentID)
+
+		// asert that when sending a rotation request in the same batch as other requests, only the rotation request gets executed.
+		chain.RunRequestsSync([]isc.Request{dummyReq, rotationReq, dummyReq2}, "")
+		chain.StateControllerKeyPair = newKP
+
+		// same block number
+		require.Equal(t, previousBlock.BlockIndex(), chain.GetLatestBlockInfo().BlockIndex())
+		// different AO
+		require.NotEqual(t, previousAOID, chain.GetChainOutputsFromL1().AnchorOutputID)
+		// state commitment is kept the same as previous
+		require.Equal(t, previousStateMetadata, chain.GetChainOutputsFromL1().AnchorOutput.FeatureSet().StateMetadata().Entries[""])
+
+		// assert no funds were taken from "someWallet" account, because the dummy requests were not executed
+		require.EqualValues(t, previousBal, chain.L2BaseTokens(someAgentID))
+
+		// no receipts for the dummy requests
+		rec, err := chain.GetRequestReceipt(dummyReq.ID())
+		require.NoError(t, err)
+		require.Nil(t, rec)
+
+		// if the dummy requests are sent now, they will be executed (not skipped)
+		chain.RunRequestsSync([]isc.Request{dummyReq, dummyReq2}, "")
+		rec, err = chain.GetRequestReceipt(dummyReq.ID())
+		require.NoError(t, err)
+		require.NotNil(t, rec)
+		rec, err = chain.GetRequestReceipt(dummyReq2.ID())
+		require.NoError(t, err)
+		require.NotNil(t, rec)
 	})
 }
 

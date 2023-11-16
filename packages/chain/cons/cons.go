@@ -124,16 +124,16 @@ type Output struct {
 }
 
 type Result struct {
-	Transaction      *iotago.Transaction // The TX for committing the block.
-	BaseAnchorOutput iotago.OutputID     // AO consumed in the TX.
-	NextAnchorOutput *isc.ChainOutputs   // AO produced in the TX.
-	Block            state.Block         // The state diff produced.
+	Transaction      *iotago.SignedTransaction // The TX for committing the block.
+	BaseAnchorOutput iotago.OutputID           // AO consumed in the TX.
+	NextAnchorOutput *isc.ChainOutputs         // AO produced in the TX.
+	Block            state.Block               // The state diff produced.
 }
 
 func (r *Result) String() string {
 	txID, err := r.Transaction.ID()
 	if err != nil {
-		txID = iotago.TransactionID{}
+		txID = iotago.SignedTransactionID{}
 	}
 	return fmt.Sprintf("{cons.Result, txID=%v, baseAO=%v, nextAO=%v}", txID, r.BaseAnchorOutput.ToHex(), r.NextAnchorOutput)
 }
@@ -640,7 +640,7 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 	if err != nil {
 		panic(fmt.Errorf("cannot get ID from the produced TX: %w", err))
 	}
-	chained, err := isc.ChainOutputsFromTx(tx, c.chainID.AsAddress())
+	chained, err := isc.ChainOutputsFromTx(tx.Transaction, c.chainID.AsAddress())
 	if err != nil {
 		panic(fmt.Errorf("cannot get AnchorOutput from produced TX: %w", err))
 	}

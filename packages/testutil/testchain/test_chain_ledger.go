@@ -48,7 +48,7 @@ func (tcl *TestChainLedger) ChainID() isc.ChainID {
 	return tcl.chainID
 }
 
-func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.Transaction, *isc.AnchorOutputWithID, isc.ChainID) {
+func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.Transaction, *isc.ChainOutputs, isc.ChainID) {
 	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.governor.Address())
 	originTX, _, chainID, err := origin.NewChainOriginTransaction(
 		tcl.governor,
@@ -136,7 +136,7 @@ func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AnchorOutputWithID, 
 	)
 	anchorOutput := &iotago.AnchorOutput{
 		Amount:        baseAO.GetAnchorOutput().Deposit(),
-		AccountID:       tcl.chainID.AsAliasID(),
+		AccountID:     tcl.chainID.AsAliasID(),
 		StateIndex:    baseAO.GetStateIndex() + 1,
 		StateMetadata: stateMetadata.Bytes(),
 		Conditions: iotago.UnlockConditions{

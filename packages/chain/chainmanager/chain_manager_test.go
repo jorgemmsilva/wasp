@@ -55,7 +55,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	defer log.Sync()
 	//
 	// Create ledger accounts.
-	utxoDB := utxodb.New(utxodb.DefaultInitParams())
+	utxoDB := utxodb.New(parameters.L1API())
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
@@ -136,8 +136,8 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 			*cmtAddrA.(*iotago.Ed25519Address),
 			consReq.LogIndex, consReq.BaseAnchorOutput.OutputID(),
 			&cons.Result{
-				Transaction:     step2TX,
-				Block:           block0,
+				Transaction:      step2TX,
+				Block:            block0,
 				BaseAnchorOutput: consReq.BaseAnchorOutput.OutputID(),
 				NextAnchorOutput: step2AO,
 			},

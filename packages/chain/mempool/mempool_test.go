@@ -757,7 +757,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.log = testlogger.NewLogger(t)
 	//
 	// Create ledger accounts.
-	te.utxoDB = utxodb.New(utxodb.DefaultInitParams())
+	te.utxoDB = utxodb.New(parameters.L1API())
 	te.governor = cryptolib.NewKeyPair()
 	_, err := te.utxoDB.GetFundsFromFaucet(te.governor.Address())
 	require.NoError(t, err)

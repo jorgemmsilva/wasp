@@ -6,6 +6,7 @@ package solo
 import (
 	"errors"
 	"math"
+	"math/big"
 	"time"
 
 	"github.com/stretchr/testify/require"
@@ -65,6 +66,8 @@ func CallParamsFromDictByHname(hContract, hFunction isc.Hname, par dict.Dict) *C
 	ret := &CallParams{
 		target:     hContract,
 		entryPoint: hFunction,
+		allowance:  isc.NewEmptyAssets(),
+		assets:     isc.NewEmptyAssets(),
 	}
 	ret.params = dict.New()
 	for k, v := range par {
@@ -79,11 +82,7 @@ func (r *CallParams) WithAllowance(allowance *isc.Assets) *CallParams {
 }
 
 func (r *CallParams) AddAllowance(allowance *isc.Assets) *CallParams {
-	if r.allowance == nil {
-		r.allowance = allowance.Clone()
-	} else {
-		r.allowance.Add(allowance)
-	}
+	r.allowance.Add(allowance)
 	return r
 }
 
@@ -91,22 +90,8 @@ func (r *CallParams) AddAllowanceBaseTokens(amount iotago.BaseToken) *CallParams
 	return r.AddAllowance(isc.NewAssetsBaseTokens(amount))
 }
 
-func (r *CallParams) AddAllowanceNativeTokensVect(nativeTokens ...*isc.NativeTokenAmount) *CallParams {
-	if r.allowance == nil {
-		r.allowance = isc.NewEmptyAssets()
-	}
-	r.allowance.Add(isc.NewAssets(0, nativeTokens))
-	return r
-}
-
-func (r *CallParams) AddAllowanceNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *CallParams {
-	if r.allowance == nil {
-		r.allowance = isc.NewEmptyAssets()
-	}
-	r.allowance.Add(isc.NewAssets(0, []*isc.NativeTokenAmount{{
-		ID:     nativeTokenID,
-		Amount: util.ToBigInt(amount),
-	}}))
+func (r *CallParams) AddAllowanceNativeTokens(nativeTokenID iotago.NativeTokenID, amount *big.Int) *CallParams {
+	r.allowance.AddNativeTokens(nativeTokenID, amount)
 	return r
 }
 
@@ -120,11 +105,7 @@ func (r *CallParams) WithFungibleTokens(assets *isc.Assets) *CallParams {
 }
 
 func (r *CallParams) AddAssets(assets *isc.Assets) *CallParams {
-	if r.assets == nil {
-		r.assets = assets.Clone()
-	} else {
-		r.assets.Add(assets)
-	}
+	r.assets.Add(assets)
 	return r
 }
 
@@ -133,10 +114,9 @@ func (r *CallParams) AddBaseTokens(amount iotago.BaseToken) *CallParams {
 }
 
 func (r *CallParams) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount interface{}) *CallParams {
-	return r.AddAssets(isc.NewAssets(0, []*isc.NativeTokenAmount{{
-		ID:     nativeTokenID,
-		Amount: util.ToBigInt(amount),
-	}}))
+	return r.AddAssets(isc.NewAssets(0, iotago.NativeTokenSum{
+		nativeTokenID: util.ToBigInt(amount),
+	}))
 }
 
 // Adds an nft to be sent (only applicable when the call is made via on-ledger request)

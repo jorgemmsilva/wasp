@@ -1229,8 +1229,8 @@ func TestERC20NativeTokens(t *testing.T) {
 	ethKey, ethAddr := env.Chain.NewEthereumAccountWithL2Funds()
 	ethAgentID := isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr)
 
-	err = env.Chain.SendFromL2ToL2Account(isc.NewAssets(0, []*isc.NativeTokenAmount{
-		{ID: nativeTokenID, Amount: supply},
+	err = env.Chain.SendFromL2ToL2Account(isc.NewAssets(0, iotago.NativeTokenSum{
+		nativeTokenID: supply,
 	}), ethAgentID, foundryOwner)
 	require.NoError(t, err)
 
@@ -1286,8 +1286,8 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 	ethAgentID := isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr)
 
 	{
-		assets := isc.NewAssets(0, []*isc.NativeTokenAmount{
-			{ID: nativeTokenID, Amount: supply},
+		assets := isc.NewAssets(0, iotago.NativeTokenSum{
+			nativeTokenID: supply,
 		})
 		err = foundryChain.Withdraw(assets, foundryOwner)
 		require.NoError(t, err)

@@ -106,7 +106,7 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		// onleger request with no sender, send all assets to the payoutAddress
 		payoutAgentID := reqctx.vm.payoutAgentID()
 		creditNFTToAccount(reqctx.uncommittedState, payoutAgentID, req, reqctx.ChainID())
-		creditToAccount(reqctx.uncommittedState, payoutAgentID, req.Assets().FungibleTokens, reqctx.ChainID())
+		creditToAccount(reqctx.uncommittedState, payoutAgentID, &req.Assets().FungibleTokens, reqctx.ChainID())
 		if storageDepositNeeded > 0 {
 			debitFromAccount(reqctx.uncommittedState, payoutAgentID, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID())
 		}
@@ -121,7 +121,7 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		panic(vmexceptions.ErrNotEnoughFundsForSD)
 	}
 
-	creditToAccount(reqctx.uncommittedState, sender, req.Assets().FungibleTokens, reqctx.ChainID())
+	creditToAccount(reqctx.uncommittedState, sender, &req.Assets().FungibleTokens, reqctx.ChainID())
 	creditNFTToAccount(reqctx.uncommittedState, sender, req, reqctx.ChainID())
 	if storageDepositNeeded > 0 {
 		reqctx.sdCharged = storageDepositNeeded

@@ -18,19 +18,10 @@ func TestAssetsSerialization(t *testing.T) {
 	maxVal.Exp(maxVal, e, nil)
 	maxVal.Sub(maxVal, big.NewInt(1))
 
-	tokens := []*isc.NativeTokenAmount{
-		{
-			ID:     [iotago.NativeTokenIDLength]byte{1},
-			Amount: big.NewInt(100),
-		},
-		{
-			ID:     [iotago.NativeTokenIDLength]byte{2},
-			Amount: big.NewInt(200),
-		},
-		{
-			ID:     [iotago.NativeTokenIDLength]byte{3},
-			Amount: util.MaxUint256,
-		},
+	tokens := iotago.NativeTokenSum{
+		[iotago.NativeTokenIDLength]byte{1}: big.NewInt(100),
+		[iotago.NativeTokenIDLength]byte{2}: big.NewInt(200),
+		[iotago.NativeTokenIDLength]byte{3}: util.MaxUint256,
 	}
 
 	assets := isc.NewAssets(1, tokens)
@@ -40,121 +31,51 @@ func TestAssetsSerialization(t *testing.T) {
 func TestAssetsSpendBudget(t *testing.T) {
 	var toSpend *isc.Assets
 	var budget *isc.Assets
-	require.True(t, budget.Spend(toSpend))
-	require.True(t, budget.IsEmpty())
-	require.True(t, budget.IsEmpty())
-
-	budget = isc.NewAssetsBaseTokens(1)
-	require.True(t, budget.Spend(toSpend))
-	require.False(t, toSpend.Spend(budget))
-
-	budget = isc.NewAssetsBaseTokens(10)
-	require.True(t, budget.Spend(budget))
-	require.True(t, budget.IsEmpty())
 
 	budget = isc.NewAssetsBaseTokens(2)
 	toSpend = isc.NewAssetsBaseTokens(1)
 	require.True(t, budget.Spend(toSpend))
-	require.True(t, budget.Equals(&isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens:   1,
-			NativeTokens: []*isc.NativeTokenAmount{},
-		},
-		NFTs: []iotago.NFTID{},
-	}))
+	require.True(t, budget.Equals(isc.NewAssetsBaseTokens(1)))
 
 	budget = isc.NewAssetsBaseTokens(1)
 	toSpend = isc.NewAssetsBaseTokens(2)
 	require.False(t, budget.Spend(toSpend))
-	require.True(t, budget.Equals(&isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens:   1,
-			NativeTokens: []*isc.NativeTokenAmount{},
-		},
-		NFTs: []iotago.NFTID{},
-	}))
+	require.True(t, budget.Equals(isc.NewAssetsBaseTokens(1)))
 
 	nativeTokenID1 := tpkg.RandNativeTokenFeature().ID
 	nativeTokenID2 := tpkg.RandNativeTokenFeature().ID
 
-	budget = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 1,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID1, Amount: big.NewInt(5)},
-			},
-		},
-	}
+	budget = isc.NewAssets(1, iotago.NativeTokenSum{nativeTokenID1: big.NewInt(5)})
 	toSpend = budget.Clone()
 	require.True(t, budget.Spend(toSpend))
 	println(budget.String())
 	require.True(t, budget.IsEmpty())
 
-	budget = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 1,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID1, Amount: big.NewInt(5)},
-			},
-		},
-	}
+	budget = isc.NewAssets(1, iotago.NativeTokenSum{nativeTokenID1: big.NewInt(5)})
 	cloneBudget := budget.Clone()
-	toSpend = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 1,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID1, Amount: big.NewInt(10)},
-			},
-		},
-	}
+	toSpend = isc.NewAssets(1, iotago.NativeTokenSum{nativeTokenID1: big.NewInt(10)})
 	require.False(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(cloneBudget))
 
-	budget = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 1,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID1, Amount: big.NewInt(5)},
-				{ID: nativeTokenID2, Amount: big.NewInt(1)},
-			},
-		},
-	}
-	toSpend = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 1,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID1, Amount: big.NewInt(5)},
-			},
-		},
-	}
-	expected := &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 0,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID2, Amount: big.NewInt(1)},
-			},
-		},
-	}
+	budget = isc.NewAssets(1, iotago.NativeTokenSum{
+		nativeTokenID1: big.NewInt(5),
+		nativeTokenID2: big.NewInt(1),
+	})
+	toSpend = isc.NewAssets(1, iotago.NativeTokenSum{
+		nativeTokenID1: big.NewInt(5),
+	})
+	expected := isc.NewAssets(0, iotago.NativeTokenSum{
+		nativeTokenID2: big.NewInt(1),
+	})
 	require.True(t, budget.Spend(toSpend))
 	require.True(t, budget.Equals(expected))
 
-	budget = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 10,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID2, Amount: big.NewInt(1)},
-			},
-		},
-	}
-	toSpend = &isc.Assets{
-		FungibleTokens: &isc.FungibleTokens{
-			BaseTokens: 1,
-			NativeTokens: []*isc.NativeTokenAmount{
-				{ID: nativeTokenID1, Amount: big.NewInt(5)},
-			},
-		},
-	}
-
+	budget = isc.NewAssets(10, iotago.NativeTokenSum{
+		nativeTokenID2: big.NewInt(1),
+	})
+	toSpend = isc.NewAssets(1, iotago.NativeTokenSum{
+		nativeTokenID1: big.NewInt(5),
+	})
 	require.False(t, budget.Spend(toSpend))
 }
 

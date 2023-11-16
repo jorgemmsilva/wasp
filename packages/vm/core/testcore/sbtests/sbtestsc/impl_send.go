@@ -2,6 +2,7 @@ package sbtestsc
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -36,12 +37,12 @@ func testSplitFundsNativeTokens(ctx isc.Sandbox) dict.Dict {
 	// claims all base tokens from allowance
 	accountID := ctx.AccountID()
 	ctx.TransferAllowedFunds(accountID, isc.NewAssets(ctx.AllowanceAvailable().BaseTokens, nil))
-	for _, nativeToken := range ctx.AllowanceAvailable().NativeTokens {
-		for ctx.AllowanceAvailable().AmountNativeToken(nativeToken.ID).Cmp(util.Big0) > 0 {
+	for id := range ctx.AllowanceAvailable().NativeTokens {
+		for ctx.AllowanceAvailable().NativeTokens.ValueOrBigInt0(id).Cmp(util.Big0) > 0 {
 			// claim 1 token from allowance at a time
 			// send back to caller's address
 			// depending on the amount of tokens, it will exceed number of outputs or not
-			assets := isc.NewEmptyAssets().AddNativeTokens(nativeToken.ID, 1)
+			assets := isc.NewEmptyAssets().AddNativeTokens(id, big.NewInt(1))
 			rem := ctx.TransferAllowedFunds(accountID, assets)
 			fmt.Printf("%s\n", rem)
 			ctx.Send(

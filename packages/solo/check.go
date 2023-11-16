@@ -28,7 +28,7 @@ func (ch *Chain) AssertL2NativeTokens(agentID isc.AgentID, nativeTokenID iotago.
 	}
 
 	bals := ch.L2Assets(agentID)
-	actualTokenBalance := bals.AmountNativeToken(nativeTokenID)
+	actualTokenBalance := bals.NativeTokens.ValueOrBigInt0(nativeTokenID)
 	expected := util.ToBigInt(bal)
 	require.Truef(ch.Env.T,
 		expected.Cmp(actualTokenBalance) == 0,
@@ -65,7 +65,7 @@ func (ch *Chain) CheckAccountLedger() {
 	sum := isc.NewEmptyFungibleTokens()
 	for i := range accs {
 		acc := accs[i]
-		sum.Add(ch.L2Assets(acc).FungibleTokens)
+		sum.Add(&ch.L2Assets(acc).FungibleTokens)
 	}
 	require.True(ch.Env.T, total.Equals(sum))
 	coreacc := isc.NewContractAgentID(ch.ChainID, root.Contract.Hname())
@@ -82,7 +82,7 @@ func (ch *Chain) AssertL2TotalNativeTokens(nativeTokenID iotago.NativeTokenID, b
 		h.Helper()
 	}
 	bals := ch.L2TotalAssets()
-	require.True(ch.Env.T, util.ToBigInt(bal).Cmp(bals.AmountNativeToken(nativeTokenID)) == 0)
+	require.True(ch.Env.T, util.ToBigInt(bal).Cmp(bals.NativeTokens.ValueOrBigInt0(nativeTokenID)) == 0)
 }
 
 func (ch *Chain) AssertL2TotalBaseTokens(bal iotago.BaseToken) {

@@ -61,24 +61,21 @@ func (a NativeTokenID) MustUnwrap() (ret iotago.NativeTokenID) {
 	return
 }
 
-// NativeToken matches the struct definition in ISCTypes.sol
+// NativeToken represents an amount of native tokens
 type NativeToken struct {
 	ID     NativeTokenID
 	Amount *big.Int
 }
 
-func WrapNativeToken(nativeToken *isc.NativeTokenAmount) NativeToken {
+func WrapNativeToken(id iotago.NativeTokenID, amount *big.Int) NativeToken {
 	return NativeToken{
-		ID:     WrapNativeTokenID(nativeToken.ID),
-		Amount: nativeToken.Amount,
+		ID:     WrapNativeTokenID(id),
+		Amount: amount,
 	}
 }
 
-func (nt NativeToken) Unwrap() *isc.NativeTokenAmount {
-	return &isc.NativeTokenAmount{
-		ID:     nt.ID.Unwrap(),
-		Amount: nt.Amount,
-	}
+func (nt NativeToken) Unwrap() (id iotago.NativeTokenID, amount *big.Int) {
+	return nt.ID.Unwrap(), nt.Amount
 }
 
 // L1Address matches the struct definition in ISCTypes.sol
@@ -254,12 +251,9 @@ type ISCAssets struct {
 }
 
 func WrapISCAssets(a *isc.Assets) ISCAssets {
-	if a == nil {
-		return WrapISCAssets(isc.NewEmptyAssets())
-	}
-	tokens := make([]NativeToken, len(a.NativeTokens))
-	for i, nativeToken := range a.NativeTokens {
-		tokens[i] = WrapNativeToken(nativeToken)
+	tokens := make([]NativeToken, 0, len(a.NativeTokens))
+	for _, id := range a.NativeTokenIDsSorted() {
+		tokens = append(tokens, WrapNativeToken(id, a.NativeTokens[id]))
 	}
 	nfts := make([]NFTID, len(a.NFTs))
 	for i, id := range a.NFTs {
@@ -273,15 +267,14 @@ func WrapISCAssets(a *isc.Assets) ISCAssets {
 }
 
 func (a ISCAssets) Unwrap() *isc.Assets {
-	tokens := make([]*isc.NativeTokenAmount, len(a.NativeTokens))
-	for i, nativeToken := range a.NativeTokens {
-		tokens[i] = nativeToken.Unwrap()
+	ret := isc.NewAssets(iotago.BaseToken(a.BaseTokens), nil)
+	for _, nativeToken := range a.NativeTokens {
+		ret.AddNativeTokens(nativeToken.ID.MustUnwrap(), nativeToken.Amount)
 	}
-	nfts := make([]iotago.NFTID, len(a.Nfts))
-	for i, id := range a.Nfts {
-		nfts[i] = id.Unwrap()
+	for _, id := range a.Nfts {
+		ret.AddNFTs(id.Unwrap())
 	}
-	return isc.NewAssets(iotago.BaseToken(a.BaseTokens), tokens, nfts...)
+	return ret
 }
 
 // ISCDictItem matches the struct definition in ISCTypes.sol

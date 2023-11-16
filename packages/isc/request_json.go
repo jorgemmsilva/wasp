@@ -7,6 +7,7 @@ import (
 
 	"github.com/samber/lo"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/parameters"
 )
@@ -106,18 +107,14 @@ type NativeTokenJSON struct {
 	Amount string `json:"amount" swagger:"required"`
 }
 
-func NativeTokenToJSONObject(token *NativeTokenAmount) *NativeTokenJSON {
-	return &NativeTokenJSON{
-		ID:     token.ID.ToHex(),
-		Amount: token.Amount.String(),
-	}
-}
-
-func NativeTokensToJSONObject(tokens []*NativeTokenAmount) []*NativeTokenJSON {
+func NativeTokensToJSONObject(tokens iotago.NativeTokenSum) []*NativeTokenJSON {
 	nativeTokens := make([]*NativeTokenJSON, len(tokens))
 
-	for k, v := range tokens {
-		nativeTokens[k] = NativeTokenToJSONObject(v)
+	for id, n := range tokens {
+		nativeTokens = append(nativeTokens, &NativeTokenJSON{
+			ID:     id.ToHex(),
+			Amount: n.String(),
+		})
 	}
 
 	return nativeTokens

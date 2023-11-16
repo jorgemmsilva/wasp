@@ -119,7 +119,7 @@ func withdraw(ctx isc.Sandbox) dict.Dict {
 		panic(errCallerMustHaveL1Address)
 	}
 	remains := ctx.TransferAllowedFunds(ctx.AccountID())
-	ctx.Requiref(remains.IsEmpty(), "internal: allowance remains must be empty")
+	ctx.Requiref(remains.IsEmpty(), "internal: allowance remains must be empty, but is: %s", remains)
 	ctx.Send(isc.RequestParameters{
 		TargetAddress: callerAddress,
 		Assets:        allowance,
@@ -323,14 +323,9 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 	if deltaAssets := isc.NewEmptyFungibleTokens().AddNativeTokens(nativeTokenID, delta); destroy {
 		// take tokens to destroy from allowance
 		accountID := ctx.AccountID()
-		ctx.TransferAllowedFunds(accountID,
-			isc.NewAssets(0, []*isc.NativeTokenAmount{
-				{
-					ID:     nativeTokenID,
-					Amount: delta,
-				},
-			}),
-		)
+		ctx.TransferAllowedFunds(accountID, isc.NewAssets(0, iotago.NativeTokenSum{
+			nativeTokenID: delta,
+		}))
 		DebitFromAccount(state, accountID, deltaAssets, ctx.ChainID())
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta.Neg(delta))
 	} else {

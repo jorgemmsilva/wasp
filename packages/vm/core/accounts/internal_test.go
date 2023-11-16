@@ -62,7 +62,7 @@ func TestCreditDebit1(t *testing.T) {
 
 	userAssets := GetAccountFungibleTokens(state, agentID1, isc.ChainID{})
 	require.EqualValues(t, 43, userAssets.BaseTokens)
-	require.Zero(t, userAssets.NativeTokenSum()[dummyAssetID].Cmp(big.NewInt(4)))
+	require.Zero(t, userAssets.NativeTokens[dummyAssetID].Cmp(big.NewInt(4)))
 	checkLedgerT(t, state, "cp2")
 
 	DebitFromAccount(state, agentID1, expected, isc.ChainID{})
@@ -92,7 +92,7 @@ func TestCreditDebit2(t *testing.T) {
 	expected = isc.NewFungibleTokens(42, nil)
 	require.True(t, expected.Equals(total))
 
-	require.True(t, util.IsZeroBigInt(GetNativeTokenBalance(state, agentID1, transfer.NativeTokens[0].ID, isc.ChainID{})))
+	require.True(t, util.IsZeroBigInt(GetNativeTokenBalance(state, agentID1, dummyAssetID, isc.ChainID{})))
 	bal1 := GetAccountFungibleTokens(state, agentID1, isc.ChainID{})
 	require.False(t, bal1.IsEmpty())
 	require.True(t, total.Equals(bal1))

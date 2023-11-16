@@ -570,7 +570,7 @@ func (env *Solo) L1NFTs(addr iotago.Address) map[iotago.OutputID]*iotago.NFTOutp
 // L1NativeTokens returns number of native tokens contained in the given address on the UTXODB ledger
 func (env *Solo) L1NativeTokens(addr iotago.Address, nativeTokenID iotago.NativeTokenID) *big.Int {
 	assets := env.L1Assets(addr)
-	return assets.AmountNativeToken(nativeTokenID)
+	return assets.NativeTokens.ValueOrBigInt0(nativeTokenID)
 }
 
 func (env *Solo) L1BaseTokens(addr iotago.Address) iotago.BaseToken {
@@ -665,8 +665,7 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.Assets, wallet *cryptolib.KeyPair) {
 	allOuts := env.utxoDB.GetUnspentOutputs(wallet.Address())
 	tx, err := transaction.NewTransferTransaction(
-		assets.BaseTokens,
-		transaction.MustSingleNativeToken(assets.FungibleTokens),
+		&assets.FungibleTokens,
 		0,
 		wallet.Address(),
 		wallet,

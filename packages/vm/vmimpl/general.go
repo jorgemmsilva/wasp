@@ -95,11 +95,7 @@ func (reqctx *requestContext) CurrentContractAccountID() isc.AgentID {
 }
 
 func (reqctx *requestContext) allowanceAvailable() *isc.Assets {
-	allowance := reqctx.getCallContext().allowanceAvailable
-	if allowance == nil {
-		return isc.NewEmptyAssets()
-	}
-	return allowance.Clone()
+	return reqctx.getCallContext().allowanceAvailable.Clone()
 }
 
 func (vmctx *vmContext) isCoreAccount(agentID isc.AgentID) bool {

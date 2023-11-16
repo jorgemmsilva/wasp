@@ -103,7 +103,7 @@ func (ch *Chain) L2NFTs(agentID isc.AgentID) []iotago.NFTID {
 }
 
 func (ch *Chain) L2NativeTokens(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int {
-	return ch.L2Assets(agentID).AmountNativeToken(nativeTokenID)
+	return ch.L2Assets(agentID).NativeTokens.ValueOrBigInt0(nativeTokenID)
 }
 
 func (ch *Chain) L2CommonAccountAssets() *isc.Assets {
@@ -115,7 +115,7 @@ func (ch *Chain) L2CommonAccountBaseTokens() iotago.BaseToken {
 }
 
 func (ch *Chain) L2CommonAccountNativeTokens(nativeTokenID iotago.NativeTokenID) *big.Int {
-	return ch.L2Assets(accounts.CommonAccount()).AmountNativeToken(nativeTokenID)
+	return ch.L2Assets(accounts.CommonAccount()).NativeTokens.ValueOrBigInt0(nativeTokenID)
 }
 
 // L2TotalAssets return total sum of ftokens contained in the on-chain accounts
@@ -275,14 +275,9 @@ func (ch *Chain) DestroyTokensOnL2(nativeTokenID iotago.NativeTokenID, amount in
 		accounts.ParamFoundrySN, toFoundrySN(nativeTokenID),
 		accounts.ParamSupplyDeltaAbs, util.ToBigInt(amount),
 		accounts.ParamDestroyTokens, true,
-	).WithAllowance(
-		isc.NewAssets(0, []*isc.NativeTokenAmount{
-			{
-				ID:     nativeTokenID,
-				Amount: util.ToBigInt(amount),
-			},
-		}),
-	).WithMaxAffordableGasBudget()
+	).
+		WithAllowance(isc.NewAssets(0, iotago.NativeTokenSum{nativeTokenID: util.ToBigInt(amount)})).
+		WithMaxAffordableGasBudget()
 
 	if user == nil {
 		user = ch.OriginatorPrivateKey
@@ -292,7 +287,7 @@ func (ch *Chain) DestroyTokensOnL2(nativeTokenID iotago.NativeTokenID, amount in
 }
 
 // DestroyTokensOnL1 sends tokens as ftokens and destroys in the same transaction
-func (ch *Chain) DestroyTokensOnL1(nativeTokenID iotago.NativeTokenID, amount interface{}, user *cryptolib.KeyPair) error {
+func (ch *Chain) DestroyTokensOnL1(nativeTokenID iotago.NativeTokenID, amount *big.Int, user *cryptolib.KeyPair) error {
 	req := NewCallParams(accounts.Contract.Name, accounts.FuncFoundryModifySupply.Name,
 		accounts.ParamFoundrySN, toFoundrySN(nativeTokenID),
 		accounts.ParamSupplyDeltaAbs, util.ToBigInt(amount),
@@ -413,7 +408,7 @@ func (ch *Chain) SendFromL2ToL2AccountBaseTokens(baseTokens iotago.BaseToken, ta
 	return ch.SendFromL2ToL2Account(isc.NewAssetsBaseTokens(baseTokens), target, user)
 }
 
-func (ch *Chain) SendFromL2ToL2AccountNativeTokens(id iotago.NativeTokenID, target isc.AgentID, amount interface{}, user *cryptolib.KeyPair) error {
+func (ch *Chain) SendFromL2ToL2AccountNativeTokens(id iotago.NativeTokenID, target isc.AgentID, amount *big.Int, user *cryptolib.KeyPair) error {
 	transfer := isc.NewEmptyAssets()
 	transfer.AddNativeTokens(id, amount)
 	return ch.SendFromL2ToL2Account(transfer, target, user)

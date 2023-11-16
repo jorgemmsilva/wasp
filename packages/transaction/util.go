@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"slices"
 
 	"github.com/samber/lo"
@@ -120,36 +119,33 @@ func computeRemainderOutputs(
 	available *AssetsWithMana,
 	target *AssetsWithMana,
 ) (ret iotago.TxEssenceOutputs, err error) {
-	if available.BaseTokens < target.BaseTokens {
+	excess := available.Clone()
+	if excess.BaseTokens < target.BaseTokens {
 		return nil, ErrNotEnoughBaseTokens
 	}
-	excess := *NewEmptyAssetsWithMana()
-	excess.BaseTokens = available.BaseTokens - target.BaseTokens
+	excess.BaseTokens -= target.BaseTokens
 
-	if available.Mana < target.Mana {
+	if excess.Mana < target.Mana {
 		return nil, ErrNotEnoughMana
 	}
-	excess.Mana = available.Mana - target.Mana
+	excess.Mana -= target.Mana
 
-	availableNTs := available.NativeTokenSum()
-	for _, nt := range available.NativeTokens {
-		excess.AddNativeTokens(nt.ID, nt.Amount)
-	}
-	for _, nt := range target.NativeTokens {
-		if availableNTs.ValueOrBigInt0(nt.ID).Cmp(nt.Amount) < 0 {
+	for id, amount := range target.NativeTokens {
+		excessAmount := excess.NativeTokens.ValueOrBigInt0(id)
+		if excessAmount.Cmp(amount) < 0 {
 			return nil, ErrNotEnoughNativeTokens
 		}
-		amount := new(big.Int).Set(nt.Amount)
-		excess.AddNativeTokens(nt.ID, amount.Neg(amount))
+		excess.NativeTokens[id] = excessAmount.Sub(excessAmount, amount)
+		if excessAmount.Sign() == 0 {
+			delete(excess.NativeTokens, id)
+		}
 	}
 
-	for _, nt := range excess.NativeTokens {
-		if nt.Amount.Sign() == 0 {
-			continue
-		}
+	for _, id := range excess.NativeTokenIDsSorted() {
+		amount := excess.NativeTokens[id]
 		out := &iotago.BasicOutput{
 			Features: iotago.BasicOutputFeatures{
-				&iotago.NativeTokenFeature{ID: nt.ID, Amount: nt.Amount},
+				&iotago.NativeTokenFeature{ID: id, Amount: amount},
 			},
 			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: senderAddress},

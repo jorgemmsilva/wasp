@@ -76,7 +76,7 @@ type Balance interface {
 	// BalanceNativeToken returns number of native token or nil if it is empty
 	BalanceNativeToken(iotago.NativeTokenID) *big.Int
 	// BalanceNativeTokens returns all native tokens owned by the smart contract
-	BalanceNativeTokens() []*NativeTokenAmount
+	BalanceNativeTokens() iotago.NativeTokenSum
 	// OwnedNFTs returns the NFTIDs of NFTs owned by the smart contract
 	OwnedNFTs() []iotago.NFTID
 	// returns whether a given user owns a given amount of tokens

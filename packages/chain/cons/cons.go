@@ -72,6 +72,7 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -110,12 +111,12 @@ type Output struct {
 	Terminated bool
 	//
 	// Requests for other components.
-	NeedMempoolProposal       *isc.AnchorOutputWithID // Requests for the mempool are needed for this Base Alias Output.
-	NeedMempoolRequests       []*isc.RequestRef       // Request payloads are needed from mempool for this IDs/Hash.
-	NeedStateMgrStateProposal *isc.AnchorOutputWithID // Query for a proposal for Virtual State (it will go to the batch proposal).
-	NeedStateMgrDecidedState  *isc.AnchorOutputWithID // Query for a decided Virtual State to be used by VM.
-	NeedStateMgrSaveBlock     state.StateDraft        // Ask StateMgr to save the produced block.
-	NeedVMResult              *vm.VMTask              // VM Result is needed for this (agreed) batch.
+	NeedMempoolProposal       *isc.ChainOutputs // Requests for the mempool are needed for this Base Alias Output.
+	NeedMempoolRequests       []*isc.RequestRef // Request payloads are needed from mempool for this IDs/Hash.
+	NeedStateMgrStateProposal *isc.ChainOutputs // Query for a proposal for Virtual State (it will go to the batch proposal).
+	NeedStateMgrDecidedState  *isc.ChainOutputs // Query for a decided Virtual State to be used by VM.
+	NeedStateMgrSaveBlock     state.StateDraft  // Ask StateMgr to save the produced block.
+	NeedVMResult              *vm.VMTask        // VM Result is needed for this (agreed) batch.
 	//
 	// Following is the final result.
 	// All the fields are filled, if State == Completed.
@@ -123,16 +124,16 @@ type Output struct {
 }
 
 type Result struct {
-	Transaction      *iotago.Transaction     // The TX for committing the block.
-	BaseAnchorOutput iotago.OutputID         // AO consumed in the TX.
-	NextAnchorOutput *isc.AnchorOutputWithID // AO produced in the TX.
-	Block            state.Block             // The state diff produced.
+	Transaction      *iotago.SignedTransaction // The TX for committing the block.
+	BaseAnchorOutput iotago.OutputID           // AO consumed in the TX.
+	NextAnchorOutput *isc.ChainOutputs         // AO produced in the TX.
+	Block            state.Block               // The state diff produced.
 }
 
 func (r *Result) String() string {
 	txID, err := r.Transaction.ID()
 	if err != nil {
-		txID = iotago.TransactionID{}
+		txID = iotago.SignedTransactionID{}
 	}
 	return fmt.Sprintf("{cons.Result, txID=%v, baseAO=%v, nextAO=%v}", txID, r.BaseAnchorOutput.ToHex(), r.NextAnchorOutput)
 }
@@ -376,7 +377,7 @@ func (c *consImpl) StatusString() string {
 ////////////////////////////////////////////////////////////////////////////////
 // MP -- MemPool
 
-func (c *consImpl) uponMPProposalInputsReady(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponMPProposalInputsReady(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	c.output.NeedMempoolProposal = baseAnchorOutput
 	return nil
 }
@@ -399,17 +400,17 @@ func (c *consImpl) uponMPRequestsReceived(requests []isc.Request) gpa.OutMessage
 ////////////////////////////////////////////////////////////////////////////////
 // SM -- StateManager
 
-func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMStateProposalQueryInputsReady(baseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	c.output.NeedStateMgrStateProposal = baseAnchorOutput
 	return nil
 }
 
-func (c *consImpl) uponSMStateProposalReceived(proposedAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMStateProposalReceived(proposedAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	c.output.NeedStateMgrStateProposal = nil
 	return c.subACS.StateProposalReceived(proposedAnchorOutput)
 }
 
-func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAnchorOutput *isc.AnchorOutputWithID) gpa.OutMessages {
+func (c *consImpl) uponSMDecidedStateQueryInputsReady(decidedBaseAnchorOutput *isc.ChainOutputs) gpa.OutMessages {
 	c.output.NeedStateMgrDecidedState = decidedBaseAnchorOutput
 	return nil
 }
@@ -473,7 +474,7 @@ func (c *consImpl) uponDSSOutputReady(signature []byte) gpa.OutMessages {
 ////////////////////////////////////////////////////////////////////////////////
 // ACS
 
-func (c *consImpl) uponACSInputsReceived(baseAnchorOutput *isc.AnchorOutputWithID, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
+func (c *consImpl) uponACSInputsReceived(baseAnchorOutput *isc.ChainOutputs, requestRefs []*isc.RequestRef, dssIndexProposal []int, timeData time.Time) gpa.OutMessages {
 	batchProposal := bp.NewBatchProposal(
 		*c.dkShare.GetIndex(),
 		baseAnchorOutput,
@@ -502,7 +503,7 @@ func (c *consImpl) uponACSOutputReceived(outputValues map[gpa.NodeID][]byte) gpa
 		return nil
 	}
 	bao := aggr.DecidedBaseAnchorOutput()
-	baoID := bao.OutputID()
+	baoID := bao.AnchorOutputID
 	reqs := aggr.DecidedRequestRefs()
 	c.log.Debugf("ACS decision: baseAO=%v, requests=%v", bao, reqs)
 	return gpa.NoMessages().
@@ -553,12 +554,13 @@ func (c *consImpl) uponVMInputsReceived(aggregatedProposals *bp.AggregatedBatchP
 	// The decided base alias output can be different from that we have proposed!
 	decidedBaseAnchorOutput := aggregatedProposals.DecidedBaseAnchorOutput()
 	c.output.NeedVMResult = &vm.VMTask{
-		Processors:           c.processorCache,
-		AnchorOutput:         decidedBaseAnchorOutput.GetAnchorOutput(),
-		AnchorOutputID:       decidedBaseAnchorOutput.OutputID(),
-		Store:                c.chainStore,
-		Requests:             aggregatedProposals.OrderedRequests(requests, *randomness),
-		TimeAssumption:       aggregatedProposals.AggregatedTime(),
+		Processors: c.processorCache,
+		Inputs:     decidedBaseAnchorOutput,
+		Store:      c.chainStore,
+		Requests:   aggregatedProposals.OrderedRequests(requests, *randomness),
+		// TODO: <lmoe> Is TimeAssumption->Timestamp a 1:1 change?
+		// (old) TimeAssumption:       aggregatedProposals.AggregatedTime(),
+		Timestamp:            aggregatedProposals.AggregatedTime(),
 		Entropy:              *randomness,
 		ValidatorFeeTarget:   aggregatedProposals.ValidatorFeeTarget(*randomness),
 		EstimateGasMode:      false,
@@ -581,10 +583,11 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 
 	if vmResult.RotationAddress != nil {
 		// Rotation by the Self-Governed Committee.
-		essence, err := rotate.MakeRotationTransactionForSelfManagedChain(
+		tx, _, err := rotate.MakeRotationTransactionForSelfManagedChain(
 			vmResult.RotationAddress,
-			isc.NewAnchorOutputWithID(vmResult.Task.AnchorOutput, vmResult.Task.AnchorOutputID),
-			vmResult.Task.TimeAssumption,
+			vmResult.Task.Inputs,
+			// TODO: <lmoe> Guess this call could be placed into a separate module? It seems to be used by a few components already.
+			parameters.L1API().TimeProvider().SlotFromTime(vmResult.Task.Timestamp),
 		)
 		if err != nil {
 			c.log.Warnf("Cannot create rotation TX, failed to make TX essence: %w", err)
@@ -592,11 +595,11 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 			c.term.haveOutputProduced()
 			return nil
 		}
-		vmResult.TransactionEssence = essence
+		vmResult.Transaction = tx
 		vmResult.StateDraft = nil
 	}
 
-	signingMsg, err := vmResult.TransactionEssence.SigningMessage()
+	signingMsg, err := vmResult.Transaction.SigningMessage()
 	if err != nil {
 		panic(fmt.Errorf("uponVMOutputReceived: cannot obtain signing message: %w", err))
 	}
@@ -611,7 +614,7 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 
 // Everything is ready for the output TX, produce it.
 func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Block, signature []byte) gpa.OutMessages {
-	resultTxEssence := vmResult.TransactionEssence
+	resultTx := vmResult.Transaction
 	publicKey := c.dkShare.GetSharedPublic()
 	var signatureArray [ed25519.SignatureSize]byte
 	copy(signatureArray[:], signature)
@@ -619,26 +622,36 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 		PublicKey: publicKey.AsKey(),
 		Signature: signatureArray,
 	}
-	tx := &iotago.Transaction{
-		Essence: resultTxEssence,
-		Unlocks: transaction.MakeSignatureAndAliasUnlockFeatures(len(resultTxEssence.Inputs), signatureForUnlock),
+
+	resultInputs, err := resultTx.Inputs()
+	if err != nil {
+		panic(fmt.Errorf("cannot get inputs from result TX: %w", err))
 	}
+
+	// TODO: <lmoe> This is most likely just trash :D
+	tx := &iotago.SignedTransaction{
+		Transaction: &iotago.Transaction{
+			TransactionEssence: resultTx.TransactionEssence,
+		},
+		Unlocks: transaction.MakeSignatureAndReferenceUnlocks(len(resultInputs), signatureForUnlock),
+	}
+
 	txID, err := tx.ID()
 	if err != nil {
 		panic(fmt.Errorf("cannot get ID from the produced TX: %w", err))
 	}
-	chained, err := isc.AnchorOutputWithIDFromTx(tx, c.chainID.AsAddress())
+	chained, err := isc.ChainOutputsFromTx(tx.Transaction, c.chainID.AsAddress())
 	if err != nil {
 		panic(fmt.Errorf("cannot get AnchorOutput from produced TX: %w", err))
 	}
 	c.output.Result = &Result{
 		Transaction:      tx,
-		BaseAnchorOutput: vmResult.Task.AnchorOutputID,
+		BaseAnchorOutput: vmResult.Task.Inputs.AnchorOutputID,
 		NextAnchorOutput: chained,
 		Block:            block,
 	}
 	c.output.Status = Completed
-	c.log.Infof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.AnchorOutputID.ToHex())
+	c.log.Infof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.Inputs.AnchorOutputID.ToHex())
 	c.term.haveOutputProduced()
 	return nil
 }

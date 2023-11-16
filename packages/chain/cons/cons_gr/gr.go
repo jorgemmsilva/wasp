@@ -47,7 +47,7 @@ func NewConsensusID(cmtAddr *iotago.Ed25519Address, logIndex *cmt_log.LogIndex) 
 }
 
 type Mempool interface {
-	ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.AnchorOutputWithID, consensusID ConsensusID) <-chan []*isc.RequestRef
+	ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.ChainOutputs, consensusID ConsensusID) <-chan []*isc.RequestRef
 	ConsensusRequestsAsync(ctx context.Context, requestRefs []*isc.RequestRef) <-chan []isc.Request
 }
 
@@ -58,13 +58,13 @@ type StateMgr interface {
 	// in the database. Context is used to cancel a request.
 	ConsensusStateProposal(
 		ctx context.Context,
-		anchorOutput *isc.AnchorOutputWithID,
+		anchorOutput *isc.ChainOutputs,
 	) <-chan interface{}
 	// State manager has to ensure all the data needed for the specified alias
 	// output (presented as anchorOutputID+stateCommitment) is present in the DB.
 	ConsensusDecidedState(
 		ctx context.Context,
-		anchorOutput *isc.AnchorOutputWithID,
+		anchorOutput *isc.ChainOutputs,
 	) <-chan state.State
 	// State manager has to persistently store the block and respond only after
 	// the block was flushed to the disk. A WAL can be used for that as well.
@@ -91,9 +91,9 @@ func (o *Output) String() string {
 }
 
 type input struct {
-	baseAnchorOutput *isc.AnchorOutputWithID
-	outputCB          func(*Output)
-	recoverCB         func()
+	baseAnchorOutput *isc.ChainOutputs
+	outputCB         func(*Output)
+	recoverCB        func()
 }
 
 type ConsGr struct {
@@ -211,15 +211,15 @@ func New(
 	return cgr
 }
 
-func (cgr *ConsGr) Input(baseAnchorOutput *isc.AnchorOutputWithID, outputCB func(*Output), recoverCB func()) {
+func (cgr *ConsGr) Input(baseAnchorOutput *isc.ChainOutputs, outputCB func(*Output), recoverCB func()) {
 	wasReceivedBefore := cgr.inputReceived.Swap(true)
 	if wasReceivedBefore {
 		panic(fmt.Errorf("duplicate input: %v", baseAnchorOutput))
 	}
 	inp := &input{
 		baseAnchorOutput: baseAnchorOutput,
-		outputCB:          outputCB,
-		recoverCB:         recoverCB,
+		outputCB:         outputCB,
+		recoverCB:        recoverCB,
 	}
 	cgr.inputCh <- inp
 	close(cgr.inputCh)

@@ -128,10 +128,10 @@ var ErrCmtLogStateNotFound = errors.New("errCmtLogStateNotFound")
 // logIndex (there will be no different baseAnchorOutputs for the same logIndex).
 type Output struct {
 	logIndex         LogIndex
-	baseAnchorOutput *isc.AnchorOutputWithID
+	baseAnchorOutput *isc.ChainOutputs
 }
 
-func makeOutput(logIndex LogIndex, baseAnchorOutput *isc.AnchorOutputWithID) *Output {
+func makeOutput(logIndex LogIndex, baseAnchorOutput *isc.ChainOutputs) *Output {
 	return &Output{logIndex: logIndex, baseAnchorOutput: baseAnchorOutput}
 }
 
@@ -139,7 +139,7 @@ func (o *Output) GetLogIndex() LogIndex {
 	return o.logIndex
 }
 
-func (o *Output) GetBaseAnchorOutput() *isc.AnchorOutputWithID {
+func (o *Output) GetBaseAnchorOutput() *isc.ChainOutputs {
 	return o.baseAnchorOutput
 }
 

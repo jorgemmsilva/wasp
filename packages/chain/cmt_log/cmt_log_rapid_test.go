@@ -20,13 +20,13 @@ import (
 )
 
 type cmtLogTestRapidSM struct {
-	anchorID         iotago.AnchorID
+	anchorID        iotago.AnchorID
 	chainID         isc.ChainID
 	governorAddress iotago.Address
 	stateAddress    iotago.Address
 	tc              *gpa.TestContext
-	l1Chain         []*isc.AnchorOutputWithID // The actual chain.
-	l1Delivered     map[gpa.NodeID]int        // Position of the last element from l1Chain to delivered for the corresponding node (-1 means none).
+	l1Chain         []*isc.ChainOutputs // The actual chain.
+	l1Delivered     map[gpa.NodeID]int  // Position of the last element from l1Chain to delivered for the corresponding node (-1 means none).
 	genAOSerial     uint32
 	genNodeID       *rapid.Generator[gpa.NodeID]
 }
@@ -64,7 +64,7 @@ func newCmtLogTestRapidSM(t *rapid.T) *cmtLogTestRapidSM {
 		gpaNodes[gpaNodeIDs[i]] = cmtLogInst.AsGPA()
 	}
 	sm.tc = gpa.NewTestContext(gpaNodes)
-	sm.l1Chain = []*isc.AnchorOutputWithID{}
+	sm.l1Chain = []*isc.ChainOutputs{}
 	sm.l1Delivered = map[gpa.NodeID]int{}
 	//
 	// Generators.
@@ -72,27 +72,29 @@ func newCmtLogTestRapidSM(t *rapid.T) *cmtLogTestRapidSM {
 	sm.genNodeID = rapid.SampledFrom(gpaNodeIDs)
 	//
 	// Start it.
-	sm.l1Chain = append(sm.l1Chain, sm.nextAnchorOutputWithID(0))
+	sm.l1Chain = append(sm.l1Chain, sm.nextChainOutputs(0))
 	for _, nid := range gpaNodeIDs {
 		sm.l1Delivered[nid] = -1
 	}
 	return sm
 }
 
-func (sm *cmtLogTestRapidSM) nextAnchorOutputWithID(stateIndex uint32) *isc.AnchorOutputWithID {
+func (sm *cmtLogTestRapidSM) nextChainOutputs(stateIndex uint32) *isc.ChainOutputs {
 	sm.genAOSerial++
 	var outputID iotago.OutputID
 	binary.BigEndian.PutUint32(outputID[:], sm.genAOSerial)
 	anchorOutput := &iotago.AnchorOutput{
 		AnchorID:   sm.anchorID,
 		StateIndex: stateIndex,
-		StateMetadata: []byte{},
-		Conditions: iotago.UnlockConditions{
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: sm.stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: sm.governorAddress},
 		},
+		Features: iotago.AnchorOutputFeatures{
+			iotago.MetadataFeature{},
+		},
 	}
-	return isc.NewAnchorOutputWithID(anchorOutput, outputID)
+	return isc.NewChainOutputs(anchorOutput, outputID)
 }
 
 // func (sm *cmtLogTestRapidSM) ConsDone(t *rapid.T) {
@@ -100,7 +102,7 @@ func (sm *cmtLogTestRapidSM) nextAnchorOutputWithID(stateIndex uint32) *isc.Anch
 // 	var li cmtLog.LogIndex         // TODO: Set it.
 // 	var pAO iotago.OutputID        // TODO: Set it.
 // 	var bAO iotago.OutputID        // TODO: Set it.
-// 	var nAO *isc.AnchorOutputWithID // TODO: Set it.
+// 	var nAO *isc.ChainOutputs // TODO: Set it.
 // 	sm.tc.WithInput(nodeID, cmtLog.NewInputConsensusOutputDone(li, pAO, bAO, nAO))
 // 	sm.tc.RunAll()
 // }
@@ -122,7 +124,7 @@ func (sm *cmtLogTestRapidSM) nextAnchorOutputWithID(stateIndex uint32) *isc.Anch
 
 // func (sm *cmtLogTestRapidSM) ConsConfirmed(t *rapid.T) {
 // 	nodeID := sm.genNodeID.Draw(t, "node")
-// 	var ao *isc.AnchorOutputWithID // TODO: Set it.
+// 	var ao *isc.ChainOutputs // TODO: Set it.
 // 	var li cmtLog.LogIndex        // TODO: Set it.
 // 	sm.tc.WithInput(nodeID, cmtLog.NewInputConsensusOutputConfirmed(ao, li))
 // 	sm.tc.RunAll()
@@ -130,7 +132,7 @@ func (sm *cmtLogTestRapidSM) nextAnchorOutputWithID(stateIndex uint32) *isc.Anch
 
 // func (sm *cmtLogTestRapidSM) ConsRejected(t *rapid.T) {
 // 	nodeID := sm.genNodeID.Draw(t, "node")
-// 	var ao *isc.AnchorOutputWithID // TODO: Set it.
+// 	var ao *isc.ChainOutputs // TODO: Set it.
 // 	var li cmtLog.LogIndex        // TODO: Set it.
 // 	sm.tc.WithInput(nodeID, cmtLog.NewInputConsensusOutputRejected(ao, li))
 // 	sm.tc.RunAll()

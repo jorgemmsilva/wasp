@@ -23,6 +23,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
+	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -71,7 +72,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	defer log.Sync()
 	//
 	// Create ledger accounts.
-	utxoDB := utxodb.New(utxodb.DefaultInitParams())
+	utxoDB := utxodb.New(parameters.L1API())
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
@@ -144,7 +145,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	// Provide data from Mempool and StateMgr.
 	for i := range nodes {
 		nodes[i].Time(time.Now())
-		mempools[i].addRequests(originAO.OutputID(), []isc.Request{
+		mempools[i].addRequests(originAO.AnchorOutputID, []isc.Request{
 			isc.NewOffLedgerRequest(chainID, isc.Hn("foo"), isc.Hn("bar"), nil, 0, gas.LimitsDefault.MaxGasPerRequest).Sign(originator),
 		})
 		stateMgrs[i].addOriginState(originAO)
@@ -231,10 +232,10 @@ func (tmp *testMempool) tryRespondRequestQueries() {
 	tmp.qRequests = remaining
 }
 
-func (tmp *testMempool) ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.AnchorOutputWithID, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
+func (tmp *testMempool) ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.ChainOutputs, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
 	tmp.lock.Lock()
 	defer tmp.lock.Unlock()
-	outputID := anchorOutput.OutputID()
+	outputID := anchorOutput.AnchorOutputID
 	resp := make(chan []*isc.RequestRef, 1)
 	tmp.qProposals[outputID] = resp
 	tmp.tryRespondProposalQueries()
@@ -273,8 +274,8 @@ func newTestStateMgr(t *testing.T, chainStore state.Store) *testStateMgr {
 	}
 }
 
-func (tsm *testStateMgr) addOriginState(originAO *isc.AnchorOutputWithID) {
-	originAOStateMetadata, err := transaction.StateMetadataFromBytes(originAO.GetStateMetadata())
+func (tsm *testStateMgr) addOriginState(originAO *isc.ChainOutputs) {
+	originAOStateMetadata, err := transaction.StateMetadataFromBytes(originAO.AnchorOutput.FeatureSet().StateMetadata())
 	require.NoError(tsm.t, err)
 	chainState, err := tsm.chainStore.StateByTrieRoot(
 		originAOStateMetadata.L1Commitment.TrieRoot(),
@@ -283,7 +284,7 @@ func (tsm *testStateMgr) addOriginState(originAO *isc.AnchorOutputWithID) {
 	tsm.addState(originAO, chainState)
 }
 
-func (tsm *testStateMgr) addState(anchorOutput *isc.AnchorOutputWithID, chainState state.State) { // TODO: Why is it not called from other places???
+func (tsm *testStateMgr) addState(anchorOutput *isc.ChainOutputs, chainState state.State) { // TODO: Why is it not called from other places???
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	hash := commitmentHashFromAO(anchorOutput)
@@ -291,7 +292,7 @@ func (tsm *testStateMgr) addState(anchorOutput *isc.AnchorOutputWithID, chainSta
 	tsm.tryRespond(hash)
 }
 
-func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, anchorOutput *isc.AnchorOutputWithID) <-chan interface{} {
+func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, anchorOutput *isc.ChainOutputs) <-chan interface{} {
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	resp := make(chan interface{}, 1)
@@ -303,11 +304,11 @@ func (tsm *testStateMgr) ConsensusStateProposal(ctx context.Context, anchorOutpu
 
 // State manager has to ensure all the data needed for the specified alias
 // output (presented as anchorOutputID+stateCommitment) is present in the DB.
-func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, anchorOutput *isc.AnchorOutputWithID) <-chan state.State {
+func (tsm *testStateMgr) ConsensusDecidedState(ctx context.Context, anchorOutput *isc.ChainOutputs) <-chan state.State {
 	tsm.lock.Lock()
 	defer tsm.lock.Unlock()
 	resp := make(chan state.State, 1)
-	stateCommitment, err := transaction.L1CommitmentFromAnchorOutput(anchorOutput.GetAnchorOutput())
+	stateCommitment, err := transaction.L1CommitmentFromAnchorOutput(anchorOutput.AnchorOutput)
 	if err != nil {
 		tsm.t.Fatal(err)
 	}
@@ -344,8 +345,8 @@ func (tsm *testStateMgr) tryRespond(hash hashing.HashValue) {
 	}
 }
 
-func commitmentHashFromAO(anchorOutput *isc.AnchorOutputWithID) hashing.HashValue {
-	commitment, err := transaction.L1CommitmentFromAnchorOutput(anchorOutput.GetAnchorOutput())
+func commitmentHashFromAO(anchorOutput *isc.ChainOutputs) hashing.HashValue {
+	commitment, err := transaction.L1CommitmentFromAnchorOutput(anchorOutput.AnchorOutput)
 	if err != nil {
 		panic(err)
 	}

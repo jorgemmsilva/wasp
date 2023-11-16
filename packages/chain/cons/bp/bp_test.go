@@ -28,7 +28,7 @@ func TestOffLedgerOrdering(t *testing.T) {
 	//
 	// Produce an alias output.
 	cmtKP := cryptolib.NewKeyPair()
-	utxoDB := utxodb.New(utxodb.DefaultInitParams())
+	utxoDB := utxodb.New(parameters.L1API())
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)

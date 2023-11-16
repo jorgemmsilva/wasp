@@ -17,6 +17,9 @@ import (
 
 // Call implements sandbox logic of the call between contracts on-chain
 func (reqctx *requestContext) Call(targetContract, epCode isc.Hname, params dict.Dict, allowance *isc.Assets) dict.Dict {
+	if allowance == nil {
+		allowance = isc.NewEmptyAssets()
+	}
 	reqctx.Debugf("Call: targetContract: %s entry point: %s", targetContract, epCode)
 	return reqctx.callProgram(targetContract, epCode, params, allowance, reqctx.CurrentContractAgentID())
 }
@@ -94,7 +97,7 @@ func (reqctx *requestContext) callCore(c *coreutil.ContractInfo, f func(s kv.KVS
 	} else {
 		caller = reqctx.req.SenderAccount()
 	}
-	reqctx.pushCallContext(c.Hname(), nil, nil, caller)
+	reqctx.pushCallContext(c.Hname(), nil, isc.NewEmptyAssets(), caller)
 	defer reqctx.popCallContext()
 
 	f(reqctx.contractStateWithGasBurn())

@@ -3,14 +3,11 @@ package vmimpl
 import (
 	"time"
 
-	"github.com/samber/lo"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -172,18 +169,12 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 // 4. produced outputs
 // 5. unprocessable requests
 func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
-	// create a mock AO, with a nil statecommitment, just to calculate changes in the minimum SD
-	mockAnchor, mockAccount := vmctx.txbuilder.CreateAnchorAndAccountOutputs(
+	oldSD, newSD, changeInSD := vmctx.txbuilder.ChangeInSD(
 		vmctx.stateMetadata(state.L1CommitmentNil),
 		vmctx.CreationSlot(),
-		iotago.OutputSet{vmctx.task.Inputs.AnchorOutputID: vmctx.task.Inputs.AnchorOutput},
 	)
-	newSD := lo.Must(parameters.Storage().MinDeposit(mockAnchor)) + mockAccount.Amount
-	oldSD := vmctx.getSDInChainOutputs()
-	changeInSD := int64(oldSD) - int64(newSD)
-
 	if changeInSD != 0 {
-		vmctx.task.Log.Debugf("adjusting commonAccount because AO SD cost changed, old:%d new:%d change:%d", oldSD, newSD, changeInSD)
+		vmctx.task.Log.Debugf("adjusting commonAccount because AO SD cost changed, change:%d", oldSD, newSD, changeInSD)
 		// update the commonAccount with the change in SD cost
 		withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
 			accounts.AdjustAccountBaseTokens(s, accounts.CommonAccount(), changeInSD, vmctx.ChainID())

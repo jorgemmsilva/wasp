@@ -26,6 +26,7 @@ var dummyStateMetadata = []byte("foobar")
 type mockAccountContractRead struct {
 	assets             *isc.FungibleTokens
 	nativeTokenOutputs map[iotago.NativeTokenID]*iotago.BasicOutput
+	changeInSD         int64
 }
 
 func (m *mockAccountContractRead) Read() AccountsContractRead {
@@ -40,21 +41,39 @@ func (m *mockAccountContractRead) Read() AccountsContractRead {
 			return nil, iotago.OutputID{}
 		},
 		TotalFungibleTokens: func() *isc.FungibleTokens {
-			return m.assets
+			return m.adjustSD(m.assets)
 		},
 	}
 }
 
-func newMockAccountsContractRead(anchor *iotago.AnchorOutput) *mockAccountContractRead {
-	anchorMinSD, err := parameters.Storage().MinDeposit(anchor)
-	if err != nil {
-		panic(err)
+// mimics the behavior of accounts.AdjustAccountBaseTokens
+func (m *mockAccountContractRead) adjustSD(assets *isc.FungibleTokens) *isc.FungibleTokens {
+	if m.changeInSD > 0 {
+		assets = assets.Clone()
+		assets.BaseTokens += iotago.BaseToken(m.changeInSD)
 	}
-	assets := isc.NewFungibleTokens(anchor.BaseTokenAmount()-anchorMinSD, nil)
+	if m.changeInSD < 0 {
+		assets = assets.Clone()
+		assets.BaseTokens -= iotago.BaseToken(-m.changeInSD)
+	}
+	return assets
+}
+
+func newMockAccountsContractRead(anchor *iotago.AnchorOutput) *mockAccountContractRead {
+	sd := lo.Must(parameters.Storage().MinDeposit(anchor))
+	assets := isc.NewFungibleTokens(anchor.BaseTokenAmount()-sd, nil)
 	return &mockAccountContractRead{
 		assets:             assets,
 		nativeTokenOutputs: make(map[iotago.FoundryID]*iotago.BasicOutput),
 	}
+}
+
+func buildTxEssence(txb *AnchorTransactionBuilder, mockedAccounts *mockAccountContractRead) *iotago.Transaction {
+	_, _, changeInSD := txb.ChangeInSD(dummyStateMetadata, 0)
+	mockedAccounts.changeInSD = changeInSD
+	essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+	txb.MustBalanced()
+	return essence
 }
 
 func TestTxBuilderBasic(t *testing.T) {
@@ -106,8 +125,7 @@ func TestTxBuilderBasic(t *testing.T) {
 			),
 			mockedAccounts.Read(),
 		)
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence := buildTxEssence(txb, mockedAccounts)
 		require.EqualValues(t, 2, txb.numInputs())
 		require.EqualValues(t, 2, txb.numOutputs())
 		require.False(t, txb.InputsAreFull())
@@ -127,8 +145,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		txb.Consume(req1)
 		mockedAccounts.assets.AddBaseTokens(req1.Output().BaseTokenAmount())
 
-		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence = buildTxEssence(txb, mockedAccounts)
 		require.Len(t, essence.Outputs, 2)
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount())
 
@@ -147,11 +164,10 @@ func TestTxBuilderBasic(t *testing.T) {
 		totalSDBaseTokensUsedToSplitAssets := txb.Consume(req2)
 
 		// deduct SD costs of creating the internal accounting outputs
-		mockedAccounts.assets.Add(req2.Assets().FungibleTokens)
+		mockedAccounts.assets.Add(&req2.Assets().FungibleTokens)
 		mockedAccounts.assets.Spend(isc.NewFungibleTokens(totalSDBaseTokensUsedToSplitAssets, nil))
 
-		essence, _ = txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence = buildTxEssence(txb, mockedAccounts)
 		require.Len(t, essence.Outputs, 4) // 1 anchor AO, 1 account AO, 1 NFT internal Output, 1 NativeTokens internal outputs
 		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount()-totalSDBaseTokensUsedToSplitAssets)
 	})
@@ -219,29 +235,23 @@ func TestTxBuilderConsistency(t *testing.T) {
 		out := transaction.MakeBasicOutput(
 			txb.inputs.AnchorOutput.AnchorID.ToAddress(),
 			nil,
-			0,
-			&isc.NativeTokenAmount{ID: id, Amount: big.NewInt(int64(amountNative))},
+			isc.NewFungibleTokens(0, iotago.NativeTokenSum{id: big.NewInt(int64(amountNative))}),
 			0,
 			nil,
 			nil,
 		)
-		req, err := isc.OnLedgerFromUTXO(
-			transaction.AdjustToMinimumStorageDeposit(out), iotago.OutputID{})
+		req, err := isc.OnLedgerFromUTXO(transaction.AdjustToMinimumStorageDeposit(out), iotago.OutputID{})
 		require.NoError(t, err)
 		sdCost := txb.Consume(req)
-		mockedAccounts.assets.Add(req.Assets().FungibleTokens)
+		mockedAccounts.assets.Add(&req.Assets().FungibleTokens)
 		mockedAccounts.assets.Spend(isc.NewFungibleTokens(sdCost, nil))
-		txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		buildTxEssence(txb, mockedAccounts)
 	}
 
 	addOutput := func(txb *AnchorTransactionBuilder, amount uint64, nativeTokenID iotago.NativeTokenID, mockedAccounts *mockAccountContractRead) {
 		outAssets := isc.NewFungibleTokens(
 			1*isc.Million,
-			[]*isc.NativeTokenAmount{{
-				ID:     nativeTokenID,
-				Amount: new(big.Int).SetUint64(amount),
-			}},
+			iotago.NativeTokenSum{nativeTokenID: new(big.Int).SetUint64(amount)},
 		)
 		out := transaction.BasicOutputFromPostData(
 			txb.inputs.AnchorOutput.AnchorID.ToAddress(),
@@ -262,8 +272,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		} else {
 			mockedAccounts.assets.AddBaseTokens(iotago.BaseToken(sdAdjust))
 		}
-		txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		buildTxEssence(txb, mockedAccounts)
 	}
 
 	t.Run("consistency check", func(t *testing.T) {
@@ -277,8 +286,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			consumeUTXO(t, txb, nativeTokenIDs[idx], testAmount, mockedAccounts)
 		}
 
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence := buildTxEssence(txb, mockedAccounts)
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)
@@ -289,8 +297,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		for i := 0; i < numRun; i++ {
 			idx := i % len(nativeTokenIDs)
 			consumeUTXO(t, txb, nativeTokenIDs[idx], amountNative, mockedAccounts)
-			txb.BuildTransactionEssence(dummyStateMetadata, iotago.SlotIndex(i))
-			txb.MustBalanced()
+			buildTxEssence(txb, mockedAccounts)
 		}
 	}
 
@@ -312,8 +319,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 
 		txb, mockedAccounts, nativeTokenIDs := initTest(numTokenIDs)
 		runConsume(txb, nativeTokenIDs, runTimesInputs, 10, mockedAccounts)
-		txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		buildTxEssence(txb, mockedAccounts)
 
 		err := panicutil.CatchPanicReturnError(func() {
 			for i := 0; i < runTimesOutputs; i++ {
@@ -336,57 +342,32 @@ func TestTxBuilderConsistency(t *testing.T) {
 			idx1 := rand.Intn(numTokenIDs)
 			consumeUTXO(t, txb, nativeTokenIDs[idx1], 1, mockedAccounts)
 			idx2 := rand.Intn(numTokenIDs)
-			if mockedAccounts.assets.AmountNativeToken(nativeTokenIDs[idx2]).Uint64() > 0 {
+			if mockedAccounts.assets.NativeTokens.ValueOrBigInt0(nativeTokenIDs[idx2]).Uint64() > 0 {
 				addOutput(txb, 1, nativeTokenIDs[idx2], mockedAccounts)
 			}
 		}
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence := buildTxEssence(txb, mockedAccounts)
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
 	})
-	t.Run("clone", func(t *testing.T) {
-		const runTimes = 7
-		const numTokenIDs = 5
-
-		txb, mockedAccounts, nativeTokenIDs := initTest(numTokenIDs)
-		for _, id := range nativeTokenIDs {
-			consumeUTXO(t, txb, id, 100, mockedAccounts)
-		}
-		txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
-
-		txbClone := txb.Clone()
-		txbClone.BuildTransactionEssence(dummyStateMetadata, 0)
-
-		for i := 0; i < runTimes; i++ {
-			idx1 := rand.Intn(numTokenIDs)
-			consumeUTXO(t, txb, nativeTokenIDs[idx1], 1, mockedAccounts)
-			idx2 := rand.Intn(numTokenIDs)
-			addOutput(txb, 1, nativeTokenIDs[idx2], mockedAccounts)
-		}
-
-		txbClone.BuildTransactionEssence(dummyStateMetadata, 0)
-	})
 	t.Run("send some of the tokens in balance", func(t *testing.T) {
 		txb, mockedAccounts, nativeTokenIDs := initTest(5)
-		setNativeTokenAccountsBalance := func(id iotago.NativeTokenID, amount int64) {
+		setNativeTokenAccountsBalance := func(id iotago.NativeTokenID, amount *big.Int) {
 			mockedAccounts.assets.AddNativeTokens(id, amount)
 			// create internal accounting outputs with 0 base tokens (they must be updated in the output side)
 			out := txb.newInternalTokenOutput(anchorID, id)
-			out.FeatureSet().NativeToken().Amount = new(big.Int).SetInt64(amount)
+			out.FeatureSet().NativeToken().Amount = new(big.Int).Set(amount)
 			mockedAccounts.nativeTokenOutputs[id] = out
 		}
 
 		// send 90 < 100 which is on-chain. 10 must be left and storage deposit should not disappear
 		for i := range nativeTokenIDs {
-			setNativeTokenAccountsBalance(nativeTokenIDs[i], 100)
+			setNativeTokenAccountsBalance(nativeTokenIDs[i], big.NewInt(100))
 			addOutput(txb, 90, nativeTokenIDs[i], mockedAccounts)
 		}
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence := buildTxEssence(txb, mockedAccounts)
 
 		require.EqualValues(t, 7, len(essence.TransactionEssence.Inputs))
 		require.EqualValues(t, 12, len(essence.Outputs)) // 6 + 5 internal outputs with the 10 remaining tokens
@@ -403,8 +384,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		addOutput(txb, 1, tokenID, mockedAccounts)
 		consumeUTXO(t, txb, tokenID, 1, mockedAccounts)
 
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence := buildTxEssence(txb, mockedAccounts)
 
 		essenceBytes, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)
@@ -482,15 +462,13 @@ func TestFoundries(t *testing.T) {
 			require.EqualValues(t, i+1, int(sn))
 
 			mockedAccounts.assets.BaseTokens -= storageDeposit
-			txb.BuildTransactionEssence(dummyStateMetadata, 0)
-			txb.MustBalanced()
+			buildTxEssence(txb, mockedAccounts)
 		}
 	}
 	t.Run("create foundry ok", func(t *testing.T) {
 		initTest()
 		createNFoundries(3)
-		essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
-		txb.MustBalanced()
+		essence := buildTxEssence(txb, mockedAccounts)
 		essenceBytes, err := parameters.L1API().Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
@@ -510,8 +488,7 @@ func TestSerDe(t *testing.T) {
 		out := transaction.AdjustToMinimumStorageDeposit(transaction.MakeBasicOutput(
 			&iotago.Ed25519Address{},
 			&iotago.Ed25519Address{1, 2, 3},
-			0,
-			nil,
+			isc.NewEmptyFungibleTokens(),
 			0,
 			&reqMetadata,
 			nil,

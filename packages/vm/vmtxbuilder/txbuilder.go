@@ -100,14 +100,14 @@ func (txb *AnchorTransactionBuilder) Clone() *AnchorTransactionBuilder {
 // (some of the native tokens might already have an accounting output owned by the chain, so we don't need new outputs for those)
 func (txb *AnchorTransactionBuilder) splitAssetsIntoInternalOutputs(req isc.OnLedgerRequest) iotago.BaseToken {
 	requiredSD := iotago.BaseToken(0)
-	for _, nativeToken := range req.Assets().NativeTokens {
+	for id, amount := range req.Assets().NativeTokens {
 		// ensure this NT is in the txbuilder, update it
-		nt := txb.ensureNativeTokenBalance(nativeToken.ID)
+		nt := txb.ensureNativeTokenBalance(id)
 		sdBefore := nt.accountingOutput.Amount
 		if util.IsZeroBigInt(nt.getOutValue()) {
 			sdBefore = 0 // accounting output was zero'ed this block, meaning the existing SD was released
 		}
-		nt.add(nativeToken.Amount)
+		nt.add(amount)
 		nt.updateMinSD()
 		sdAfter := nt.accountingOutput.Amount
 		// user pays for the difference (in case SD has increased, will be the full SD cost if the output is new)
@@ -171,8 +171,8 @@ func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 	fts := isc.FungibleTokensFromOutput(o)
 
 	sdAdjustment := int64(0)
-	for _, nativeToken := range fts.NativeTokens {
-		sdAdjustment += txb.addNativeTokenBalanceDelta(nativeToken.ID, new(big.Int).Neg(nativeToken.Amount))
+	for id, amount := range fts.NativeTokens {
+		sdAdjustment += txb.addNativeTokenBalanceDelta(id, new(big.Int).Neg(amount))
 	}
 	if nftout, ok := o.(*iotago.NFTOutput); ok {
 		sdAdjustment += txb.sendNFT(nftout)
@@ -283,10 +283,33 @@ func (txb *AnchorTransactionBuilder) AccountID() iotago.AccountID {
 	return util.AccountIDFromAccountOutput(out, id)
 }
 
+func (txb *AnchorTransactionBuilder) getSDInChainOutputs() iotago.BaseToken {
+	api := parameters.L1Provider().APIForSlot(txb.inputs.AnchorOutputID.CreationSlot())
+	ret := lo.Must(api.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
+	if _, out, ok := txb.inputs.AccountOutput(); ok {
+		ret += out.Amount
+	}
+	return ret
+}
+
+func (txb *AnchorTransactionBuilder) ChangeInSD(
+	stateMetadata []byte,
+	creationSlot iotago.SlotIndex,
+) (iotago.BaseToken, iotago.BaseToken, int64) {
+	mockAnchor, mockAccount := txb.CreateAnchorAndAccountOutputs(
+		stateMetadata,
+		creationSlot,
+		txb.inputs.AnchorOutput.Mana,
+	)
+	newSD := lo.Must(parameters.Storage().MinDeposit(mockAnchor)) + mockAccount.Amount
+	oldSD := txb.getSDInChainOutputs()
+	return oldSD, newSD, int64(oldSD) - int64(newSD)
+}
+
 func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 	stateMetadata []byte,
 	creationSlot iotago.SlotIndex,
-	inputs iotago.OutputSet,
+	totalManaInInputs iotago.Mana,
 ) (*iotago.AnchorOutput, *iotago.AccountOutput) {
 	anchorID := txb.inputs.AnchorOutput.AnchorID
 	if anchorID.Empty() {
@@ -303,13 +326,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{"": stateMetadata}},
 		},
-		Mana: lo.Must(vm.TotalManaIn(
-			parameters.L1API().ManaDecayProvider(),
-			parameters.Storage(),
-			creationSlot,
-			vm.InputSet(inputs),
-			vm.RewardsInputSet{},
-		)),
+		Mana: totalManaInInputs,
 	}
 	if metadata := txb.inputs.AnchorOutput.FeatureSet().Metadata(); metadata != nil {
 		anchorOutput.Features.Upsert(&iotago.MetadataFeature{Entries: metadata.Entries})
@@ -352,7 +369,15 @@ func (txb *AnchorTransactionBuilder) buildOutputs(
 ) iotago.TxEssenceOutputs {
 	ret := make(iotago.TxEssenceOutputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
 
-	txb.resultAnchorOutput, txb.resultAccountOutput = txb.CreateAnchorAndAccountOutputs(stateMetadata, creationSlot, inputs)
+	totalMana := lo.Must(vm.TotalManaIn(
+		parameters.L1API().ManaDecayProvider(),
+		parameters.Storage(),
+		creationSlot,
+		vm.InputSet(inputs),
+		vm.RewardsInputSet{},
+	))
+
+	txb.resultAnchorOutput, txb.resultAccountOutput = txb.CreateAnchorAndAccountOutputs(stateMetadata, creationSlot, totalMana)
 	ret = append(ret, txb.resultAnchorOutput, txb.resultAccountOutput)
 
 	// creating outputs for updated internal accounts

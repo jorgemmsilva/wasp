@@ -6,15 +6,11 @@ import (
 	"math"
 	"slices"
 
-	"github.com/samber/lo"
-
 	"github.com/iotaledger/hive.go/logger"
-	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
@@ -169,15 +165,6 @@ func (vmctx *vmContext) getMigrations() *migrations.MigrationScheme {
 		return vmctx.task.MigrationsOverride
 	}
 	return allmigrations.DefaultScheme
-}
-
-func (vmctx *vmContext) getSDInChainOutputs() iotago.BaseToken {
-	api := parameters.L1Provider().APIForSlot(vmctx.task.Inputs.AnchorOutputID.CreationSlot())
-	ret := lo.Must(api.StorageScoreStructure().MinDeposit(vmctx.task.Inputs.AnchorOutput))
-	if _, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
-		ret += out.Amount
-	}
-	return ret
 }
 
 func (vmctx *vmContext) runRequests(

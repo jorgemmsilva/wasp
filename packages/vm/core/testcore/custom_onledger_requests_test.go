@@ -49,10 +49,7 @@ func TestNoSenderFeature(t *testing.T) {
 	).
 		AddBaseTokens(baseTokensToSend).
 		AddAllowanceBaseTokens(allowance).
-		AddAllowanceNativeTokensVect(&isc.NativeTokenAmount{
-			ID:     nativeTokenID,
-			Amount: nativeTokenAmount,
-		}).
+		AddAllowanceNativeTokens(nativeTokenID, nativeTokenAmount).
 		WithGasBudget(uint64(gasFee)),
 		wallet)
 	require.NoError(t, err)
@@ -74,7 +71,7 @@ func TestNoSenderFeature(t *testing.T) {
 			TargetAddress: ch.ChainID.AsAddress(),
 			Assets: isc.NewAssets(
 				5*isc.Million,
-				[]*isc.NativeTokenAmount{{ID: nativeTokenID, Amount: nativeTokenAmount}},
+				iotago.NativeTokenSum{nativeTokenID: nativeTokenAmount},
 			).AddNFTs(nft.ID),
 			Metadata: &isc.SendMetadata{
 				TargetContract: inccounter.Contract.Hname(),
@@ -123,8 +120,11 @@ func TestNoSenderFeature(t *testing.T) {
 	// assert the assets were credited to the payout address
 	payoutAgentIDBalance := ch.L2Assets(ch.OriginatorAgentID)
 	require.Greater(t, payoutAgentIDBalance.BaseTokens, payoutAgentIDBalanceBefore.BaseTokens)
-	require.EqualValues(t, payoutAgentIDBalance.NativeTokens[0].ID, nativeTokenID)
-	require.EqualValues(t, payoutAgentIDBalance.NativeTokens[0].Amount.Uint64(), nativeTokenAmount.Uint64())
+	require.Len(t, payoutAgentIDBalance.NativeTokens, 1)
+	for id, n := range payoutAgentIDBalance.NativeTokens {
+		require.EqualValues(t, id, nativeTokenID)
+		require.EqualValues(t, n.Uint64(), nativeTokenAmount.Uint64())
+	}
 	require.EqualValues(t, payoutAgentIDBalance.NFTs[0], nft.ID)
 }
 

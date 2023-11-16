@@ -13,8 +13,7 @@ import (
 
 // NewTransferTransaction creates a basic output transaction that sends L1 Token to another L1 address
 func NewTransferTransaction(
-	baseTokens iotago.BaseToken,
-	nativeToken *isc.NativeTokenAmount,
+	ftokens *isc.FungibleTokens,
 	mana iotago.Mana,
 	senderAddress iotago.Address,
 	senderKeyPair *cryptolib.KeyPair,
@@ -27,8 +26,7 @@ func NewTransferTransaction(
 	output := MakeBasicOutput(
 		targetAddress,
 		senderAddress,
-		baseTokens,
-		nativeToken,
+		ftokens,
 		mana,
 		nil,
 		unlockConditions,
@@ -46,14 +44,10 @@ func NewTransferTransaction(
 			ErrNotEnoughBaseTokensForStorageDeposit, output.BaseTokenAmount(), storageDeposit)
 	}
 
-	assets := isc.NewAssets(baseTokens, nil)
-	if nativeToken != nil {
-		assets.AddNativeTokens(nativeToken.ID, nativeToken.Amount)
-	}
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
 		senderAddress,
 		unspentOutputs,
-		NewAssetsWithMana(assets, mana),
+		NewAssetsWithMana(ftokens.ToAssets(), mana),
 		creationSlot,
 	)
 	if err != nil {
@@ -144,8 +138,7 @@ func MakeRequestTransactionOutput(
 	out = MakeBasicOutput(
 		req.TargetAddress,
 		senderAddress,
-		assets.BaseTokens,
-		MustSingleNativeToken(assets.FungibleTokens),
+		&assets.FungibleTokens,
 		0,
 		&isc.RequestMetadata{
 			SenderContract: isc.EmptyContractIdentity(),

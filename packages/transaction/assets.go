@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/samber/lo"
 
@@ -12,12 +13,12 @@ import (
 )
 
 type AssetsWithMana struct {
-	*isc.Assets
+	isc.Assets
 	Mana iotago.Mana
 }
 
 func NewAssetsWithMana(assets *isc.Assets, mana iotago.Mana) *AssetsWithMana {
-	return &AssetsWithMana{Assets: assets, Mana: mana}
+	return &AssetsWithMana{Assets: *assets, Mana: mana}
 }
 
 func NewEmptyAssetsWithMana() *AssetsWithMana {
@@ -33,29 +34,36 @@ func (a *AssetsWithMana) String() string {
 }
 
 func (a *AssetsWithMana) Geq(b *AssetsWithMana) bool {
-	if !a.Assets.Geq(b.Assets) {
+	if !a.Assets.Geq(&b.Assets) {
 		return false
 	}
 	return a.Mana > b.Mana
 }
 
 func (a *AssetsWithMana) Equals(b *AssetsWithMana) bool {
-	return a.Assets.Equals(b.Assets) && a.Mana == b.Mana
+	return a.Assets.Equals(&b.Assets) && a.Mana == b.Mana
 }
 
 func (a *AssetsWithMana) Add(b *AssetsWithMana) {
-	a.Assets.Add(b.Assets)
+	a.Assets.Add(&b.Assets)
 	a.Mana += b.Mana
 }
 
-func MustSingleNativeToken(a *isc.FungibleTokens) *isc.NativeTokenAmount {
+func (a *AssetsWithMana) Clone() *AssetsWithMana {
+	return &AssetsWithMana{
+		Assets: *a.Assets.Clone(),
+		Mana:   a.Mana,
+	}
+}
+
+func MustSingleNativeToken(a *isc.FungibleTokens) (iotago.NativeTokenID, *big.Int, bool) {
 	if len(a.NativeTokens) > 1 {
 		panic("expected at most 1 native token")
 	}
-	if len(a.NativeTokens) == 0 {
-		return nil
+	for id, n := range a.NativeTokens {
+		return id, n, true
 	}
-	return a.NativeTokens[0]
+	return iotago.NativeTokenID{}, nil, false
 }
 
 func AssetsAndAvailableManaFromOutput(

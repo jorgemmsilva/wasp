@@ -36,7 +36,7 @@ type WaspCallContext interface {
 	Timestamp() time.Time
 	CurrentContractAccountID() isc.AgentID
 	Caller() isc.AgentID
-	GetNativeTokens(agentID isc.AgentID) []*isc.NativeTokenAmount
+	GetNativeTokens(agentID isc.AgentID) iotago.NativeTokenSum
 	GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken
 	GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int
 	Call(contractHname, entryPoint isc.Hname, params dict.Dict, allowance *isc.Assets) dict.Dict

@@ -31,17 +31,22 @@ type TransactionTotals struct {
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 	api := parameters.L1Provider().APIForSlot(txb.inputs.AnchorOutputID.CreationSlot())
-	total := txb.inputs.AnchorOutput.BaseTokenAmount()
+
 	sd := lo.Must(api.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
+	totalL2 := txb.inputs.AnchorOutput.BaseTokenAmount() - sd
+
 	if _, out, ok := txb.inputs.AccountOutput(); ok {
-		total += out.BaseTokenAmount()
-		sd += lo.Must(api.StorageScoreStructure().MinDeposit(out))
+		accountSD := lo.Must(api.StorageScoreStructure().MinDeposit(out))
+		if out.BaseTokenAmount() != accountSD {
+			panic("excess base tokens in account output")
+		}
+		sd += accountSD
 	}
 
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     total - sd,
+		TotalBaseTokensInL2Accounts:     totalL2,
 		TotalBaseTokensInStorageDeposit: sd,
 	}
 	// sum over native tokens which require inputs
@@ -62,13 +67,13 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 	for _, out := range txb.consumed {
 		a := out.Assets()
 		totals.TotalBaseTokensInL2Accounts += a.BaseTokens
-		for _, nativeToken := range a.NativeTokens {
-			s, ok := totals.NativeTokenBalances[nativeToken.ID]
+		for id, amount := range a.NativeTokens {
+			s, ok := totals.NativeTokenBalances[id]
 			if !ok {
 				s = new(big.Int)
 			}
-			s.Add(s, nativeToken.Amount)
-			totals.NativeTokenBalances[nativeToken.ID] = s
+			s.Add(s, amount)
+			totals.NativeTokenBalances[id] = s
 		}
 	}
 	for _, f := range txb.invokedFoundries {
@@ -91,15 +96,19 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	total := txb.resultAnchorOutput.BaseTokenAmount()
 	sd := lo.Must(parameters.Storage().MinDeposit(txb.resultAnchorOutput))
-	total += txb.resultAccountOutput.BaseTokenAmount()
-	sd += lo.Must(parameters.Storage().MinDeposit(txb.resultAccountOutput))
+	totalL2 := txb.resultAnchorOutput.BaseTokenAmount() - sd
+
+	accountSD := lo.Must(parameters.Storage().MinDeposit(txb.resultAccountOutput))
+	if txb.resultAccountOutput.BaseTokenAmount() != accountSD {
+		panic("excess base tokens in account output")
+	}
+	sd += accountSD
 
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     total - sd,
+		TotalBaseTokensInL2Accounts:     totalL2,
 		TotalBaseTokensInStorageDeposit: sd,
 		SentOutBaseTokens:               0,
 		SentOutTokenBalances:            make(iotago.NativeTokenSum),
@@ -131,13 +140,13 @@ func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
 	for _, o := range txb.postedOutputs {
 		fts := isc.FungibleTokensFromOutput(o)
 		totals.SentOutBaseTokens += fts.BaseTokens
-		for _, nativeToken := range fts.NativeTokens {
-			s, ok := totals.SentOutTokenBalances[nativeToken.ID]
+		for id, amount := range fts.NativeTokens {
+			s, ok := totals.SentOutTokenBalances[id]
 			if !ok {
 				s = new(big.Int)
 			}
-			s.Add(s, nativeToken.Amount)
-			totals.SentOutTokenBalances[nativeToken.ID] = s
+			s.Add(s, amount)
+			totals.SentOutTokenBalances[id] = s
 		}
 	}
 	for _, nft := range txb.nftsIncluded {
@@ -165,7 +174,7 @@ func (txb *AnchorTransactionBuilder) MustBalanced() {
 	totalsOUT := txb.sumOutputs()
 
 	if err := totalsIN.BalancedWith(totalsOUT); err != nil {
-		fmt.Printf("================= MustBalanced: %v \ninTotals: %v\noutTotals: %v\n", err, totalsIN, totalsOUT)
+		fmt.Printf("================= MustBalanced: %v \ninTotals:  %v\noutTotals: %v\n", err, totalsIN, totalsOUT)
 		panic(fmt.Errorf("%v: %w ", vm.ErrFatalTxBuilderNotBalanced, err))
 	}
 
@@ -175,15 +184,15 @@ func (txb *AnchorTransactionBuilder) MustBalanced() {
 		panic(fmt.Errorf("base tokens L1 (%d) != base tokens L2 (%d): %v",
 			totalsOUT.TotalBaseTokensInL2Accounts, l2Totals.BaseTokens, vm.ErrInconsistentL2LedgerWithL1TxBuilder))
 	}
-	for _, nativeToken := range l2Totals.NativeTokens {
-		b1, ok := totalsOUT.NativeTokenBalances[nativeToken.ID]
+	for id, amount := range l2Totals.NativeTokens {
+		b1, ok := totalsOUT.NativeTokenBalances[id]
 		if !ok {
 			// checking only those which are in the tx builder
 			continue
 		}
-		if nativeToken.Amount.Cmp(b1) != 0 {
+		if amount.Cmp(b1) != 0 {
 			panic(fmt.Errorf("token %s L1 (%d) != L2 (%d): %v",
-				nativeToken.ID.String(), nativeToken.Amount, b1, vm.ErrInconsistentL2LedgerWithL1TxBuilder))
+				id.String(), amount, b1, vm.ErrInconsistentL2LedgerWithL1TxBuilder))
 		}
 	}
 }
@@ -192,11 +201,11 @@ func (t *TransactionTotals) BalancedWith(another *TransactionTotals) error {
 	tIn := t.TotalBaseTokensInL2Accounts + t.TotalBaseTokensInStorageDeposit
 	tOut := another.TotalBaseTokensInL2Accounts + another.TotalBaseTokensInStorageDeposit + another.SentOutBaseTokens
 	if tIn != tOut {
-		msgIn := fmt.Sprintf("in.TotalBaseTokensInL2Accounts: %d\n+ in.TotalBaseTokensInStorageDeposit: %d\n (%d)",
+		msgIn := fmt.Sprintf(" in.TotalBaseTokensInL2Accounts (%d) +  in.TotalBaseTokensInStorageDeposit (%d) = (%d)",
 			t.TotalBaseTokensInL2Accounts, t.TotalBaseTokensInStorageDeposit, tIn)
-		msgOut := fmt.Sprintf("out.TotalBaseTokensInL2Accounts: %d\n+ out.TotalBaseTokensInStorageDeposit: %d\n+ out.SentOutBaseToken: %d\n (%d)",
+		msgOut := fmt.Sprintf("out.TotalBaseTokensInL2Accounts (%d) + out.TotalBaseTokensInStorageDeposit (%d) + out.SentOutBaseToken (%d) = (%d)",
 			another.TotalBaseTokensInL2Accounts, another.TotalBaseTokensInStorageDeposit, another.SentOutBaseTokens, tOut)
-		return fmt.Errorf("%v:\n %s\n    !=\n%s", vm.ErrFatalTxBuilderNotBalanced, msgIn, msgOut)
+		return fmt.Errorf("%v:\n  %s\n    !=\n  %s", vm.ErrFatalTxBuilderNotBalanced, msgIn, msgOut)
 	}
 	nativeTokenIDs := make(map[iotago.NativeTokenID]bool)
 	for id := range t.TokenCirculatingSupplies {

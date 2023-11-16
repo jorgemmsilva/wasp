@@ -102,8 +102,8 @@ func (reqctx *requestContext) GetNativeTokenBalanceTotal(nativeTokenID iotago.Na
 	return ret
 }
 
-func (reqctx *requestContext) GetNativeTokens(agentID isc.AgentID) []*isc.NativeTokenAmount {
-	var ret []*isc.NativeTokenAmount
+func (reqctx *requestContext) GetNativeTokens(agentID isc.AgentID) iotago.NativeTokenSum {
+	var ret iotago.NativeTokenSum
 	reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
 		ret = accounts.GetNativeTokens(s, agentID, reqctx.ChainID())
 	})

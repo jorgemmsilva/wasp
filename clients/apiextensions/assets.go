@@ -33,10 +33,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 			return nil, err2
 		}
 
-		assets.NativeTokens = append(assets.NativeTokens, &isc.NativeTokenAmount{
-			ID:     nativeTokenID,
-			Amount: amount,
-		})
+		assets.NativeTokens[nativeTokenID] = amount
 	}
 
 	return assets, err

@@ -23,7 +23,7 @@ func NewInputProposal(baseAnchorOutput *isc.ChainOutputs) gpa.Input {
 func (ip *inputProposal) String() string {
 	l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(ip.baseAnchorOutput.AnchorOutput)
 	if err != nil {
-		panic(fmt.Errorf("cannot extract L1 commitment from alias output: %w", err))
+		panic(fmt.Errorf("cannot extract L1 commitment from anchor output: %w", err))
 	}
 	return fmt.Sprintf("{cons.inputProposal: baseAnchorOutput=%v, l1Commitment=%v}", ip.baseAnchorOutput, l1Commitment)
 }

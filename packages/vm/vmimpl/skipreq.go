@@ -8,7 +8,7 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
@@ -21,7 +21,7 @@ import (
 func (reqctx *requestContext) earlyCheckReasonToSkip(maintenanceMode bool) error {
 	if reqctx.vm.task.Inputs.AnchorOutput.FeatureSet().NativeToken() != nil {
 		if reqctx.vm.task.Inputs.AnchorOutput.StateIndex == 0 {
-			return errors.New("can't init chain with native assets on the origin alias output")
+			return errors.New("can't init chain with native assets on the origin anchor output")
 		} else {
 			panic("inconsistency: native assets on the anchor output")
 		}

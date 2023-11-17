@@ -9,10 +9,10 @@ import (
 )
 
 type ChainNodeConnMetricsProvider struct {
-	l1RequestReceived     *prometheus.CounterVec
+	l1RequestReceived      *prometheus.CounterVec
 	l1AnchorOutputReceived *prometheus.CounterVec
-	txPublishStarted      *prometheus.CounterVec
-	txPublishResult       *prometheus.HistogramVec
+	txPublishStarted       *prometheus.CounterVec
+	txPublishResult        *prometheus.HistogramVec
 }
 
 func newChainNodeConnMetricsProvider() *ChainNodeConnMetricsProvider {
@@ -27,7 +27,7 @@ func newChainNodeConnMetricsProvider() *ChainNodeConnMetricsProvider {
 			Namespace: "iota_wasp",
 			Subsystem: "node_conn",
 			Name:      "l1_alias_output_received",
-			Help:      "A number of confirmed alias outputs received from L1.",
+			Help:      "A number of confirmed anchor outputs received from L1.",
 		}, []string{labelNameChain}),
 		txPublishStarted: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "iota_wasp",
@@ -59,18 +59,18 @@ func (p *ChainNodeConnMetricsProvider) createForChain(chainID isc.ChainID) *Chai
 }
 
 type ChainNodeConnMetrics struct {
-	ncL1RequestReceived     prometheus.Counter
+	ncL1RequestReceived      prometheus.Counter
 	ncL1AnchorOutputReceived prometheus.Counter
-	ncTXPublishStarted      prometheus.Counter
-	ncTXPublishResult       map[bool]prometheus.Observer
+	ncTXPublishStarted       prometheus.Counter
+	ncTXPublishResult        map[bool]prometheus.Observer
 }
 
 func newChainNodeConnMetrics(collectors *ChainNodeConnMetricsProvider, chainID isc.ChainID) *ChainNodeConnMetrics {
 	labels := getChainLabels(chainID)
 	return &ChainNodeConnMetrics{
-		ncL1RequestReceived:     collectors.l1RequestReceived.With(labels),
+		ncL1RequestReceived:      collectors.l1RequestReceived.With(labels),
 		ncL1AnchorOutputReceived: collectors.l1AnchorOutputReceived.With(labels),
-		ncTXPublishStarted:      collectors.txPublishStarted.With(labels),
+		ncTXPublishStarted:       collectors.txPublishStarted.With(labels),
 		ncTXPublishResult: map[bool]prometheus.Observer{
 			true:  collectors.txPublishResult.MustCurryWith(labels).With(prometheus.Labels{labelTxPublishResult: "confirmed"}),
 			false: collectors.txPublishResult.MustCurryWith(labels).With(prometheus.Labels{labelTxPublishResult: "rejected"}),

@@ -20,7 +20,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/emulator"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"

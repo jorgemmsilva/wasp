@@ -51,7 +51,7 @@ func assertMatchingNodeVersion(name string, client *apiclient.APIClient) {
 	}
 }
 
-func L1Client() l1connection.Client {
+func L1Client() l1connection.L1Client {
 	log.Verbosef("using L1 API %s\n", config.L1APIAddress())
 
 	return l1connection.NewClient(

@@ -12,7 +12,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/assert"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/execution"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )

@@ -136,7 +136,7 @@ func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AnchorOutputWithID, 
 	)
 	anchorOutput := &iotago.AnchorOutput{
 		Amount:        baseAO.GetAnchorOutput().Deposit(),
-		AccountID:     tcl.chainID.AsAliasID(),
+		AccountID:     tcl.chainID.AsAnchorID(),
 		StateIndex:    baseAO.GetStateIndex() + 1,
 		StateMetadata: stateMetadata.Bytes(),
 		Conditions: iotago.UnlockConditions{
@@ -154,7 +154,7 @@ func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AnchorOutputWithID, 
 
 func (tcl *TestChainLedger) FakeRotationTX(baseAO *isc.AnchorOutputWithID, nextCommitteeAddr iotago.Address) (*isc.AnchorOutputWithID, *iotago.Transaction) {
 	tx, err := transaction.NewRotateChainStateControllerTx(
-		tcl.chainID.AsAliasID(),
+		tcl.chainID.AsAnchorID(),
 		nextCommitteeAddr,
 		baseAO.OutputID(),
 		baseAO.GetAnchorOutput(),
@@ -174,7 +174,7 @@ func (tcl *TestChainLedger) FakeRotationTX(baseAO *isc.AnchorOutputWithID, nextC
 			return isc.NewAnchorOutputWithID(ao, outputID), tx
 		}
 	}
-	panic("alias output not found")
+	panic("anchor output not found")
 }
 
 func (tcl *TestChainLedger) findChainRequests(tx *iotago.Transaction) []isc.Request {
@@ -182,16 +182,16 @@ func (tcl *TestChainLedger) findChainRequests(tx *iotago.Transaction) []isc.Requ
 	outputs, err := tx.OutputsSet()
 	require.NoError(tcl.t, err)
 	for outputID, output := range outputs {
-		// If that's alias output of the chain, then it is not a request.
+		// If that's anchor output of the chain, then it is not a request.
 		if output.Type() == iotago.OutputAlias {
 			outAsAlias := output.(*iotago.AnchorOutput)
-			if outAsAlias.AccountID == tcl.chainID.AsAliasID() {
-				continue // That's our alias output, not the request, skip it here.
+			if outAsAlias.AccountID == tcl.chainID.AsAnchorID() {
+				continue // That's our anchor output, not the request, skip it here.
 			}
 			if outAsAlias.AccountID.Empty() {
-				implicitAliasID := iotago.AliasIDFromOutputID(outputID)
-				if implicitAliasID == tcl.chainID.AsAliasID() {
-					continue // That's our origin alias output, not the request, skip it here.
+				implicitAnchorID := iotago.AnchorIDFromOutputID(outputID)
+				if implicitAnchorID == tcl.chainID.AsAnchorID() {
+					continue // That's our origin anchor output, not the request, skip it here.
 				}
 			}
 		}

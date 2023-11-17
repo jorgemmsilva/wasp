@@ -14,7 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
 )

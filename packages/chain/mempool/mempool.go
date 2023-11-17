@@ -79,7 +79,7 @@ const (
 
 type Mempool interface {
 	consGR.Mempool
-	// Invoked by the chain, when new alias output is considered as a tip/head
+	// Invoked by the chain, when new anchor output is considered as a tip/head
 	// of the chain. Mempool can reorganize its state by removing/rejecting
 	// or re-adding some requests, depending on how the head has changed.
 	// It can mean simple advance of the chain, or a rollback or a reorg.
@@ -116,7 +116,7 @@ type RequestPool[V isc.Request] interface {
 }
 
 // This implementation tracks single branch of the chain only. I.e. all the consensus
-// instances that are asking for requests for alias outputs different than the current
+// instances that are asking for requests for anchor outputs different than the current
 // head (as considered by the ChainMgr) will get empty proposal sets.
 //
 // In general we can track several branches, but then we have to remember, which
@@ -326,10 +326,10 @@ func (mpi *mempoolImpl) ConsensusInstancesUpdated(activeConsensusInstances []con
 func (mpi *mempoolImpl) ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.AnchorOutputWithID, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
 	res := make(chan []*isc.RequestRef, 1)
 	req := &reqConsensusProposal{
-		ctx:           ctx,
+		ctx:          ctx,
 		anchorOutput: anchorOutput,
-		consensusID:   consensusID,
-		responseCh:    res,
+		consensusID:  consensusID,
+		responseCh:   res,
 	}
 	mpi.reqConsensusProposalPipe.In() <- req
 	return res

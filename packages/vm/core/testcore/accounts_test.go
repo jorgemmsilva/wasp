@@ -18,8 +18,8 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -87,7 +87,7 @@ func TestWithdrawEverything(t *testing.T) {
 	l2balance := ch.L2BaseTokens(senderAgentID)
 
 	// construct request with low allowance (just sufficient for storage deposit balance), so its possible to estimate the gas fees
-	sd := lo.Must(parameters.Storage().MinDeposit(transaction.BasicOutputFromPostData(
+	sd := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(transaction.BasicOutputFromPostData(
 		&iotago.AnchorAddress{},
 		isc.ContractIdentityFromHname(accounts.Contract.Hname()),
 		isc.RequestParameters{
@@ -514,8 +514,8 @@ func TestAccountBalances(t *testing.T) {
 
 		bi := ch.GetLatestBlockInfo()
 
-		anchorSD := lo.Must(parameters.Storage().MinDeposit(chainOutputs.AnchorOutput))
-		accountSD := lo.Must(parameters.Storage().MinDeposit(chainOutputs.MustAccountOutput()))
+		anchorSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
+		accountSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.MustAccountOutput()))
 
 		require.EqualValues(t,
 			chainOutputs.AnchorOutput.BaseTokenAmount(),
@@ -612,7 +612,7 @@ func TestDepositBaseTokens(t *testing.T) {
 			require.NoError(t, err)
 			rec := v.ch.LastReceipt()
 
-			storageDeposit := lo.Must(parameters.Storage().MinDeposit(tx.Transaction.Outputs[0]))
+			storageDeposit := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(tx.Transaction.Outputs[0]))
 			t.Logf("byteCost = %d", storageDeposit)
 
 			adjusted := addBaseTokens

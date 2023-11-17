@@ -14,7 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"

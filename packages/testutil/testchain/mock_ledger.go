@@ -44,8 +44,8 @@ func NewMockedLedger(stateAddress iotago.Address, log *logger.Logger) (*MockedLe
 		},
 	}
 	outputID := getOriginOutputID()
-	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(outputID))
-	originOutput.AccountID = chainID.AsAliasID() // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
+	chainID := isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(outputID))
+	originOutput.AccountID = chainID.AsAnchorID() // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
 	outputs := make(map[iotago.OutputID]*iotago.AnchorOutput)
 	outputs[outputID] = originOutput
 	ret := &MockedLedger{
@@ -104,7 +104,7 @@ func (mlT *MockedLedger) PublishTransaction(tx *iotago.Transaction) error {
 			outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
 			mlT.log.Debugf("Publishing transaction: outputs[%v] has id %v", index, outputID.ToHex())
 			if ok {
-				mlT.log.Debugf("Publishing transaction: outputs[%v] is alias output", index)
+				mlT.log.Debugf("Publishing transaction: outputs[%v] is anchor output", index)
 				mlT.outputs[outputID] = anchorOutput
 				currentLatestAnchorOutput := mlT.getAnchorOutput(mlT.latestOutputID)
 				if currentLatestAnchorOutput == nil || currentLatestAnchorOutput.StateIndex < anchorOutput.StateIndex {
@@ -220,7 +220,7 @@ func (mlT *MockedLedger) GetAnchorOutputByID(outputID iotago.OutputID) *iotago.A
 	mlT.mutex.RLock()
 	defer mlT.mutex.RUnlock()
 
-	mlT.log.Debugf("Getting alias output by ID %v", outputID.ToHex())
+	mlT.log.Debugf("Getting anchor output by ID %v", outputID.ToHex())
 	return mlT.getAnchorOutput(outputID)
 }
 

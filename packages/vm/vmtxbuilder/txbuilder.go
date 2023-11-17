@@ -9,7 +9,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/vmexceptions"
@@ -204,7 +204,7 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byt
 }
 
 // buildInputs generates a deterministic list of inputs for the transaction essence
-// - index 0 is always alias output
+// - index 0 is always anchor output
 // - then goes consumed external BasicOutput UTXOs, the requests, in the order of processing
 // - then goes inputs of native token UTXOs, sorted by token id
 // - then goes inputs of foundries sorted by serial number

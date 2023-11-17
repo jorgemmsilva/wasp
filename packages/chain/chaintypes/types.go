@@ -61,7 +61,7 @@ func (sf StateFreshness) String() string {
 
 type ChainCore interface {
 	ID() isc.ChainID
-	// Returns the current latest confirmed alias output and the active one.
+	// Returns the current latest confirmed anchor output and the active one.
 	// The active AO can be ahead of the confirmed one by several blocks.
 	// Both values can be nil, if the node haven't received an output from
 	// L1 yet (after a restart or a chain activation).

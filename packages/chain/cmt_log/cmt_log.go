@@ -100,7 +100,7 @@ import (
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/util/byz_quorum"
 )

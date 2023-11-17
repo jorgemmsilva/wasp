@@ -203,7 +203,7 @@ func (c *Client) PostOffLedgerRequest(ctx context.Context,
 	return signed, err
 }
 
-func (c *Client) DepositFunds(n uint64) (*iotago.Transaction, error) {
+func (c *Client) DepositFunds(n iotago.BaseToken) (*iotago.Transaction, error) {
 	return c.Post1Request(accounts.Contract.Hname(), accounts.FuncDeposit.Hname(), PostRequestParams{
 		Transfer: isc.NewAssets(n, nil),
 	})
@@ -223,7 +223,7 @@ func (par *PostRequestParams) WithTransfer(transfer *isc.Assets) *PostRequestPar
 	return par
 }
 
-func (par *PostRequestParams) WithBaseTokens(i uint64) *PostRequestParams {
+func (par *PostRequestParams) WithBaseTokens(i iotago.BaseToken) *PostRequestParams {
 	par.Transfer.AddBaseTokens(i)
 	return par
 }

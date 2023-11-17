@@ -35,8 +35,8 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/util"
@@ -1111,22 +1111,22 @@ func TestERC20BaseTokens(t *testing.T) {
 	{
 		var name string
 		require.NoError(t, erc20.callView("name", nil, &name))
-		require.Equal(t, parameters.BaseToken().Name, name)
+		require.Equal(t, testutil.BaseToken.Name, name)
 	}
 	{
 		var sym string
 		require.NoError(t, erc20.callView("symbol", nil, &sym))
-		require.Equal(t, parameters.BaseToken().TickerSymbol, sym)
+		require.Equal(t, testutil.BaseToken.TickerSymbol, sym)
 	}
 	{
 		var dec uint8
 		require.NoError(t, erc20.callView("decimals", nil, &dec))
-		require.EqualValues(t, parameters.BaseToken().Decimals, dec)
+		require.EqualValues(t, testutil.BaseToken.Decimals, dec)
 	}
 	{
 		var supply *big.Int
 		require.NoError(t, erc20.callView("totalSupply", nil, &supply))
-		require.EqualValues(t, parameters.L1().Protocol.TokenSupply(), supply.Uint64())
+		require.EqualValues(t, testutil.L1API.ProtocolParameters().TokenSupply(), supply.Uint64())
 	}
 	{
 		var balance *big.Int
@@ -1544,7 +1544,7 @@ func TestEVMTransferBaseTokens(t *testing.T) {
 	// try sending 1 million base tokens (expressed in ethereum decimals)
 	value := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		1*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 	sendTx(value)
 	env.Chain.AssertL2BaseTokens(someAgentID, 1*isc.Million)
@@ -1561,7 +1561,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	// try sending funds to `someEthereumAddr` by sending a "value tx" to the isc test contract
 	oneMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		1*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 
 	_, err := iscTest.CallFn([]ethCallOptions{{
@@ -1574,7 +1574,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	// attempt to send more than the contract will have available
 	twoMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		2*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 
 	_, err = iscTest.CallFn([]ethCallOptions{{
@@ -1594,7 +1594,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 
 	tenMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		10*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 
 	_, err = iscTest.CallFn([]ethCallOptions{{
@@ -1624,7 +1624,7 @@ func TestSendEntireBalance(t *testing.T) {
 	// try sending funds to `someEthereumAddr` by sending a "value tx"
 	initialBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		initial,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 
 	unsignedTx := types.NewTransaction(0, someEthereumAddr, initialBalanceInEthDecimals, env.maxGasLimit(), env.evmChain.GasPrice(), []byte{})
@@ -1644,7 +1644,7 @@ func TestSendEntireBalance(t *testing.T) {
 
 	currentBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 
 	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
@@ -1662,7 +1662,7 @@ func TestSendEntireBalance(t *testing.T) {
 
 	valueToSendInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance-tokensForGasBudget,
-		parameters.BaseToken().Decimals,
+		testutil.BaseToken.Decimals,
 	)
 	unsignedTx = types.NewTransaction(1, someEthereumAddr, valueToSendInEthDecimals, gasLimit, env.evmChain.GasPrice(), []byte{})
 	tx, err = types.SignTx(unsignedTx, evmutil.Signer(big.NewInt(int64(env.evmChainID))), ethKey)
@@ -2062,7 +2062,7 @@ func TestL1DepositEVM(t *testing.T) {
 	require.NoError(t, rr.Err)
 
 	require.EqualValues(t,
-		util.MustEthereumDecimalsToBaseTokenDecimalsExact(bal, parameters.L1().BaseToken.Decimals),
+		util.MustEthereumDecimalsToBaseTokenDecimalsExact(bal, testutil.BaseToken.Decimals),
 		assets.BaseTokens)
 
 	evmRec := env.Chain.EVM().TransactionReceipt(tx.Hash())
@@ -2099,7 +2099,7 @@ func TestDecimalsConversion(t *testing.T) {
 	lessThanOneSMR := new(big.Int).SetUint64(999999999999)
 	valueInBaseTokens, remainder := util.EthereumDecimalsToBaseTokenDecimals(
 		lessThanOneSMR,
-		parameters.L1().BaseToken.Decimals,
+		testutil.BaseToken.Decimals,
 	)
 	t.Log(valueInBaseTokens)
 	require.Zero(t, valueInBaseTokens)

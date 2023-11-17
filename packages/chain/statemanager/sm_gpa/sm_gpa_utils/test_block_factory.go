@@ -29,7 +29,7 @@ type BlockFactory struct {
 	chainID             isc.ChainID
 	chainInitParams     dict.Dict
 	lastBlockCommitment *state.L1Commitment
-	anchorOutputs        map[state.BlockHash]*isc.AnchorOutputWithID
+	anchorOutputs       map[state.BlockHash]*isc.AnchorOutputWithID
 }
 
 func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *BlockFactory {
@@ -40,12 +40,12 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 		chainInitParams = nil
 	}
 	anchorOutput0ID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(t), 0)
-	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(anchorOutput0ID))
+	chainID := isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(anchorOutput0ID))
 	stateAddress := cryptolib.NewKeyPair().GetPublicKey().AsEd25519Address()
 	originCommitment := origin.L1Commitment(chainInitParams, 0)
 	anchorOutput0 := &iotago.AnchorOutput{
 		Amount:        tpkg.TestTokenSupply,
-		AccountID:       chainID.AsAliasID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
+		AnchorID:      chainID.AsAnchorID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
 		StateMetadata: testutil.DummyStateMetadata(originCommitment).Bytes(),
 		Conditions: iotago.UnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
@@ -68,7 +68,7 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 		chainID:             chainID,
 		chainInitParams:     chainInitParams,
 		lastBlockCommitment: originCommitment,
-		anchorOutputs:        anchorOutputs,
+		anchorOutputs:       anchorOutputs,
 	}
 }
 
@@ -151,7 +151,7 @@ func (bfT *BlockFactory) GetNextBlock(
 	anchorOutput := &iotago.AnchorOutput{
 		Amount:         consumedAnchorOutput.Amount,
 		NativeTokens:   consumedAnchorOutput.NativeTokens,
-		AccountID:        consumedAnchorOutput.AccountID,
+		AccountID:      consumedAnchorOutput.AccountID,
 		StateIndex:     consumedAnchorOutput.StateIndex + 1,
 		StateMetadata:  testutil.DummyStateMetadata(newCommitment).Bytes(),
 		FoundryCounter: consumedAnchorOutput.FoundryCounter,

@@ -11,7 +11,7 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/chainclient"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
@@ -86,13 +86,13 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 	l1Client := cliclients.L1Client()
 
 	myWallet := wallet.Load()
-	aliasID := config.GetChain(chain).AsAliasID()
+	anchorID := config.GetChain(chain).AsAnchorID()
 
-	chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(aliasID)
+	chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(anchorID)
 	log.Check(err)
 
 	tx, err := transaction.NewRotateChainStateControllerTx(
-		aliasID,
+		anchorID,
 		newStateControllerAddr,
 		chainOutputID,
 		chainOutput,
@@ -166,7 +166,7 @@ func initChangeGovControllerCmd() *cobra.Command {
 			log.Check(err)
 
 			tx, err := transaction.NewChangeGovControllerTx(
-				chain.AsAliasID(),
+				chain.AsAnchorID(),
 				newGovController,
 				outputSet,
 				myWallet.KeyPair,

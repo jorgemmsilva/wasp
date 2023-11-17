@@ -51,7 +51,7 @@ func provide(c *dig.Container) error {
 	}
 
 	if err := c.Provide(func(deps consensusRegistryDeps) cmt_log.ConsensusStateRegistry {
-		consensusStateRegistry, err := registry.NewConsensusStateRegistry(ParamsRegistries.ConsensusState.Path, deps.NodeConnection.GetBech32HRP())
+		consensusStateRegistry, err := registry.NewConsensusStateRegistry(ParamsRegistries.ConsensusState.Path, deps.NodeConnection.Bech32HRP())
 		if err != nil {
 			Component.LogPanic(err)
 		}
@@ -68,7 +68,7 @@ func provide(c *dig.Container) error {
 	}
 
 	if err := c.Provide(func(deps dkSharesRegistryDeps) registry.DKShareRegistryProvider {
-		dkSharesRegistry, err := registry.NewDKSharesRegistry(ParamsRegistries.DKShares.Path, deps.NodeIdentityProvider.NodeIdentity().GetPrivateKey(), deps.NodeConnection.GetBech32HRP())
+		dkSharesRegistry, err := registry.NewDKSharesRegistry(ParamsRegistries.DKShares.Path, deps.NodeIdentityProvider.NodeIdentity().GetPrivateKey(), deps.NodeConnection.Bech32HRP())
 		if err != nil {
 			Component.LogPanic(err)
 		}

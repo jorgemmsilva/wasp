@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 

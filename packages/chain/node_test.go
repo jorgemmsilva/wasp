@@ -27,7 +27,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/shutdown"
@@ -272,13 +271,13 @@ func awaitPredicate(te *testEnv, ctx context.Context, desc string, predicate fun
 // testNodeConn
 
 type testNodeConn struct {
-	t                 *testing.T
-	chainID           isc.ChainID
-	published         []*iotago.Transaction
-	recvRequestCB     chain.RequestOutputHandler
+	t                *testing.T
+	chainID          isc.ChainID
+	published        []*iotago.Transaction
+	recvRequestCB    chain.RequestOutputHandler
 	recvAnchorOutput chain.AnchorOutputHandler
-	recvMilestone     chain.MilestoneHandler
-	attachWG          *sync.WaitGroup
+	recvMilestone    chain.MilestoneHandler
+	attachWG         *sync.WaitGroup
 }
 
 func newTestNodeConn(t *testing.T) *testNodeConn {
@@ -360,15 +359,11 @@ func (tnc *testNodeConn) WaitUntilInitiallySynced(ctx context.Context) error {
 }
 
 func (tnc *testNodeConn) GetBech32HRP() iotago.NetworkPrefix {
-	return parameters.NetworkPrefix()
-}
-
-func (tnc *testNodeConn) GetL1Params() *parameters.L1Params {
-	return parameters.L1()
+	return testutil.L1API.ProtocolParameters().Bech32HRP()
 }
 
 func (tnc *testNodeConn) GetL1ProtocolParams() iotago.ProtocolParameters {
-	return parameters.Protocol()
+	return testutil.L1API.ProtocolParameters()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -390,7 +385,7 @@ type testEnv struct {
 	tcl              *testchain.TestChainLedger
 	cmtAddress       iotago.Address
 	chainID          isc.ChainID
-	originAO         *isc.AnchorOutputWithID
+	originAO         *isc.ChainOutputs
 	originTx         *iotago.Transaction
 	nodeConns        []*testNodeConn
 	nodes            []chaintypes.Chain
@@ -402,7 +397,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.log = testlogger.NewLogger(t).Named(fmt.Sprintf("%04d", rand.Intn(10000))) // For test instance ID.
 	//
 	// Create ledger accounts.
-	te.utxoDB = utxodb.New(parameters.L1API())
+	te.utxoDB = utxodb.New(testutil.L1API)
 	te.governor = cryptolib.NewKeyPair()
 	te.originator = cryptolib.NewKeyPair()
 	_, err := te.utxoDB.GetFundsFromFaucet(te.governor.Address())

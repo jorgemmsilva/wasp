@@ -55,7 +55,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	defer log.Sync()
 	//
 	// Create ledger accounts.
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)

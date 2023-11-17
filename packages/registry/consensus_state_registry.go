@@ -20,7 +20,7 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/onchangemap"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/util"
 )
 

@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/origin"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -26,9 +27,9 @@ func TestOffLedgerOrdering(t *testing.T) {
 	log := testlogger.NewLogger(t)
 	nodeIDs := gpa.MakeTestNodeIDs(1)
 	//
-	// Produce an alias output.
+	// Produce an anchor output.
 	cmtKP := cryptolib.NewKeyPair()
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)

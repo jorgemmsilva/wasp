@@ -12,7 +12,7 @@ import (
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testiotago"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
@@ -60,7 +60,7 @@ func (m *mockAccountContractRead) adjustSD(assets *isc.FungibleTokens) *isc.Fung
 }
 
 func newMockAccountsContractRead(anchor *iotago.AnchorOutput) *mockAccountContractRead {
-	sd := lo.Must(parameters.Storage().MinDeposit(anchor))
+	sd := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(anchor))
 	assets := isc.NewFungibleTokens(anchor.BaseTokenAmount()-sd, nil)
 	return &mockAccountContractRead{
 		assets:             assets,
@@ -110,7 +110,9 @@ func TestTxBuilderBasic(t *testing.T) {
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	account.Amount = lo.Must(parameters.Storage().MinDeposit(account))
+	var err error
+	account.Amount, err = testutil.L1API.StorageScoreStructure().MinDeposit(account)
+	require.NoError(t, err)
 	anchor.Amount -= account.Amount
 	accountOutputID := tpkg.RandOutputID(1)
 
@@ -134,7 +136,7 @@ func TestTxBuilderBasic(t *testing.T) {
 		require.EqualValues(t, 2, len(essence.TransactionEssence.Inputs))
 		require.EqualValues(t, 2, len(essence.Outputs))
 
-		_, err := parameters.L1API().Encode(essence)
+		_, err := testutil.L1API.Encode(essence)
 		require.NoError(t, err)
 
 		// consume a request that sends 1Mi funds
@@ -207,7 +209,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	account.Amount = lo.Must(parameters.Storage().MinDeposit(account))
+	account.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(account))
 	anchor.Amount -= account.Amount
 	accountOutputID := tpkg.RandOutputID(1)
 
@@ -288,7 +290,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 
 		essence := buildTxEssence(txb, mockedAccounts)
 
-		essenceBytes, err := parameters.L1API().Encode(essence)
+		essenceBytes, err := testutil.L1API.Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
 	})
@@ -348,7 +350,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		}
 		essence := buildTxEssence(txb, mockedAccounts)
 
-		essenceBytes, err := parameters.L1API().Encode(essence)
+		essenceBytes, err := testutil.L1API.Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
 	})
@@ -372,7 +374,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 		require.EqualValues(t, 7, len(essence.TransactionEssence.Inputs))
 		require.EqualValues(t, 12, len(essence.Outputs)) // 6 + 5 internal outputs with the 10 remaining tokens
 
-		essenceBytes, err := parameters.L1API().Encode(essence)
+		essenceBytes, err := testutil.L1API.Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
 	})
@@ -386,7 +388,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 
 		essence := buildTxEssence(txb, mockedAccounts)
 
-		essenceBytes, err := parameters.L1API().Encode(essence)
+		essenceBytes, err := testutil.L1API.Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
 	})
@@ -426,7 +428,7 @@ func TestFoundries(t *testing.T) {
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	account.Amount = lo.Must(parameters.Storage().MinDeposit(account))
+	account.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(account))
 	anchor.Amount -= account.Amount
 	accountOutputID := tpkg.RandOutputID(1)
 
@@ -469,7 +471,7 @@ func TestFoundries(t *testing.T) {
 		initTest()
 		createNFoundries(3)
 		essence := buildTxEssence(txb, mockedAccounts)
-		essenceBytes, err := parameters.L1API().Encode(essence)
+		essenceBytes, err := testutil.L1API.Encode(essence)
 		require.NoError(t, err)
 		t.Logf("essence bytes len = %d", len(essenceBytes))
 	})
@@ -493,10 +495,10 @@ func TestSerDe(t *testing.T) {
 			&reqMetadata,
 			nil,
 		))
-		data, err := parameters.L1API().Encode(out)
+		data, err := testutil.L1API.Encode(out)
 		require.NoError(t, err)
 		outBack := &iotago.BasicOutput{}
-		_, err = parameters.L1API().Decode(data, &outBack)
+		_, err = testutil.L1API.Decode(data, &outBack)
 		require.NoError(t, err)
 		condSet := out.UnlockConditions.MustSet()
 		condSetBack := outBack.UnlockConditions.MustSet()
@@ -519,10 +521,10 @@ func TestSerDe(t *testing.T) {
 			},
 			Features: nil,
 		}
-		data, err := parameters.L1API().Encode(out)
+		data, err := testutil.L1API.Encode(out)
 		require.NoError(t, err)
 		outBack := &iotago.FoundryOutput{}
-		_, err = parameters.L1API().Decode(data, &outBack)
+		_, err = testutil.L1API.Decode(data, &outBack)
 		require.NoError(t, err)
 		require.True(t, identicalFoundries(out, outBack))
 	})

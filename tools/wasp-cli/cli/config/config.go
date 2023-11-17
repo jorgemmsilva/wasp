@@ -8,7 +8,7 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/testutil/privtangle/privtangledefaults"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )

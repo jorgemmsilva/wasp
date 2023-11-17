@@ -23,7 +23,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
@@ -72,7 +71,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	defer log.Sync()
 	//
 	// Create ledger accounts.
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)

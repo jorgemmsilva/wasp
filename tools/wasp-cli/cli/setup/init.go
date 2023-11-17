@@ -3,7 +3,6 @@ package setup
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
 )

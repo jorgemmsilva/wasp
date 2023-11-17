@@ -6,6 +6,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -90,9 +91,9 @@ func initBalanceCmd() *cobra.Command {
 var _ log.CLIOutput = &BalanceModel{}
 
 type BalanceModel struct {
-	AddressIndex int                 `json:"AddressIndex"`
-	Address      string              `json:"Address"`
-	BaseTokens   uint64              `json:"BaseTokens"`
+	AddressIndex int                          `json:"AddressIndex"`
+	Address      string                       `json:"Address"`
+	BaseTokens   uint64                       `json:"BaseTokens"`
 	NativeTokens []*iotago.NativeTokenFeature `json:"NativeTokens"`
 
 	OutputMap      iotago.OutputSet `json:"-"`

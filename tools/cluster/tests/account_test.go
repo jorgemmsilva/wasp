@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
@@ -95,7 +96,7 @@ func testAccounts(e *ChainEnv) {
 	receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 10*time.Second)
 	require.NoError(e.t, err)
 
-	fees, err := iotago.DecodeUint64(receipts[0].GasFeeCharged)
+	fees, err := strconv.ParseUint(receipts[0].GasFeeCharged, 10, 64)
 	require.NoError(e.t, err)
 
 	e.checkBalanceOnChain(isc.NewAgentID(myAddress), isc.BaseTokenID, transferBaseTokens-fees)
@@ -185,10 +186,10 @@ func testBasic2Accounts(t *testing.T, env *ChainEnv) {
 	env.printAccounts("withdraw before")
 
 	// withdraw back 500 base tokens to originator address
-	fmt.Printf("\norig address from sigsheme: %s\n", originatorAddress.Bech32(parameters.NetworkPrefix()))
+	fmt.Printf("\norig address from sigsheme: %s\n", originatorAddress.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	origL1Balance := env.Clu.AddressBalances(originatorAddress).BaseTokens
 	originatorClient := chainclient.New(env.Clu.L1Client(), env.Clu.WaspClient(0), chain.ChainID, originatorSigScheme)
-	allowanceBaseTokens := uint64(800_000)
+	allowanceBaseTokens := iotago.BaseToken(800_000)
 	req2, err := originatorClient.PostOffLedgerRequest(context.Background(), accounts.Contract.Hname(), accounts.FuncWithdraw.Hname(),
 		chainclient.PostRequestParams{
 			Allowance: isc.NewAssetsBaseTokens(allowanceBaseTokens),

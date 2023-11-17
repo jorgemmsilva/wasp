@@ -9,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )

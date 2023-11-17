@@ -21,7 +21,7 @@ var _ gpa.Input = &ConsensusDecidedState{}
 func NewConsensusDecidedState(ctx context.Context, anchorOutput *isc.ChainOutputs) (*ConsensusDecidedState, <-chan state.State) {
 	commitment, err := transaction.L1CommitmentFromAnchorOutput(anchorOutput.AnchorOutput)
 	if err != nil {
-		panic("Cannot make L1 commitment from alias output")
+		panic("Cannot make L1 commitment from anchor output")
 	}
 	resultChannel := make(chan state.State, 1)
 	return &ConsensusDecidedState{

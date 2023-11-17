@@ -24,9 +24,9 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
@@ -77,7 +77,7 @@ func testConsBasic(t *testing.T, n, f int) {
 	committeeAddress, dkShareProviders := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
 	//
 	// Construct the chain on L1.
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	//
 	// Construct the chain on L1: Create the accounts.
 	originator := cryptolib.NewKeyPair()
@@ -138,13 +138,13 @@ func testConsBasic(t *testing.T, n, f int) {
 	for outputID, output := range outputs {
 		if output.Type() == iotago.OutputAlias {
 			anchorOutput := output.(*iotago.AnchorOutput)
-			if anchorOutput.AccountID == chainID.AsAliasID() {
-				continue // That's our alias output, not the request, skip it here.
+			if anchorOutput.AccountID == chainID.AsAnchorID() {
+				continue // That's our anchor output, not the request, skip it here.
 			}
 			if anchorOutput.AccountID.Empty() {
-				implicitAliasID := iotago.AliasIDFromOutputID(outputID)
-				if implicitAliasID == chainID.AsAliasID() {
-					continue // That's our origin alias output, not the request, skip it here.
+				implicitAnchorID := iotago.AnchorIDFromOutputID(outputID)
+				if implicitAnchorID == chainID.AsAnchorID() {
+					continue // That's our origin anchor output, not the request, skip it here.
 				}
 			}
 		}

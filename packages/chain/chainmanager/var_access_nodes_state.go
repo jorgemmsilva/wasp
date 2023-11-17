@@ -30,15 +30,15 @@ type VarAccessNodeState interface {
 
 type varAccessNodeStateImpl struct {
 	chainID   isc.ChainID
-	tipAO     *isc.AnchorOutputWithID                                         // Will point to the latest known good state while the chain don't have the current good state.
-	confirmed *isc.AnchorOutputWithID                                         // Latest known confirmed AO.
+	tipAO     *isc.AnchorOutputWithID                                        // Will point to the latest known good state while the chain don't have the current good state.
+	confirmed *isc.AnchorOutputWithID                                        // Latest known confirmed AO.
 	pending   *shrinkingmap.ShrinkingMap[uint32, []*varAccessNodeStateEntry] // A set of unconfirmed outputs (StateIndex => TX).
 	log       *logger.Logger                                                 // Will write this just for the alignment.
 }
 
 type varAccessNodeStateEntry struct {
 	output   *isc.AnchorOutputWithID // The published AO.
-	consumed iotago.OutputID        // The AO used as an input for the TX.
+	consumed iotago.OutputID         // The AO used as an input for the TX.
 }
 
 func NewVarAccessNodeState(chainID isc.ChainID, log *logger.Logger) VarAccessNodeState {
@@ -227,7 +227,7 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 	//   - Previous known AO is among the TX inputs.
 	published, err = isc.AnchorOutputWithIDFromTx(tx, vas.chainID.AsAddress())
 	if err != nil {
-		return consumed, nil, fmt.Errorf("cannot extract alias output from the block: %v", err)
+		return consumed, nil, fmt.Errorf("cannot extract anchor output from the block: %v", err)
 	}
 	if published == nil {
 		return consumed, nil, fmt.Errorf("extracted nil AO from the TX, something wrong")

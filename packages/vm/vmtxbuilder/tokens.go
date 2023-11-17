@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+
 	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"

@@ -6,7 +6,6 @@ import (
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type Output struct {

@@ -15,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/apilib"
 	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/util/byz_quorum"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"

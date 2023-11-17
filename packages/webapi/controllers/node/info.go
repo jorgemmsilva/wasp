@@ -6,7 +6,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 )
 

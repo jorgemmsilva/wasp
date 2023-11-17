@@ -12,7 +12,6 @@ import (
 
 	hivecrypto "github.com/iotaledger/hive.go/crypto/ed25519"
 	"github.com/iotaledger/wasp/packages/cryptolib/byteutils"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 // testnet/alphanet uses COIN_TYPE = 1

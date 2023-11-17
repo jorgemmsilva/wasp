@@ -7,8 +7,8 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
@@ -33,7 +33,7 @@ func TestTutorialFirst(t *testing.T) {
 func TestTutorialL1(t *testing.T) {
 	env := solo.New(t)
 	_, userAddress := env.NewKeyPairWithFunds(env.NewSeedFromIndex(1))
-	t.Logf("address of the user is: %s", userAddress.Bech32(parameters.NetworkPrefix()))
+	t.Logf("address of the user is: %s", userAddress.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	numBaseTokens := env.L1BaseTokens(userAddress)
 	t.Logf("balance of the user is: %d base tokens", numBaseTokens)
 	env.AssertL1BaseTokens(userAddress, utxodb.FundsFromFaucetAmount)

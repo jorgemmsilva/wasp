@@ -50,7 +50,3 @@ var (
 	L1API         = iotago.V3API(testProtoParams)
 	L1APIProvider = api.SingleVersionProvider(L1API) // TODO is this needed?
 )
-
-func asd() {
-	L1API.ProtocolParameters().TokenSupply()
-}

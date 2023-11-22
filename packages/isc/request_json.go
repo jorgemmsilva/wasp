@@ -25,7 +25,7 @@ type RequestJSON struct {
 	TargetAddress string         `json:"targetAddress" swagger:"required"`
 }
 
-func RequestToJSONObject(request Request) RequestJSON {
+func RequestToJSONObject(request Request, l1API iotago.API) RequestJSON {
 	gasBudget, isEVM := request.GasBudget()
 
 	return RequestJSON{
@@ -35,16 +35,16 @@ func RequestToJSONObject(request Request) RequestJSON {
 		GasBudget:     strconv.FormatUint(gasBudget, 10),
 		IsEVM:         isEVM,
 		IsOffLedger:   request.IsOffLedger(),
-		NFT:           NFTToJSONObject(request.NFT()),
+		NFT:           NFTToJSONObject(request.NFT(), l1API),
 		Params:        request.Params().JSONDict(),
 		RequestID:     request.ID().String(),
-		SenderAccount: request.SenderAccount().String(),
-		TargetAddress: request.TargetAddress().Bech32(parameters.NetworkPrefix()),
+		SenderAccount: request.SenderAccount().String(l1API.ProtocolParameters().Bech32HRP()),
+		TargetAddress: request.TargetAddress().Bech32(l1API.ProtocolParameters().Bech32HRP()),
 	}
 }
 
-func RequestToJSON(req Request) ([]byte, error) {
-	return json.Marshal(RequestToJSONObject(req))
+func RequestToJSON(req Request, l1API iotago.API) ([]byte, error) {
+	return json.Marshal(RequestToJSONObject(req, l1API))
 }
 
 // ----------------------------------------------------------------------------
@@ -81,20 +81,20 @@ type NFTJSON struct {
 	Owner    string         `json:"owner" swagger:"required"`
 }
 
-func NFTToJSONObject(nft *NFT) *NFTJSON {
+func NFTToJSONObject(nft *NFT, l1API iotago.API) *NFTJSON {
 	if nft == nil {
 		return nil
 	}
 
 	ownerString := ""
 	if nft.Owner != nil {
-		ownerString = nft.Owner.String()
+		ownerString = nft.Owner.String(l1API.ProtocolParameters().Bech32HRP())
 	}
 
 	return &NFTJSON{
 		ID:       nft.ID.ToHex(),
 		Issuer:   nft.Issuer.String(),
-		Metadata: lo.Must(parameters.L1API().Underlying().MapEncode(context.Background(), nft.Metadata)).Values(),
+		Metadata: lo.Must(l1API.Underlying().MapEncode(context.Background(), nft.Metadata)).Values(),
 		Owner:    ownerString,
 	}
 }

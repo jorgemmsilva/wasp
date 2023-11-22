@@ -39,7 +39,7 @@ type ViewContext struct {
 	log                   *logger.Logger
 	chainInfo             *isc.ChainInfo
 	gasBurnLog            *gas.BurnLog
-	gasBudget             uint64
+	gasBudget             gas.GasUnits
 	gasBurnEnabled        bool
 	gasBurnLoggingEnabled bool
 	callStack             []*callContext
@@ -172,11 +172,11 @@ func (ctx *ViewContext) ContractStateReaderWithGasBurn() kv.KVStoreReader {
 	return ctx.contractStateReaderWithGasBurn(ctx.CurrentContractHname())
 }
 
-func (ctx *ViewContext) GasBudgetLeft() uint64 {
+func (ctx *ViewContext) GasBudgetLeft() gas.GasUnits {
 	return ctx.gasBudget
 }
 
-func (ctx *ViewContext) GasBurned() uint64 {
+func (ctx *ViewContext) GasBurned() gas.GasUnits {
 	// view calls start with max gas
 	return ctx.chainInfo.GasLimits.MaxGasExternalViewCall - ctx.gasBudget
 }

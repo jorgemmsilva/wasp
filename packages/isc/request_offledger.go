@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 type offLedgerSignature struct {
@@ -25,7 +26,7 @@ type OffLedgerRequestData struct {
 	chainID    ChainID
 	contract   Hname
 	entryPoint Hname
-	gasBudget  uint64
+	gasBudget  gas.GasUnits
 	nonce      uint64
 	params     dict.Dict
 	signature  offLedgerSignature
@@ -44,7 +45,7 @@ func NewOffLedgerRequest(
 	contract, entryPoint Hname,
 	params dict.Dict,
 	nonce uint64,
-	gasBudget uint64,
+	gasBudget gas.GasUnits,
 ) UnsignedOffLedgerRequest {
 	return &OffLedgerRequestData{
 		chainID:    chainID,
@@ -82,7 +83,7 @@ func (req *OffLedgerRequestData) readEssence(rr *rwutil.Reader) {
 	req.params = dict.New()
 	rr.Read(&req.params)
 	req.nonce = rr.ReadAmount64()
-	req.gasBudget = rr.ReadGas64()
+	req.gasBudget = gas.GasUnits(rr.ReadGas64())
 	req.allowance = NewEmptyAssets()
 	rr.Read(req.allowance)
 }
@@ -94,7 +95,7 @@ func (req *OffLedgerRequestData) writeEssence(ww *rwutil.Writer) {
 	ww.Write(&req.entryPoint)
 	ww.Write(&req.params)
 	ww.WriteAmount64(req.nonce)
-	ww.WriteGas64(req.gasBudget)
+	ww.WriteGas64(uint64(req.gasBudget))
 	ww.Write(req.allowance)
 }
 
@@ -138,7 +139,7 @@ func (req *OffLedgerRequestData) Expiry() (iotago.SlotIndex, iotago.Address, boo
 	return 0, nil, false
 }
 
-func (req *OffLedgerRequestData) GasBudget() (gasBudget uint64, isEVM bool) {
+func (req *OffLedgerRequestData) GasBudget() (gasBudget gas.GasUnits, isEVM bool) {
 	return req.gasBudget, false
 }
 
@@ -184,10 +185,10 @@ func (req *OffLedgerRequestData) Sign(key *cryptolib.KeyPair) OffLedgerRequest {
 	return req
 }
 
-func (req *OffLedgerRequestData) String() string {
+func (req *OffLedgerRequestData) String(bech32HRP iotago.NetworkPrefix) string {
 	return fmt.Sprintf("offLedgerRequestData::{ ID: %s, sender: %s, target: %s, entrypoint: %s, Params: %s, nonce: %d }",
 		req.ID().String(),
-		req.SenderAccount().String(),
+		req.SenderAccount().String(bech32HRP),
 		req.contract.String(),
 		req.entryPoint.String(),
 		req.Params().String(),
@@ -221,7 +222,7 @@ func (req *OffLedgerRequestData) WithAllowance(allowance *Assets) UnsignedOffLed
 	return req
 }
 
-func (req *OffLedgerRequestData) WithGasBudget(gasBudget uint64) UnsignedOffLedgerRequest {
+func (req *OffLedgerRequestData) WithGasBudget(gasBudget gas.GasUnits) UnsignedOffLedgerRequest {
 	req.gasBudget = gasBudget
 	return req
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // IsRotateStateControllerRequest determines if request may be a committee rotation request
@@ -17,7 +18,7 @@ func IsRotateStateControllerRequest(req isc.Calldata) bool {
 	return target.Contract == coreutil.CoreContractGovernanceHname && target.EntryPoint == coreutil.CoreEPRotateStateControllerHname
 }
 
-func NewRotateRequestOffLedger(chainID isc.ChainID, newStateAddress iotago.Address, keyPair *cryptolib.KeyPair, gasBudget uint64) isc.Request {
+func NewRotateRequestOffLedger(chainID isc.ChainID, newStateAddress iotago.Address, keyPair *cryptolib.KeyPair, gasBudget gas.GasUnits) isc.Request {
 	args := dict.New()
 	args.Set(coreutil.ParamStateControllerAddress, codec.EncodeAddress(newStateAddress))
 	nonce := uint64(time.Now().UnixNano())
@@ -30,6 +31,7 @@ func MakeRotationTransactionForSelfManagedChain(
 	nextAddr iotago.Address,
 	chainInputs *isc.ChainOutputs,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 ) (*iotago.Transaction, iotago.Unlocks, error) {
 	// The Account output cannot be consumed on this transaction (it is not a state transaction)
 	anchorOutput := chainInputs.AnchorOutput.Clone().(*iotago.AnchorOutput)
@@ -47,9 +49,9 @@ func MakeRotationTransactionForSelfManagedChain(
 	}
 
 	tx := &iotago.Transaction{
-		API: parameters.L1API(),
+		API: l1API,
 		TransactionEssence: &iotago.TransactionEssence{
-			NetworkID:    parameters.L1().Protocol.NetworkID(),
+			NetworkID:    l1API.ProtocolParameters().NetworkID(),
 			Inputs:       inputs,
 			CreationSlot: creationSlot,
 		},

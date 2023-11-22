@@ -32,14 +32,14 @@ func newAddress(addressType iotago.AddressType) (address iotago.Address, err err
 	}
 }
 
-func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
+func AddressFromReader(rr *rwutil.Reader, l1API iotago.API) (address iotago.Address) {
 	kind := rr.ReadKind()
 	if kind == addressIsNil {
 		return nil
 	}
 	rr.PushBack().WriteKind(kind)
 	address, rr.Err = newAddress(iotago.AddressType(kind))
-	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
+	rr.ReadSerialized(&address, l1API, math.MaxUint16, address.Size())
 	return address
 }
 
@@ -51,9 +51,9 @@ func AddressToWriter(ww *rwutil.Writer, address iotago.Address) {
 	ww.WriteSerialized(address, math.MaxUint16, address.Size())
 }
 
-func AddressFromBytes(data []byte) (iotago.Address, error) {
+func AddressFromBytes(data []byte, l1API iotago.API) (iotago.Address, error) {
 	rr := rwutil.NewBytesReader(data)
-	return AddressFromReader(rr), rr.Err
+	return AddressFromReader(rr, l1API), rr.Err
 }
 
 func AddressToBytes(address iotago.Address) []byte {

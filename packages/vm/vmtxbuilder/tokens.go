@@ -8,7 +8,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/vmexceptions"
@@ -77,8 +76,8 @@ func (n *nativeTokenBalance) add(delta *big.Int) *nativeTokenBalance {
 }
 
 // updateMinSD uptates the resulting output to have the minimum SD
-func (n *nativeTokenBalance) updateMinSD() {
-	minSD, err := parameters.Storage().MinDeposit(n.accountingOutput)
+func (n *nativeTokenBalance) updateMinSD(l1API iotago.API) {
+	minSD, err := l1API.StorageScoreStructure().MinDeposit(n.accountingOutput)
 	if err != nil {
 		panic(err)
 	}
@@ -190,7 +189,7 @@ func (txb *AnchorTransactionBuilder) addNativeTokenBalanceDelta(nativeTokenID io
 
 	// update the SD in case the storage deposit has changed from the last time this output was used
 	oldSD := nt.accountingOutput.Amount
-	nt.updateMinSD()
+	nt.updateMinSD(txb.L1API)
 	updatedSD := nt.accountingOutput.Amount
 
 	return int64(oldSD) - int64(updatedSD)

@@ -9,7 +9,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
-	"github.com/iotaledger/wasp/packages/parameters"
 
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -121,8 +120,8 @@ func (id ChainID) ShortString() string {
 }
 
 // String human-readable form (bech32)
-func (id ChainID) String() string {
-	return id.AsAddress().Bech32(parameters.NetworkPrefix())
+func (id ChainID) String(bech32HRP iotago.NetworkPrefix) string {
+	return id.AsAddress().Bech32(bech32HRP)
 }
 
 func (id *ChainID) Read(r io.Reader) error {

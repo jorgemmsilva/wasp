@@ -10,7 +10,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -35,7 +34,7 @@ type AgentID interface {
 	Equals(other AgentID) bool
 	Kind() AgentIDKind
 	Read(r io.Reader) error
-	String() string
+	String(iotago.NetworkPrefix) string
 	Write(w io.Writer) error
 }
 
@@ -110,7 +109,7 @@ func AgentIDToWriter(ww *rwutil.Writer, agent AgentID) {
 }
 
 // AgentIDFromString parses the human-readable string representation
-func AgentIDFromString(s string) (AgentID, error) {
+func AgentIDFromString(s string, bech32HRP iotago.NetworkPrefix) (AgentID, error) {
 	if s == nilAgentIDString {
 		return &NilAgentID{}, nil
 	}
@@ -134,7 +133,7 @@ func AgentIDFromString(s string) (AgentID, error) {
 		}
 		return contractAgentIDFromString(contractPart, addrPart)
 	}
-	if strings.HasPrefix(addrPart, string(parameters.NetworkPrefix())) {
+	if strings.HasPrefix(addrPart, string(bech32HRP)) {
 		return addressAgentIDFromString(s)
 	}
 	return nil, errors.New("invalid AgentID string")

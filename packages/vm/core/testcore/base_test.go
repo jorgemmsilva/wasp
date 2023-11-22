@@ -111,7 +111,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
 		originatorsL2BaseTokensBefore := ch.L2BaseTokens(ch.OriginatorAgentID)
@@ -129,7 +129,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -147,7 +147,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID := isc.NewAgentID(senderAddr)
@@ -169,7 +169,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -192,7 +192,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no EP,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
 		originatorsL2BaseTokensBefore := ch.L2BaseTokens(ch.OriginatorAgentID)
@@ -212,7 +212,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -228,7 +228,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no EP,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID := isc.NewAgentID(senderAddr)
@@ -250,7 +250,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 

@@ -74,8 +74,8 @@ func (a *ContractAgentID) Kind() AgentIDKind {
 	return AgentIDKindContract
 }
 
-func (a *ContractAgentID) String() string {
-	return a.hname.String() + AgentIDStringSeparator + a.chainID.String()
+func (a *ContractAgentID) String(bech32HRP iotago.NetworkPrefix) string {
+	return a.hname.String() + AgentIDStringSeparator + a.chainID.String(bech32HRP)
 }
 
 func (a *ContractAgentID) Read(r io.Reader) error {

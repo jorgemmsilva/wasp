@@ -58,6 +58,8 @@ type AnchorTransactionBuilder struct {
 	invokedFoundries map[uint32]*foundryInvoked
 	// requests posted by smart contracts
 	postedOutputs iotago.TxEssenceOutputs
+
+	L1API iotago.API
 }
 
 // NewAnchorTransactionBuilder creates new AnchorTransactionBuilder object
@@ -108,7 +110,7 @@ func (txb *AnchorTransactionBuilder) splitAssetsIntoInternalOutputs(req isc.OnLe
 			sdBefore = 0 // accounting output was zero'ed this block, meaning the existing SD was released
 		}
 		nt.add(amount)
-		nt.updateMinSD()
+		nt.updateMinSD(txb.L1API)
 		sdAfter := nt.accountingOutput.Amount
 		// user pays for the difference (in case SD has increased, will be the full SD cost if the output is new)
 		requiredSD += sdAfter - sdBefore
@@ -160,7 +162,7 @@ func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerReques
 func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 	defer txb.assertLimits()
 
-	storageDeposit, err := parameters.Storage().MinDeposit(o)
+	storageDeposit, err := txb.L1API.StorageScoreStructure().MinDeposit(o)
 	if err != nil {
 		panic(err)
 	}
@@ -190,10 +192,10 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) (*iotago.Transaction, iotago.Unlocks) {
 	inputs, inputIDs, unlocks := txb.buildInputs()
 	return &iotago.Transaction{
-		API: parameters.L1API(),
+		API: txb.L1API,
 		TransactionEssence: &iotago.TransactionEssence{
 			CreationSlot: creationSlot,
-			NetworkID:    parameters.Protocol().NetworkID(),
+			NetworkID:    txb.L1API.ProtocolParameters().NetworkID(),
 			Inputs:       inputIDs.UTXOInputs(),
 			Capabilities: iotago.TransactionCapabilitiesBitMaskWithCapabilities(
 				iotago.WithTransactionCanDestroyFoundryOutputs(true),
@@ -284,8 +286,7 @@ func (txb *AnchorTransactionBuilder) AccountID() iotago.AccountID {
 }
 
 func (txb *AnchorTransactionBuilder) getSDInChainOutputs() iotago.BaseToken {
-	api := parameters.L1Provider().APIForSlot(txb.inputs.AnchorOutputID.CreationSlot())
-	ret := lo.Must(api.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
+	ret := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
 	if _, out, ok := txb.inputs.AccountOutput(); ok {
 		ret += out.Amount
 	}
@@ -301,7 +302,7 @@ func (txb *AnchorTransactionBuilder) ChangeInSD(
 		creationSlot,
 		txb.inputs.AnchorOutput.Mana,
 	)
-	newSD := lo.Must(parameters.Storage().MinDeposit(mockAnchor)) + mockAccount.Amount
+	newSD := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(mockAnchor)) + mockAccount.Amount
 	oldSD := txb.getSDInChainOutputs()
 	return oldSD, newSD, int64(oldSD) - int64(newSD)
 }
@@ -332,7 +333,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		anchorOutput.Features.Upsert(&iotago.MetadataFeature{Entries: metadata.Entries})
 		anchorOutput.Features.Sort()
 	}
-	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(parameters.Storage().MinDeposit(anchorOutput))
+	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(anchorOutput))
 
 	accountOutput := &iotago.AccountOutput{
 		FoundryCounter: txb.nextFoundryCounter(),
@@ -349,7 +350,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 			accountOutput.AccountID = iotago.AccountIDFromOutputID(id)
 		}
 	}
-	accountOutput.Amount = lo.Must(parameters.Storage().MinDeposit(accountOutput))
+	accountOutput.Amount = lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(accountOutput))
 
 	return anchorOutput, accountOutput
 }
@@ -370,8 +371,8 @@ func (txb *AnchorTransactionBuilder) buildOutputs(
 	ret := make(iotago.TxEssenceOutputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
 
 	totalMana := lo.Must(vm.TotalManaIn(
-		parameters.L1API().ManaDecayProvider(),
-		parameters.Storage(),
+		txb.L1API.ManaDecayProvider(),
+		txb.L1API.StorageScoreStructure(),
 		creationSlot,
 		vm.InputSet(inputs),
 		vm.RewardsInputSet{},

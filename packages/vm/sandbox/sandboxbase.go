@@ -106,7 +106,8 @@ func (s *SandboxBase) Timestamp() time.Time {
 }
 
 func (s *SandboxBase) SlotIndex() iotago.SlotIndex {
-	return parameters.L1API().TimeProvider().SlotFromTime(s.Ctx.Timestamp())
+	panic("not implemented") // TODO does it really make sense for this function to exist?
+	// return parameters.L1API().TimeProvider().SlotFromTime(s.Ctx.Timestamp())
 }
 
 func (s *SandboxBase) Log() isc.LogInterface {
@@ -127,7 +128,7 @@ func (s *SandboxBase) Gas() isc.Gas {
 	return s
 }
 
-func (s *SandboxBase) Burned() uint64 {
+func (s *SandboxBase) Burned() gas.GasUnits {
 	return s.Ctx.GasBurned()
 }
 
@@ -135,7 +136,7 @@ func (s *SandboxBase) Burn(burnCode gas.BurnCode, par ...uint64) {
 	s.Ctx.GasBurn(burnCode, par...)
 }
 
-func (s *SandboxBase) Budget() uint64 {
+func (s *SandboxBase) Budget() gas.GasUnits {
 	return s.Ctx.GasBudgetLeft()
 }
 

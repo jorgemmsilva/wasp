@@ -174,8 +174,8 @@ type RequestParameters struct {
 
 type Gas interface {
 	Burn(burnCode gas.BurnCode, par ...uint64)
-	Budget() uint64
-	Burned() uint64
+	Budget() gas.GasUnits
+	Burned() gas.GasUnits
 	EstimateGasMode() bool
 }
 

@@ -5,7 +5,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -58,8 +57,8 @@ func (a *AddressAgentID) Kind() AgentIDKind {
 	return AgentIDKindAddress
 }
 
-func (a *AddressAgentID) String() string {
-	return a.a.Bech32(parameters.NetworkPrefix())
+func (a *AddressAgentID) String(bech32HRP iotago.NetworkPrefix) string {
+	return a.a.Bech32(bech32HRP)
 }
 
 func (a *AddressAgentID) Read(r io.Reader) error {

@@ -4,6 +4,7 @@
 package rwutil
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -221,7 +222,7 @@ func (rr *Reader) ReadKindAndVerify(expectedKind Kind) {
 // If no sizes are present a 16-bit size is read from the stream.
 // The first size indicates a different limit for the size read from the stream.
 // The second size indicates the expected size and does not read it from the stream.
-func (rr *Reader) ReadSerialized(obj any, l1API iotago.API, sizes ...int) {
+func (rr *Reader) ReadSerialized(obj any, sizes ...int) {
 	if rr.Err != nil {
 		return
 	}
@@ -250,7 +251,7 @@ func (rr *Reader) ReadSerialized(obj any, l1API iotago.API, sizes ...int) {
 	rr.ReadN(data)
 	if rr.Err == nil {
 		var n int
-		n, rr.Err = l1API.Decode(data, obj) // TODO worth moving to another func to avoid passing L1API in the params?
+		n, rr.Err = iotago.CommonSerixAPI().Decode(context.Background(), data, obj)
 		if n != len(data) && rr.Err == nil {
 			rr.Err = errors.New("unexpected deserialize size")
 		}

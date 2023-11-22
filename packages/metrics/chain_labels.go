@@ -12,7 +12,7 @@ const (
 	labelNameMessageType                            = "message_type"
 	labelNameInMilestone                            = "in_milestone"
 	labelNameInStateOutputMetrics                   = "in_state_output"
-	labelNameInAnchorOutputMetrics                   = "in_alias_output"
+	labelNameInAnchorOutputMetrics                  = "in_alias_output"
 	labelNameInOutputMetrics                        = "in_output"
 	labelNameInOnLedgerRequestMetrics               = "in_on_ledger_request"
 	labelNameInTxInclusionStateMetrics              = "in_tx_inclusion_state"
@@ -29,6 +29,6 @@ const (
 
 func getChainLabels(chainID isc.ChainID) prometheus.Labels {
 	return prometheus.Labels{
-		labelNameChain: chainID.String(),
+		labelNameChain: chainID.ShortString(),
 	}
 }

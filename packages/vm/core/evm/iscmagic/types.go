@@ -4,6 +4,7 @@
 package iscmagic
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -180,7 +181,7 @@ func WrapISCNFT(n *isc.NFT) ISCNFT {
 	r := ISCNFT{
 		ID:       WrapNFTID(n.ID),
 		Issuer:   WrapL1Address(n.Issuer),
-		Metadata: lo.Must(parameters.L1API().Encode(n.Metadata)),
+		Metadata: lo.Must(iotago.CommonSerixAPI().Encode(context.Background(), n.Metadata)),
 	}
 	if n.Owner != nil {
 		r.Owner = WrapISCAgentID(n.Owner)
@@ -194,7 +195,7 @@ func (n ISCNFT) Unwrap() (*isc.NFT, error) {
 		return nil, err
 	}
 	var metadata iotago.MetadataFeatureEntries
-	nr, err := parameters.L1API().Decode(n.Metadata, &metadata)
+	nr, err := iotago.CommonSerixAPI().Decode(context.Background(), n.Metadata, &metadata)
 	if err != nil {
 		return nil, err
 	}

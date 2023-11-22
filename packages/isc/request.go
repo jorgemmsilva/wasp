@@ -28,7 +28,7 @@ type Calldata interface {
 	Allowance() *Assets // transfer of assets to the smart contract. Debited from sender anchor
 	Assets() *Assets    // attached assets for the UTXO request, nil for off-ledger. All goes to sender
 	CallTarget() CallTarget
-	GasBudget() (gas gas.GasUnits, isEVM bool)
+	GasBudget() (gas uint64, isEVM bool)
 	ID() RequestID
 	NFT() *NFT // Not nil if the request is an NFT request
 	Params() dict.Dict

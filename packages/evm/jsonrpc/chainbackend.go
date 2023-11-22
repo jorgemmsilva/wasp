@@ -12,8 +12,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
 )
@@ -36,7 +34,7 @@ type ChainBackend interface {
 	ISCLatestState() state.State
 	ISCStateByBlockIndex(blockIndex uint32) (state.State, error)
 	ISCStateByTrieRoot(trieRoot trie.Hash) (state.State, error)
-	BaseToken() *parameters.BaseTokenInfo
+	BaseTokenDecimals() uint32
 	TakeSnapshot() (int, error)
 	RevertToSnapshot(int) error
 }

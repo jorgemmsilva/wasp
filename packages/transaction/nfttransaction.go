@@ -3,8 +3,6 @@ package transaction
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -15,6 +13,7 @@ func NewMintNFTsTransaction(
 	immutableMetadata []iotago.MetadataFeatureEntries,
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, error) {
 	senderAddress := issuerKeyPair.Address()
 
@@ -25,7 +24,7 @@ func NewMintNFTsTransaction(
 	nftsOut := make(map[iotago.NFTID]bool)
 
 	addOutput := func(out *iotago.NFTOutput) {
-		d, err := parameters.Storage().MinDeposit(out)
+		d, err := l1API.StorageScoreStructure().MinDeposit(out)
 		if err != nil {
 			panic(err)
 		}

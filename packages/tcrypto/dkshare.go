@@ -643,7 +643,7 @@ func DecodeHexKyberPoints(group kyber.Group, dataHex []string) ([]kyber.Point, e
 }
 
 func (s *dkShareImpl) MarshalJSON() ([]byte, error) {
-	jAddressRaw, err := parameters.L1API().Underlying().MapEncode(context.Background(), s.address.Address())
+	jAddressRaw, err := iotago.CommonSerixAPI().MapEncode(context.Background(), s.address.Address())
 	if err != nil {
 		return nil, err
 	}
@@ -724,7 +724,7 @@ func (s *dkShareImpl) UnmarshalJSON(bytes []byte) error {
 	}
 
 	var address iotago.Address
-	err := parameters.L1API().Underlying().MapDecode(context.Background(), j.Address.Values(), &address)
+	err := iotago.CommonSerixAPI().MapDecode(context.Background(), j.Address.Values(), &address)
 	if err != nil {
 		return err
 	}

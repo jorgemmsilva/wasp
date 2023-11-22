@@ -8,8 +8,8 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
-func CheckGasPrice(tx *types.Transaction, gasFeePolicy *gas.FeePolicy) error {
-	expectedGasPrice := gasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
+func CheckGasPrice(tx *types.Transaction, gasFeePolicy *gas.FeePolicy, baseTokenDecimals uint32) error {
+	expectedGasPrice := gasFeePolicy.GasPriceWei(baseTokenDecimals)
 	gasPrice := tx.GasPrice()
 	if gasPrice.Cmp(expectedGasPrice) != 0 {
 		return fmt.Errorf(

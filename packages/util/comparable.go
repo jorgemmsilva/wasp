@@ -33,5 +33,5 @@ func (c *ComparableAddress) Key() string {
 }
 
 func (c *ComparableAddress) String() string {
-	return c.address.Bech32(parameters.NetworkPrefix())
+	return c.address.String()
 }

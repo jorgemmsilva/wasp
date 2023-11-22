@@ -1,10 +1,10 @@
 package codec
 
 import (
+	"context"
 	"errors"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenScheme, err error) {
@@ -14,7 +14,7 @@ func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenSche
 		}
 		return nil, errors.New("wrong data length")
 	}
-	n, err := parameters.L1API().Decode(b, &ts)
+	n, err := iotago.CommonSerixAPI().Decode(context.Background(), b, &ts)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,7 @@ func MustDecodeTokenScheme(b []byte, def ...iotago.TokenScheme) iotago.TokenSche
 }
 
 func EncodeTokenScheme(value iotago.TokenScheme) []byte {
-	b, err := parameters.L1API().Encode(value)
+	b, err := iotago.CommonSerixAPI().Encode(context.Background(), value)
 	if err != nil {
 		panic(err)
 	}

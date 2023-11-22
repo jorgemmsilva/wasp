@@ -1,6 +1,7 @@
 package util
 
 import (
+	"context"
 	"errors"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -8,7 +9,7 @@ import (
 
 func OutputFromBytes(data []byte) (ret iotago.Output, err error) {
 	var n int
-	n, err = parameters.L1API().Decode(data, &ret)
+	n, err = iotago.CommonSerixAPI().Decode(context.Background(), data, &ret)
 	if err != nil {
 		return nil, err
 	}

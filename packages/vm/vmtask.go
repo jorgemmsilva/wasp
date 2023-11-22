@@ -5,6 +5,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -34,7 +35,9 @@ type VMTask struct {
 
 	MigrationsOverride *migrations.MigrationScheme // for testing and Solo only
 
-	L1API iotago.API
+	// TODO these 2 below are not assigned anywhere
+	L1API     iotago.API
+	BaseToken apimodels.InfoResBaseToken
 
 	Log *logger.Logger
 }

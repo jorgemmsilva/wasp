@@ -8,8 +8,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -19,6 +17,7 @@ func EVMCall(
 	ch chaintypes.ChainCore,
 	chainOutputs *isc.ChainOutputs,
 	call ethereum.CallMsg,
+	baseTokenDecimals uint32,
 ) ([]byte, error) {
 	info := getChainInfo(ch)
 
@@ -29,7 +28,7 @@ func EVMCall(
 	}
 
 	if call.GasPrice == nil {
-		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
+		call.GasPrice = info.GasFeePolicy.GasPriceWei(baseTokenDecimals)
 	}
 
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)

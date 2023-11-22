@@ -15,8 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
-	"github.com/iotaledger/wasp/packages/parameters"
-
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
@@ -150,7 +149,7 @@ func (ch *Chain) GetFoundryOutput(sn uint32) (*iotago.FoundryOutput, error) {
 	}
 	outBin := res.Get(accounts.ParamFoundryOutputBin)
 	out := &iotago.FoundryOutput{}
-	_, err = parameters.L1API().Decode(outBin, &out)
+	_, err = testutil.L1API.Decode(outBin, &out)
 	require.NoError(ch.Env.T, err)
 	return out, nil
 }

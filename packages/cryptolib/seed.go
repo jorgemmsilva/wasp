@@ -11,6 +11,7 @@ import (
 	"github.com/wollac/iota-crypto-demo/pkg/slip10/eddsa"
 
 	hivecrypto "github.com/iotaledger/hive.go/crypto/ed25519"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib/byteutils"
 )
 
@@ -24,14 +25,14 @@ const IotaCoinType = uint32(4218)
 const ShimmerCoinType = uint32(4219)
 
 // SubSeed returns a Seed (ed25519 Seed) from a master seed (that has arbitrary length)
-func SubSeed(walletSeed []byte, accountIndex uint64, useLegacyDerivation ...bool) Seed {
+func SubSeed(walletSeed []byte, accountIndex uint64, bech32HRP iotago.NetworkPrefix, useLegacyDerivation ...bool) Seed {
 	if len(useLegacyDerivation) > 0 && useLegacyDerivation[0] {
 		seed := SeedFromBytes(walletSeed)
 		return legacyDerivation(&seed, accountIndex)
 	}
 
 	coinType := TestnetCoinType // default to the testnet
-	switch parameters.NetworkPrefix() {
+	switch bech32HRP {
 	case "iota":
 		coinType = IotaCoinType
 	case "smr":

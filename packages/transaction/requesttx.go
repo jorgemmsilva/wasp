@@ -7,8 +7,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -23,6 +21,7 @@ func NewTransferTransaction(
 	unlockConditions []iotago.UnlockCondition,
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, error) {
 	output := MakeBasicOutput(
 		targetAddress,
@@ -36,7 +35,7 @@ func NewTransferTransaction(
 		output = AdjustToMinimumStorageDeposit(output)
 	}
 
-	storageDeposit, err := parameters.Storage().MinDeposit(output)
+	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(output)
 	if err != nil {
 		return nil, err
 	}
@@ -77,6 +76,7 @@ func NewRequestTransaction(
 	nft *isc.NFT,
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, error) {
 	outputs := iotago.TxEssenceOutputs{}
 
@@ -85,7 +85,7 @@ func NewRequestTransaction(
 		out = AdjustToMinimumStorageDeposit(out)
 	}
 
-	storageDeposit, err := parameters.Storage().MinDeposit(out)
+	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		return nil, err
 	}

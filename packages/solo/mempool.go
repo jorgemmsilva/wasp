@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
 )
 
 type Mempool interface {
@@ -64,7 +64,7 @@ func (mi *mempoolImpl) ReceiveRequests(reqs ...isc.Request) {
 func (mi *mempoolImpl) RequestBatchProposal() []isc.Request {
 	mi.mu.Lock()
 	defer mi.mu.Unlock()
-	slot := parameters.L1API().TimeProvider().SlotFromTime(mi.currentTime())
+	slot := testutil.L1API.TimeProvider().SlotFromTime(mi.currentTime())
 	batch := []isc.Request{}
 	for rid, request := range mi.requests {
 		switch request := request.(type) {

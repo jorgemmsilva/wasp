@@ -124,7 +124,7 @@ func (req *evmOffLedgerTxRequest) SenderAccount() AgentID {
 	return req.sender
 }
 
-func (req *evmOffLedgerTxRequest) String() string {
+func (req *evmOffLedgerTxRequest) String(_ iotago.NetworkPrefix) string {
 	// ignore error so String does not crash the app
 	data, _ := json.MarshalIndent(req.tx, " ", " ")
 	return fmt.Sprintf("%T::{ ID: %s, Tx: %s }",

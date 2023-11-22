@@ -19,8 +19,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/util"
@@ -29,18 +27,18 @@ import (
 
 // WaspEVMBackend is the implementation of [ChainBackend] for the production environment.
 type WaspEVMBackend struct {
-	chain      chaintypes.Chain
-	nodePubKey *cryptolib.PublicKey
-	baseToken  *parameters.BaseTokenInfo
+	chain             chaintypes.Chain
+	nodePubKey        *cryptolib.PublicKey
+	baseTokenDecimals uint32
 }
 
 var _ ChainBackend = &WaspEVMBackend{}
 
-func NewWaspEVMBackend(ch chaintypes.Chain, nodePubKey *cryptolib.PublicKey, baseToken *parameters.BaseTokenInfo) *WaspEVMBackend {
+func NewWaspEVMBackend(ch chaintypes.Chain, nodePubKey *cryptolib.PublicKey, baseTokenDecimals uint32) *WaspEVMBackend {
 	return &WaspEVMBackend{
-		chain:      ch,
-		nodePubKey: nodePubKey,
-		baseToken:  baseToken,
+		chain:             ch,
+		nodePubKey:        nodePubKey,
+		baseTokenDecimals: baseTokenDecimals,
 	}
 }
 
@@ -76,11 +74,11 @@ func (b *WaspEVMBackend) EVMSendTransaction(tx *types.Transaction) error {
 }
 
 func (b *WaspEVMBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.chain, chainOutputs, callMsg)
+	return chainutil.EVMCall(b.chain, chainOutputs, callMsg, b.BaseTokenDecimals())
 }
 
 func (b *WaspEVMBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.chain, chainOutputs, callMsg)
+	return chainutil.EVMEstimateGas(b.chain, chainOutputs, callMsg, b.BaseTokenDecimals())
 }
 
 func (b *WaspEVMBackend) EVMTraceTransaction(
@@ -104,8 +102,8 @@ func (b *WaspEVMBackend) ISCCallView(chainState state.State, scName, funName str
 	return chainutil.CallView(chainState, b.chain, isc.Hn(scName), isc.Hn(funName), args)
 }
 
-func (b *WaspEVMBackend) BaseToken() *parameters.BaseTokenInfo {
-	return b.baseToken
+func (b *WaspEVMBackend) BaseTokenDecimals() uint32 {
+	return b.baseTokenDecimals
 }
 
 func (b *WaspEVMBackend) ISCLatestChainOutputs() (*isc.ChainOutputs, error) {

@@ -10,8 +10,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/gas"
@@ -21,7 +19,7 @@ var evmErrOutOfGasRegex = regexp.MustCompile("out of gas|intrinsic gas too low")
 
 // EVMEstimateGas executes the given request and discards the resulting chain state. It is useful
 // for estimating gas.
-func EVMEstimateGas(ch chaintypes.ChainCore, chainOutputs *isc.ChainOutputs, call ethereum.CallMsg) (uint64, error) { //nolint:gocyclo
+func EVMEstimateGas(ch chaintypes.ChainCore, chainOutputs *isc.ChainOutputs, call ethereum.CallMsg, baseTokenDecimals uint32) (uint64, error) { //nolint:gocyclo
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
 		lo     uint64 = params.TxGas - 1
@@ -39,7 +37,7 @@ func EVMEstimateGas(ch chaintypes.ChainCore, chainOutputs *isc.ChainOutputs, cal
 	}
 
 	if call.GasPrice == nil {
-		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
+		call.GasPrice = info.GasFeePolicy.GasPriceWei(baseTokenDecimals)
 	}
 
 	gasCap = hi
@@ -83,7 +81,7 @@ func EVMEstimateGas(ch chaintypes.ChainCore, chainOutputs *isc.ChainOutputs, cal
 			lastUsed = 0
 			lo = mid
 		} else {
-			lastUsed = res.Receipt.GasBurned
+			lastUsed = uint64(res.Receipt.GasBurned) // TODO do we need to conver this ISC gas to EVM gas instead of just casting to  uint64 here?
 			hi = mid
 			if lastUsed == mid {
 				// if used gas == gas limit, then use this as the estimation.

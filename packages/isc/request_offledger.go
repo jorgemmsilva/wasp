@@ -139,8 +139,8 @@ func (req *OffLedgerRequestData) Expiry() (iotago.SlotIndex, iotago.Address, boo
 	return 0, nil, false
 }
 
-func (req *OffLedgerRequestData) GasBudget() (gasBudget gas.GasUnits, isEVM bool) {
-	return req.gasBudget, false
+func (req *OffLedgerRequestData) GasBudget() (gasBudget uint64, isEVM bool) {
+	return uint64(req.gasBudget), false
 }
 
 // ID returns request id for this request

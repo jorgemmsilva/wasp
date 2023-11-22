@@ -6,7 +6,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -39,7 +38,6 @@ type ChainPipeMetrics struct {
 	lenMetrics map[string]prometheus.Collector
 	maxMetrics map[string]*chainPipeMaxCollector
 	regLock    sync.RWMutex
-	beck32HRP  iotago.NetworkPrefix
 }
 
 type chainPipeMaxCollector struct {
@@ -68,7 +66,7 @@ func (m *ChainPipeMetrics) cleanup() {
 
 func (m *ChainPipeMetrics) makeLabels(pipeName string) prometheus.Labels {
 	return prometheus.Labels{
-		labelNameChain:    m.chainID.String(m.beck32HRP),
+		labelNameChain:    m.chainID.ShortString(),
 		labelNamePipeName: pipeName,
 	}
 }

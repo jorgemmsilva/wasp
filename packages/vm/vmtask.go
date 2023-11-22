@@ -34,6 +34,8 @@ type VMTask struct {
 
 	MigrationsOverride *migrations.MigrationScheme // for testing and Solo only
 
+	L1API iotago.API
+
 	Log *logger.Logger
 }
 

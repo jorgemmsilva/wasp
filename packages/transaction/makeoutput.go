@@ -5,7 +5,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 // BasicOutputFromPostData creates extended output object from parameters.
@@ -85,6 +84,7 @@ func NFTOutputFromPostData(
 	senderContract isc.ContractIdentity,
 	par isc.RequestParameters,
 	nft *isc.NFT,
+	l1API iotago.API,
 ) *iotago.NFTOutput {
 	if len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0] {
 		panic("inconsistency: len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0]")
@@ -95,7 +95,7 @@ func NFTOutputFromPostData(
 	if !par.AdjustToMinimumStorageDeposit {
 		return out
 	}
-	storageDeposit, err := parameters.Storage().MinDeposit(out)
+	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}

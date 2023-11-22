@@ -12,8 +12,8 @@ import (
 type Receipt struct {
 	Request       []byte             `json:"request"`
 	Error         *UnresolvedVMError `json:"error"`
-	GasBudget     uint64             `json:"gasBudget"`
-	GasBurned     uint64             `json:"gasBurned"`
+	GasBudget     gas.GasUnits       `json:"gasBudget"`
+	GasBurned     gas.GasUnits       `json:"gasBurned"`
 	GasFeeCharged iotago.BaseToken   `json:"gasFeeCharged"`
 	SDCharged     iotago.BaseToken   `json:"storageDepositCharged"`
 	BlockIndex    uint32             `json:"blockIndex"`

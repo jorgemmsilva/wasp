@@ -216,7 +216,7 @@ func (reqctx *requestContext) callTheContract() (*vm.RequestResult, error) {
 		reqctx.GasBurnEnable(true)
 		result.Return = reqctx.callFromRequest()
 		// ensure at least the minimum amount of gas is charged
-		reqctx.GasBurn(gas.BurnCodeMinimumGasPerRequest1P, reqctx.GasBurned())
+		reqctx.GasBurn(gas.BurnCodeMinimumGasPerRequest1P, uint64(reqctx.GasBurned()))
 	}()
 	reqctx.GasBurnEnable(false)
 	if skipRequestErr != nil {
@@ -296,10 +296,10 @@ func (reqctx *requestContext) callFromRequest() dict.Dict {
 	)
 }
 
-func (reqctx *requestContext) getGasBudget() uint64 {
+func (reqctx *requestContext) getGasBudget() gas.GasUnits {
 	gasBudget, isEVM := reqctx.req.GasBudget()
 	if !isEVM || gasBudget == 0 {
-		return gasBudget
+		return gas.GasUnits(gasBudget)
 	}
 
 	var gasRatio util.Ratio32
@@ -313,7 +313,7 @@ func (reqctx *requestContext) getGasBudget() uint64 {
 // Affordable gas budget is calculated from gas budget provided in the request by the user and taking into account
 // how many tokens the sender has in its account and how many are allowed for the target.
 // Safe arithmetics is used
-func (reqctx *requestContext) calculateAffordableGasBudget() (budget uint64, maxTokensToSpendForGasFee iotago.BaseToken) {
+func (reqctx *requestContext) calculateAffordableGasBudget() (budget gas.GasUnits, maxTokensToSpendForGasFee iotago.BaseToken) {
 	gasBudget := reqctx.getGasBudget()
 
 	if reqctx.vm.task.EstimateGasMode && gasBudget == 0 {

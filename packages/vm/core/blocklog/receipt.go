@@ -21,8 +21,8 @@ import (
 type RequestReceipt struct {
 	Request       isc.Request            `json:"request"`
 	Error         *isc.UnresolvedVMError `json:"error"`
-	GasBudget     uint64                 `json:"gasBudget"`
-	GasBurned     uint64                 `json:"gasBurned"`
+	GasBudget     gas.GasUnits           `json:"gasBudget"`
+	GasBurned     gas.GasUnits           `json:"gasBurned"`
 	GasFeeCharged iotago.BaseToken       `json:"gasFeeCharged"`
 	SDCharged     iotago.BaseToken       `json:"storageDepositCharged"`
 	// not persistent
@@ -69,8 +69,8 @@ func (rec *RequestReceipt) Bytes() []byte {
 
 func (rec *RequestReceipt) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
-	rec.GasBudget = rr.ReadGas64()
-	rec.GasBurned = rr.ReadGas64()
+	rec.GasBudget = gas.GasUnits(rr.ReadGas64())
+	rec.GasBurned = gas.GasUnits(rr.ReadGas64())
 	rec.GasFeeCharged = iotago.BaseToken(rr.ReadAmount64())
 	rec.SDCharged = iotago.BaseToken(rr.ReadAmount64())
 	rec.Request = isc.RequestFromReader(rr)
@@ -89,8 +89,8 @@ func (rec *RequestReceipt) Read(r io.Reader) error {
 
 func (rec *RequestReceipt) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
-	ww.WriteGas64(rec.GasBudget)
-	ww.WriteGas64(rec.GasBurned)
+	ww.WriteGas64(uint64(rec.GasBudget))
+	ww.WriteGas64(uint64(rec.GasBurned))
 	ww.WriteAmount64(uint64(rec.GasFeeCharged))
 	ww.WriteAmount64(uint64(rec.SDCharged))
 	ww.Write(rec.Request)

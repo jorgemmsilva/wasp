@@ -18,7 +18,7 @@ func (reqctx *requestContext) GasBurnEnabled() bool {
 	return reqctx.gas.burnEnabled
 }
 
-func (reqctx *requestContext) gasSetBudget(gasBudget uint64, maxTokensToSpendForGasFee iotago.BaseToken) {
+func (reqctx *requestContext) gasSetBudget(gasBudget gas.GasUnits, maxTokensToSpendForGasFee iotago.BaseToken) {
 	reqctx.gas.budgetAdjusted = gasBudget
 	reqctx.gas.maxTokensToSpendForGasFee = maxTokensToSpendForGasFee
 	reqctx.gas.burned = 0
@@ -42,14 +42,14 @@ func (reqctx *requestContext) GasBurn(burnCode gas.BurnCode, par ...uint64) {
 	}
 }
 
-func (reqctx *requestContext) GasBudgetLeft() uint64 {
+func (reqctx *requestContext) GasBudgetLeft() gas.GasUnits {
 	if reqctx.gas.budgetAdjusted < reqctx.gas.burned {
 		return 0
 	}
 	return reqctx.gas.budgetAdjusted - reqctx.gas.burned
 }
 
-func (reqctx *requestContext) GasBurned() uint64 {
+func (reqctx *requestContext) GasBurned() gas.GasUnits {
 	return reqctx.gas.burned
 }
 

@@ -10,7 +10,7 @@ import (
 
 type BurnRecord struct {
 	Code      BurnCode `json:"code" swagger:"required"`
-	GasBurned uint64   `json:"gasBurned" swagger:"required"`
+	GasBurned GasUnits `json:"gasBurned" swagger:"required"`
 }
 
 type BurnLog struct {
@@ -21,7 +21,7 @@ func NewGasBurnLog() *BurnLog {
 	return &BurnLog{Records: make([]BurnRecord, 0)}
 }
 
-func (l *BurnLog) Record(code BurnCode, gas uint64) {
+func (l *BurnLog) Record(code BurnCode, gas GasUnits) {
 	if l != nil {
 		l.Records = append(l.Records, BurnRecord{code, gas})
 	}
@@ -38,7 +38,7 @@ func (l *BurnLog) Read(r io.Reader) error {
 
 		l.Records[i] = BurnRecord{
 			Code:      burnCode,
-			GasBurned: gasBurned,
+			GasBurned: GasUnits(gasBurned),
 		}
 	}
 	return rr.Err
@@ -50,7 +50,7 @@ func (l *BurnLog) Write(w io.Writer) error {
 	ww.WriteUint32(uint32(recordLen))
 	for _, record := range l.Records {
 		ww.WriteString(record.Code.Name())
-		ww.WriteUint64(record.GasBurned)
+		ww.WriteUint64(uint64(record.GasBurned))
 	}
 	return ww.Err
 }
@@ -60,7 +60,7 @@ func (l *BurnLog) String() string {
 		return "(no burn history)"
 	}
 	ret := make([]string, 0, len(l.Records)+2)
-	var total uint64
+	var total GasUnits
 	for i := range l.Records {
 		ret = append(ret, fmt.Sprintf("%10s: %d", l.Records[i].Code.Name(), l.Records[i].GasBurned))
 		total += l.Records[i].GasBurned

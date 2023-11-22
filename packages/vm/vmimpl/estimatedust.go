@@ -23,7 +23,7 @@ func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestPara
 		contractIdentity,
 		par,
 	)
-	sd, err := parameters.Storage().MinDeposit(out)
+	sd, err := reqctx.vm.task.L1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}

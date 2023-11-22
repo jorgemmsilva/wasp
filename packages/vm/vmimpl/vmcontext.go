@@ -34,7 +34,7 @@ type vmContext struct {
 }
 
 type blockGas struct {
-	burned     uint64
+	burned     gas.GasUnits
 	feeCharged iotago.BaseToken
 }
 
@@ -69,9 +69,9 @@ type requestGas struct {
 	// max tokens that can be charged for gas fee
 	maxTokensToSpendForGasFee iotago.BaseToken
 	// final gas budget set for the run
-	budgetAdjusted uint64
+	budgetAdjusted gas.GasUnits
 	// gas already burned
-	burned uint64
+	burned gas.GasUnits
 	// tokens charged
 	feeCharged iotago.BaseToken
 	// burn history. If disabled, it is nil
@@ -245,7 +245,7 @@ func (vmctx *vmContext) removeUnprocessable(reqID isc.RequestID) {
 }
 
 func (vmctx *vmContext) assertConsistentGasTotals(requestResults []*vm.RequestResult) {
-	var sumGasBurned uint64
+	var sumGasBurned gas.GasUnits
 	var sumGasFeeCharged iotago.BaseToken
 
 	for _, r := range requestResults {

@@ -6,7 +6,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -25,8 +24,8 @@ func NewRotateChainStateControllerTx(
 	resolvedAnchorID := util.AnchorIDFromAnchorOutput(o, chainOutputID)
 	if resolvedAnchorID != anchorID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
-			anchorID.ToAddress().Bech32(parameters.NetworkPrefix()),
-			chainOutput.(*iotago.AnchorOutput).AnchorID.ToAddress().Bech32(parameters.NetworkPrefix()),
+			anchorID.ToHex(),
+			chainOutput.(*iotago.AnchorOutput).AnchorID.ToHex(),
 		)
 	}
 

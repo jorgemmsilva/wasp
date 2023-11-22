@@ -5,9 +5,9 @@ import "github.com/iotaledger/wasp/packages/util"
 // <ISC gas> = <EVM Gas> * <A> / <B>
 var DefaultEVMGasRatio = util.Ratio32{A: 1, B: 1}
 
-func ISCGasBudgetToEVM(iscGasBudget uint64, gasRatio *util.Ratio32) uint64 {
+func ISCGasBudgetToEVM(iscGasBudget GasUnits, gasRatio *util.Ratio32) uint64 {
 	// EVM gas budget = floor(ISC gas budget * B / A)
-	return gasRatio.YFloor64(iscGasBudget)
+	return gasRatio.YFloor64(uint64(iscGasBudget))
 }
 
 func ISCGasBurnedToEVM(iscGasBurned uint64, gasRatio *util.Ratio32) uint64 {
@@ -15,9 +15,9 @@ func ISCGasBurnedToEVM(iscGasBurned uint64, gasRatio *util.Ratio32) uint64 {
 	return gasRatio.YCeil64(iscGasBurned)
 }
 
-func EVMGasToISC(evmGas uint64, gasRatio *util.Ratio32) uint64 {
+func EVMGasToISC(evmGas uint64, gasRatio *util.Ratio32) GasUnits {
 	// ISC gas burned = ceil(EVM gas * A / B)
-	return gasRatio.XCeil64(evmGas)
+	return GasUnits(gasRatio.XCeil64(evmGas))
 }
 
 // EVMBlockGasLimit returns the ISC block gas limit converted to EVM gas units

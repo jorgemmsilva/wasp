@@ -75,14 +75,14 @@ const (
 	CoefBLSAggregate = 400
 )
 
-func constValue(constGas uint64) BurnFunction {
+func constValue(constGas GasUnits) BurnFunction {
 	g := constGas
-	return func(_ uint64) uint64 {
+	return func(_ uint64) GasUnits {
 		return g
 	}
 }
 
-func (c BurnCode) Cost(p ...uint64) uint64 {
+func (c BurnCode) Cost(p ...uint64) GasUnits {
 	x := uint64(0)
 	if len(p) > 0 {
 		x = p[0]
@@ -94,18 +94,18 @@ func (c BurnCode) Cost(p ...uint64) uint64 {
 }
 
 func linear(a uint64) BurnFunction {
-	return func(x uint64) uint64 {
-		return a * x
+	return func(x uint64) GasUnits {
+		return GasUnits(a * x)
 	}
 }
 
-func minBurn(minGasBurn uint64) BurnFunction {
-	return func(currentBurnedGas uint64) uint64 {
-		if minGasBurn < currentBurnedGas {
+func minBurn(minGasBurn GasUnits) BurnFunction {
+	return func(currentBurnedGas uint64) GasUnits {
+		if minGasBurn < GasUnits(currentBurnedGas) {
 			// prevent overflow
 			return 0
 		}
 
-		return minGasBurn - currentBurnedGas
+		return minGasBurn - GasUnits(currentBurnedGas)
 	}
 }

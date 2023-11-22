@@ -6,9 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-
 	"github.com/iotaledger/wasp/packages/testutil/privtangle/privtangledefaults"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
@@ -29,23 +27,6 @@ func L1ParamsExpired() bool {
 		return true
 	}
 	return viper.GetTime(l1ParamsTimestampKey).Add(l1ParamsExpiration).Before(time.Now())
-}
-
-func RefreshL1ParamsFromNode() {
-	if log.VerboseFlag {
-		log.Printf("Getting L1 params from node at %s...\n", L1APIAddress())
-	}
-
-	Set(l1ParamsKey, parameters.L1NoLock())
-	Set(l1ParamsTimestampKey, time.Now())
-}
-
-func LoadL1ParamsFromConfig() {
-	// read L1 params from config file
-	var params *parameters.L1Params
-	err := viper.UnmarshalKey("l1.params", &params)
-	log.Check(err)
-	parameters.InitL1(params)
 }
 
 func Read() {
@@ -123,14 +104,6 @@ func GetChain(name string) isc.ChainID {
 	if configChainID == "" {
 		log.Fatal(fmt.Sprintf("chain '%s' doesn't exist in config file", name))
 	}
-	networkPrefix, _, err := iotago.ParseBech32(configChainID)
-	log.Check(err)
-
-	if networkPrefix != parameters.NetworkPrefix() {
-		err = fmt.Errorf("target network of the L1 node does not match the wasp-cli config")
-	}
-	log.Check(err)
-
 	chainID, err := isc.ChainIDFromString(configChainID)
 	log.Check(err)
 	return chainID

@@ -123,7 +123,7 @@ func initAccountNFTsCmd() *cobra.Command {
 }
 
 // baseTokensForDepositFee calculates the amount of tokens needed to pay for a deposit
-func baseTokensForDepositFee(client *apiclient.APIClient, chain string) uint64 {
+func baseTokensForDepositFee(client *apiclient.APIClient, chain string) iotago.BaseToken {
 	callGovView := func(viewName string) dict.Dict {
 		result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain).String()).
 			ContractCallViewRequest(apiclient.ContractCallViewRequest{
@@ -194,8 +194,8 @@ func initDepositCmd() *cobra.Command {
 					senderOnChainBaseTokens, err := strconv.ParseUint(senderOnChainBalance.BaseTokens, 10, 64)
 					log.Check(err)
 
-					if senderOnChainBaseTokens < feeNeeded {
-						allowance.Spend(isc.NewAssetsBaseTokens(feeNeeded - senderOnChainBaseTokens))
+					if iotago.BaseToken(senderOnChainBaseTokens) < feeNeeded {
+						allowance.Spend(isc.NewAssetsBaseTokens(feeNeeded - iotago.BaseToken(senderOnChainBaseTokens)))
 					}
 				}
 

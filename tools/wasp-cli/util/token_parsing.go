@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"strings"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -44,7 +45,7 @@ func ParseFungibleTokens(args []string) *isc.Assets {
 		}
 
 		if isc.IsBaseToken(tokenIDBytes) {
-			tokens.AddBaseTokens(amount.Uint64())
+			tokens.AddBaseTokens(iotago.BaseToken(amount.Uint64()))
 			continue
 		}
 

@@ -34,7 +34,7 @@ type Config struct {
 	FaucetKey     *cryptolib.KeyPair
 }
 
-type L1Client interface {
+type Client interface {
 	// requests funds from faucet, waits for confirmation
 	RequestFunds(addr iotago.Address, timeout ...time.Duration) error
 	// sends a tx (including tipselection and local PoW if necessary) and waits for confirmation
@@ -45,11 +45,13 @@ type L1Client interface {
 	GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error)
 	// used to query the health endpoint of the node
 	Health(timeout ...time.Duration) (bool, error)
-	// return the latest L1 API
+	// API returns the latest L1 API
 	API() iotago.API
+	// Bech32HRP returns the bech32 humanly readable prefix for the current network
+	Bech32HRP() iotago.NetworkPrefix
 }
 
-var _ L1Client = &l1client{}
+var _ Client = &l1client{}
 
 type l1client struct {
 	ctx           context.Context
@@ -60,7 +62,7 @@ type l1client struct {
 	config        Config
 }
 
-func NewClient(config Config, log *logger.Logger, timeout ...time.Duration) L1Client {
+func NewClient(config Config, log *logger.Logger, timeout ...time.Duration) Client {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	nodeAPIClient, err := nodeclient.New(config.APIAddress)
 	if err != nil {
@@ -300,8 +302,12 @@ func (c *l1client) API() iotago.API {
 	return c.nodeAPIClient.LatestAPI()
 }
 
+func (c *l1client) Bech32HRP() iotago.NetworkPrefix {
+	return c.API().ProtocolParameters().Bech32HRP()
+}
+
 func MakeSimpleValueTX(
-	client L1Client,
+	client Client,
 	sender *cryptolib.KeyPair,
 	recipientAddr iotago.Address,
 	amount iotago.BaseToken,

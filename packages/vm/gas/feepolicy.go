@@ -11,6 +11,8 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
+type GasUnits uint64
+
 // By default each token pays for 100 units of gas
 var DefaultGasPerToken = util.Ratio32{A: 100, B: 1}
 
@@ -33,7 +35,7 @@ type FeePolicy struct {
 
 // FeeFromGasBurned calculates the how many tokens to take and where
 // to deposit them.
-func (p *FeePolicy) FeeFromGasBurned(gasUnits uint64, availableTokens iotago.BaseToken) (sendToOwner, sendToValidator iotago.BaseToken) {
+func (p *FeePolicy) FeeFromGasBurned(gasUnits GasUnits, availableTokens iotago.BaseToken) (sendToOwner, sendToValidator iotago.BaseToken) {
 	var fee iotago.BaseToken
 
 	// round up
@@ -53,11 +55,11 @@ func (p *FeePolicy) FeeFromGasBurned(gasUnits uint64, availableTokens iotago.Bas
 	return fee - sendToValidator, sendToValidator
 }
 
-func FeeFromGas(gasUnits uint64, gasPerToken util.Ratio32) iotago.BaseToken {
-	return iotago.BaseToken(gasPerToken.YCeil64(gasUnits))
+func FeeFromGas(gasUnits GasUnits, gasPerToken util.Ratio32) iotago.BaseToken {
+	return iotago.BaseToken(gasPerToken.YCeil64(uint64(gasUnits)))
 }
 
-func (p *FeePolicy) FeeFromGas(gasUnits uint64) iotago.BaseToken {
+func (p *FeePolicy) FeeFromGas(gasUnits GasUnits) iotago.BaseToken {
 	return FeeFromGas(gasUnits, p.GasPerToken)
 }
 
@@ -73,11 +75,11 @@ func (p *FeePolicy) IsEnoughForMinimumFee(availableTokens iotago.BaseToken) bool
 }
 
 // if GasPerToken is '0:0' then set the GasBudget to MaxGasPerRequest
-func (p *FeePolicy) GasBudgetFromTokens(availableTokens iotago.BaseToken, limits ...*Limits) uint64 {
+func (p *FeePolicy) GasBudgetFromTokens(availableTokens iotago.BaseToken, limits ...*Limits) GasUnits {
 	if p.GasPerToken.IsZero() {
 		return limits[0].MaxGasPerRequest
 	}
-	return p.GasPerToken.XFloor64(uint64(availableTokens))
+	return GasUnits(p.GasPerToken.XFloor64(uint64(availableTokens)))
 }
 
 func DefaultFeePolicy() *FeePolicy {

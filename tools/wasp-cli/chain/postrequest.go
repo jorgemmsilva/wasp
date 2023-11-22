@@ -31,7 +31,8 @@ func postRequest(nodeName, chain, hname, fname string, params chainclient.PostRe
 		output := transaction.MakeBasicOutput(
 			chainID.AsAddress(),
 			scClient.ChainClient.KeyPair.Address(),
-			params.Transfer,
+			&params.Transfer.FungibleTokens,
+			0, // TODO this this correct? does it need to be a parameter?
 			&isc.RequestMetadata{
 				SenderContract: isc.EmptyContractIdentity(),
 				TargetContract: isc.Hn(hname),
@@ -40,7 +41,7 @@ func postRequest(nodeName, chain, hname, fname string, params chainclient.PostRe
 				Allowance:      params.Allowance,
 				GasBudget:      params.GasBudget(),
 			},
-			isc.SendOptions{},
+			[]iotago.UnlockCondition{},
 		)
 		util.SDAdjustmentPrompt(output)
 	}

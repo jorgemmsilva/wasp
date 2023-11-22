@@ -19,7 +19,6 @@ var SkipCheckVersions bool
 
 func WaspClientForHostName(name string) *apiclient.APIClient {
 	apiAddress := config.MustWaspAPIURL(name)
-	L1Client() // this will fill parameters.L1() with data from the L1 node
 	log.Verbosef("using Wasp host %s\n", apiAddress)
 
 	client, err := apiextensions.WaspAPIClientByHostName(apiAddress)
@@ -51,16 +50,20 @@ func assertMatchingNodeVersion(name string, client *apiclient.APIClient) {
 	}
 }
 
-func L1Client() l1connection.L1Client {
-	log.Verbosef("using L1 API %s\n", config.L1APIAddress())
+var l1client l1connection.Client
 
-	return l1connection.NewClient(
-		l1connection.Config{
-			APIAddress:    config.L1APIAddress(),
-			FaucetAddress: config.L1FaucetAddress(),
-		},
-		log.HiveLogger(),
-	)
+func L1Client() l1connection.Client {
+	log.Verbosef("using L1 API %s\n", config.L1APIAddress())
+	if l1client == nil {
+		l1client = l1connection.NewClient(
+			l1connection.Config{
+				APIAddress:    config.L1APIAddress(),
+				FaucetAddress: config.L1FaucetAddress(),
+			},
+			log.HiveLogger(),
+		)
+	}
+	return l1client
 }
 
 func ChainClient(waspClient *apiclient.APIClient, chainID isc.ChainID) *chainclient.Client {

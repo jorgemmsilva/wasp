@@ -70,11 +70,11 @@ func TestHornetStartup(t *testing.T) {
 	}
 }
 
-func mustOutputCount(client l1connection.L1Client, myAddress *iotago.Ed25519Address) int {
+func mustOutputCount(client l1connection.Client, myAddress *iotago.Ed25519Address) int {
 	return len(mustOutputMap(client, myAddress))
 }
 
-func mustOutputMap(client l1connection.L1Client, myAddress *iotago.Ed25519Address) map[iotago.OutputID]iotago.Output {
+func mustOutputMap(client l1connection.Client, myAddress *iotago.Ed25519Address) map[iotago.OutputID]iotago.Output {
 	outs, err := client.OutputMap(myAddress)
 	if err != nil {
 		panic(fmt.Errorf("unable to get outputs as a map: %w", err))

@@ -58,7 +58,7 @@ func testSeveralOutputsInASingleCall(t *testing.T, w bool) {
 	tx, _, err := ch.PostRequestSyncTx(req, wallet)
 	require.NoError(t, err)
 
-	storageDeposit := tx.Outputs[0].Deposit()
+	storageDeposit := tx.Outputs[0].BaseTokenAmount()
 	ch.Env.AssertL1BaseTokens(walletAddr, beforeWallet.AssetsL1.BaseTokens+allowance-storageDeposit)
 }
 

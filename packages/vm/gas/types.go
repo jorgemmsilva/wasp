@@ -7,7 +7,7 @@ import (
 
 type BurnCode uint16
 
-type BurnFunction func(x uint64) uint64
+type BurnFunction func(x uint64) GasUnits
 
 type BurnCodeRecord struct {
 	Name string

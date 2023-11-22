@@ -135,7 +135,7 @@ func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AnchorOutputWithID, 
 		"",
 	)
 	anchorOutput := &iotago.AnchorOutput{
-		Amount:        baseAO.GetAnchorOutput().Deposit(),
+		Amount:        baseAO.GetAnchorOutput().BaseTokenAmount(),
 		AccountID:     tcl.chainID.AsAnchorID(),
 		StateIndex:    baseAO.GetStateIndex() + 1,
 		StateMetadata: stateMetadata.Bytes(),

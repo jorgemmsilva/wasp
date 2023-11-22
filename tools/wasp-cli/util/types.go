@@ -17,6 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
@@ -27,7 +28,7 @@ func ValueFromString(vtype, s string, chainID isc.ChainID) []byte {
 	case "address":
 		prefix, addr, err := iotago.ParseBech32(s)
 		log.Check(err)
-		l1Prefix := parameters.NetworkPrefix()
+		l1Prefix := cliclients.L1Client().Bech32HRP()
 		if prefix != l1Prefix {
 			log.Fatalf("address prefix %s does not match L1 prefix %s", prefix, l1Prefix)
 		}
@@ -130,7 +131,7 @@ func ValueToString(vtype string, v []byte) string {
 	case "address":
 		addr, err := codec.DecodeAddress(v)
 		log.Check(err)
-		return addr.Bech32(parameters.NetworkPrefix())
+		return addr.Bech32(cliclients.L1Client().Bech32HRP())
 	case "agentid":
 		aid, err := codec.DecodeAgentID(v)
 		log.Check(err)

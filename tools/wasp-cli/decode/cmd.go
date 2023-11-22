@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/spf13/cobra"
 
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -134,7 +134,9 @@ func initDecodeMetadataCmd() *cobra.Command {
 		Short: "Translates metadata from Hex to a humanly-readable format",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			metadata, err := isc.RequestMetadataFromBytes(hexutil.MustDecode(args[0]))
+			b, err := hexutil.DecodeHex(args[0])
+			log.Check(err)
+			metadata, err := isc.RequestMetadataFromBytes(b)
 			log.Check(err)
 			jsonBytes, err := json.MarshalIndent(metadata, "", "  ")
 			log.Check(err)

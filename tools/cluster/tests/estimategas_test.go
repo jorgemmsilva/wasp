@@ -138,7 +138,7 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 
 	accountsClient := env.Chain.SCClient(accounts.Contract.Hname(), keyPair)
 	par := chainclient.PostRequestParams{
-		Transfer: isc.NewAssetsBaseTokens(output.Deposit()),
+		Transfer: isc.NewAssetsBaseTokens(output.BaseTokenAmount()),
 		Args: map[kv.Key][]byte{
 			accounts.ParamAgentID: targetAgentID.Bytes(),
 		},

@@ -53,7 +53,7 @@ func (c *comparableChainCommitteeID) Key() comparableChainCommitteeIDKey {
 }
 
 func (c *comparableChainCommitteeID) String() string {
-	return fmt.Sprintf("%s-%s", c.chainID, c.address.Bech32(parameters.NetworkPrefix()))
+	return fmt.Sprintf("%s-%s", c.chainID, c.address.String())
 }
 
 type consensusState struct {
@@ -88,15 +88,13 @@ type jsonConsensusState struct {
 }
 
 func (c *consensusState) MarshalJSON() ([]byte, error) {
-	chainIDBech32 := c.identifier.chainID.AsAddress().Bech32(parameters.NetworkPrefix())
-
-	jAddressRaw, err := parameters.L1API().Underlying().MapEncode(context.Background(), c.identifier.address)
+	jAddressRaw, err := iotago.CommonSerixAPI().MapEncode(context.Background(), c.identifier.address)
 	if err != nil {
 		return nil, err
 	}
 
 	return json.Marshal(&jsonConsensusState{
-		ChainID:          chainIDBech32,
+		ChainID:          c.identifier.chainID.String(),
 		CommitteeAddress: jAddressRaw,
 		LogIndex:         c.LogIndex.AsUint32(),
 	})
@@ -114,7 +112,7 @@ func (c *consensusState) UnmarshalJSON(bytes []byte) error {
 	}
 
 	var committeeAddress iotago.Address
-	err = parameters.L1API().Underlying().MapDecode(context.Background(), j.CommitteeAddress.Values(), &committeeAddress)
+	err = iotago.CommonSerixAPI().MapDecode(context.Background(), j.CommitteeAddress.Values(), &committeeAddress)
 	if err != nil {
 		return err
 	}

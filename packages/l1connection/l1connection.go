@@ -12,9 +12,9 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
-	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -95,14 +95,14 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	// TODO how to get the current epoch
 	bech32Addr := myAddress.Bech32(c.API().ProtocolParameters().Bech32HRP())
 	queries := []nodeclient.IndexerQuery{
-		&apimodels.BasicOutputsQuery{AddressBech32: bech32Addr},
-		&apimodels.FoundriesQuery{AccountAddressBech32: bech32Addr},
-		&apimodels.NFTsQuery{AddressBech32: bech32Addr},
-		&apimodels.AnchorsQuery{
+		&api.BasicOutputsQuery{AddressBech32: bech32Addr},
+		&api.FoundriesQuery{AccountAddressBech32: bech32Addr},
+		&api.NFTsQuery{AddressBech32: bech32Addr},
+		&api.AnchorsQuery{
 			GovernorBech32: bech32Addr,
 			// IssuerBech32:                     "", // TODO needed? prob not
 		},
-		&apimodels.AccountsQuery{AddressBech32: bech32Addr},
+		&api.AccountsQuery{AddressBech32: bech32Addr},
 	}
 
 	result := make(map[iotago.OutputID]iotago.Output)
@@ -223,7 +223,7 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 
 func (c *l1client) GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error) {
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
-	outputID, stateOutput, _, err := c.indexerClient.Anchor(ctxWithTimeout, anchorID)
+	outputID, stateOutput, _, err := c.indexerClient.Anchor(ctxWithTimeout, anchorID.ToAddress().(*iotago.AnchorAddress))
 	cancelContext()
 	return *outputID, stateOutput, err
 }

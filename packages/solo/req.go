@@ -18,6 +18,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/testutil"
 
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -25,6 +26,7 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	vmerrors "github.com/iotaledger/wasp/packages/vm/core/errors"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 	"github.com/iotaledger/wasp/packages/vm/viewcontext"
 )
 
@@ -36,7 +38,7 @@ type CallParams struct {
 	assets     *isc.Assets // ignored off-ledger
 	nft        *isc.NFT
 	allowance  *isc.Assets
-	gasBudget  uint64
+	gasBudget  gas.GasUnits
 	nonce      uint64 // ignored for on-ledger
 	params     dict.Dict
 	sender     iotago.Address
@@ -125,11 +127,11 @@ func (r *CallParams) WithNFT(nft *isc.NFT) *CallParams {
 	return r
 }
 
-func (r *CallParams) GasBudget() uint64 {
+func (r *CallParams) GasBudget() gas.GasUnits {
 	return r.gasBudget
 }
 
-func (r *CallParams) WithGasBudget(gasBudget uint64) *CallParams {
+func (r *CallParams) WithGasBudget(gasBudget gas.GasUnits) *CallParams {
 	r.gasBudget = gasBudget
 	return r
 }
@@ -224,6 +226,7 @@ func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*
 		req.nft,
 		ch.Env.SlotIndex(),
 		ch.Env.disableAutoAdjustStorageDeposit,
+		testutil.L1API,
 	)
 	if err != nil {
 		return nil, err
@@ -357,7 +360,7 @@ func (ch *Chain) PostRequestSyncExt(req *CallParams, keyPair *cryptolib.KeyPair)
 // any changes in the ledger. It returns the amount of gas consumed.
 // if useFakeBalance is `true` the request will be executed as if the sender had enough base tokens to cover the maximum gas allowed
 // WARNING: Gas estimation is just an "estimate", there is no guarantees that the real call will bear the same cost, due to the turing-completeness of smart contracts
-func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair, useFakeBudget ...bool) (gas uint64, gasFee iotago.BaseToken, err error) {
+func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair, useFakeBudget ...bool) (gas gas.GasUnits, gasFee iotago.BaseToken, err error) {
 	reqCopy := *req
 	if len(useFakeBudget) > 0 && useFakeBudget[0] {
 		reqCopy.WithGasBudget(0)
@@ -376,7 +379,7 @@ func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair
 // any changes in the ledger. It returns the amount of gas consumed.
 // if useMaxBalance is `true` the request will be executed as if the sender had enough base tokens to cover the maximum gas allowed
 // WARNING: Gas estimation is just an "estimate", there is no guarantees that the real call will bear the same cost, due to the turing-completeness of smart contracts
-func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPair, useMaxBalance ...bool) (gas uint64, gasFee iotago.BaseToken, err error) {
+func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPair, useMaxBalance ...bool) (gas gas.GasUnits, gasFee iotago.BaseToken, err error) {
 	reqCopy := *req
 	if len(useMaxBalance) > 0 && useMaxBalance[0] {
 		reqCopy.WithGasBudget(0)
@@ -399,7 +402,7 @@ func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptoli
 		req.Build(ch.ChainID.AsAddress()),
 		req.nft,
 	)
-	storageDeposit, err := parameters.Storage().MinDeposit(out)
+	storageDeposit, err := testutil.L1API.StorageScoreStructure().MinDeposit(out)
 	require.NoError(ch.Env.T, err)
 
 	reqDeposit := iotago.BaseToken(0)

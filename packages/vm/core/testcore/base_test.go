@@ -25,6 +25,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/vm/core/testcore/sbtests/sbtestsc"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 func GetStorageDeposit(tx *iotago.Transaction) []iotago.BaseToken {
@@ -312,7 +313,7 @@ func TestEstimateGas(t *testing.T) {
 		return n
 	}
 
-	var estimatedGas uint64
+	var estimatedGas gas.GasUnits
 	var estimatedGasFee iotago.BaseToken
 	{
 		keyPair, _ := env.NewKeyPairWithFunds()
@@ -331,7 +332,7 @@ func TestEstimateGas(t *testing.T) {
 	for _, testCase := range []struct {
 		Desc          string
 		L2Balance     iotago.BaseToken
-		GasBudget     uint64
+		GasBudget     gas.GasUnits
 		ExpectedError string
 	}{
 		{

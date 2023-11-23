@@ -125,7 +125,7 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 		func() {
 			ctx.Gas().Burn(
 				gas.BurnCodeEVM1P,
-				gas.EVMGasToISC(result.UsedGas, &chainInfo.GasFeePolicy.EVMGasRatio),
+				uint64(gas.EVMGasToISC(result.UsedGas, &chainInfo.GasFeePolicy.EVMGasRatio)),
 			)
 		},
 	)
@@ -156,7 +156,7 @@ func applyTransaction(ctx isc.Sandbox) dict.Dict {
 
 	// make sure we always store the EVM tx/receipt in the BlockchainDB, even
 	// if the ISC request is reverted
-	ctx.Privileged().OnWriteReceipt(func(evmPartition kv.KVStore, _ uint64) {
+	ctx.Privileged().OnWriteReceipt(func(evmPartition kv.KVStore, _ gas.GasUnits) {
 		saveExecutedTx(evmPartition, chainInfo, tx, receipt)
 	})
 	// revert the changes in the state / txbuilder in case of error
@@ -428,7 +428,7 @@ func callContract(ctx isc.Sandbox) dict.Dict {
 		ctx.Privileged().GasBurnEnable(true)
 		gasErr := panicutil.CatchPanic(
 			func() {
-				ctx.Gas().Burn(gas.BurnCodeEVM1P, gas.EVMGasToISC(res.UsedGas, &gasRatio))
+				ctx.Gas().Burn(gas.BurnCodeEVM1P, uint64(gas.EVMGasToISC(res.UsedGas, &gasRatio)))
 			},
 		)
 		ctx.Privileged().GasBurnEnable(false)
@@ -463,7 +463,7 @@ func newL1Deposit(ctx isc.Sandbox) dict.Dict {
 	txData = append(txData, codec.Encode(ctx.StateAnchor().StateIndex+1)...)
 	txData = append(txData, codec.Encode(ctx.RequestIndex())...)
 	chainInfo := ctx.ChainInfo()
-	gasPrice := chainInfo.GasFeePolicy.GasPriceWei(parameters.L1().BaseToken.Decimals)
+	gasPrice := chainInfo.GasFeePolicy.GasPriceWei(ctx.TokenInfo().Decimals)
 	tx := types.NewTransaction(nonce, addr, wei, 0, gasPrice, txData)
 
 	// create a fake receipt
@@ -474,7 +474,7 @@ func newL1Deposit(ctx isc.Sandbox) dict.Dict {
 	}
 	receipt.Bloom = types.CreateBloom(types.Receipts{receipt})
 
-	ctx.Privileged().OnWriteReceipt(func(evmPartition kv.KVStore, gasBurned uint64) {
+	ctx.Privileged().OnWriteReceipt(func(evmPartition kv.KVStore, gasBurned gas.GasUnits) {
 		receipt.GasUsed = gas.ISCGasBurnedToEVM(gasBurned, &chainInfo.GasFeePolicy.EVMGasRatio)
 		receipt.CumulativeGasUsed = createBlockchainDB(evmPartition, chainInfo).GetPendingCumulativeGasUsed() + receipt.GasUsed
 		createBlockchainDB(evmPartition, ctx.ChainInfo()).AddTransaction(tx, receipt)

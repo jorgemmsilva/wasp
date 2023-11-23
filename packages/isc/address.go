@@ -1,11 +1,34 @@
 package isc
 
 import (
+	"fmt"
 	"math"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
+
+// TODO: copied from iota.go/address.go -- should be made public
+func newAddress(addressType iotago.AddressType) (address iotago.Address, err error) {
+	switch addressType {
+	case iotago.AddressEd25519:
+		return &iotago.Ed25519Address{}, nil
+	case iotago.AddressAccount:
+		return &iotago.AccountAddress{}, nil
+	case iotago.AddressNFT:
+		return &iotago.NFTAddress{}, nil
+	case iotago.AddressAnchor:
+		return &iotago.AnchorAddress{}, nil
+	case iotago.AddressImplicitAccountCreation:
+		return &iotago.ImplicitAccountCreationAddress{}, nil
+	case iotago.AddressMulti:
+		return &iotago.MultiAddress{}, nil
+	case iotago.AddressRestricted:
+		return &iotago.RestrictedAddress{}, nil
+	default:
+		return nil, fmt.Errorf("no handler for address type %d", addressType)
+	}
+}
 
 const addressIsNil rwutil.Kind = 0x80
 
@@ -15,8 +38,8 @@ func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
 		return nil
 	}
 	rr.PushBack().WriteKind(kind)
-	var addr iotago.Address
-	rr.ReadSerialized(&addr, math.MaxUint16, address.Size())
+	address, rr.Err = newAddress(iotago.AddressType(kind))
+	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
 	return address
 }
 

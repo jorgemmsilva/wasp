@@ -13,6 +13,7 @@ func BasicOutputFromPostData(
 	senderAddress iotago.Address,
 	senderContract isc.ContractIdentity,
 	par isc.RequestParameters,
+	l1API iotago.API,
 ) *iotago.BasicOutput {
 	metadata := par.Metadata
 	if metadata == nil {
@@ -36,7 +37,7 @@ func BasicOutputFromPostData(
 		par.UnlockConditions,
 	)
 	if par.AdjustToMinimumStorageDeposit {
-		return AdjustToMinimumStorageDeposit(ret)
+		return AdjustToMinimumStorageDeposit(ret, l1API)
 	}
 	return ret
 }
@@ -89,7 +90,7 @@ func NFTOutputFromPostData(
 	if len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0] {
 		panic("inconsistency: len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0]")
 	}
-	basicOutput := BasicOutputFromPostData(senderAddress, senderContract, par)
+	basicOutput := BasicOutputFromPostData(senderAddress, senderContract, par, l1API)
 	out := NFTOutputFromBasicOutput(basicOutput, nft)
 
 	if !par.AdjustToMinimumStorageDeposit {

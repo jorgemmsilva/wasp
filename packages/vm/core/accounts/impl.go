@@ -197,7 +197,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 	assets := allowance.Clone()
 
 	// deduct the gas reserve GAS2 from the allowance, if possible
-	gasReserve := ctx.Params().MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest)
+	gasReserve := ctx.Params().MustGetUint64(ParamGasReserve, uint64(gas.LimitsDefault.MinGasPerRequest))
 	// FIXME: add a solo test for FuncTransferAccountToChain and fix the ParamGasReserve logic
 	/*
 		if allowance.BaseTokens < gasReserve {
@@ -223,7 +223,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 			EntryPoint:     FuncTransferAllowanceTo.Hname(),
 			Allowance:      allowance,
 			Params:         dict.Dict{ParamAgentID: callerContract.Bytes()},
-			GasBudget:      gasReserve,
+			GasBudget:      gas.GasUnits(gasReserve),
 		},
 	})
 	ctx.Log().Debugf("accounts.transferAccountToChain.success. Sent to contract %s: %s",

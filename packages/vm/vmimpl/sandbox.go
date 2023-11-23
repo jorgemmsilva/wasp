@@ -83,7 +83,7 @@ func (s *contractSandbox) Send(par isc.RequestParameters) {
 
 func (s *contractSandbox) EstimateRequiredStorageDeposit(par isc.RequestParameters) iotago.BaseToken {
 	s.Ctx.GasBurn(gas.BurnCodeEstimateStorageDepositCost)
-	return s.reqctx.estimateRequiredStorageDeposit(par)
+	return s.reqctx.estimateRequiredStorageDeposit(par, s.reqctx.L1API())
 }
 
 func (s *contractSandbox) State() kv.KVStore {

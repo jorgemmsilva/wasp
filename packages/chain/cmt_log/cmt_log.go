@@ -208,7 +208,7 @@ func New(
 	}
 	//
 	// Log important info.
-	log.Infof("Committee: N=%v, F=%v, address=%v, betch32=%v", n, f, cmtAddr.String(), cmtAddr.Bech32(parameters.NetworkPrefix()))
+	log.Infof("Committee: N=%v, F=%v, address=%v", n, f, cmtAddr.String())
 	for i := range nodePKs {
 		log.Infof("Committee node[%v]=%v", i, nodePKs[i])
 	}

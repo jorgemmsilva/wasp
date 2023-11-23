@@ -12,7 +12,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
@@ -81,12 +80,11 @@ func (h *magicContractHandler) GetAllowance(from, to common.Address) iscmagic.IS
 
 // handler for ISCSandbox::getBaseTokenProperties
 func (h *magicContractHandler) GetBaseTokenProperties() iscmagic.ISCTokenProperties {
-	l1 := parameters.L1()
 	return iscmagic.ISCTokenProperties{
-		Name:         l1.BaseToken.Name,
-		TickerSymbol: l1.BaseToken.TickerSymbol,
-		Decimals:     uint8(l1.BaseToken.Decimals),
-		TotalSupply:  big.NewInt(int64(l1.Protocol.TokenSupply())),
+		Name:         h.ctx.TokenInfo().Name,
+		TickerSymbol: h.ctx.TokenInfo().TickerSymbol,
+		Decimals:     uint8(h.ctx.TokenInfo().Decimals),
+		TotalSupply:  big.NewInt(int64(h.ctx.L1API().ProtocolParameters().TokenSupply())),
 	}
 }
 
@@ -113,7 +111,7 @@ func (h *magicContractHandler) GetNativeTokenID(foundrySN uint32) iscmagic.Nativ
 		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
-	_, err := parameters.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
+	_, err := h.ctx.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
 	h.ctx.RequireNoError(err)
 	nativeTokenID := out.MustNativeTokenID()
 	return iscmagic.WrapNativeTokenID(nativeTokenID)
@@ -127,7 +125,7 @@ func (h *magicContractHandler) GetNativeTokenScheme(foundrySN uint32) iotago.Sim
 		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
-	_, err := parameters.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
+	_, err := h.ctx.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
 	h.ctx.RequireNoError(err)
 	s, ok := out.TokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {

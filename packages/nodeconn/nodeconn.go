@@ -27,9 +27,9 @@ import (
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	inx "github.com/iotaledger/inx/go"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
-	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/util"
@@ -141,11 +141,14 @@ func newCtxWithTimeout(ctx context.Context, defaultTimeout time.Duration, timeou
 }
 
 func waitForL1ToBeConnected(ctx context.Context, log *logger.Logger, nodeClient *nodeclient.Client) error {
-	inxGetPeers := func(ctx context.Context) ([]*apimodels.PeerInfo, error) {
+	inxGetPeers := func(ctx context.Context) ([]*api.PeerInfo, error) {
 		ctx, cancel := context.WithTimeout(ctx, inxTimeoutGetPeers)
 		defer cancel()
-
-		peersResp, err := nodeClient.Peers(ctx)
+		mgmClient, err := nodeClient.Management(ctx)
+		if err != nil {
+			return nil, err
+		}
+		peersResp, err := mgmClient.Peers(ctx)
 		if err != nil {
 			return nil, err
 		}

@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -50,7 +51,7 @@ func TestNoSenderFeature(t *testing.T) {
 		AddBaseTokens(baseTokensToSend).
 		AddAllowanceBaseTokens(allowance).
 		AddAllowanceNativeTokens(nativeTokenID, nativeTokenAmount).
-		WithGasBudget(uint64(gasFee)),
+		WithMaxAffordableGasBudget(),
 		wallet)
 	require.NoError(t, err)
 
@@ -82,6 +83,7 @@ func TestNoSenderFeature(t *testing.T) {
 		nft,
 		env.SlotIndex(),
 		false,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -104,6 +106,7 @@ func TestNoSenderFeature(t *testing.T) {
 		tx.Transaction.TransactionEssence.Inputs,
 		tx.Transaction.Outputs,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
@@ -171,6 +174,7 @@ func TestSendBack(t *testing.T) {
 		nil,
 		env.SlotIndex(),
 		false,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -195,6 +199,7 @@ func TestSendBack(t *testing.T) {
 		tx.Transaction.TransactionEssence.Inputs,
 		tx.Transaction.Outputs,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
@@ -238,6 +243,7 @@ func TestBadMetadata(t *testing.T) {
 		nil,
 		env.SlotIndex(),
 		false,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -262,6 +268,7 @@ func TestBadMetadata(t *testing.T) {
 		tx.Transaction.TransactionEssence.Inputs,
 		tx.Transaction.Outputs,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 	require.Zero(t, ch.L2BaseTokens(isc.NewAddressAgentID(addr)))

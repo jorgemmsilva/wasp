@@ -242,7 +242,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 			nil,
 			nil,
 		)
-		req, err := isc.OnLedgerFromUTXO(transaction.AdjustToMinimumStorageDeposit(out), iotago.OutputID{})
+		req, err := isc.OnLedgerFromUTXO(transaction.AdjustToMinimumStorageDeposit(out, testutil.L1API), iotago.OutputID{})
 		require.NoError(t, err)
 		sdCost := txb.Consume(req)
 		mockedAccounts.assets.Add(&req.Assets().FungibleTokens)
@@ -264,6 +264,7 @@ func TestTxBuilderConsistency(t *testing.T) {
 				AdjustToMinimumStorageDeposit: true,
 				Metadata:                      &isc.SendMetadata{},
 			},
+			testutil.L1API,
 		)
 		sdAdjust := txb.AddOutput(out)
 		if !mockedAccounts.assets.Spend(outAssets) {
@@ -487,14 +488,17 @@ func TestSerDe(t *testing.T) {
 			Allowance:      isc.NewEmptyAssets(),
 			GasBudget:      0,
 		}
-		out := transaction.AdjustToMinimumStorageDeposit(transaction.MakeBasicOutput(
-			&iotago.Ed25519Address{},
-			&iotago.Ed25519Address{1, 2, 3},
-			isc.NewEmptyFungibleTokens(),
-			0,
-			&reqMetadata,
-			nil,
-		))
+		out := transaction.AdjustToMinimumStorageDeposit(
+			transaction.MakeBasicOutput(
+				&iotago.Ed25519Address{},
+				&iotago.Ed25519Address{1, 2, 3},
+				isc.NewEmptyFungibleTokens(),
+				0,
+				&reqMetadata,
+				nil,
+			),
+			testutil.L1API,
+		)
 		data, err := testutil.L1API.Encode(out)
 		require.NoError(t, err)
 		outBack := &iotago.BasicOutput{}

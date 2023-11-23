@@ -1,6 +1,8 @@
 package gas
 
-import "github.com/iotaledger/wasp/packages/util"
+import (
+	"github.com/iotaledger/wasp/packages/util"
+)
 
 // <ISC gas> = <EVM Gas> * <A> / <B>
 var DefaultEVMGasRatio = util.Ratio32{A: 1, B: 1}
@@ -10,9 +12,9 @@ func ISCGasBudgetToEVM(iscGasBudget GasUnits, gasRatio *util.Ratio32) uint64 {
 	return gasRatio.YFloor64(uint64(iscGasBudget))
 }
 
-func ISCGasBurnedToEVM(iscGasBurned uint64, gasRatio *util.Ratio32) uint64 {
+func ISCGasBurnedToEVM(iscGasBurned GasUnits, gasRatio *util.Ratio32) uint64 {
 	// estimated EVM gas = ceil(ISC gas burned * B / A)
-	return gasRatio.YCeil64(iscGasBurned)
+	return gasRatio.YCeil64(uint64(iscGasBurned))
 }
 
 func EVMGasToISC(evmGas uint64, gasRatio *util.Ratio32) GasUnits {

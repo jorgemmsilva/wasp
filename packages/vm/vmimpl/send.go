@@ -47,6 +47,7 @@ func (reqctx *requestContext) doSend(caller isc.ContractIdentity, par isc.Reques
 		reqctx.vm.task.Inputs.AnchorOutput.AnchorID.ToAddress(),
 		caller,
 		par,
+		reqctx.L1API(),
 	)
 	reqctx.sendOutput(out)
 }

@@ -32,7 +32,7 @@ func NewTransferTransaction(
 		unlockConditions,
 	)
 	if !disableAutoAdjustStorageDeposit {
-		output = AdjustToMinimumStorageDeposit(output)
+		output = AdjustToMinimumStorageDeposit(output, l1API)
 	}
 
 	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(output)
@@ -49,6 +49,7 @@ func NewTransferTransaction(
 		unspentOutputs,
 		NewAssetsWithMana(ftokens.ToAssets(), mana),
 		creationSlot,
+		l1API,
 	)
 	if err != nil {
 		return nil, err
@@ -61,6 +62,7 @@ func NewTransferTransaction(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }
 
@@ -82,7 +84,7 @@ func NewRequestTransaction(
 
 	out := MakeRequestTransactionOutput(senderAddress, request, nft)
 	if !disableAutoAdjustStorageDeposit {
-		out = AdjustToMinimumStorageDeposit(out)
+		out = AdjustToMinimumStorageDeposit(out, l1API)
 	}
 
 	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(out)
@@ -103,6 +105,7 @@ func NewRequestTransaction(
 		outputs,
 		outputAssets,
 		creationSlot,
+		l1API,
 	)
 
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
@@ -110,6 +113,7 @@ func NewRequestTransaction(
 		unspentOutputs,
 		outputAssets,
 		creationSlot,
+		l1API,
 	)
 	if err != nil {
 		return nil, err
@@ -122,6 +126,7 @@ func NewRequestTransaction(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }
 
@@ -189,6 +194,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 	outputs iotago.TxEssenceOutputs,
 	outputAssets *AssetsWithMana,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 ) (
 	iotago.TxEssenceOutputs,
 	*AssetsWithMana,
@@ -211,7 +217,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 		}
 		// found the needed output
 		outputs = append(outputs, updateID(out, outID))
-		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot)
+		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot, l1API)
 		if err != nil {
 			panic(err)
 		}

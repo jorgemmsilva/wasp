@@ -120,8 +120,12 @@ func (id ChainID) ShortString() string {
 }
 
 // String human-readable form (bech32)
-func (id ChainID) String(bech32HRP iotago.NetworkPrefix) string {
+func (id ChainID) Bech32(bech32HRP iotago.NetworkPrefix) string {
 	return id.AsAddress().Bech32(bech32HRP)
+}
+
+func (id ChainID) String() string {
+	return id.AsAnchorID().ToHex()
 }
 
 func (id *ChainID) Read(r io.Reader) error {

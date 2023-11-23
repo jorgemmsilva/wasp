@@ -34,7 +34,7 @@ type AgentID interface {
 	Equals(other AgentID) bool
 	Kind() AgentIDKind
 	Read(r io.Reader) error
-	String(iotago.NetworkPrefix) string
+	String() string
 	Write(w io.Writer) error
 }
 
@@ -109,7 +109,7 @@ func AgentIDToWriter(ww *rwutil.Writer, agent AgentID) {
 }
 
 // AgentIDFromString parses the human-readable string representation
-func AgentIDFromString(s string, bech32HRP iotago.NetworkPrefix) (AgentID, error) {
+func AgentIDFromString(s string) (AgentID, error) {
 	if s == nilAgentIDString {
 		return &NilAgentID{}, nil
 	}
@@ -133,10 +133,7 @@ func AgentIDFromString(s string, bech32HRP iotago.NetworkPrefix) (AgentID, error
 		}
 		return contractAgentIDFromString(contractPart, addrPart)
 	}
-	if strings.HasPrefix(addrPart, string(bech32HRP)) {
-		return addressAgentIDFromString(s)
-	}
-	return nil, errors.New("invalid AgentID string")
+	return addressAgentIDFromString(s)
 }
 
 // NewRandomAgentID creates random AgentID

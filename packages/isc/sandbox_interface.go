@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -52,6 +53,10 @@ type SandboxBase interface {
 	CallView(contractHname Hname, entryPoint Hname, params dict.Dict) dict.Dict
 	// StateR returns the immutable k/v store of the current call (in the context of the smart contract)
 	StateR() kv.KVStoreReader
+	// L1 API returns the L1 api
+	L1API() iotago.API
+	// TokenInfo returns information about the base token
+	TokenInfo() api.InfoResBaseToken
 }
 
 type Params struct {
@@ -198,7 +203,7 @@ type SendMetadata struct {
 	EntryPoint     Hname
 	Params         dict.Dict
 	Allowance      *Assets
-	GasBudget      uint64
+	GasBudget      gas.GasUnits
 }
 
 // Utils implement various utilities which are faster on host side than on wasm VM

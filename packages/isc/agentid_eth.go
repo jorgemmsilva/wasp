@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -76,9 +75,9 @@ func (a *EthereumAddressAgentID) Kind() AgentIDKind {
 	return AgentIDKindEthereumAddress
 }
 
-func (a *EthereumAddressAgentID) String(bech32HRP iotago.NetworkPrefix) string {
+func (a *EthereumAddressAgentID) String() string {
 	// eth.String includes 0x prefix
-	return a.eth.String() + AgentIDStringSeparator + a.chainID.String(bech32HRP)
+	return a.eth.String() + AgentIDStringSeparator + a.chainID.String()
 }
 
 func (a *EthereumAddressAgentID) Read(r io.Reader) error {

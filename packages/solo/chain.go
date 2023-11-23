@@ -27,6 +27,7 @@ import (
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/state/indexedstore"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -571,7 +572,7 @@ func (ch *Chain) GetL2FundsFromFaucet(agentID isc.AgentID, baseTokens ...iotago.
 		masterSeed := []byte("GetL2FundsFromFaucet")
 		i := uint64(0)
 		for {
-			ss := cryptolib.SubSeed(masterSeed, i)
+			ss := cryptolib.SubSeed(masterSeed, i, testutil.L1API.ProtocolParameters().Bech32HRP())
 			key, addr := ch.Env.NewKeyPair(&ss)
 			_, err := ch.Env.GetFundsFromFaucet(addr)
 			require.NoError(ch.Env.T, err)

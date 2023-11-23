@@ -13,8 +13,8 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
-	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -508,7 +508,7 @@ func (ncc *ncChain) queryLatestChainStateAnchorOutput(ctx context.Context) (iota
 	ctx, cancel := newCtxWithTimeout(ctx, inxTimeoutIndexerQuery)
 	defer cancel()
 
-	outputID, output, slot, err := ncc.nodeConn.indexerClient.Anchor(ctx, ncc.chainID.AsAnchorID())
+	outputID, output, slot, err := ncc.nodeConn.indexerClient.Anchor(ctx, ncc.chainID.AsAnchorID().ToAddress().(*iotago.AnchorAddress))
 	if err != nil {
 		return 0, nil, fmt.Errorf("error while fetching chain state output: %w", err)
 	}
@@ -523,11 +523,11 @@ func (ncc *ncChain) queryChainOutputIDs(ctx context.Context) ([]iotago.OutputID,
 
 	falseCondition := false
 	queries := []nodeclient.IndexerQuery{
-		&apimodels.BasicOutputsQuery{AddressBech32: bech32Addr, IndexerStorageDepositParams: apimodels.IndexerStorageDepositParams{
+		&api.BasicOutputsQuery{AddressBech32: bech32Addr, IndexerStorageDepositParams: api.IndexerStorageDepositParams{
 			HasStorageDepositReturn: &falseCondition,
 		}},
-		&apimodels.FoundriesQuery{AccountAddressBech32: bech32Addr},
-		&apimodels.NFTsQuery{AddressBech32: bech32Addr, IndexerStorageDepositParams: apimodels.IndexerStorageDepositParams{
+		&api.FoundriesQuery{AccountAddressBech32: bech32Addr},
+		&api.NFTsQuery{AddressBech32: bech32Addr, IndexerStorageDepositParams: api.IndexerStorageDepositParams{
 			HasStorageDepositReturn: &falseCondition,
 		}},
 	}

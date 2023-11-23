@@ -188,7 +188,7 @@ func (req *OffLedgerRequestData) Sign(key *cryptolib.KeyPair) OffLedgerRequest {
 func (req *OffLedgerRequestData) String(bech32HRP iotago.NetworkPrefix) string {
 	return fmt.Sprintf("offLedgerRequestData::{ ID: %s, sender: %s, target: %s, entrypoint: %s, Params: %s, nonce: %d }",
 		req.ID().String(),
-		req.SenderAccount().String(bech32HRP),
+		req.SenderAccount().String(),
 		req.contract.String(),
 		req.entryPoint.String(),
 		req.Params().String(),

@@ -3,7 +3,6 @@ package testutil
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
-	"github.com/iotaledger/iota.go/v4/nodeclient/apimodels"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 )
 
@@ -19,13 +18,12 @@ const (
 )
 
 var (
-	BaseToken = &apimodels.InfoResBaseToken{
-		Name:            "TestCoin",
-		TickerSymbol:    "TEST",
-		Unit:            "TEST",
-		Subunit:         "testies",
-		Decimals:        6,
-		UseMetricPrefix: false,
+	BaseToken = &api.InfoResBaseToken{
+		Name:         "TestCoin",
+		TickerSymbol: "TEST",
+		Unit:         "TEST",
+		Subunit:      "testies",
+		Decimals:     6,
 	}
 
 	schedulerRate   iotago.WorkScore = 100000
@@ -47,6 +45,5 @@ var (
 		iotago.WithCongestionControlOptions(500, 500, 500, 8*schedulerRate, 5*schedulerRate, schedulerRate, 1000, 100),
 	)
 
-	L1API         = iotago.V3API(testProtoParams)
-	L1APIProvider = api.SingleVersionProvider(L1API) // TODO is this needed?
+	L1API = iotago.V3API(testProtoParams)
 )

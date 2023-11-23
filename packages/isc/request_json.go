@@ -38,7 +38,7 @@ func RequestToJSONObject(request Request, l1API iotago.API) RequestJSON {
 		NFT:           NFTToJSONObject(request.NFT(), l1API),
 		Params:        request.Params().JSONDict(),
 		RequestID:     request.ID().String(),
-		SenderAccount: request.SenderAccount().String(l1API.ProtocolParameters().Bech32HRP()),
+		SenderAccount: request.SenderAccount().String(),
 		TargetAddress: request.TargetAddress().Bech32(l1API.ProtocolParameters().Bech32HRP()),
 	}
 }
@@ -88,7 +88,7 @@ func NFTToJSONObject(nft *NFT, l1API iotago.API) *NFTJSON {
 
 	ownerString := ""
 	if nft.Owner != nil {
-		ownerString = nft.Owner.String(l1API.ProtocolParameters().Bech32HRP())
+		ownerString = nft.Owner.String()
 	}
 
 	return &NFTJSON{

@@ -121,8 +121,8 @@ func (ctx *emulatorContext) Timestamp() uint64 {
 	return timestamp(ctx.sandbox.Timestamp())
 }
 
-func (*emulatorContext) BaseTokensDecimals() uint32 {
-	return parameters.BaseToken().Decimals
+func (ctx *emulatorContext) BaseTokensDecimals() uint32 {
+	return ctx.sandbox.TokenInfo().Decimals
 }
 
 func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.BaseToken {

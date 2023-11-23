@@ -84,7 +84,7 @@ func (reqctx *requestContext) checkReasonToSkipOffLedger() error {
 	}
 
 	if evmTx := offledgerReq.EVMTransaction(); evmTx != nil {
-		if err := evmutil.CheckGasPrice(evmTx, reqctx.vm.chainInfo.GasFeePolicy, reqctx.vm.task.BaseToken.Decimals); err != nil {
+		if err := evmutil.CheckGasPrice(evmTx, reqctx.vm.chainInfo.GasFeePolicy, reqctx.vm.task.TokenInfo.Decimals); err != nil {
 			return err
 		}
 	}

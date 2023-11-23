@@ -69,11 +69,12 @@ func AssetsAndAvailableManaFromOutput(
 	oID iotago.OutputID,
 	o iotago.Output,
 	slotIndex iotago.SlotIndex,
+	l1API iotago.API,
 ) (*AssetsWithMana, error) {
 	assets := isc.AssetsFromOutput(o, oID)
 	mana, err := vm.TotalManaIn(
-		parameters.L1API().ManaDecayProvider(),
-		parameters.Storage(),
+		l1API.ManaDecayProvider(),
+		l1API.StorageScoreStructure(),
 		slotIndex,
 		vm.InputSet{oID: o},
 		vm.RewardsInputSet{},
@@ -84,8 +85,8 @@ func AssetsAndAvailableManaFromOutput(
 	return NewAssetsWithMana(assets, mana), nil
 }
 
-func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
-	storageDeposit := lo.Must(parameters.Storage().MinDeposit(out))
+func AdjustToMinimumStorageDeposit[T iotago.Output](out T, l1API iotago.API) T {
+	storageDeposit := lo.Must(l1API.StorageScoreStructure().MinDeposit(out))
 	if out.BaseTokenAmount() >= storageDeposit {
 		return out
 	}

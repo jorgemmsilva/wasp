@@ -176,6 +176,7 @@ func initChangeGovControllerCmd() *cobra.Command {
 				newGovController,
 				outputSet,
 				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+				cliclients.L1Client().API(),
 				myWallet.KeyPair,
 			)
 			log.Check(err)

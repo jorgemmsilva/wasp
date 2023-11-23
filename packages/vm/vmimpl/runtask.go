@@ -103,6 +103,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 			taskResult.RotationAddress,
 			vmctx.task.Inputs,
 			vmctx.CreationSlot(),
+			task.L1API,
 		)
 		if err != nil {
 			panic(fmt.Sprintf("MakeRotateStateControllerTransaction: %s", err.Error()))

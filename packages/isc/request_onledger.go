@@ -137,7 +137,7 @@ func (req *onLedgerRequestData) GasBudget() (gasBudget uint64, isEVM bool) {
 	if req.requestMetadata == nil {
 		return 0, false
 	}
-	return req.requestMetadata.GasBudget, false
+	return uint64(req.requestMetadata.GasBudget), false
 }
 
 func (req *onLedgerRequestData) ID() RequestID {

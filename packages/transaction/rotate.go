@@ -15,6 +15,7 @@ func NewRotateChainStateControllerTx(
 	chainOutputID iotago.OutputID,
 	chainOutput iotago.Output,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 	kp *cryptolib.KeyPair,
 ) (*iotago.SignedTransaction, error) {
 	o, ok := chainOutput.(*iotago.AnchorOutput)
@@ -70,5 +71,6 @@ func NewRotateChainStateControllerTx(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }

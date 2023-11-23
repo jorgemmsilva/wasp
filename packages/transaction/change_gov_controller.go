@@ -13,6 +13,7 @@ func NewChangeGovControllerTx(
 	newGovController iotago.Address,
 	utxos iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 	wallet *cryptolib.KeyPair,
 ) (*iotago.SignedTransaction, error) {
 	// find the correct chain UTXO
@@ -55,5 +56,6 @@ func NewChangeGovControllerTx(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }

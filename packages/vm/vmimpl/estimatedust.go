@@ -10,7 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 )
 
-func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestParameters) iotago.BaseToken {
+func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestParameters, l1API iotago.API) iotago.BaseToken {
 	par.AdjustToMinimumStorageDeposit = false
 
 	hname := reqctx.CurrentContractHname()
@@ -22,6 +22,7 @@ func (reqctx *requestContext) estimateRequiredStorageDeposit(par isc.RequestPara
 		reqctx.vm.task.Inputs.AnchorOutput.AnchorID.ToAddress(),
 		contractIdentity,
 		par,
+		l1API,
 	)
 	sd, err := reqctx.vm.task.L1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {

@@ -78,7 +78,8 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 	return block
 }
 
-func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutputs) (state.Block, error) {
+// TODO make sure wherever this is called, the API is `().APIForSlot(chainOutputs.AnchorOutputID.CreationSlot())`
+func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutputs, l1API iotago.API) (state.Block, error) {
 	var initParams dict.Dict
 	if originMetadata := chainOutputs.AnchorOutput.FeatureSet().Metadata(); originMetadata != nil {
 		var err error
@@ -87,8 +88,7 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 			return nil, fmt.Errorf("invalid parameters on origin AO, %w", err)
 		}
 	}
-	api := parameters.L1Provider().APIForSlot(chainOutputs.AnchorOutputID.CreationSlot())
-	anchorSD := lo.Must(api.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
+	anchorSD := lo.Must(l1API.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
 	commonAccountAmount := chainOutputs.AnchorOutput.Amount - anchorSD
 	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
 
@@ -100,7 +100,7 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 		return nil, fmt.Errorf("unsupported StateMetadata Version: %v, expect %v", originAOStateMetadata.Version, transaction.StateMetadataSupportedVersion)
 	}
 	if !originBlock.L1Commitment().Equals(originAOStateMetadata.L1Commitment) {
-		l1paramsJSON, err := json.Marshal(parameters.L1())
+		l1paramsJSON, err := json.Marshal(l1API)
 		if err != nil {
 			l1paramsJSON = []byte(fmt.Sprintf("unable to marshalJson l1params: %s", err.Error()))
 		}
@@ -150,6 +150,7 @@ func NewChainOriginTransaction(
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
 	schemaVersion uint32,
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID, error) {
 	walletAddr := keyPair.GetPublicKey().AsEd25519Address()
 
@@ -168,9 +169,6 @@ func NewChainOriginTransaction(
 			&iotago.GovernorAddressUnlockCondition{Address: governanceControllerAddress},
 		},
 		Features: iotago.AnchorOutputFeatures{
-			// SenderFeature included so that SD calculation keeps stable.
-			// SenderFeature will be set to AnchorAddress in the first VM run.
-			&iotago.SenderFeature{Address: walletAddr},
 			&iotago.MetadataFeature{Entries: iotago.MetadataFeatureEntries{"": initParams.Bytes()}},
 			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{
 				"": calcStateMetadata(initParams, deposit, schemaVersion), // NOTE: Updated below.
@@ -178,9 +176,9 @@ func NewChainOriginTransaction(
 		},
 		Mana: depositMana,
 	}
-	anchorSD := lo.Must(parameters.Storage().MinDeposit(anchorOutput))
+	anchorSD := lo.Must(l1API.StorageScoreStructure().MinDeposit(anchorOutput))
 
-	accountSD := accountOutputSD(parameters.L1API())
+	accountSD := accountOutputSD(l1API)
 	minAmount := anchorSD + accountSD + governance.DefaultMinBaseTokensOnCommonAccount
 	if anchorOutput.Amount < minAmount {
 		anchorOutput.Amount = minAmount
@@ -198,6 +196,7 @@ func NewChainOriginTransaction(
 		unspentOutputs,
 		transaction.NewAssetsWithMana(isc.FungibleTokensFromOutput(anchorOutput).ToAssets(), anchorOutput.StoredMana()),
 		creationSlot,
+		l1API,
 	)
 	if err != nil {
 		return nil, nil, isc.ChainID{}, err
@@ -205,9 +204,9 @@ func NewChainOriginTransaction(
 	outputs := iotago.TxEssenceOutputs{anchorOutput}
 	outputs = append(outputs, remainder...)
 	tx := &iotago.Transaction{
-		API: parameters.L1API(),
+		API: l1API,
 		TransactionEssence: &iotago.TransactionEssence{
-			NetworkID:    parameters.L1().Protocol.NetworkID(),
+			NetworkID:    l1API.ProtocolParameters().NetworkID(),
 			Inputs:       txInputs.UTXOInputs(),
 			CreationSlot: creationSlot,
 		},
@@ -226,7 +225,7 @@ func NewChainOriginTransaction(
 	chainID := isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(anchorOutputID))
 
 	return &iotago.SignedTransaction{
-			API:         parameters.L1API(),
+			API:         l1API,
 			Transaction: tx,
 			Unlocks:     transaction.MakeSignatureAndReferenceUnlocks(len(txInputs), sigs[0]),
 		},

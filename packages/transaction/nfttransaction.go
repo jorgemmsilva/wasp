@@ -66,6 +66,7 @@ func NewMintNFTsTransaction(
 		unspentOutputs,
 		outputAssets,
 		creationSlot,
+		l1API,
 	)
 	if err != nil {
 		return nil, err
@@ -77,5 +78,6 @@ func NewMintNFTsTransaction(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }

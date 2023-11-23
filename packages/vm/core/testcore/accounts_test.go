@@ -94,6 +94,7 @@ func TestWithdrawEverything(t *testing.T) {
 			TargetAddress: &iotago.Ed25519Address{},
 			Assets:        isc.NewAssetsBaseTokens(100),
 		},
+		testutil.L1API,
 	)))
 	req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncWithdraw.Name).
 		WithFungibleTokens(isc.NewAssetsBaseTokens(l2balance)).AddAllowance(isc.NewAssetsBaseTokens(sd))

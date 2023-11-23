@@ -8,6 +8,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -43,6 +44,10 @@ type ViewContext struct {
 	gasBurnEnabled        bool
 	gasBurnLoggingEnabled bool
 	callStack             []*callContext
+
+	// TODO this is not set anywhere!!
+	l1API     iotago.API
+	tokenInfo api.InfoResBaseToken
 }
 
 var _ execution.WaspCallContext = &ViewContext{}
@@ -320,4 +325,12 @@ func (ctx *ViewContext) GasBurnEnable(enable bool) {
 
 func (ctx *ViewContext) GasBurnEnabled() bool {
 	return ctx.gasBurnEnabled
+}
+
+func (ctx *ViewContext) L1API() iotago.API {
+	return ctx.l1API
+}
+
+func (ctx *ViewContext) TokenInfo() api.InfoResBaseToken {
+	return ctx.tokenInfo
 }

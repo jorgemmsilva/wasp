@@ -8,6 +8,7 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/assert"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -163,4 +164,12 @@ func (s *SandboxBase) CallView(contractHname, entryPoint isc.Hname, params dict.
 
 func (s *SandboxBase) StateR() kv.KVStoreReader {
 	return s.Ctx.ContractStateReaderWithGasBurn()
+}
+
+func (s *SandboxBase) L1API() iotago.API {
+	return s.Ctx.L1API()
+}
+
+func (s *SandboxBase) TokenInfo() api.InfoResBaseToken {
+	return s.Ctx.TokenInfo()
 }

@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // ISCChainID matches the type definition in ISCTypes.sol
@@ -309,7 +310,7 @@ type ISCSendMetadata struct {
 	Entrypoint     uint32
 	Params         ISCDict
 	Allowance      ISCAssets
-	GasBudget      uint64
+	GasBudget      gas.GasUnits
 }
 
 func WrapISCSendMetadata(metadata isc.SendMetadata) ISCSendMetadata {

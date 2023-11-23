@@ -13,11 +13,13 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/testutil"
 
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -27,11 +29,11 @@ import (
 // tests.
 type jsonRPCSoloBackend struct {
 	Chain     *Chain
-	baseToken *parameters.BaseTokenInfo
+	baseToken api.InfoResBaseToken
 	snapshots []*Snapshot
 }
 
-func newJSONRPCSoloBackend(chain *Chain, baseToken *parameters.BaseTokenInfo) jsonrpc.ChainBackend {
+func newJSONRPCSoloBackend(chain *Chain, baseToken api.InfoResBaseToken) jsonrpc.ChainBackend {
 	return &jsonRPCSoloBackend{Chain: chain, baseToken: baseToken}
 }
 
@@ -41,11 +43,11 @@ func (b *jsonRPCSoloBackend) EVMSendTransaction(tx *types.Transaction) error {
 }
 
 func (b *jsonRPCSoloBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.Chain, chainOutputs, callMsg)
+	return chainutil.EVMCall(b.Chain, chainOutputs, callMsg, b.baseToken.Decimals)
 }
 
 func (b *jsonRPCSoloBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.Chain, chainOutputs, callMsg)
+	return chainutil.EVMEstimateGas(b.Chain, chainOutputs, callMsg, b.baseToken.Decimals)
 }
 
 func (b *jsonRPCSoloBackend) EVMTraceTransaction(
@@ -93,7 +95,7 @@ func (b *jsonRPCSoloBackend) ISCStateByTrieRoot(trieRoot trie.Hash) (state.State
 	return b.Chain.store.StateByTrieRoot(trieRoot)
 }
 
-func (b *jsonRPCSoloBackend) BaseToken() *parameters.BaseTokenInfo {
+func (b *jsonRPCSoloBackend) BaseToken() api.InfoResBaseToken {
 	return b.baseToken
 }
 
@@ -115,6 +117,10 @@ func (b *jsonRPCSoloBackend) TakeSnapshot() (int, error) {
 	return len(b.snapshots) - 1, nil
 }
 
+func (b *jsonRPCSoloBackend) BaseTokenDecimals() uint32 {
+	return b.baseToken.Decimals
+}
+
 /*
 indexDbEngine hivedb.Engine,
 indexDbPath string,
@@ -128,7 +134,7 @@ path.Join(indexDbPath, backend.ISCChainID().String())
 */
 func (ch *Chain) EVM() *jsonrpc.EVMChain {
 	return jsonrpc.NewEVMChain(
-		newJSONRPCSoloBackend(ch, parameters.BaseToken()),
+		newJSONRPCSoloBackend(ch, *testutil.BaseToken),
 		ch.Env.publisher,
 		true,
 		ch.Env.getDB(dbKindEVMJSONRPCIndex, ch.ChainID),

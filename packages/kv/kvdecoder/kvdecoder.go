@@ -227,10 +227,10 @@ func (p *kvdecoder) MustGetBytes(key kv.Key, def ...[]byte) []byte {
 	return ret
 }
 
-func (p *kvdecoder) GetTokenScheme(key kv.Key, def ...iotago.TokenScheme) (iotago.TokenScheme, error) {
+func (p *kvdecoder) GetTokenScheme(key kv.Key, l1API iotago.API, def ...iotago.TokenScheme) (iotago.TokenScheme, error) {
 	v := p.Get(key)
 	if len(v) > 0 {
-		return codec.DecodeTokenScheme(v, def...)
+		return codec.DecodeTokenScheme(v, l1API, def...)
 	}
 	if len(def) == 0 {
 		return nil, fmt.Errorf("GetTokenScheme: mandatory parameter '%s' does not exist", key)
@@ -238,8 +238,8 @@ func (p *kvdecoder) GetTokenScheme(key kv.Key, def ...iotago.TokenScheme) (iotag
 	return def[0], nil
 }
 
-func (p *kvdecoder) MustGetTokenScheme(key kv.Key, def ...iotago.TokenScheme) iotago.TokenScheme {
-	ret, err := p.GetTokenScheme(key, def...)
+func (p *kvdecoder) MustGetTokenScheme(key kv.Key, l1API iotago.API, def ...iotago.TokenScheme) iotago.TokenScheme {
+	ret, err := p.GetTokenScheme(key, l1API, def...)
 	p.check(err)
 	return ret
 }

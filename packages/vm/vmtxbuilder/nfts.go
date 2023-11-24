@@ -108,7 +108,7 @@ func (txb *AnchorTransactionBuilder) internalNFTOutputFromRequest(nftOutput *iot
 
 	// set amount to the min SD
 	var err error
-	out.Amount, err = txb.L1API.StorageScoreStructure().MinDeposit(out)
+	out.Amount, err = txb.l1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}
@@ -207,7 +207,7 @@ func (txb *AnchorTransactionBuilder) MintNFT(addr iotago.Address, immutableMetad
 		},
 	}
 	var err error
-	nftOutput.Amount, err = txb.L1API.StorageScoreStructure().MinDeposit(nftOutput)
+	nftOutput.Amount, err = txb.l1API.StorageScoreStructure().MinDeposit(nftOutput)
 	if err != nil {
 		panic(err)
 	}

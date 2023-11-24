@@ -18,7 +18,7 @@ const (
 )
 
 var (
-	BaseToken = &api.InfoResBaseToken{
+	TokenInfo = &api.InfoResBaseToken{
 		Name:         "TestCoin",
 		TickerSymbol: "TEST",
 		Unit:         "TEST",

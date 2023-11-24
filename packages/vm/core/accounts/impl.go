@@ -239,7 +239,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 func foundryCreateNew(ctx isc.Sandbox) dict.Dict {
 	ctx.Log().Debugf("accounts.foundryCreateNew")
 
-	tokenScheme := ctx.Params().MustGetTokenScheme(ParamTokenScheme, &iotago.SimpleTokenScheme{})
+	tokenScheme := ctx.Params().MustGetTokenScheme(ParamTokenScheme, ctx.L1API(), &iotago.SimpleTokenScheme{})
 	ts := util.MustTokenScheme(tokenScheme)
 	ts.MeltedTokens = util.Big0
 	ts.MintedTokens = util.Big0
@@ -274,7 +274,7 @@ func foundryDestroy(ctx isc.Sandbox) dict.Dict {
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(state, sn, accountID)
+	out, _ := GetFoundryOutput(state, sn, accountID, ctx.L1API())
 	simpleTokenScheme := util.MustTokenScheme(out.TokenScheme)
 	if !util.IsZeroBigInt(big.NewInt(0).Sub(simpleTokenScheme.MintedTokens, simpleTokenScheme.MeltedTokens)) {
 		panic(errFoundryWithCirculatingSupply)
@@ -313,7 +313,7 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(state, sn, accountID)
+	out, _ := GetFoundryOutput(state, sn, accountID, ctx.L1API())
 	nativeTokenID, err := out.NativeTokenID()
 	ctx.RequireNoError(err, "internal")
 

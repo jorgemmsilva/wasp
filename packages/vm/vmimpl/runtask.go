@@ -146,7 +146,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	// save the OutputID of the newly created tokens, foundries and NFTs in the previous block
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex)
+			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex, vmctx.task.L1API)
 		})
 	})
 
@@ -158,6 +158,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 			NFTOutput:           vmctx.loadNFT,
 			TotalFungibleTokens: vmctx.loadTotalFungibleTokens,
 		},
+		vmctx.task.L1API,
 	)
 }
 

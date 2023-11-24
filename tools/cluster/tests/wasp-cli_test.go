@@ -850,7 +850,7 @@ func TestEVMISCReceipt(t *testing.T) {
 	w.MustRun("chain", "deposit", ethAddr.String(), "base:100000000", "--node=0")
 
 	// send some arbitrary EVM tx
-	gasPrice := gas.DefaultFeePolicy().GasPriceWei(testutil.BaseToken.Decimals)
+	gasPrice := gas.DefaultFeePolicy().GasPriceWei(testutil.TokenInfo.Decimals)
 	jsonRPCClient := NewEVMJSONRPClient(t, w.ChainID(0), w.Cluster, 0)
 	tx, err := types.SignTx(
 		types.NewTransaction(0, ethAddr, big.NewInt(123), 100000, gasPrice, []byte{}),

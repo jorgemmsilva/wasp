@@ -4,7 +4,6 @@
 package rwutil
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -191,7 +190,9 @@ func (ww *Writer) WriteSerialized(obj any, sizes ...int) *Writer {
 	}
 
 	var buf []byte
-	buf, ww.Err = iotago.CommonSerixAPI().Encode(context.Background(), obj)
+	// TODO this API should probably be the same version is used for a given block... maybe we should encode/decode the protocol version here...
+	l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
+	buf, ww.Err = l1API.Encode(obj)
 	switch len(sizes) {
 	case 0:
 		ww.WriteSize16(len(buf))

@@ -61,7 +61,7 @@ func (vmctx *vmContext) loadNativeTokenOutput(nativeTokenID iotago.NativeTokenID
 
 func (vmctx *vmContext) loadFoundry(serNum uint32) (out *iotago.FoundryOutput, id iotago.OutputID) {
 	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.MustChainAccountID())
+		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.MustChainAccountID(), vmctx.task.L1API)
 	})
 	return
 }

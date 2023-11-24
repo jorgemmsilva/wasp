@@ -232,7 +232,7 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 		res := ctx.CallView(accounts.Contract.Hname(), accounts.ViewFoundryOutput.Hname(), dict.Dict{
 			accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
 		})
-		o := codec.MustDecodeOutput(res[accounts.ParamFoundryOutputBin])
+		o := codec.MustDecodeOutput(res[accounts.ParamFoundryOutputBin], ctx.L1API())
 		foundryOutput, ok := o.(*iotago.FoundryOutput)
 		if !ok {
 			panic(errOutputMustBeFoundry)
@@ -296,7 +296,7 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	decimals := codec.MustDecodeUint8(ctx.Params().Get(evm.FieldTokenDecimals))
 
 	foundrySN := codec.MustDecodeUint32(ctx.Params().Get(evm.FieldFoundrySN))
-	tokenScheme := codec.MustDecodeTokenScheme(ctx.Params().Get(evm.FieldFoundryTokenScheme))
+	tokenScheme := codec.MustDecodeTokenScheme(ctx.Params().Get(evm.FieldFoundryTokenScheme), ctx.L1API())
 	simpleTS, ok := tokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {
 		panic(errUnsupportedTokenScheme)

@@ -42,7 +42,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 			Entries: metadata,
 		}}
 	}
-	f.Amount = lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(f))
+	f.Amount = lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(f))
 	txb.invokedFoundries[f.SerialNumber] = &foundryInvoked{
 		serialNumber:     f.SerialNumber,
 		accountingInput:  nil,

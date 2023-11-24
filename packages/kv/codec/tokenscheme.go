@@ -7,14 +7,14 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 )
 
-func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenScheme, err error) {
+func DecodeTokenScheme(b []byte, l1API iotago.API, def ...iotago.TokenScheme) (ts iotago.TokenScheme, err error) {
 	if len(b) == 0 {
 		if len(def) > 0 {
 			return def[0], nil
 		}
 		return nil, errors.New("wrong data length")
 	}
-	n, err := iotago.CommonSerixAPI().Decode(context.Background(), b, &ts)
+	n, err := l1API.Decode(b, &ts)
 	if err != nil {
 		return nil, err
 	}
@@ -24,8 +24,8 @@ func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenSche
 	return
 }
 
-func MustDecodeTokenScheme(b []byte, def ...iotago.TokenScheme) iotago.TokenScheme {
-	t, err := DecodeTokenScheme(b, def...)
+func MustDecodeTokenScheme(b []byte, l1API iotago.API, def ...iotago.TokenScheme) iotago.TokenScheme {
+	t, err := DecodeTokenScheme(b, l1API, def...)
 	if err != nil {
 		panic(err)
 	}

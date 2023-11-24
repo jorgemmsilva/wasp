@@ -1,14 +1,13 @@
 package codec
 
 import (
-	"context"
 	"errors"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 )
 
-func DecodeOutput(b []byte) (out iotago.TxEssenceOutput, err error) {
-	n, err := iotago.CommonSerixAPI().Decode(context.Background(), b, &out)
+func DecodeOutput(b []byte, l1API iotago.API) (out iotago.TxEssenceOutput, err error) {
+	n, err := l1API.Decode(b, &out)
 	if err != nil {
 		return nil, err
 	}
@@ -18,16 +17,16 @@ func DecodeOutput(b []byte) (out iotago.TxEssenceOutput, err error) {
 	return
 }
 
-func MustDecodeOutput(b []byte) iotago.TxEssenceOutput {
-	o, err := DecodeOutput(b)
+func MustDecodeOutput(b []byte, l1API iotago.API) iotago.TxEssenceOutput {
+	o, err := DecodeOutput(b, l1API)
 	if err != nil {
 		panic(err)
 	}
 	return o
 }
 
-func EncodeOutput(out iotago.TxEssenceOutput) []byte {
-	b, err := iotago.CommonSerixAPI().Encode(context.Background(), out)
+func EncodeOutput(out iotago.TxEssenceOutput, l1API iotago.API) []byte {
+	b, err := l1API.Encode(out)
 	if err != nil {
 		panic(err)
 	}

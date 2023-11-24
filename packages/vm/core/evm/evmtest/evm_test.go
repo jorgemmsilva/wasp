@@ -1111,17 +1111,17 @@ func TestERC20BaseTokens(t *testing.T) {
 	{
 		var name string
 		require.NoError(t, erc20.callView("name", nil, &name))
-		require.Equal(t, testutil.BaseToken.Name, name)
+		require.Equal(t, testutil.TokenInfo.Name, name)
 	}
 	{
 		var sym string
 		require.NoError(t, erc20.callView("symbol", nil, &sym))
-		require.Equal(t, testutil.BaseToken.TickerSymbol, sym)
+		require.Equal(t, testutil.TokenInfo.TickerSymbol, sym)
 	}
 	{
 		var dec uint8
 		require.NoError(t, erc20.callView("decimals", nil, &dec))
-		require.EqualValues(t, testutil.BaseToken.Decimals, dec)
+		require.EqualValues(t, testutil.TokenInfo.Decimals, dec)
 	}
 	{
 		var supply *big.Int
@@ -1544,7 +1544,7 @@ func TestEVMTransferBaseTokens(t *testing.T) {
 	// try sending 1 million base tokens (expressed in ethereum decimals)
 	value := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		1*isc.Million,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 	sendTx(value)
 	env.Chain.AssertL2BaseTokens(someAgentID, 1*isc.Million)
@@ -1561,7 +1561,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	// try sending funds to `someEthereumAddr` by sending a "value tx" to the isc test contract
 	oneMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		1*isc.Million,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	_, err := iscTest.CallFn([]ethCallOptions{{
@@ -1574,7 +1574,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	// attempt to send more than the contract will have available
 	twoMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		2*isc.Million,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	_, err = iscTest.CallFn([]ethCallOptions{{
@@ -1594,7 +1594,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 
 	tenMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		10*isc.Million,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	_, err = iscTest.CallFn([]ethCallOptions{{
@@ -1624,7 +1624,7 @@ func TestSendEntireBalance(t *testing.T) {
 	// try sending funds to `someEthereumAddr` by sending a "value tx"
 	initialBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		initial,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	unsignedTx := types.NewTransaction(0, someEthereumAddr, initialBalanceInEthDecimals, env.maxGasLimit(), env.evmChain.GasPrice(), []byte{})
@@ -1644,7 +1644,7 @@ func TestSendEntireBalance(t *testing.T) {
 
 	currentBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
@@ -1662,7 +1662,7 @@ func TestSendEntireBalance(t *testing.T) {
 
 	valueToSendInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance-tokensForGasBudget,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 	unsignedTx = types.NewTransaction(1, someEthereumAddr, valueToSendInEthDecimals, gasLimit, env.evmChain.GasPrice(), []byte{})
 	tx, err = types.SignTx(unsignedTx, evmutil.Signer(big.NewInt(int64(env.evmChainID))), ethKey)
@@ -2062,7 +2062,7 @@ func TestL1DepositEVM(t *testing.T) {
 	require.NoError(t, rr.Err)
 
 	require.EqualValues(t,
-		util.MustEthereumDecimalsToBaseTokenDecimalsExact(bal, testutil.BaseToken.Decimals),
+		util.MustEthereumDecimalsToBaseTokenDecimalsExact(bal, testutil.TokenInfo.Decimals),
 		assets.BaseTokens)
 
 	evmRec := env.Chain.EVM().TransactionReceipt(tx.Hash())
@@ -2099,7 +2099,7 @@ func TestDecimalsConversion(t *testing.T) {
 	lessThanOneSMR := new(big.Int).SetUint64(999999999999)
 	valueInBaseTokens, remainder := util.EthereumDecimalsToBaseTokenDecimals(
 		lessThanOneSMR,
-		testutil.BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 	t.Log(valueInBaseTokens)
 	require.Zero(t, valueInBaseTokens)

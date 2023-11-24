@@ -30,11 +30,11 @@ type TransactionTotals struct {
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
-	sd := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
+	sd := lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
 	totalL2 := txb.inputs.AnchorOutput.BaseTokenAmount() - sd
 
 	if _, out, ok := txb.inputs.AccountOutput(); ok {
-		accountSD := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(out))
+		accountSD := lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(out))
 		if out.BaseTokenAmount() != accountSD {
 			panic("excess base tokens in account output")
 		}
@@ -94,10 +94,10 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	sd := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(txb.resultAnchorOutput))
+	sd := lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(txb.resultAnchorOutput))
 	totalL2 := txb.resultAnchorOutput.BaseTokenAmount() - sd
 
-	accountSD := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(txb.resultAccountOutput))
+	accountSD := lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(txb.resultAccountOutput))
 	if txb.resultAccountOutput.BaseTokenAmount() != accountSD {
 		panic("excess base tokens in account output")
 	}

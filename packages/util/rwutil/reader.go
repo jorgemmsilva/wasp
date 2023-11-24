@@ -4,7 +4,6 @@
 package rwutil
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -251,7 +250,9 @@ func (rr *Reader) ReadSerialized(obj any, sizes ...int) {
 	rr.ReadN(data)
 	if rr.Err == nil {
 		var n int
-		n, rr.Err = iotago.CommonSerixAPI().Decode(context.Background(), data, obj)
+		// TODO this API should probably be the same version is used for a given block... maybe we should encode/decode the protocol version here...
+		l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
+		n, rr.Err = l1API.Decode(data, obj)
 		if n != len(data) && rr.Err == nil {
 			rr.Err = errors.New("unexpected deserialize size")
 		}

@@ -134,7 +134,7 @@ path.Join(indexDbPath, backend.ISCChainID().String())
 */
 func (ch *Chain) EVM() *jsonrpc.EVMChain {
 	return jsonrpc.NewEVMChain(
-		newJSONRPCSoloBackend(ch, *testutil.BaseToken),
+		newJSONRPCSoloBackend(ch, *testutil.TokenInfo),
 		ch.Env.publisher,
 		true,
 		ch.Env.getDB(dbKindEVMJSONRPCIndex, ch.ChainID),

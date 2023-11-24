@@ -101,12 +101,12 @@ func viewFoundryOutput(ctx isc.SandboxView) dict.Dict {
 	sn := ctx.Params().MustGetUint32(ParamFoundrySN)
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(ctx.StateR(), sn, accountID)
+	out, _ := GetFoundryOutput(ctx.StateR(), sn, accountID, ctx.L1API())
 	if out == nil {
 		panic(errFoundryNotFound)
 	}
 	return dict.Dict{
-		ParamFoundryOutputBin: codec.EncodeOutput(out),
+		ParamFoundryOutputBin: codec.EncodeOutput(out, ctx.L1API()),
 	}
 }
 

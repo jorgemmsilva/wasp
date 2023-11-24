@@ -59,13 +59,14 @@ type AnchorTransactionBuilder struct {
 	// requests posted by smart contracts
 	postedOutputs iotago.TxEssenceOutputs
 
-	L1API iotago.API
+	l1API iotago.API
 }
 
 // NewAnchorTransactionBuilder creates new AnchorTransactionBuilder object
 func NewAnchorTransactionBuilder(
 	inputs *isc.ChainOutputs,
 	accounts AccountsContractRead,
+	l1API iotago.API,
 ) *AnchorTransactionBuilder {
 	return &AnchorTransactionBuilder{
 		inputs:              inputs,
@@ -76,6 +77,7 @@ func NewAnchorTransactionBuilder(
 		invokedFoundries:    make(map[uint32]*foundryInvoked),
 		nftsIncluded:        make(map[iotago.NFTID]*nftIncluded),
 		nftsMinted:          make(iotago.TxEssenceOutputs, 0),
+		l1API:               l1API,
 	}
 }
 
@@ -94,6 +96,7 @@ func (txb *AnchorTransactionBuilder) Clone() *AnchorTransactionBuilder {
 		nftsMinted: lo.Map(txb.nftsMinted, func(o iotago.TxEssenceOutput, _ int) iotago.TxEssenceOutput {
 			return o.Clone()
 		}),
+		l1API: txb.l1API,
 	}
 }
 
@@ -110,7 +113,7 @@ func (txb *AnchorTransactionBuilder) splitAssetsIntoInternalOutputs(req isc.OnLe
 			sdBefore = 0 // accounting output was zero'ed this block, meaning the existing SD was released
 		}
 		nt.add(amount)
-		nt.updateMinSD(txb.L1API)
+		nt.updateMinSD(txb.l1API)
 		sdAfter := nt.accountingOutput.Amount
 		// user pays for the difference (in case SD has increased, will be the full SD cost if the output is new)
 		requiredSD += sdAfter - sdBefore
@@ -162,7 +165,7 @@ func (txb *AnchorTransactionBuilder) ConsumeUnprocessable(req isc.OnLedgerReques
 func (txb *AnchorTransactionBuilder) AddOutput(o iotago.Output) int64 {
 	defer txb.assertLimits()
 
-	storageDeposit, err := txb.L1API.StorageScoreStructure().MinDeposit(o)
+	storageDeposit, err := txb.l1API.StorageScoreStructure().MinDeposit(o)
 	if err != nil {
 		panic(err)
 	}
@@ -192,10 +195,10 @@ func (txb *AnchorTransactionBuilder) InputsAreFull() bool {
 func (txb *AnchorTransactionBuilder) BuildTransactionEssence(stateMetadata []byte, creationSlot iotago.SlotIndex) (*iotago.Transaction, iotago.Unlocks) {
 	inputs, inputIDs, unlocks := txb.buildInputs()
 	return &iotago.Transaction{
-		API: txb.L1API,
+		API: txb.l1API,
 		TransactionEssence: &iotago.TransactionEssence{
 			CreationSlot: creationSlot,
-			NetworkID:    txb.L1API.ProtocolParameters().NetworkID(),
+			NetworkID:    txb.l1API.ProtocolParameters().NetworkID(),
 			Inputs:       inputIDs.UTXOInputs(),
 			Capabilities: iotago.TransactionCapabilitiesBitMaskWithCapabilities(
 				iotago.WithTransactionCanDestroyFoundryOutputs(true),
@@ -286,7 +289,7 @@ func (txb *AnchorTransactionBuilder) AccountID() iotago.AccountID {
 }
 
 func (txb *AnchorTransactionBuilder) getSDInChainOutputs() iotago.BaseToken {
-	ret := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
+	ret := lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
 	if _, out, ok := txb.inputs.AccountOutput(); ok {
 		ret += out.Amount
 	}
@@ -302,7 +305,7 @@ func (txb *AnchorTransactionBuilder) ChangeInSD(
 		creationSlot,
 		txb.inputs.AnchorOutput.Mana,
 	)
-	newSD := lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(mockAnchor)) + mockAccount.Amount
+	newSD := lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(mockAnchor)) + mockAccount.Amount
 	oldSD := txb.getSDInChainOutputs()
 	return oldSD, newSD, int64(oldSD) - int64(newSD)
 }
@@ -333,7 +336,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		anchorOutput.Features.Upsert(&iotago.MetadataFeature{Entries: metadata.Entries})
 		anchorOutput.Features.Sort()
 	}
-	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(anchorOutput))
+	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(anchorOutput))
 
 	accountOutput := &iotago.AccountOutput{
 		FoundryCounter: txb.nextFoundryCounter(),
@@ -350,7 +353,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 			accountOutput.AccountID = iotago.AccountIDFromOutputID(id)
 		}
 	}
-	accountOutput.Amount = lo.Must(txb.L1API.StorageScoreStructure().MinDeposit(accountOutput))
+	accountOutput.Amount = lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(accountOutput))
 
 	return anchorOutput, accountOutput
 }
@@ -371,8 +374,8 @@ func (txb *AnchorTransactionBuilder) buildOutputs(
 	ret := make(iotago.TxEssenceOutputs, 0, 1+len(txb.balanceNativeTokens)+len(txb.postedOutputs))
 
 	totalMana := lo.Must(vm.TotalManaIn(
-		txb.L1API.ManaDecayProvider(),
-		txb.L1API.StorageScoreStructure(),
+		txb.l1API.ManaDecayProvider(),
+		txb.l1API.StorageScoreStructure(),
 		creationSlot,
 		vm.InputSet(inputs),
 		vm.RewardsInputSet{},

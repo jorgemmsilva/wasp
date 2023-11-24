@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"bytes"
 	"io"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -20,25 +21,27 @@ func (rec *foundryOutputRec) Bytes() []byte {
 	return rwutil.WriteToBytes(rec)
 }
 
-func foundryOutputRecFromBytes(data []byte) (*foundryOutputRec, error) {
-	return rwutil.ReadFromBytes(data, new(foundryOutputRec))
+func foundryOutputRecFromBytes(data []byte, l1API iotago.API) (*foundryOutputRec, error) {
+	f := new(foundryOutputRec)
+	err := f.Read(bytes.NewBuffer(data), l1API)
+	return f, err
 }
 
-func mustFoundryOutputRecFromBytes(data []byte) *foundryOutputRec {
-	ret, err := foundryOutputRecFromBytes(data)
+func mustFoundryOutputRecFromBytes(data []byte, l1API iotago.API) *foundryOutputRec {
+	ret, err := foundryOutputRecFromBytes(data, l1API)
 	if err != nil {
 		panic(err)
 	}
 	return ret
 }
 
-func (rec *foundryOutputRec) Read(r io.Reader) error {
+func (rec *foundryOutputRec) Read(r io.Reader, l1API iotago.API) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadN(rec.OutputID[:])
 	rec.Amount = iotago.BaseToken(rr.ReadUint64())
 	tokenScheme := rr.ReadBytes()
 	if rr.Err == nil {
-		rec.TokenScheme, rr.Err = codec.DecodeTokenScheme(tokenScheme)
+		rec.TokenScheme, rr.Err = codec.DecodeTokenScheme(tokenScheme, l1API)
 	}
 	rec.Metadata = rr.ReadBytes()
 	return rr.Err

@@ -27,7 +27,8 @@ func (c *Controller) listBlobs(e echo.Context) error {
 		return c.handleViewCallError(err, chainID)
 	}
 
-	blobList, err := corecontracts.ListBlobs(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	blobList, err := corecontracts.ListBlobs(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}
@@ -63,7 +64,8 @@ func (c *Controller) getBlobValue(e echo.Context) error {
 
 	fieldKey := e.Param(params.ParamFieldKey)
 
-	blobValueBytes, err := corecontracts.GetBlobValue(ch, *blobHash, fieldKey, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	blobValueBytes, err := corecontracts.GetBlobValue(invoker, *blobHash, fieldKey, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}
@@ -92,7 +94,8 @@ func (c *Controller) getBlobInfo(e echo.Context) error {
 		return err
 	}
 
-	blobInfo, ok, err := corecontracts.GetBlobInfo(ch, *blobHash, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	blobInfo, ok, err := corecontracts.GetBlobInfo(invoker, *blobHash, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}

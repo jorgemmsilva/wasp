@@ -124,7 +124,7 @@ func Init(
 		node.NewNodeController(waspVersion, config, dkgService, nodeService, peeringService),
 		requests.NewRequestsController(chainService, offLedgerService, peeringService),
 		users.NewUsersController(userService),
-		corecontracts.NewCoreContractsController(chainService, l1API),
+		corecontracts.NewCoreContractsController(chainService, l1API, baseTokenInfo),
 	}
 
 	AddHealthEndpoint(server, chainService, metricsService)

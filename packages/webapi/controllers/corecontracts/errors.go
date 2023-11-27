@@ -29,7 +29,8 @@ func (c *Controller) getErrorMessageFormat(e echo.Context) error {
 		return err
 	}
 
-	messageFormat, err := corecontracts.ErrorMessageFormat(ch, contractHname, uint16(errorID), e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	messageFormat, err := corecontracts.ErrorMessageFormat(invoker, contractHname, uint16(errorID), e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}

@@ -35,7 +35,8 @@ func (c *Controller) getChainInfo(e echo.Context) error {
 		return c.handleViewCallError(err, chainID)
 	}
 
-	chainInfo, err := corecontracts.GetChainInfo(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	chainInfo, err := corecontracts.GetChainInfo(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}
@@ -51,7 +52,8 @@ func (c *Controller) getChainOwner(e echo.Context) error {
 		return c.handleViewCallError(err, chainID)
 	}
 
-	chainOwner, err := corecontracts.GetChainOwner(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	chainOwner, err := corecontracts.GetChainOwner(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}
@@ -69,7 +71,8 @@ func (c *Controller) getAllowedStateControllerAddresses(e echo.Context) error {
 		return c.handleViewCallError(err, chainID)
 	}
 
-	addresses, err := corecontracts.GetAllowedStateControllerAddresses(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	addresses, err := corecontracts.GetAllowedStateControllerAddresses(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}

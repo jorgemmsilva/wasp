@@ -6,6 +6,7 @@ import (
 
 	"github.com/pangpanglabs/echoswagger/v2"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/authentication"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
@@ -16,10 +17,11 @@ import (
 
 type Controller struct {
 	chainService interfaces.ChainService
+	l1Api        iotago.API
 }
 
-func NewCoreContractsController(chainService interfaces.ChainService) interfaces.APIController {
-	return &Controller{chainService}
+func NewCoreContractsController(chainService interfaces.ChainService, l1Api iotago.API) interfaces.APIController {
+	return &Controller{chainService, l1Api}
 }
 
 func (c *Controller) Name() string {

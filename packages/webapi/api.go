@@ -11,6 +11,7 @@ import (
 	"github.com/iotaledger/hive.go/app/configuration"
 	"github.com/iotaledger/hive.go/app/shutdown"
 	loggerpkg "github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/authentication"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/dkg"
@@ -95,6 +96,7 @@ func Init(
 	indexDbPath string,
 	pub *publisher.Publisher,
 	jsonrpcParams *jsonrpc.Parameters,
+	l1Api iotago.API,
 ) {
 	// load mock files to generate correct echo swagger documentation
 	mocker := NewMocker()
@@ -120,7 +122,7 @@ func Init(
 		node.NewNodeController(waspVersion, config, dkgService, nodeService, peeringService),
 		requests.NewRequestsController(chainService, offLedgerService, peeringService),
 		users.NewUsersController(userService),
-		corecontracts.NewCoreContractsController(chainService),
+		corecontracts.NewCoreContractsController(chainService, l1Api),
 	}
 
 	AddHealthEndpoint(server, chainService, metricsService)

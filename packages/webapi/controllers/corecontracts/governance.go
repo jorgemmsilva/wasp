@@ -6,8 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/models"
@@ -79,7 +77,7 @@ func (c *Controller) getAllowedStateControllerAddresses(e echo.Context) error {
 	encodedAddresses := make([]string, len(addresses))
 
 	for k, v := range addresses {
-		encodedAddresses[k] = v.Bech32(parameters.NetworkPrefix())
+		encodedAddresses[k] = v.Bech32(c.l1Api.ProtocolParameters().Bech32HRP())
 	}
 
 	addressesResponse := models.GovAllowedStateControllerAddressesResponse{

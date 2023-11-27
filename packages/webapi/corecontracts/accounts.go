@@ -145,7 +145,7 @@ func GetNativeTokenIDRegistry(ch chaintypes.Chain, blockIndexOrTrieRoot string) 
 	return ret, nil
 }
 
-func GetFoundryOutput(ch chaintypes.Chain, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {
+func GetFoundryOutput(ch chaintypes.Chain, l1Api iotago.API, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {
 	res, err := common.CallView(
 		ch,
 		accounts.Contract.Hname(),
@@ -160,7 +160,7 @@ func GetFoundryOutput(ch chaintypes.Chain, serialNumber uint32, blockIndexOrTrie
 	out := &iotago.FoundryOutput{}
 
 	// TODO: <lmoe> Did this really change to L1API.Decode?
-	_, err = parameters.L1API().Decode(outBin, out)
+	_, err = l1Api.Decode(outBin, out)
 	if err != nil {
 		return nil, err
 	}

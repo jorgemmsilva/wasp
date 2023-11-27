@@ -166,7 +166,7 @@ func (c *Controller) getNFTData(e echo.Context) error {
 		return c.handleViewCallError(err, chainID)
 	}
 
-	nftDataResponse := isc.NFTToJSONObject(nftData)
+	nftDataResponse := isc.NFTToJSONObject(nftData, c.l1Api)
 
 	return e.JSON(http.StatusOK, nftDataResponse)
 }
@@ -204,7 +204,7 @@ func (c *Controller) getFoundryOutput(e echo.Context) error {
 		return err
 	}
 
-	foundryOutput, err := corecontracts.GetFoundryOutput(ch, uint32(serialNumber), e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	foundryOutput, err := corecontracts.GetFoundryOutput(ch, c.l1Api, uint32(serialNumber), e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}

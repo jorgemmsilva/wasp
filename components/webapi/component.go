@@ -224,7 +224,8 @@ func provide(c *dig.Container) error {
 		ChainRecordRegistryProvider registry.ChainRecordRegistryProvider
 		DKShareRegistryProvider     registry.DKShareRegistryProvider
 		NodeIdentityProvider        registry.NodeIdentityProvider
-		NetworkProvider             peering.NetworkProvider       `name:"networkProvider"`
+		NetworkProvider             peering.NetworkProvider `name:"networkProvider"`
+		NodeConnection              chain.NodeConnection
 		TrustedNetworkManager       peering.TrustedNetworkManager `name:"trustedNetworkManager"`
 		Node                        *dkg.Node
 		UserManager                 *users.UserManager
@@ -296,6 +297,7 @@ func provide(c *dig.Container) error {
 				ParamsWebAPI.Limits.Jsonrpc.MaxBlocksInLogsFilterRange,
 				ParamsWebAPI.Limits.Jsonrpc.MaxLogsInResult,
 			),
+			deps.NodeConnection.L1API(),
 		)
 
 		return webapiServerResult{

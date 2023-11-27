@@ -8,8 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 	"github.com/iotaledger/wasp/packages/webapi/common"
@@ -31,9 +29,9 @@ func (c *Controller) getControlAddresses(e echo.Context) error {
 	}
 
 	controlAddressesResponse := &models.ControlAddressesResponse{
-		GoverningAddress: controlAddresses.GoverningAddress.Bech32(parameters.NetworkPrefix()),
+		GoverningAddress: controlAddresses.GoverningAddress.Bech32(c.l1Api.ProtocolParameters().Bech32HRP()),
 		SinceBlockIndex:  controlAddresses.SinceBlockIndex,
-		StateAddress:     controlAddresses.StateAddress.Bech32(parameters.NetworkPrefix()),
+		StateAddress:     controlAddresses.StateAddress.Bech32(c.l1Api.ProtocolParameters().Bech32HRP()),
 	}
 
 	return e.JSON(http.StatusOK, controlAddressesResponse)

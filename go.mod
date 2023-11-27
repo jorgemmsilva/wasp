@@ -31,7 +31,7 @@ require (
 	github.com/iotaledger/hive.go/runtime v0.0.0-20231127113116-6e22aa5eded9
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231113110812-4ca2b6cc9a42
 	github.com/iotaledger/hive.go/web v0.0.0-20231106113411-94ac829adbb2
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231125005727-9199c4fd05e3
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231127144558-80fc60998ef4
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231124154447-f20fb8921e8c
 	github.com/iotaledger/iota.go/v4 v4.0.0-20231124103306-ad44904e2b86
 	github.com/labstack/echo-contrib v0.15.0

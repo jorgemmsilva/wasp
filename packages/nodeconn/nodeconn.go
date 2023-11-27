@@ -74,6 +74,8 @@ type nodeConnection struct {
 	nodeBridge      nodebridge.NodeBridge
 	nodeClient      *nodeclient.Client
 
+	baseTokenInfo *api.InfoResBaseToken
+
 	// TODO remove
 	// pendingTransactionsMap is a map of sent transactions that are pending.
 	// pendingTransactionsMap  *shrinkingmap.ShrinkingMap[iotago.TransactionID, *pendingTransaction]
@@ -223,6 +225,10 @@ func (nc *nodeConnection) L1API() iotago.API {
 	return nc.nodeClient.LatestAPI()
 }
 
+func (nc *nodeConnection) BaseTokenInfo() *api.InfoResBaseToken {
+	return nc.baseTokenInfo
+}
+
 func (nc *nodeConnection) Run(ctx context.Context) error {
 	nc.ctx = ctx
 
@@ -263,6 +269,12 @@ func (nc *nodeConnection) Run(ctx context.Context) error {
 	// nc.reattachWorkerPool.Start()
 	go nc.subscribeToLedgerUpdates()
 	go nc.subscribeToBlocks()
+
+	nodeInfo, err := nc.nodeClient.Info(nc.ctx)
+	if err != nil {
+		return fmt.Errorf("getting latest node info parameters failed, error: %w", err)
+	}
+	nc.baseTokenInfo = nodeInfo.BaseToken
 
 	// mark the node connection as synced
 	nc.syncedCtxCancel()

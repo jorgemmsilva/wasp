@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/dto"
@@ -83,12 +84,12 @@ func MapRegisteredChainIDs(registered []isc.ChainID) []string {
 	return chainIDs
 }
 
-func MapChainMessageMetrics(metrics *dto.ChainMessageMetrics) *ChainMessageMetrics {
+func MapChainMessageMetrics(l1Api iotago.API, metrics *dto.ChainMessageMetrics) *ChainMessageMetrics {
 	return &ChainMessageMetrics{
-		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(metrics.InStateOutput.LastMessage))),
-		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
-		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(metrics.InOutput.LastMessage))),
-		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(metrics.InOnLedgerRequest.LastMessage))),
+		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(l1Api, metrics.InStateOutput.LastMessage))),
+		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(l1Api, metrics.InAnchorOutput.LastMessage))),
+		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(l1Api, metrics.InOutput.LastMessage))),
+		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(l1Api, metrics.InOnLedgerRequest.LastMessage))),
 		InTxInclusionState: TxInclusionStateMsgMetricItem(MapMetricItem(metrics.InTxInclusionState, TxInclusionStateMsgFromISCTxInclusionStateMsg(metrics.InTxInclusionState.LastMessage))),
 
 		OutPublishStateTransaction:      PublisherStateTransactionItem(MapMetricItem(metrics.OutPublishStateTransaction, StateTransactionFromISCStateTransaction(metrics.OutPublishStateTransaction.LastMessage))),
@@ -99,14 +100,14 @@ func MapChainMessageMetrics(metrics *dto.ChainMessageMetrics) *ChainMessageMetri
 	}
 }
 
-func MapNodeMessageMetrics(metrics *dto.NodeMessageMetrics) *NodeMessageMetrics {
+func MapNodeMessageMetrics(l1Api iotago.API, metrics *dto.NodeMessageMetrics) *NodeMessageMetrics {
 	return &NodeMessageMetrics{
 		RegisteredChainIDs: MapRegisteredChainIDs(metrics.RegisteredChainIDs),
 
-		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(metrics.InStateOutput.LastMessage))),
-		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(metrics.InAnchorOutput.LastMessage))),
-		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(metrics.InOutput.LastMessage))),
-		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(metrics.InOnLedgerRequest.LastMessage))),
+		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(l1Api, metrics.InStateOutput.LastMessage))),
+		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(l1Api, metrics.InAnchorOutput.LastMessage))),
+		InOutput:           InOutputMetricItem(MapMetricItem(metrics.InOutput, InOutputFromISCInOutput(l1Api, metrics.InOutput.LastMessage))),
+		InOnLedgerRequest:  OnLedgerRequestMetricItem(MapMetricItem(metrics.InOnLedgerRequest, OnLedgerRequestFromISC(l1Api, metrics.InOnLedgerRequest.LastMessage))),
 		InTxInclusionState: TxInclusionStateMsgMetricItem(MapMetricItem(metrics.InTxInclusionState, TxInclusionStateMsgFromISCTxInclusionStateMsg(metrics.InTxInclusionState.LastMessage))),
 
 		OutPublishStateTransaction:      PublisherStateTransactionItem(MapMetricItem(metrics.OutPublishStateTransaction, StateTransactionFromISCStateTransaction(metrics.OutPublishStateTransaction.LastMessage))),

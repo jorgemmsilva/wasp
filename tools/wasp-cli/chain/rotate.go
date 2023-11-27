@@ -99,6 +99,7 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 		chainOutputID,
 		chainOutput,
 		cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+		cliclients.L1Client().API(),
 		myWallet.KeyPair,
 	)
 	log.Check(err)

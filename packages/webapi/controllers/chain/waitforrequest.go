@@ -66,7 +66,7 @@ func (c *Controller) waitForRequestToFinish(e echo.Context) error {
 		})
 	}
 
-	mappedReceipt := models.MapReceiptResponse(receipt)
+	mappedReceipt := models.MapReceiptResponse(c.l1API, receipt)
 
 	return e.JSON(http.StatusOK, mappedReceipt)
 }

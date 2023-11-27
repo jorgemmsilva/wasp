@@ -20,6 +20,7 @@ func CallView(
 	l1API iotago.API,
 	tokenInfo api.InfoResBaseToken,
 ) (dict.Dict, error) {
+
 	vctx, err := viewcontext.New(ch, chainState, false, l1API, tokenInfo)
 	if err != nil {
 		return nil, err

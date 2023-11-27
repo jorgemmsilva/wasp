@@ -32,7 +32,7 @@ func (c *Controller) estimateGasOnLedger(e echo.Context) error {
 	if err != nil {
 		return apierrors.InvalidPropertyError("Request", err)
 	}
-	output, err := util.OutputFromBytes(outputBytes)
+	output, err := util.OutputFromBytes(outputBytes, c.l1API)
 	if err != nil {
 		return apierrors.InvalidPropertyError("Output", err)
 	}
@@ -52,7 +52,7 @@ func (c *Controller) estimateGasOnLedger(e echo.Context) error {
 	if err != nil {
 		return apierrors.NewHTTPError(http.StatusBadRequest, "VM run error", err)
 	}
-	return e.JSON(http.StatusOK, models.MapReceiptResponse(rec))
+	return e.JSON(http.StatusOK, models.MapReceiptResponse(c.l1API, rec))
 }
 
 func (c *Controller) estimateGasOffLedger(e echo.Context) error {
@@ -84,5 +84,5 @@ func (c *Controller) estimateGasOffLedger(e echo.Context) error {
 	if err != nil {
 		return apierrors.NewHTTPError(http.StatusBadRequest, "VM run error", err)
 	}
-	return e.JSON(http.StatusOK, models.MapReceiptResponse(rec))
+	return e.JSON(http.StatusOK, models.MapReceiptResponse(c.l1API, rec))
 }

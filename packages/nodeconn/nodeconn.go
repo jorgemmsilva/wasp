@@ -71,7 +71,7 @@ type nodeConnection struct {
 	chainsLock      sync.RWMutex
 	chainsMap       *shrinkingmap.ShrinkingMap[isc.ChainID, *ncChain]
 	indexerClient   nodeclient.IndexerClient
-	nodeBridge      *nodebridge.NodeBridge
+	nodeBridge      nodebridge.NodeBridge
 	nodeClient      *nodeclient.Client
 
 	// TODO remove
@@ -86,7 +86,7 @@ type nodeConnection struct {
 func New(
 	ctx context.Context,
 	log *logger.Logger,
-	nodeBridge *nodebridge.NodeBridge,
+	nodeBridge nodebridge.NodeBridge,
 	shutdownHandler *shutdown.ShutdownHandler,
 ) (chain.NodeConnection, error) {
 	ctxIndexer, cancelIndexer := context.WithTimeout(ctx, indexerPluginAvailableTimeout)
@@ -311,7 +311,7 @@ func (nc *nodeConnection) subscribeToLedgerUpdates() {
 }
 
 func (nc *nodeConnection) subscribeToBlocks() {
-	if err := nc.nodeBridge.ListenToBlocks(nc.ctx, func() {}, nc.handleBlock); err != nil && !errors.Is(err, io.EOF) {
+	if err := nc.nodeBridge.ListenToBlocks(nc.ctx, nc.handleBlock); err != nil && !errors.Is(err, io.EOF) {
 		nc.LogError(err)
 		nc.shutdownHandler.SelfShutdown(
 			fmt.Sprintf("INX connection unexpected error: %s", err.Error()),
@@ -599,27 +599,28 @@ func (nc *nodeConnection) handleLedgerUpdate(update *nodebridge.LedgerUpdate) er
 	return nil
 }
 
-func (nc *nodeConnection) handleBlock(block *iotago.Block) {
+func (nc *nodeConnection) handleBlock(block *iotago.Block, rawData []byte) error {
 	if block == nil {
-		return
+		return errors.New("block is nil")
 	}
 
 	body, ok := block.Body.(*iotago.BasicBlockBody)
 	if !ok {
-		return
+		return errors.New("can not cast block body into BasicBlockBody")
 	}
 
 	// check if the block contains a transaction payload
 	_, isTransactionPayload := body.Payload.(*iotago.SignedTransaction)
 	if !isTransactionPayload {
 		// not a transaction payload
-		return
+		return errors.New("block does not contain a signed transaction payload")
 	}
 
 	// TODO check differently here
 	// // check if the same tx is being tracked in any of the chains,
 	// // and cancel the ongoing PoW if the received tx is attached correctly.
 	// nc.checkReceivedTxPendingAndCancelPoW(block, txPayload)
+	return nil
 }
 
 // GetChain returns the chain if it was registered, otherwise it returns an error.

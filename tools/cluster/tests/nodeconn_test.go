@@ -45,10 +45,12 @@ func createChain(t *testing.T) isc.ChainID {
 		originator.Address(),
 		originator.Address(),
 		0,
-		nil,
+		iotago.Mana(0),
 		utxoMap,
 		utxoIDs,
+		layer1Client.API().TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
+		layer1Client.API(),
 	)
 	require.NoError(t, err)
 	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)
@@ -87,7 +89,7 @@ func TestNodeConn(t *testing.T) {
 	ctxInit, cancelInit := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelInit()
 
-	nodeBridge := nodebridge.NewNodeBridge(log.Named("NodeBridge"))
+	nodeBridge := nodebridge.New(log.Named("NodeBridge"))
 	err := nodeBridge.Connect(ctxInit, l1.Config.INXAddress, 10)
 	require.NoError(t, err)
 

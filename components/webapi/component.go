@@ -261,7 +261,7 @@ func provide(c *dig.Container) error {
 			publisher.ISCEventKindReceipt,
 			publisher.ISCEventIssuerVM,
 			publisher.ISCEventKindBlockEvents,
-		}, deps.Publisher, websocket.WithMaxTopicSubscriptionsPerClient(ParamsWebAPI.Limits.MaxTopicSubscriptionsPerClient))
+		}, deps.Publisher, deps.NodeConnection.L1API(), websocket.WithMaxTopicSubscriptionsPerClient(ParamsWebAPI.Limits.MaxTopicSubscriptionsPerClient))
 
 		if ParamsWebAPI.DebugRequestLoggerEnabled {
 			echoSwagger.Echo().Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {

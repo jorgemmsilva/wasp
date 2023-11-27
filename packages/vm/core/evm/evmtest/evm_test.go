@@ -322,7 +322,10 @@ func TestEstimateGasWithoutFunds(t *testing.T) {
 		From: common.Address{},
 		To:   &iscTest.address,
 		Data: callData,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
 	t.Log(estimatedGas)
@@ -339,7 +342,11 @@ func TestLoopWithGasLeftEstimateGas(t *testing.T) {
 		From: ethAddr,
 		To:   &iscTest.address,
 		Data: callData,
-	}, nil)
+	},
+		nil,
+
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
 	t.Log(estimatedGas)
@@ -375,7 +382,10 @@ func TestEstimateContractGas(t *testing.T) {
 	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
 		From: contract.address,
 		To:   &ethAddr,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
 }
@@ -393,7 +403,7 @@ func TestCallViewGasLimit(t *testing.T) {
 		Gas:  math.MaxUint64,
 		Data: callArguments,
 	})
-	_, err = loop.chain.evmChain.CallContract(callMsg, nil)
+	_, err = loop.chain.evmChain.CallContract(callMsg, nil, testutil.L1API)
 	require.Contains(t, err.Error(), "out of gas")
 }
 
@@ -1652,19 +1662,22 @@ func TestSendEntireBalance(t *testing.T) {
 		To:    &someEthereumAddr,
 		Value: currentBalanceInEthDecimals,
 		Data:  []byte{},
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 
 	feePolicy := env.Chain.GetGasFeePolicy()
 	tokensForGasBudget := feePolicy.FeeFromGas(gas.EVMGasToISC(estimatedGas, &feePolicy.EVMGasRatio))
 
-	gasLimit := feePolicy.GasBudgetFromTokens(tokensForGasBudget)
+	gasLimit := feePolicy.GasBudgetFromTokens(tokensForGasBudget) // TODO this gas limit seems to be ISC gas, but used as EVM gas (?)
 
 	valueToSendInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance-tokensForGasBudget,
 		testutil.TokenInfo.Decimals,
 	)
-	unsignedTx = types.NewTransaction(1, someEthereumAddr, valueToSendInEthDecimals, gasLimit, env.evmChain.GasPrice(), []byte{})
+	unsignedTx = types.NewTransaction(1, someEthereumAddr, valueToSendInEthDecimals, uint64(gasLimit), env.evmChain.GasPrice(), []byte{})
 	tx, err = types.SignTx(unsignedTx, evmutil.Signer(big.NewInt(int64(env.evmChainID))), ethKey)
 	require.NoError(t, err)
 	err = env.evmChain.SendTransaction(tx)
@@ -1686,7 +1699,10 @@ func TestSolidityRevertMessage(t *testing.T) {
 		To:   &iscTest.address,
 		Gas:  100_000,
 		Data: callData,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.ErrorContains(t, err, "execution reverted")
 
 	revertData, err := evmerrors.ExtractRevertData(err)
@@ -1912,7 +1928,7 @@ func TestTraceTransaction(t *testing.T) {
 	traceLatestTx := func() *jsonrpc.CallFrame {
 		latestBlock, err := env.evmChain.BlockByNumber(nil)
 		require.NoError(t, err)
-		trace, err := env.evmChain.TraceTransaction(latestBlock.Transactions()[0].Hash(), &tracers.TraceConfig{})
+		trace, err := env.evmChain.TraceTransaction(latestBlock.Transactions()[0].Hash(), &tracers.TraceConfig{}, testutil.L1API)
 		require.NoError(t, err)
 		var ret jsonrpc.CallFrame
 		err = json.Unmarshal(trace.(json.RawMessage), &ret)

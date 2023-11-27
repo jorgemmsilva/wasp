@@ -239,7 +239,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 func foundryCreateNew(ctx isc.Sandbox) dict.Dict {
 	ctx.Log().Debugf("accounts.foundryCreateNew")
 
-	tokenScheme := ctx.Params().MustGetTokenScheme(ParamTokenScheme, ctx.L1API(), &iotago.SimpleTokenScheme{})
+	tokenScheme := ctx.Params().MustGetTokenScheme(ParamTokenScheme, &iotago.SimpleTokenScheme{})
 	ts := util.MustTokenScheme(tokenScheme)
 	ts.MeltedTokens = util.Big0
 	ts.MintedTokens = util.Big0

@@ -115,6 +115,7 @@ func CreateChainOrigin(
 		utxoMap,
 		creationSlot,
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
+		layer1Client.API(),
 	)
 	if err != nil {
 		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)

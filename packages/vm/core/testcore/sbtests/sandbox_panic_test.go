@@ -10,13 +10,14 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/core/testcore/sbtests/sbtestsc"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 func TestPanicFull(t *testing.T) {
 	run2(t, testPanicFull)
 }
 
-func testPanicCallView(t *testing.T, w bool, funName string, gasBudget uint64, panicView string) {
+func testPanicCallView(t *testing.T, w bool, funName string, gasBudget gas.GasUnits, panicView string) {
 	_, chain := setupChain(t, nil)
 	setupTestSandboxSC(t, chain, nil, w)
 

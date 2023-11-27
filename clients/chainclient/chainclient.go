@@ -15,6 +15,8 @@ import (
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/packages/vm/gas"
+	"github.com/samber/lo"
 )
 
 // Client allows to interact with a specific chain in the node, for example to send on-ledger or off-ledger requests
@@ -46,11 +48,11 @@ type PostRequestParams struct {
 	Nonce                    uint64
 	NFT                      *isc.NFT
 	Allowance                *isc.Assets
-	gasBudget                uint64
+	gasBudget                gas.GasUnits
 	AutoAdjustStorageDeposit bool
 }
 
-func (par *PostRequestParams) GasBudget() uint64 {
+func (par *PostRequestParams) GasBudget() gas.GasUnits {
 	if par.gasBudget == 0 {
 		return math.MaxUint64
 	}
@@ -99,16 +101,14 @@ func (c *Client) PostNRequests(
 		if err != nil {
 			return nil, err
 		}
-		for _, input := range transactions[i].Essence.Inputs {
-			if utxoInput, ok := input.(*iotago.UTXOInput); ok {
-				delete(outputs, utxoInput.ID())
-			}
+		for _, input := range lo.Must(transactions[i].Inputs()) {
+			delete(outputs, input.OutputID())
 		}
-		for index, output := range transactions[i].Essence.Outputs {
+		for index, output := range transactions[i].Outputs {
 			if basicOutput, ok := output.(*iotago.BasicOutput); ok {
 				if basicOutput.Ident().Equal(c.KeyPair.Address()) {
 					outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
-					outputs[outputID] = transactions[i].Essence.Outputs[index]
+					outputs[outputID] = transactions[i].Outputs[index]
 				}
 			}
 		}

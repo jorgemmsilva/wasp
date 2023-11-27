@@ -203,7 +203,7 @@ const (
 func (fp *foundryParams) CreateFoundry() (uint32, iotago.NativeTokenID, error) {
 	par := dict.New()
 	if fp.sch != nil {
-		par.Set(accounts.ParamTokenScheme, codec.EncodeTokenScheme(fp.sch, testutil.L1API))
+		par.Set(accounts.ParamTokenScheme, codec.EncodeTokenScheme(fp.sch))
 	}
 	user := fp.ch.OriginatorPrivateKey
 	if fp.user != nil {

@@ -15,9 +15,8 @@ func TestTokenSchemeSerialization(t *testing.T) {
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
 	}
-	l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
-	enc := EncodeTokenScheme(ts, l1API)
-	tsBack, err := DecodeTokenScheme(enc, l1API)
+	enc := EncodeTokenScheme(ts)
+	tsBack, err := DecodeTokenScheme(enc)
 	require.NoError(t, err)
 	require.EqualValues(t, ts, tsBack)
 }

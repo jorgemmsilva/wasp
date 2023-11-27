@@ -142,7 +142,6 @@ func TestFoundries(t *testing.T) {
 		req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
 			accounts.ParamTokenScheme, codec.EncodeTokenScheme(
 				&iotago.SimpleTokenScheme{MaximumSupply: big.NewInt(1), MintedTokens: util.Big0, MeltedTokens: util.Big0},
-				testutil.L1API,
 			),
 		).AddBaseTokens(2 * isc.Million).WithGasBudget(math.MaxUint64)
 		_, err := ch.PostRequestSync(req, nil)
@@ -158,7 +157,6 @@ func TestFoundries(t *testing.T) {
 		req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncFoundryCreateNew.Name,
 			accounts.ParamTokenScheme, codec.EncodeTokenScheme(
 				&iotago.SimpleTokenScheme{MaximumSupply: big.NewInt(1), MintedTokens: big.NewInt(10), MeltedTokens: big.NewInt(10)},
-				testutil.L1API,
 			),
 		).AddBaseTokens(2 * isc.Million).WithGasBudget(math.MaxUint64)
 		_, err := ch.PostRequestSync(req.AddAllowanceBaseTokens(1*isc.Million), nil)

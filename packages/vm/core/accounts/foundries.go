@@ -37,7 +37,7 @@ func SaveFoundryOutput(state kv.KVStore, f *iotago.FoundryOutput, outputIndex ui
 		TokenScheme: f.TokenScheme,
 		Metadata:    []byte{},
 	}
-	AllFoundriesMap(state).SetAt(codec.EncodeUint32(f.SerialNumber), foundryRec.Bytes(l1API))
+	AllFoundriesMap(state).SetAt(codec.EncodeUint32(f.SerialNumber), foundryRec.Bytes())
 	newFoundriesArray(state).Push(codec.EncodeUint32(f.SerialNumber))
 }
 
@@ -47,9 +47,9 @@ func updateFoundryOutputIDs(state kv.KVStore, anchorTxID iotago.TransactionID, l
 	n := newFoundries.Len()
 	for i := uint32(0); i < n; i++ {
 		k := newFoundries.GetAt(i)
-		rec := mustFoundryOutputRecFromBytes(allFoundries.GetAt(k), l1API)
+		rec := mustFoundryOutputRecFromBytes(allFoundries.GetAt(k))
 		rec.OutputID = iotago.OutputIDFromTransactionIDAndIndex(anchorTxID, rec.OutputID.Index())
-		allFoundries.SetAt(k, rec.Bytes(l1API))
+		allFoundries.SetAt(k, rec.Bytes())
 	}
 	newFoundries.Erase()
 }
@@ -65,7 +65,7 @@ func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainAccountID iotago.A
 	if data == nil {
 		return nil, iotago.OutputID{}
 	}
-	rec := mustFoundryOutputRecFromBytes(data, l1API)
+	rec := mustFoundryOutputRecFromBytes(data)
 
 	ret := &iotago.FoundryOutput{
 		Amount:       rec.Amount,

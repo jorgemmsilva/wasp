@@ -74,7 +74,7 @@ type nodeConnection struct {
 	nodeBridge      nodebridge.NodeBridge
 	nodeClient      *nodeclient.Client
 
-	baseTokenInfo *api.InfoResBaseToken
+	baseTokenInfo api.InfoResBaseToken
 
 	// TODO remove
 	// pendingTransactionsMap is a map of sent transactions that are pending.
@@ -225,8 +225,18 @@ func (nc *nodeConnection) L1API() iotago.API {
 	return nc.nodeClient.LatestAPI()
 }
 
-func (nc *nodeConnection) BaseTokenInfo() *api.InfoResBaseToken {
+func (nc *nodeConnection) BaseTokenInfo() api.InfoResBaseToken {
 	return nc.baseTokenInfo
+}
+
+func (nc *nodeConnection) pullNodeInfo() error {
+	nodeInfo, err := nc.nodeClient.Info(nc.ctx)
+	if err != nil {
+		return fmt.Errorf("getting latest node info parameters failed, error: %w", err)
+	}
+
+	nc.baseTokenInfo = *nodeInfo.BaseToken
+	return nil
 }
 
 func (nc *nodeConnection) Run(ctx context.Context) error {
@@ -270,14 +280,13 @@ func (nc *nodeConnection) Run(ctx context.Context) error {
 	go nc.subscribeToLedgerUpdates()
 	go nc.subscribeToBlocks()
 
-	nodeInfo, err := nc.nodeClient.Info(nc.ctx)
-	if err != nil {
-		return fmt.Errorf("getting latest node info parameters failed, error: %w", err)
-	}
-	nc.baseTokenInfo = nodeInfo.BaseToken
-
 	// mark the node connection as synced
 	nc.syncedCtxCancel()
+
+	err := nc.pullNodeInfo()
+	if err != nil {
+		return err
+	}
 
 	<-ctx.Done()
 	// TODO remove
@@ -587,7 +596,7 @@ func (nc *nodeConnection) unwrapLedgerUpdate(update *nodebridge.LedgerUpdate) (*
 	})
 
 	return &ledgerUpdate{
-		slot:               update.Slot,
+		slot:               update.CommitmentID.Slot(),
 		outputsCreatedMap:  outputsCreatedMap,
 		outputsConsumedMap: outputsConsumedMap,
 	}, nil

@@ -9,6 +9,8 @@ import (
 
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
@@ -29,19 +31,23 @@ type EVMService struct {
 	evmBackendMutex sync.Mutex
 	evmChainServers map[isc.ChainID]*chainServer
 
+	baseTokenInfo   api.InfoResBaseToken
 	chainsProvider  chains.Provider
 	chainService    interfaces.ChainService
 	networkProvider peering.NetworkProvider
 	publisher       *publisher.Publisher
 	indexDbPath     string
+	l1API           iotago.API
 	metrics         *metrics.ChainMetricsProvider
 	jsonrpcParams   *jsonrpc.Parameters
 	log             *logger.Logger
 }
 
 func NewEVMService(
+	baseTokenInfo api.InfoResBaseToken,
 	chainsProvider chains.Provider,
 	chainService interfaces.ChainService,
+	l1API iotago.API,
 	networkProvider peering.NetworkProvider,
 	pub *publisher.Publisher,
 	indexDbPath string,
@@ -50,10 +56,12 @@ func NewEVMService(
 	log *logger.Logger,
 ) interfaces.EVMService {
 	return &EVMService{
+		baseTokenInfo:   baseTokenInfo,
 		chainsProvider:  chainsProvider,
 		chainService:    chainService,
 		evmChainServers: map[isc.ChainID]*chainServer{},
 		evmBackendMutex: sync.Mutex{},
+		l1API:           l1API,
 		networkProvider: networkProvider,
 		publisher:       pub,
 		indexDbPath:     indexDbPath,
@@ -77,7 +85,7 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 	}
 
 	nodePubKey := e.networkProvider.Self().PubKey()
-	backend := jsonrpc.NewWaspEVMBackend(chain, nodePubKey, parameters.BaseToken())
+	backend := jsonrpc.NewWaspEVMBackend(chain, nodePubKey, e.baseTokenInfo)
 
 	db, err := database.DatabaseWithDefaultSettings(e.indexDbPath, true, hivedb.EngineRocksDB, false)
 	if err != nil {
@@ -90,6 +98,9 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 		jsonrpc.NewAccountManager(nil),
 		e.metrics.GetChainMetrics(chainID).WebAPI,
 		e.jsonrpcParams,
+		func() iotago.API {
+			return e.l1API
+		},
 	)
 	if err != nil {
 		return nil, err

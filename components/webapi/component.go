@@ -298,6 +298,7 @@ func provide(c *dig.Container) error {
 				ParamsWebAPI.Limits.Jsonrpc.MaxLogsInResult,
 			),
 			deps.NodeConnection.L1API(),
+			deps.NodeConnection.BaseTokenInfo(),
 		)
 
 		return webapiServerResult{

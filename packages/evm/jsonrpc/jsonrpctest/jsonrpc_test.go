@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmerrors"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
@@ -27,6 +28,7 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 )
@@ -58,6 +60,9 @@ func newSoloTestEnv(t testing.TB) *soloTestEnv {
 		accounts,
 		chain.GetChainMetrics().WebAPI,
 		jsonrpc.ParametersDefault(),
+		func() iotago.API {
+			return testutil.L1API
+		},
 	)
 	require.NoError(t, err)
 	t.Cleanup(rpcsrv.Stop)

@@ -9,6 +9,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 )
 
 func initCreateFoundryCmd() *cobra.Command {
@@ -31,7 +32,7 @@ func initCreateFoundryCmd() *cobra.Command {
 				MeltedTokens:  big.NewInt(meltedTokens),
 			}
 
-			tokenSchemeBytes := codec.EncodeTokenScheme(tokenScheme)
+			tokenSchemeBytes := codec.EncodeTokenScheme(tokenScheme, cliclients.L1Client().API())
 
 			return []string{"string", "t", "bytes", "0x" + hex.EncodeToString(tokenSchemeBytes)}
 		},

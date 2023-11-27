@@ -29,12 +29,11 @@ import (
 // tests.
 type jsonRPCSoloBackend struct {
 	Chain     *Chain
-	baseToken api.InfoResBaseToken
 	snapshots []*Snapshot
 }
 
-func newJSONRPCSoloBackend(chain *Chain, baseToken api.InfoResBaseToken) jsonrpc.ChainBackend {
-	return &jsonRPCSoloBackend{Chain: chain, baseToken: baseToken}
+func newJSONRPCSoloBackend(chain *Chain) jsonrpc.ChainBackend {
+	return &jsonRPCSoloBackend{Chain: chain}
 }
 
 func (b *jsonRPCSoloBackend) EVMSendTransaction(tx *types.Transaction) error {
@@ -42,12 +41,12 @@ func (b *jsonRPCSoloBackend) EVMSendTransaction(tx *types.Transaction) error {
 	return err
 }
 
-func (b *jsonRPCSoloBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.Chain, chainOutputs, callMsg, b.baseToken.Decimals)
+func (b *jsonRPCSoloBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg, _ iotago.API) ([]byte, error) {
+	return chainutil.EVMCall(b.Chain, chainOutputs, callMsg, testutil.L1API, *testutil.TokenInfo)
 }
 
-func (b *jsonRPCSoloBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.Chain, chainOutputs, callMsg, b.baseToken.Decimals)
+func (b *jsonRPCSoloBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg, _ iotago.API) (uint64, error) {
+	return chainutil.EVMEstimateGas(b.Chain, chainOutputs, callMsg, testutil.L1API, *testutil.TokenInfo)
 }
 
 func (b *jsonRPCSoloBackend) EVMTraceTransaction(
@@ -56,6 +55,7 @@ func (b *jsonRPCSoloBackend) EVMTraceTransaction(
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
 	tracer tracers.Tracer,
+	_ iotago.API,
 ) error {
 	return chainutil.EVMTraceTransaction(
 		b.Chain,
@@ -64,10 +64,12 @@ func (b *jsonRPCSoloBackend) EVMTraceTransaction(
 		iscRequestsInBlock,
 		txIndex,
 		tracer,
+		testutil.L1API,
+		*testutil.TokenInfo,
 	)
 }
 
-func (b *jsonRPCSoloBackend) ISCCallView(chainState state.State, scName, funName string, args dict.Dict) (dict.Dict, error) {
+func (b *jsonRPCSoloBackend) ISCCallView(chainState state.State, scName, funName string, args dict.Dict, _ iotago.API) (dict.Dict, error) {
 	return b.Chain.CallViewAtState(chainState, scName, funName, args)
 }
 
@@ -96,7 +98,7 @@ func (b *jsonRPCSoloBackend) ISCStateByTrieRoot(trieRoot trie.Hash) (state.State
 }
 
 func (b *jsonRPCSoloBackend) BaseToken() api.InfoResBaseToken {
-	return b.baseToken
+	return *testutil.TokenInfo
 }
 
 func (b *jsonRPCSoloBackend) ISCChainID() *isc.ChainID {
@@ -118,7 +120,7 @@ func (b *jsonRPCSoloBackend) TakeSnapshot() (int, error) {
 }
 
 func (b *jsonRPCSoloBackend) BaseTokenDecimals() uint32 {
-	return b.baseToken.Decimals
+	return testutil.TokenInfo.Decimals
 }
 
 /*
@@ -134,7 +136,7 @@ path.Join(indexDbPath, backend.ISCChainID().String())
 */
 func (ch *Chain) EVM() *jsonrpc.EVMChain {
 	return jsonrpc.NewEVMChain(
-		newJSONRPCSoloBackend(ch, *testutil.TokenInfo),
+		newJSONRPCSoloBackend(ch),
 		ch.Env.publisher,
 		true,
 		ch.Env.getDB(dbKindEVMJSONRPCIndex, ch.ChainID),

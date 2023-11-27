@@ -204,7 +204,7 @@ func TestWaspCLIDeposit(t *testing.T) {
 			MintedTokens:  big.NewInt(0),
 			MeltedTokens:  big.NewInt(0),
 			MaximumSupply: big.NewInt(1000),
-		})
+		}, testutil.L1API)
 		out := w.PostRequestGetReceipt(
 			"accounts", accounts.FuncFoundryCreateNew.Name,
 			"string", accounts.ParamTokenScheme, "bytes", hexutil.EncodeHex(tokenScheme),
@@ -283,7 +283,7 @@ func TestWaspCLIUnprocessableRequest(t *testing.T) {
 			MintedTokens:  big.NewInt(0),
 			MeltedTokens:  big.NewInt(0),
 			MaximumSupply: big.NewInt(1),
-		})
+		}, testutil.L1API)
 		for i := 1; i <= nFoundries; i++ {
 			// create foundry
 			out := w.PostRequestGetReceipt(

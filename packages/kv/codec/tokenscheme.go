@@ -1,7 +1,6 @@
 package codec
 
 import (
-	"context"
 	"errors"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -32,8 +31,8 @@ func MustDecodeTokenScheme(b []byte, l1API iotago.API, def ...iotago.TokenScheme
 	return t
 }
 
-func EncodeTokenScheme(value iotago.TokenScheme) []byte {
-	b, err := iotago.CommonSerixAPI().Encode(context.Background(), value)
+func EncodeTokenScheme(value iotago.TokenScheme, l1API iotago.API) []byte {
+	b, err := l1API.Encode(value)
 	if err != nil {
 		panic(err)
 	}

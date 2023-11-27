@@ -259,7 +259,7 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 				evm.FieldTokenName:          codec.EncodeString(name),
 				evm.FieldTokenTickerSymbol:  codec.EncodeString(tickerSymbol),
 				evm.FieldTokenDecimals:      codec.EncodeUint8(decimals),
-				evm.FieldFoundryTokenScheme: codec.EncodeTokenScheme(tokenScheme),
+				evm.FieldFoundryTokenScheme: codec.EncodeTokenScheme(tokenScheme, ctx.L1API()),
 				evm.FieldTargetAddress:      codec.EncodeAddress(accountID.ToAddress()),
 			},
 			GasBudget: gasBudget,

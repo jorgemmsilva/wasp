@@ -17,8 +17,13 @@ type foundryOutputRec struct {
 	Metadata    []byte
 }
 
-func (rec *foundryOutputRec) Bytes() []byte {
-	return rwutil.WriteToBytes(rec)
+func (rec *foundryOutputRec) Bytes(l1API iotago.API) []byte {
+	buf := bytes.NewBuffer([]byte{})
+	err := rec.Write(buf, l1API)
+	if err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
 }
 
 func foundryOutputRecFromBytes(data []byte, l1API iotago.API) (*foundryOutputRec, error) {
@@ -47,12 +52,12 @@ func (rec *foundryOutputRec) Read(r io.Reader, l1API iotago.API) error {
 	return rr.Err
 }
 
-func (rec *foundryOutputRec) Write(w io.Writer) error {
+func (rec *foundryOutputRec) Write(w io.Writer, l1API iotago.API) error {
 	ww := rwutil.NewWriter(w)
 	ww.WriteN(rec.OutputID[:])
 	ww.WriteUint64(uint64(rec.Amount))
 	if ww.Err == nil {
-		tokenScheme := codec.EncodeTokenScheme(rec.TokenScheme)
+		tokenScheme := codec.EncodeTokenScheme(rec.TokenScheme, l1API)
 		ww.WriteBytes(tokenScheme)
 	}
 	ww.WriteBytes(rec.Metadata)

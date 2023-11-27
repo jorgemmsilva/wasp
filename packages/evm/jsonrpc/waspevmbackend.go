@@ -13,6 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -27,24 +29,24 @@ import (
 
 // WaspEVMBackend is the implementation of [ChainBackend] for the production environment.
 type WaspEVMBackend struct {
-	chain             chaintypes.Chain
-	nodePubKey        *cryptolib.PublicKey
-	baseTokenDecimals uint32
+	chain      chaintypes.Chain
+	nodePubKey *cryptolib.PublicKey
+	tokenInfo  api.InfoResBaseToken
 }
 
 var _ ChainBackend = &WaspEVMBackend{}
 
-func NewWaspEVMBackend(ch chaintypes.Chain, nodePubKey *cryptolib.PublicKey, baseTokenDecimals uint32) *WaspEVMBackend {
+func NewWaspEVMBackend(ch chaintypes.Chain, nodePubKey *cryptolib.PublicKey, tokenInfo api.InfoResBaseToken) *WaspEVMBackend {
 	return &WaspEVMBackend{
-		chain:             ch,
-		nodePubKey:        nodePubKey,
-		baseTokenDecimals: baseTokenDecimals,
+		chain:      ch,
+		nodePubKey: nodePubKey,
+		tokenInfo:  tokenInfo,
 	}
 }
 
-func (b *WaspEVMBackend) EVMGasRatio() (util.Ratio32, error) {
+func (b *WaspEVMBackend) EVMGasRatio(l1API iotago.API) (util.Ratio32, error) {
 	// TODO: Cache the gas ratio?
-	ret, err := b.ISCCallView(b.ISCLatestState(), governance.Contract.Name, governance.ViewGetEVMGasRatio.Name, nil)
+	ret, err := b.ISCCallView(b.ISCLatestState(), governance.Contract.Name, governance.ViewGetEVMGasRatio.Name, nil, l1API)
 	if err != nil {
 		return util.Ratio32{}, err
 	}
@@ -73,12 +75,12 @@ func (b *WaspEVMBackend) EVMSendTransaction(tx *types.Transaction) error {
 	return nil
 }
 
-func (b *WaspEVMBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) ([]byte, error) {
-	return chainutil.EVMCall(b.chain, chainOutputs, callMsg, b.BaseTokenDecimals())
+func (b *WaspEVMBackend) EVMCall(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg, l1API iotago.API) ([]byte, error) {
+	return chainutil.EVMCall(b.chain, chainOutputs, callMsg, l1API, b.tokenInfo)
 }
 
-func (b *WaspEVMBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg) (uint64, error) {
-	return chainutil.EVMEstimateGas(b.chain, chainOutputs, callMsg, b.BaseTokenDecimals())
+func (b *WaspEVMBackend) EVMEstimateGas(chainOutputs *isc.ChainOutputs, callMsg ethereum.CallMsg, l1API iotago.API) (uint64, error) {
+	return chainutil.EVMEstimateGas(b.chain, chainOutputs, callMsg, l1API, b.tokenInfo)
 }
 
 func (b *WaspEVMBackend) EVMTraceTransaction(
@@ -87,6 +89,7 @@ func (b *WaspEVMBackend) EVMTraceTransaction(
 	iscRequestsInBlock []isc.Request,
 	txIndex uint64,
 	tracer tracers.Tracer,
+	l1API iotago.API,
 ) error {
 	return chainutil.EVMTraceTransaction(
 		b.chain,
@@ -95,15 +98,23 @@ func (b *WaspEVMBackend) EVMTraceTransaction(
 		iscRequestsInBlock,
 		txIndex,
 		tracer,
+		l1API,
+		b.tokenInfo,
 	)
 }
 
-func (b *WaspEVMBackend) ISCCallView(chainState state.State, scName, funName string, args dict.Dict) (dict.Dict, error) {
-	return chainutil.CallView(chainState, b.chain, isc.Hn(scName), isc.Hn(funName), args)
+func (b *WaspEVMBackend) ISCCallView(
+	chainState state.State,
+	scName,
+	funName string,
+	args dict.Dict,
+	l1API iotago.API,
+) (dict.Dict, error) {
+	return chainutil.CallView(chainState, b.chain, isc.Hn(scName), isc.Hn(funName), args, l1API, b.tokenInfo)
 }
 
 func (b *WaspEVMBackend) BaseTokenDecimals() uint32 {
-	return b.baseTokenDecimals
+	return b.tokenInfo.Decimals
 }
 
 func (b *WaspEVMBackend) ISCLatestChainOutputs() (*isc.ChainOutputs, error) {

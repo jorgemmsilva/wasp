@@ -95,7 +95,7 @@ func (h *magicContractHandler) FoundryCreateNew(tokenScheme iotago.SimpleTokenSc
 		accounts.Contract.Hname(),
 		accounts.FuncFoundryCreateNew.Hname(),
 		dict.Dict{
-			accounts.ParamTokenScheme: codec.EncodeTokenScheme(&tokenScheme),
+			accounts.ParamTokenScheme: codec.EncodeTokenScheme(&tokenScheme, h.ctx.L1API()),
 		},
 		allowance.Unwrap(),
 	)

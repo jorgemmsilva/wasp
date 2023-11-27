@@ -44,15 +44,13 @@ type ViewContext struct {
 	gasBurnEnabled        bool
 	gasBurnLoggingEnabled bool
 	callStack             []*callContext
-
-	// TODO this is not set anywhere!!
-	l1API     iotago.API
-	tokenInfo api.InfoResBaseToken
+	l1API                 iotago.API
+	tokenInfo             api.InfoResBaseToken
 }
 
 var _ execution.WaspCallContext = &ViewContext{}
 
-func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled bool) (*ViewContext, error) {
+func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled bool, l1API iotago.API, tokenInfo api.InfoResBaseToken) (*ViewContext, error) {
 	chainID := ch.ID()
 	return &ViewContext{
 		processors:            ch.Processors(),
@@ -60,6 +58,8 @@ func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled
 		chainID:               chainID,
 		log:                   ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
 		gasBurnLoggingEnabled: gasBurnLoggingEnabled,
+		l1API:                 l1API,
+		tokenInfo:             tokenInfo,
 	}, nil
 }
 

@@ -1,14 +1,11 @@
 package models
 
-import (
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/hexutil"
-)
-
 type NodeOwnerCertificateResponse struct {
 	Certificate string `json:"certificate" swagger:"desc(Certificate stating the ownership. (Hex)),required"`
 }
 
+// TODO: <lmoe> For now just commented out, might be removed soon
+/*
 // Storage defines the parameters of rent cost calculations on objects which take node resources.
 type Storage struct {
 	// Defines the rent of a single virtual byte denoted in IOTA tokens.
@@ -72,15 +69,15 @@ func MapL1Params(l1 *parameters.L1Params) *L1Params {
 	}
 
 	return params
-}
+}*/
 
 type VersionResponse struct {
 	Version string `json:"version" swagger:"desc(The version of the node),required"`
 }
 
 type InfoResponse struct {
-	Version    string    `json:"version" swagger:"desc(The version of the node),required"`
-	PublicKey  string    `json:"publicKey" swagger:"desc(The public key of the node (Hex)),required"`
-	PeeringURL string    `json:"peeringURL" swagger:"desc(The net id of the node),required"`
-	L1Params   *L1Params `json:"l1Params" swagger:"desc(The L1 parameters),required"`
+	Version    string `json:"version" swagger:"desc(The version of the node),required"`
+	PublicKey  string `json:"publicKey" swagger:"desc(The public key of the node (Hex)),required"`
+	PeeringURL string `json:"peeringURL" swagger:"desc(The net id of the node),required"`
+	//L1Params   *L1Params `json:"l1Params" swagger:"desc(The L1 parameters),required"`
 }

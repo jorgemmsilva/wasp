@@ -59,6 +59,7 @@ func initSendFundsCmd() *cobra.Command {
 				[]iotago.UnlockCondition{},
 				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
 				false,
+				cliclients.L1Client().API(),
 			)
 			log.Check(err)
 

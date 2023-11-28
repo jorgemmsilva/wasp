@@ -5,13 +5,9 @@ import (
 
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
-	"github.com/iotaledger/wasp/clients/chainclient"
-	"github.com/iotaledger/wasp/clients/scclient"
 	"github.com/iotaledger/wasp/components/app"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
-	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
@@ -64,17 +60,4 @@ func L1Client() l1connection.Client {
 		)
 	}
 	return l1client
-}
-
-func ChainClient(waspClient *apiclient.APIClient, chainID isc.ChainID) *chainclient.Client {
-	return chainclient.New(
-		L1Client(),
-		waspClient,
-		chainID,
-		wallet.Load().KeyPair,
-	)
-}
-
-func SCClient(apiClient *apiclient.APIClient, chainID isc.ChainID, contractHname isc.Hname) *scclient.SCClient {
-	return scclient.New(ChainClient(apiClient, chainID), contractHname)
 }

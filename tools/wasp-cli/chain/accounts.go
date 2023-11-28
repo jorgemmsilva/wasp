@@ -166,10 +166,10 @@ func initDepositCmd() *cobra.Command {
 				// deposit to own agentID
 				tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args))
 
-				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.Transaction, error) {
+				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.SignedTransaction, error) {
 					client := cliclients.WaspClient(node)
 
-					return cliclients.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
+					return wallet.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
 						accounts.FuncDeposit.Name,
 						chainclient.PostRequestParams{
 							Transfer:                 tokens,
@@ -199,10 +199,10 @@ func initDepositCmd() *cobra.Command {
 					}
 				}
 
-				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.Transaction, error) {
+				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.SignedTransaction, error) {
 					client := cliclients.WaspClient(node)
 
-					return cliclients.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
+					return wallet.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
 						accounts.FuncTransferAllowanceTo.Name,
 						chainclient.PostRequestParams{
 							Args: dict.Dict{

@@ -6,6 +6,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
@@ -26,7 +27,7 @@ func Load() *Wallet {
 	masterSeed, err := hexutil.DecodeHex(seedHex)
 	log.Check(err)
 
-	kp := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(masterSeed, uint64(AddressIndex), useLegacyDerivation))
+	kp := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(masterSeed, uint64(AddressIndex), cliclients.L1Client().Bech32HRP(), useLegacyDerivation))
 
 	return &Wallet{KeyPair: kp, AddressIndex: AddressIndex}
 }

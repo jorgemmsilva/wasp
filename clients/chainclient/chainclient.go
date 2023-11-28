@@ -3,6 +3,9 @@ package chainclient
 import (
 	"context"
 	"math"
+	"time"
+
+	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
@@ -16,7 +19,6 @@ import (
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/gas"
-	"github.com/samber/lo"
 )
 
 // Client allows to interact with a specific chain in the node, for example to send on-ledger or off-ledger requests
@@ -71,7 +73,7 @@ func (c *Client) Post1Request(
 	contractHname isc.Hname,
 	entryPoint isc.Hname,
 	params ...PostRequestParams,
-) (*iotago.Transaction, error) {
+) (*iotago.SignedTransaction, error) {
 	outputsSet, err := c.Layer1Client.OutputMap(c.KeyPair.Address())
 	if err != nil {
 		return nil, err
@@ -85,30 +87,30 @@ func (c *Client) PostNRequests(
 	entryPoint isc.Hname,
 	requestsCount int,
 	params ...PostRequestParams,
-) ([]*iotago.Transaction, error) {
+) ([]*iotago.SignedTransaction, error) {
 	var err error
 	outputs, err := c.Layer1Client.OutputMap(c.KeyPair.Address())
 	if err != nil {
 		return nil, err
 	}
-	transactions := make([]*iotago.Transaction, requestsCount)
+	transactions := make([]*iotago.SignedTransaction, requestsCount)
 	for i := 0; i < requestsCount; i++ {
 		transactions[i], err = c.post1RequestWithOutputs(contractHname, entryPoint, outputs, params...)
 		if err != nil {
 			return nil, err
 		}
-		txID, err := transactions[i].ID()
+		txID, err := transactions[i].Transaction.ID()
 		if err != nil {
 			return nil, err
 		}
-		for _, input := range lo.Must(transactions[i].Inputs()) {
+		for _, input := range lo.Must(transactions[i].Transaction.Inputs()) {
 			delete(outputs, input.OutputID())
 		}
-		for index, output := range transactions[i].Outputs {
+		for index, output := range transactions[i].Transaction.Outputs {
 			if basicOutput, ok := output.(*iotago.BasicOutput); ok {
 				if basicOutput.Ident().Equal(c.KeyPair.Address()) {
 					outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
-					outputs[outputID] = transactions[i].Outputs[index]
+					outputs[outputID] = transactions[i].Transaction.Outputs[index]
 				}
 			}
 		}
@@ -121,28 +123,28 @@ func (c *Client) post1RequestWithOutputs(
 	entryPoint isc.Hname,
 	outputs iotago.OutputSet,
 	params ...PostRequestParams,
-) (*iotago.Transaction, error) {
+) (*iotago.SignedTransaction, error) {
 	par := defaultParams(params...)
 	tx, err := transaction.NewRequestTransaction(
-		transaction.NewRequestTransactionParams{
-			SenderKeyPair:    c.KeyPair,
-			SenderAddress:    c.KeyPair.Address(),
-			UnspentOutputs:   outputs,
-			UnspentOutputIDs: isc.OutputSetToOutputIDs(outputs),
-			Request: &isc.RequestParameters{
-				TargetAddress:                 c.ChainID.AsAddress(),
-				Assets:                        par.Transfer,
-				AdjustToMinimumStorageDeposit: par.AutoAdjustStorageDeposit,
-				Metadata: &isc.SendMetadata{
-					TargetContract: contractHname,
-					EntryPoint:     entryPoint,
-					Params:         par.Args,
-					Allowance:      par.Allowance,
-					GasBudget:      par.GasBudget(),
-				},
+		c.KeyPair,
+		c.KeyPair.Address(),
+		outputs,
+		&isc.RequestParameters{
+			TargetAddress:                 c.ChainID.AsAddress(),
+			Assets:                        par.Transfer,
+			AdjustToMinimumStorageDeposit: par.AutoAdjustStorageDeposit,
+			Metadata: &isc.SendMetadata{
+				TargetContract: contractHname,
+				EntryPoint:     entryPoint,
+				Params:         par.Args,
+				Allowance:      par.Allowance,
+				GasBudget:      par.GasBudget(),
 			},
-			NFT: par.NFT,
 		},
+		par.NFT,
+		c.Layer1Client.API().TimeProvider().SlotFromTime(time.Now()),
+		false,
+		c.Layer1Client.API(),
 	)
 	if err != nil {
 		return nil, err
@@ -203,7 +205,7 @@ func (c *Client) PostOffLedgerRequest(ctx context.Context,
 	return signed, err
 }
 
-func (c *Client) DepositFunds(n iotago.BaseToken) (*iotago.Transaction, error) {
+func (c *Client) DepositFunds(n iotago.BaseToken) (*iotago.SignedTransaction, error) {
 	return c.Post1Request(accounts.Contract.Hname(), accounts.FuncDeposit.Hname(), PostRequestParams{
 		Transfer: isc.NewAssets(n, nil),
 	})
@@ -228,7 +230,7 @@ func (par *PostRequestParams) WithBaseTokens(i iotago.BaseToken) *PostRequestPar
 	return par
 }
 
-func (par *PostRequestParams) WithGasBudget(budget uint64) *PostRequestParams {
+func (par *PostRequestParams) WithGasBudget(budget gas.GasUnits) *PostRequestParams {
 	par.gasBudget = budget
 	return par
 }

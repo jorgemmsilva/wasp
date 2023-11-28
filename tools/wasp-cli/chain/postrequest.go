@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/gas"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/util"
 	"github.com/iotaledger/wasp/tools/wasp-cli/waspcmd"
 )
@@ -18,7 +19,7 @@ func postRequest(nodeName, chain, hname, fname string, params chainclient.PostRe
 	chainID := config.GetChain(chain)
 
 	apiClient := cliclients.WaspClient(nodeName)
-	scClient := cliclients.SCClient(apiClient, chainID, isc.Hn(hname))
+	scClient := wallet.SCClient(apiClient, chainID, isc.Hn(hname))
 
 	if offLedger {
 		util.WithOffLedgerRequest(chainID, nodeName, func() (isc.OffLedgerRequest, error) {
@@ -47,7 +48,7 @@ func postRequest(nodeName, chain, hname, fname string, params chainclient.PostRe
 		util.SDAdjustmentPrompt(output)
 	}
 
-	util.WithSCTransaction(config.GetChain(chain), nodeName, func() (*iotago.Transaction, error) {
+	util.WithSCTransaction(config.GetChain(chain), nodeName, func() (*iotago.SignedTransaction, error) {
 		return scClient.PostRequest(fname, params)
 	})
 }

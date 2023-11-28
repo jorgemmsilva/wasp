@@ -282,6 +282,9 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 		},
 		stateAddr,
 		stateAddr,
+		0,
+		0,
+		clu.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("DeployChain: %w", err)

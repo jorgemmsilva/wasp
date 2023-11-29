@@ -21,6 +21,7 @@ import (
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -281,7 +282,7 @@ func (pt *PrivTangle) Stop() {
 }
 
 func (pt *PrivTangle) nodeClient(i int) *nodeclient.Client {
-	return nodeclient.New(fmt.Sprintf("http://localhost:%d", pt.NodePortRestAPI(i)))
+	return lo.Must(nodeclient.New(fmt.Sprintf("http://localhost:%d", pt.NodePortRestAPI(i))))
 }
 
 func (pt *PrivTangle) waitAllReady(timeout time.Duration) {
@@ -537,7 +538,6 @@ func (pt *PrivTangle) L1Config(i ...int) l1connection.Config {
 		INXAddress:    fmt.Sprintf("localhost:%d", pt.NodePortINX(nodeIndex)),
 		FaucetAddress: fmt.Sprintf("http://localhost:%d", pt.NodePortFaucet(nodeIndex)),
 		FaucetKey:     pt.FaucetKeyPair,
-		UseRemotePoW:  false,
 	}
 }
 

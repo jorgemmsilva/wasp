@@ -10,7 +10,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -69,17 +68,19 @@ func createOnLedgerRequest() isc.OnLedgerRequest {
 
 	outputOn := &iotago.BasicOutput{
 		Amount: 123,
-		NativeTokens: []*iotago.NativeTokenFeature{
+		Features: iotago.BasicOutputFeatures{
+			&iotago.MetadataFeature{
+				Entries: map[iotago.MetadataFeatureEntriesKey]iotago.MetadataFeatureEntriesValue{
+					"": requestMetadata.Bytes(),
+				},
+			},
+			&iotago.SenderFeature{Address: tpkg.RandAccountAddress()},
 			&iotago.NativeTokenFeature{
 				ID:     [iotago.NativeTokenIDLength]byte{1},
 				Amount: big.NewInt(100),
 			},
 		},
-		Features: iotago.Features{
-			&iotago.MetadataFeature{Data: requestMetadata.Bytes()},
-			&iotago.SenderFeature{Address: tpkg.RandAccountAddress()},
-		},
-		Conditions: iotago.UnlockConditions{
+		UnlockConditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: tpkg.RandAccountAddress()},
 		},
 	}
@@ -108,9 +109,9 @@ func TestMessageMetrics(t *testing.T) {
 	checkMetricsValues(t, 3, outputID3, ncm.InStateOutput())
 
 	// IN Alias output
-	anchorOutput1 := &iotago.AnchorOutput{StateIndex: 1, StateMetadata: []byte{}}
-	anchorOutput2 := &iotago.AnchorOutput{StateIndex: 2, StateMetadata: []byte{}}
-	anchorOutput3 := &iotago.AnchorOutput{StateIndex: 3, StateMetadata: []byte{}}
+	anchorOutput1 := &iotago.AnchorOutput{StateIndex: 1}
+	anchorOutput2 := &iotago.AnchorOutput{StateIndex: 2}
+	anchorOutput3 := &iotago.AnchorOutput{StateIndex: 3}
 
 	ncm.InAnchorOutput().IncMessages(anchorOutput1)
 	cncm1.InAnchorOutput().IncMessages(anchorOutput2)
@@ -175,16 +176,13 @@ func TestMessageMetrics(t *testing.T) {
 
 	// OUT Publish governance transaction
 	publishStateTransaction1 := &iotago.Transaction{
-		Essence: nil,
-		Unlocks: nil,
+		TransactionEssence: nil,
 	}
 	publishStateTransaction2 := &iotago.Transaction{
-		Essence: nil,
-		Unlocks: nil,
+		TransactionEssence: nil,
 	}
 	publishStateTransaction3 := &iotago.Transaction{
-		Essence: nil,
-		Unlocks: nil,
+		TransactionEssence: nil,
 	}
 
 	cncm2.OutPublishGovernanceTransaction().IncMessages(publishStateTransaction1)
@@ -222,22 +220,13 @@ func TestMessageMetrics(t *testing.T) {
 	utxoInput2 := &iotago.UTXOInput{TransactionID: iotago.TransactionID{1}}
 	utxoInput3 := &iotago.UTXOInput{TransactionID: iotago.TransactionID{1}}
 
-	cncm1.OutPullOutputByID().IncMessages(utxoInput1.ID())
-	cncm1.OutPullOutputByID().IncMessages(utxoInput2.ID())
-	cncm1.OutPullOutputByID().IncMessages(utxoInput3.ID())
+	cncm1.OutPullOutputByID().IncMessages(utxoInput1.OutputID())
+	cncm1.OutPullOutputByID().IncMessages(utxoInput2.OutputID())
+	cncm1.OutPullOutputByID().IncMessages(utxoInput3.OutputID())
 
-	checkMetricsValues(t, 3, utxoInput3.ID(), cncm1.OutPullOutputByID())
+	checkMetricsValues(t, 3, utxoInput3.OutputID(), cncm1.OutPullOutputByID())
 	checkMetricsValues(t, 0, iotago.OutputID{}, cncm2.OutPullOutputByID())
-	checkMetricsValues(t, 3, utxoInput3.ID(), ncm.OutPullOutputByID())
-
-	// IN Milestone
-	milestoneInfo1 := &nodeclient.MilestoneInfo{Index: 0}
-	milestoneInfo2 := &nodeclient.MilestoneInfo{Index: 0}
-
-	ncm.InMilestone().IncMessages(milestoneInfo1)
-	ncm.InMilestone().IncMessages(milestoneInfo2)
-
-	checkMetricsValues(t, 2, milestoneInfo2, ncm.InMilestone())
+	checkMetricsValues(t, 3, utxoInput3.OutputID(), ncm.OutPullOutputByID())
 }
 
 func checkMetricsValues[T any, V any](t *testing.T, expectedTotal uint32, expectedLastMessage V, metrics IMessageMetric[T]) {

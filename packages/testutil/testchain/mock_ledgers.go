@@ -12,6 +12,8 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
+// TODO not sure how to refactor this file, milestones are not a thing anymore.
+
 type MockedLedgers struct {
 	ledgers              map[isc.ChainIDKey]*MockedLedger
 	milestones           *event.Event1[*nodebridge.Milestone]

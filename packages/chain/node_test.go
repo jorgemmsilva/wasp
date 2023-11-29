@@ -103,7 +103,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 
 	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(te.originTx)
 	require.NoError(t, err)
-	deployBaseAO := isc.NewAnchorOutputWithID(deployBaseAONoID, deployBaseAnchor.OutputID)
+	deployBaseAO := isc.NewChainOutputs(deployBaseAONoID, deployBaseAnchor.OutputID)
 	for _, tnc := range te.nodeConns {
 		tnc.recvAnchorOutput(
 			isc.NewOutputInfo(deployBaseAO.OutputID(), deployBaseAO.GetAnchorOutput(), iotago.TransactionID{}),
@@ -209,7 +209,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 			activeAO, err := node.LatestAnchorOutput(chaintypes.ActiveState)
 			require.NoError(t, err)
 			lastPublishedTX := te.nodeConns[i].published[len(te.nodeConns[i].published)-1]
-			lastPublishedAO, err := isc.AnchorOutputWithIDFromTx(lastPublishedTX, te.chainID.AsAddress())
+			lastPublishedAO, err := isc.ChainOutputsFromTx(lastPublishedTX, te.chainID.AsAddress())
 			require.NoError(t, err)
 			if !lastPublishedAO.Equals(confirmedAO) { // In this test we confirm outputs immediately.
 				te.log.Debugf("lastPublishedAO(%v) != confirmedAO(%v)", lastPublishedAO, confirmedAO)

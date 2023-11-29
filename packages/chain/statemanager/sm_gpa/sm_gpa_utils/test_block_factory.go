@@ -29,7 +29,7 @@ type BlockFactory struct {
 	chainID             isc.ChainID
 	chainInitParams     dict.Dict
 	lastBlockCommitment *state.L1Commitment
-	anchorOutputs       map[state.BlockHash]*isc.AnchorOutputWithID
+	anchorOutputs       map[state.BlockHash]*isc.ChainOutputs
 }
 
 func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *BlockFactory {
@@ -57,8 +57,8 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 			},
 		},
 	}
-	anchorOutputs := make(map[state.BlockHash]*isc.AnchorOutputWithID)
-	originOutput := isc.NewAnchorOutputWithID(anchorOutput0, anchorOutput0ID)
+	anchorOutputs := make(map[state.BlockHash]*isc.ChainOutputs)
+	originOutput := isc.NewChainOutputs(anchorOutput0, anchorOutput0ID)
 	anchorOutputs[originCommitment.BlockHash()] = originOutput
 	chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
 	origin.InitChain(chainStore, chainInitParams, 0)
@@ -80,7 +80,7 @@ func (bfT *BlockFactory) GetChainInitParameters() dict.Dict {
 	return bfT.chainInitParams
 }
 
-func (bfT *BlockFactory) GetOriginOutput() *isc.AnchorOutputWithID {
+func (bfT *BlockFactory) GetOriginOutput() *isc.ChainOutputs {
 	return bfT.GetAnchorOutput(origin.L1Commitment(bfT.chainInitParams, 0))
 }
 
@@ -159,7 +159,7 @@ func (bfT *BlockFactory) GetNextBlock(
 		Features:       consumedAnchorOutput.Features,
 	}
 	anchorOutputID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(bfT.t), 0)
-	anchorOutputWithID := isc.NewAnchorOutputWithID(anchorOutput, anchorOutputID)
+	anchorOutputWithID := isc.NewChainOutputs(anchorOutput, anchorOutputID)
 	bfT.anchorOutputs[newCommitment.BlockHash()] = anchorOutputWithID
 
 	return block
@@ -176,7 +176,7 @@ func (bfT *BlockFactory) GetStateDraft(block state.Block) state.StateDraft {
 	return result
 }
 
-func (bfT *BlockFactory) GetAnchorOutput(commitment *state.L1Commitment) *isc.AnchorOutputWithID {
+func (bfT *BlockFactory) GetAnchorOutput(commitment *state.L1Commitment) *isc.ChainOutputs {
 	result, ok := bfT.anchorOutputs[commitment.BlockHash()]
 	require.True(bfT.t, ok)
 	return result

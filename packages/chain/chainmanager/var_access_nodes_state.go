@@ -18,27 +18,27 @@ import (
 // committee should be used. The algorithm itself is similar to the `varLocalView`
 // in the `cmtLog`.
 type VarAccessNodeState interface {
-	Tip() *isc.AnchorOutputWithID
+	Tip() *isc.ChainOutputs
 	// Considers the produced (not yet confirmed) block / TX and returns new tip AO.
 	// The returned bool indicates if the tip has changed because of this call.
 	// This function should return L1 commitment, if the corresponding block should be added to the store.
-	BlockProduced(tx *iotago.Transaction) (*isc.AnchorOutputWithID, bool, *state.L1Commitment)
+	BlockProduced(tx *iotago.Transaction) (*isc.ChainOutputs, bool, *state.L1Commitment)
 	// Considers a confirmed AO and returns new tip AO.
 	// The returned bool indicates if the tip has changed because of this call.
-	BlockConfirmed(ao *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool)
+	BlockConfirmed(ao *isc.ChainOutputs) (*isc.ChainOutputs, bool)
 }
 
 type varAccessNodeStateImpl struct {
 	chainID   isc.ChainID
-	tipAO     *isc.AnchorOutputWithID                                        // Will point to the latest known good state while the chain don't have the current good state.
-	confirmed *isc.AnchorOutputWithID                                        // Latest known confirmed AO.
+	tipAO     *isc.ChainOutputs                                              // Will point to the latest known good state while the chain don't have the current good state.
+	confirmed *isc.ChainOutputs                                              // Latest known confirmed AO.
 	pending   *shrinkingmap.ShrinkingMap[uint32, []*varAccessNodeStateEntry] // A set of unconfirmed outputs (StateIndex => TX).
 	log       *logger.Logger                                                 // Will write this just for the alignment.
 }
 
 type varAccessNodeStateEntry struct {
-	output   *isc.AnchorOutputWithID // The published AO.
-	consumed iotago.OutputID         // The AO used as an input for the TX.
+	output   *isc.ChainOutputs // The published AO.
+	consumed iotago.OutputID   // The AO used as an input for the TX.
 }
 
 func NewVarAccessNodeState(chainID isc.ChainID, log *logger.Logger) VarAccessNodeState {
@@ -51,11 +51,11 @@ func NewVarAccessNodeState(chainID isc.ChainID, log *logger.Logger) VarAccessNod
 	}
 }
 
-func (vas *varAccessNodeStateImpl) Tip() *isc.AnchorOutputWithID {
+func (vas *varAccessNodeStateImpl) Tip() *isc.ChainOutputs {
 	return vas.tipAO
 }
 
-func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.AnchorOutputWithID, bool, *state.L1Commitment) {
+func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.ChainOutputs, bool, *state.L1Commitment) {
 	txID, err := tx.ID()
 	if err != nil {
 		vas.log.Debugf("BlockProduced: Ignoring, cannot extract txID: %v", err)
@@ -101,7 +101,7 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.A
 	return vas.tipAO, false, publishedL1Commitment
 }
 
-func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
+func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
 	vas.log.Debugf("BlockConfirmed: confirmed=%v", confirmed)
 	stateIndex := confirmed.GetStateIndex()
 	vas.confirmed = confirmed
@@ -109,7 +109,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AnchorOutputWit
 		// Clean all the outputs that are older (by StateIndex) than the new confirmed output.
 		// Also, clean all the blocks that have the higher index, but are known to be based
 		// on a block from a losing branch.
-		losing := []*isc.AnchorOutputWithID{}
+		losing := []*isc.ChainOutputs{}
 		vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 			if si == stateIndex {
 				for _, e := range es {
@@ -154,7 +154,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.AnchorOutputWit
 	return vas.outputIfChanged(vas.findLatestPending())
 }
 
-func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.AnchorOutputWithID) (*isc.AnchorOutputWithID, bool) {
+func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
 	if vas.tipAO == nil && newTip == nil {
 		vas.log.Debugf("⊳ Tip remains nil.")
 		return vas.tipAO, false
@@ -177,7 +177,7 @@ func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.AnchorOutputWithI
 	return vas.tipAO, true
 }
 
-func (vas *varAccessNodeStateImpl) isAnchorOutputPending(ao *isc.AnchorOutputWithID) bool {
+func (vas *varAccessNodeStateImpl) isAnchorOutputPending(ao *isc.ChainOutputs) bool {
 	found := false
 	vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 		found = lo.ContainsBy(es, func(e *varAccessNodeStateEntry) bool {
@@ -188,7 +188,7 @@ func (vas *varAccessNodeStateImpl) isAnchorOutputPending(ao *isc.AnchorOutputWit
 	return found
 }
 
-func (vas *varAccessNodeStateImpl) findLatestPending() *isc.AnchorOutputWithID {
+func (vas *varAccessNodeStateImpl) findLatestPending() *isc.ChainOutputs {
 	if vas.confirmed == nil {
 		return nil
 	}
@@ -211,9 +211,9 @@ func (vas *varAccessNodeStateImpl) findLatestPending() *isc.AnchorOutputWithID {
 	return latest
 }
 
-func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transaction) (iotago.OutputID, *isc.AnchorOutputWithID, error) {
+func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transaction) (iotago.OutputID, *isc.ChainOutputs, error) {
 	var consumed iotago.OutputID
-	var published *isc.AnchorOutputWithID
+	var published *isc.ChainOutputs
 	var err error
 	if vas.confirmed == nil {
 		return consumed, nil, fmt.Errorf("don't have the confirmed AO")
@@ -225,7 +225,7 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 	// Validate the TX:
 	//   - Signature is valid and is by the latest known confirmed state controller.
 	//   - Previous known AO is among the TX inputs.
-	published, err = isc.AnchorOutputWithIDFromTx(tx, vas.chainID.AsAddress())
+	published, err = isc.ChainOutputsFromTx(tx, vas.chainID.AsAddress())
 	if err != nil {
 		return consumed, nil, fmt.Errorf("cannot extract anchor output from the block: %v", err)
 	}

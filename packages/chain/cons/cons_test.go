@@ -101,7 +101,7 @@ func testConsBasic(t *testing.T, n, f int) {
 	require.NoError(t, err)
 	require.NotNil(t, stateAnchor)
 	require.NotNil(t, anchorOutput)
-	ao0 := isc.NewAnchorOutputWithID(anchorOutput, stateAnchor.OutputID)
+	ao0 := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID)
 	err = utxoDB.AddToLedger(originTX)
 	require.NoError(t, err)
 
@@ -136,7 +136,7 @@ func testConsBasic(t *testing.T, n, f int) {
 	reqRefs := []*isc.RequestRef{}
 	outputs, _ = utxoDB.GetUnspentOutputs(chainID.AsAddress())
 	for outputID, output := range outputs {
-		if output.Type() == iotago.OutputAlias {
+		if output.Type() == iotago.OutputAnchor {
 			anchorOutput := output.(*iotago.AnchorOutput)
 			if anchorOutput.AccountID == chainID.AsAnchorID() {
 				continue // That's our anchor output, not the request, skip it here.
@@ -422,7 +422,7 @@ func testChained(t *testing.T, n, f, b int) {
 
 type testInstInput struct {
 	nodeID           gpa.NodeID
-	baseAnchorOutput *isc.AnchorOutputWithID
+	baseAnchorOutput *isc.ChainOutputs
 	baseState        state.State // State committed with the baseAnchorOutput
 }
 

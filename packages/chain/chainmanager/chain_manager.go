@@ -98,14 +98,14 @@ type Output struct {
 	cmi *chainMgrImpl
 }
 
-func (o *Output) LatestActiveAnchorOutput() *isc.AnchorOutputWithID {
+func (o *Output) LatestActiveAnchorOutput() *isc.ChainOutputs {
 	if o.cmi.needConsensus == nil {
 		return nil
 	}
 	return o.cmi.needConsensus.BaseAnchorOutput
 }
-func (o *Output) LatestConfirmedAnchorOutput() *isc.AnchorOutputWithID { return o.cmi.latestConfirmedAO }
-func (o *Output) NeedConsensus() *NeedConsensus                      { return o.cmi.needConsensus }
+func (o *Output) LatestConfirmedAnchorOutput() *isc.ChainOutputs { return o.cmi.latestConfirmedAO }
+func (o *Output) NeedConsensus() *NeedConsensus                  { return o.cmi.needConsensus }
 func (o *Output) NeedPublishTX() *shrinkingmap.ShrinkingMap[iotago.TransactionID, *NeedPublishTX] {
 	return o.cmi.needPublishTX
 }
@@ -120,10 +120,10 @@ func (o *Output) String() string {
 }
 
 type NeedConsensus struct {
-	CommitteeAddr   iotago.Ed25519Address
-	LogIndex        cmt_log.LogIndex
-	DKShare         tcrypto.DKShare
-	BaseAnchorOutput *isc.AnchorOutputWithID
+	CommitteeAddr    iotago.Ed25519Address
+	LogIndex         cmt_log.LogIndex
+	DKShare          tcrypto.DKShare
+	BaseAnchorOutput *isc.ChainOutputs
 }
 
 func (nc *NeedConsensus) IsFor(output *cmt_log.Output) bool {
@@ -140,12 +140,12 @@ func (nc *NeedConsensus) String() string {
 }
 
 type NeedPublishTX struct {
-	CommitteeAddr     iotago.Ed25519Address
-	LogIndex          cmt_log.LogIndex
-	TxID              iotago.TransactionID
-	Tx                *iotago.Transaction
-	BaseAnchorOutputID iotago.OutputID        // The consumed AnchorOutput.
-	NextAnchorOutput   *isc.AnchorOutputWithID // The next one (produced by the TX.)
+	CommitteeAddr      iotago.Ed25519Address
+	LogIndex           cmt_log.LogIndex
+	TxID               iotago.TransactionID
+	Tx                 *iotago.Transaction
+	BaseAnchorOutputID iotago.OutputID   // The consumed AnchorOutput.
+	NextAnchorOutput   *isc.ChainOutputs // The next one (produced by the TX.)
 }
 
 type ChainMgr interface {
@@ -165,9 +165,9 @@ type chainMgrImpl struct {
 	cmtLogs                 map[iotago.Ed25519Address]*cmtLogInst                            // All the committee log instances for this chain.
 	consensusStateRegistry  cmt_log.ConsensusStateRegistry                                   // Persistent store for log indexes.
 	latestActiveCmt         *iotago.Ed25519Address                                           // The latest active committee.
-	latestConfirmedAO       *isc.AnchorOutputWithID                                           // The latest confirmed AO (follows Active AO).
+	latestConfirmedAO       *isc.ChainOutputs                                                // The latest confirmed AO (follows Active AO).
 	activeNodesCB           func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey)          // All the nodes authorized for being access nodes (for the ActiveAO).
-	trackActiveStateCB      func(ao *isc.AnchorOutputWithID)                                  // We will call this to set new AO for the active state.
+	trackActiveStateCB      func(ao *isc.ChainOutputs)                                       // We will call this to set new AO for the active state.
 	savePreliminaryBlockCB  func(block state.Block)                                          // We will call this, when a preliminary block matching the tx signatures is received.
 	committeeUpdatedCB      func(dkShare tcrypto.DKShare)                                    // Will be called, when a committee changes.
 	needConsensus           *NeedConsensus                                                   // Query for a consensus.
@@ -197,7 +197,7 @@ func New(
 	dkShareRegistryProvider registry.DKShareRegistryProvider,
 	nodeIDFromPubKey func(pubKey *cryptolib.PublicKey) gpa.NodeID,
 	activeNodesCB func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey),
-	trackActiveStateCB func(ao *isc.AnchorOutputWithID),
+	trackActiveStateCB func(ao *isc.ChainOutputs),
 	savePreliminaryBlockCB func(block state.Block),
 	committeeUpdatedCB func(dkShare tcrypto.DKShare),
 	deriveAOByQuorum bool,
@@ -367,10 +367,10 @@ func (cmi *chainMgrImpl) handleInputConsensusOutputDone(input *inputConsensusOut
 			}
 		}
 		cmi.needPublishTX.Set(txID, &NeedPublishTX{
-			CommitteeAddr:     input.committeeAddr,
-			LogIndex:          input.logIndex,
-			TxID:              txID,
-			Tx:                input.consensusResult.Transaction,
+			CommitteeAddr:      input.committeeAddr,
+			LogIndex:           input.logIndex,
+			TxID:               txID,
+			Tx:                 input.consensusResult.Transaction,
 			BaseAnchorOutputID: input.consensusResult.BaseAnchorOutput,
 			NextAnchorOutput:   input.consensusResult.NextAnchorOutput,
 		})
@@ -505,9 +505,9 @@ func (cmi *chainMgrImpl) ensureNeedConsensus(cli *cmtLogInst, outputUntyped gpa.
 		panic(fmt.Errorf("ensureNeedConsensus cannot load DKShare for %v: %w", committeeAddress, err))
 	}
 	cmi.needConsensus = &NeedConsensus{
-		CommitteeAddr:   cli.committeeAddr,
-		LogIndex:        output.GetLogIndex(),
-		DKShare:         dkShare,
+		CommitteeAddr:    cli.committeeAddr,
+		LogIndex:         output.GetLogIndex(),
+		DKShare:          dkShare,
 		BaseAnchorOutput: output.GetBaseAnchorOutput(),
 	}
 }

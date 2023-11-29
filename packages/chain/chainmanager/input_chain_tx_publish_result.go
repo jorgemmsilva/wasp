@@ -13,16 +13,16 @@ type inputChainTxPublishResult struct {
 	committeeAddr iotago.Ed25519Address
 	logIndex      cmt_log.LogIndex
 	txID          iotago.TransactionID
-	anchorOutput   *isc.AnchorOutputWithID
+	anchorOutput  *isc.ChainOutputs
 	confirmed     bool
 }
 
-func NewInputChainTxPublishResult(committeeAddr iotago.Ed25519Address, logIndex cmt_log.LogIndex, txID iotago.TransactionID, anchorOutput *isc.AnchorOutputWithID, confirmed bool) gpa.Input {
+func NewInputChainTxPublishResult(committeeAddr iotago.Ed25519Address, logIndex cmt_log.LogIndex, txID iotago.TransactionID, anchorOutput *isc.ChainOutputs, confirmed bool) gpa.Input {
 	return &inputChainTxPublishResult{
 		committeeAddr: committeeAddr,
 		logIndex:      logIndex,
 		txID:          txID,
-		anchorOutput:   anchorOutput,
+		anchorOutput:  anchorOutput,
 		confirmed:     confirmed,
 	}
 }

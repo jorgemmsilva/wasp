@@ -5,6 +5,7 @@ package testchain
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -48,86 +50,90 @@ func (tcl *TestChainLedger) ChainID() isc.ChainID {
 	return tcl.chainID
 }
 
-func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.Transaction, *isc.ChainOutputs, isc.ChainID) {
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(tcl.governor.Address())
+func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID) {
+	outs := tcl.utxoDB.GetUnspentOutputs(tcl.governor.Address())
 	originTX, _, chainID, err := origin.NewChainOriginTransaction(
 		tcl.governor,
 		committeeAddress,
 		tcl.governor.Address(),
 		100*isc.Million,
+		0,
 		nil,
 		outs,
-		outIDs,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
+		testutil.L1API,
 	)
 	require.NoError(tcl.t, err)
-	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
 	require.NoError(tcl.t, err)
 	require.NotNil(tcl.t, stateAnchor)
 	require.NotNil(tcl.t, anchorOutput)
-	originAO := isc.NewAnchorOutputWithID(anchorOutput, stateAnchor.OutputID)
+	chainOutputs := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID, nil, iotago.OutputID{})
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(originTX))
 	tcl.chainID = chainID
-	return originTX, originAO, chainID
+	return originTX, chainOutputs, chainID
 }
 
 func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []isc.Request {
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(account.Address())
+	outs := tcl.utxoDB.GetUnspentOutputs(account.Address())
 	tx, err := transaction.NewRequestTransaction(
-		transaction.NewRequestTransactionParams{
-			SenderKeyPair:    account,
-			SenderAddress:    account.Address(),
-			UnspentOutputs:   outs,
-			UnspentOutputIDs: outIDs,
-			Request: &isc.RequestParameters{
-				TargetAddress:                 tcl.chainID.AsAddress(),
-				Assets:                        isc.NewAssetsBaseTokens(100_000_000),
-				AdjustToMinimumStorageDeposit: false,
-				Metadata: &isc.SendMetadata{
-					TargetContract: accounts.Contract.Hname(),
-					EntryPoint:     accounts.FuncDeposit.Hname(),
-					GasBudget:      2 * gas.LimitsDefault.MinGasPerRequest,
-				},
+		account,
+		account.Address(),
+		outs,
+		&isc.RequestParameters{
+			TargetAddress:                 tcl.chainID.AsAddress(),
+			Assets:                        isc.NewAssetsBaseTokens(100_000_000),
+			AdjustToMinimumStorageDeposit: false,
+			Metadata: &isc.SendMetadata{
+				TargetContract: accounts.Contract.Hname(),
+				EntryPoint:     accounts.FuncDeposit.Hname(),
+				GasBudget:      2 * gas.LimitsDefault.MinGasPerRequest,
 			},
 		},
+		nil,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
+		false,
+		testutil.L1API,
 	)
 	require.NoError(tcl.t, err)
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))
-	return tcl.findChainRequests(tx)
+	return tcl.findChainRequests(tx.Transaction)
 }
 
 func (tcl *TestChainLedger) MakeTxDeployIncCounterContract() []isc.Request {
 	sender := tcl.governor
-	outs, outIDs := tcl.utxoDB.GetUnspentOutputs(sender.Address())
+	outs := tcl.utxoDB.GetUnspentOutputs(sender.Address())
 	tx, err := transaction.NewRequestTransaction(
-		transaction.NewRequestTransactionParams{
-			SenderKeyPair:    sender,
-			SenderAddress:    sender.Address(),
-			UnspentOutputs:   outs,
-			UnspentOutputIDs: outIDs,
-			Request: &isc.RequestParameters{
-				TargetAddress:                 tcl.chainID.AsAddress(),
-				Assets:                        isc.NewAssetsBaseTokens(2_000_000),
-				AdjustToMinimumStorageDeposit: false,
-				Metadata: &isc.SendMetadata{
-					TargetContract: root.Contract.Hname(),
-					EntryPoint:     root.FuncDeployContract.Hname(),
-					Params: codec.MakeDict(map[string]interface{}{
-						root.ParamProgramHash: inccounter.Contract.ProgramHash,
-						root.ParamName:        inccounter.Contract.Name,
-						inccounter.VarCounter: 0,
-					}),
-					GasBudget: 2 * gas.LimitsDefault.MinGasPerRequest,
-				},
+		sender,
+		sender.Address(),
+		outs,
+		&isc.RequestParameters{
+			TargetAddress:                 tcl.chainID.AsAddress(),
+			Assets:                        isc.NewAssetsBaseTokens(2_000_000),
+			AdjustToMinimumStorageDeposit: false,
+			Metadata: &isc.SendMetadata{
+				TargetContract: root.Contract.Hname(),
+				EntryPoint:     root.FuncDeployContract.Hname(),
+				Params: codec.MakeDict(map[string]interface{}{
+					root.ParamProgramHash: inccounter.Contract.ProgramHash,
+					root.ParamName:        inccounter.Contract.Name,
+					inccounter.VarCounter: 0,
+				}),
+				GasBudget: 2 * gas.LimitsDefault.MinGasPerRequest,
 			},
 		},
+		nil,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
+		false,
+		testutil.L1API,
 	)
 	require.NoError(tcl.t, err)
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))
-	return tcl.findChainRequests(tx)
+	return tcl.findChainRequests(tx.Transaction)
 }
 
-func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AnchorOutputWithID, stateCommitment *state.L1Commitment) *isc.AnchorOutputWithID {
+func (tcl *TestChainLedger) FakeStateTransition(chainOuts *isc.ChainOutputs, stateCommitment *state.L1Commitment) *isc.ChainOutputs {
 	stateMetadata := transaction.NewStateMetadata(
 		stateCommitment,
 		gas.DefaultFeePolicy(),
@@ -135,43 +141,60 @@ func (tcl *TestChainLedger) FakeStateTransition(baseAO *isc.AnchorOutputWithID, 
 		"",
 	)
 	anchorOutput := &iotago.AnchorOutput{
-		Amount:        baseAO.GetAnchorOutput().BaseTokenAmount(),
-		AccountID:     tcl.chainID.AsAnchorID(),
-		StateIndex:    baseAO.GetStateIndex() + 1,
-		StateMetadata: stateMetadata.Bytes(),
-		Conditions: iotago.UnlockConditions{
+		Amount:     chainOuts.AnchorOutput.Amount,
+		AnchorID:   tcl.chainID.AsAnchorID(),
+		StateIndex: chainOuts.GetStateIndex() + 1,
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: tcl.governor.Address()},
 			&iotago.GovernorAddressUnlockCondition{Address: tcl.governor.Address()},
 		},
-		Features: iotago.Features{
+		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
 				Address: tcl.chainID.AsAddress(),
 			},
+			&iotago.StateMetadataFeature{
+				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
+					"": stateMetadata.Bytes(),
+				},
+			},
 		},
 	}
-	return isc.NewAnchorOutputWithID(anchorOutput, iotago.OutputID{byte(anchorOutput.StateIndex)})
+
+	// TODO how to transition the account output?
+	accountID, accountOut, _ := chainOuts.AccountOutput()
+
+	return isc.NewChainOutputs(
+		anchorOutput,
+		iotago.OutputID{byte(anchorOutput.StateIndex)},
+		accountOut,
+		accountID,
+	)
 }
 
-func (tcl *TestChainLedger) FakeRotationTX(baseAO *isc.AnchorOutputWithID, nextCommitteeAddr iotago.Address) (*isc.AnchorOutputWithID, *iotago.Transaction) {
+func (tcl *TestChainLedger) FakeRotationTX(chainOuts *isc.ChainOutputs, nextCommitteeAddr iotago.Address) (*isc.ChainOutputs, *iotago.SignedTransaction) {
 	tx, err := transaction.NewRotateChainStateControllerTx(
 		tcl.chainID.AsAnchorID(),
 		nextCommitteeAddr,
-		baseAO.OutputID(),
-		baseAO.GetAnchorOutput(),
+		chainOuts.AnchorOutputID,
+		chainOuts.AnchorOutput,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
+		testutil.L1API,
 		tcl.governor,
 	)
 	if err != nil {
 		panic(err)
 	}
-	outputs, err := tx.OutputsSet()
+	outputs, err := tx.Transaction.OutputsSet()
 	if err != nil {
 		panic(err)
 	}
 	for outputID, output := range outputs {
-		if output.Type() == iotago.OutputAlias {
+		if output.Type() == iotago.OutputAnchor {
 			ao := output.(*iotago.AnchorOutput)
-			ao.StateIndex = baseAO.GetStateIndex() + 1 // Fake next state index, just for tests.
-			return isc.NewAnchorOutputWithID(ao, outputID), tx
+			// TODO I'm not sure if the state index should be updated here
+			ao.StateIndex = chainOuts.GetStateIndex() + 1 // Fake next state index, just for tests.
+			accountOutputID, accountOutput, _ := chainOuts.AccountOutput()
+			return isc.NewChainOutputs(ao, outputID, accountOutput, accountOutputID), tx
 		}
 	}
 	panic("anchor output not found")
@@ -183,12 +206,12 @@ func (tcl *TestChainLedger) findChainRequests(tx *iotago.Transaction) []isc.Requ
 	require.NoError(tcl.t, err)
 	for outputID, output := range outputs {
 		// If that's anchor output of the chain, then it is not a request.
-		if output.Type() == iotago.OutputAlias {
-			outAsAlias := output.(*iotago.AnchorOutput)
-			if outAsAlias.AccountID == tcl.chainID.AsAnchorID() {
+		if output.Type() == iotago.OutputAnchor {
+			anchorOut := output.(*iotago.AnchorOutput)
+			if anchorOut.AnchorID == tcl.chainID.AsAnchorID() {
 				continue // That's our anchor output, not the request, skip it here.
 			}
-			if outAsAlias.AccountID.Empty() {
+			if anchorOut.AnchorID.Empty() {
 				implicitAnchorID := iotago.AnchorIDFromOutputID(outputID)
 				if implicitAnchorID == tcl.chainID.AsAnchorID() {
 					continue // That's our origin anchor output, not the request, skip it here.

@@ -1,10 +1,8 @@
-// Copyright 2020 IOTA Stiftung
-// SPDX-License-Identifier: Apache-2.0
-
-package tests
+package l1starter_test
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"testing"
 	"time"
@@ -16,15 +14,17 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
+	"github.com/iotaledger/wasp/packages/util/l1starter"
 )
 
-func TestPrivtangleStartup(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping privtangle test in short mode")
-	}
-	l1.StartPrivtangleIfNecessary(t.Logf)
+// TODO remove this file, it is tested by privtangle_test.go already..
+// just testing here because the other test dir won't compile for now
 
-	// pvt tangle is already stated by the cluster l1_init
+func TestPrivtangleTMP(t *testing.T) {
+	l1 := l1starter.New(flag.CommandLine, flag.CommandLine)
+	l1.StartPrivtangleIfNecessary(t.Logf)
+	t.Cleanup(func() { l1.Cleanup(t.Logf) })
+
 	ctx := context.Background()
 
 	//
@@ -43,20 +43,7 @@ func TestPrivtangleStartup(t *testing.T) {
 	initialOutputCount := mustOutputCount(client, myAddress)
 	//
 	// Check if faucet requests are working.
-	client.RequestFunds(myAddress)
-	for i := 0; ; i++ {
-		t.Log("Waiting for a TX...")
-		time.Sleep(100 * time.Millisecond)
-		if initialOutputCount != mustOutputCount(client, myAddress) {
-			break
-		}
-	}
-
-	//
-	// Check if the TX post works.
-	tx, err := l1connection.MakeSimpleValueTX(client, l1.Config.FaucetKey, myAddress, 500_000)
-	require.NoError(t, err)
-	_, err = client.PostTxAndWaitUntilConfirmation(tx)
+	err = client.RequestFunds(myAddress)
 	require.NoError(t, err)
 	for i := 0; ; i++ {
 		t.Log("Waiting for a TX...")

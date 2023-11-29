@@ -31,7 +31,6 @@ type Config struct {
 	APIAddress    string
 	INXAddress    string
 	FaucetAddress string
-	FaucetKey     *cryptolib.KeyPair
 }
 
 type Client interface {
@@ -230,15 +229,6 @@ func (c *l1client) GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Dur
 
 // RequestFunds implements L1Connection
 func (c *l1client) RequestFunds(addr iotago.Address, timeout ...time.Duration) error {
-	if c.config.FaucetKey == nil {
-		return c.FaucetRequestHTTP(addr, timeout...)
-	}
-	return c.PostSimpleValueTX(c.config.FaucetKey, addr, iotago.BaseToken(fundsFromFaucetAmount))
-}
-
-// PostFaucetRequest makes a faucet request.
-// Simple value TX is processed faster, and should be used in cases where we are using a private testnet and have the genesis key available.
-func (c *l1client) FaucetRequestHTTP(addr iotago.Address, timeout ...time.Duration) error {
 	initialAddrOutputs, err := c.OutputMap(addr)
 	if err != nil {
 		return err

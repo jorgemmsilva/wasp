@@ -99,9 +99,4 @@ docker-push:
 
 docker-build-push: docker-check-push-deps docker-build docker-push
 
-deps-versions:
-	@grep -n "====" packages/testutil/privtangle/privtangle.go | \
-		awk -F ":" '{ print $$1 }' | \
-		{ read from ; read to; awk -v s="$$from" -v e="$$to" 'NR>1*s&&NR<1*e' packages/testutil/privtangle/privtangle.go; }
-
 .PHONY: all wasm compile-solidity build-cli build-full build build-lint test-full test test-short install-cli install-full install lint gofumpt-list docker-build deps-versions

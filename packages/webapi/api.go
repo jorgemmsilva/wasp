@@ -120,7 +120,7 @@ func Init(
 
 	controllersToLoad := []interfaces.APIController{
 		chain.NewChainController(logger, l1API, baseTokenInfo, chainService, committeeService, evmService, nodeService, offLedgerService, registryService),
-		apimetrics.NewMetricsController(chainService, metricsService),
+		apimetrics.NewMetricsController(chainService, metricsService, l1API),
 		node.NewNodeController(waspVersion, config, dkgService, nodeService, peeringService),
 		requests.NewRequestsController(chainService, offLedgerService, peeringService),
 		users.NewUsersController(userService),

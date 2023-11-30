@@ -6,7 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 	"github.com/iotaledger/wasp/packages/webapi/params"
@@ -30,15 +29,14 @@ func MapGovChainInfoResponse(chainInfo *isc.ChainInfo) models.GovChainInfoRespon
 }
 
 func (c *Controller) getChainInfo(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	chainInfo, err := corecontracts.GetChainInfo(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	chainInfoResponse := MapGovChainInfoResponse(chainInfo)
@@ -47,15 +45,14 @@ func (c *Controller) getChainInfo(e echo.Context) error {
 }
 
 func (c *Controller) getChainOwner(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	chainOwner, err := corecontracts.GetChainOwner(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	chainOwnerResponse := models.GovChainOwnerResponse{
@@ -66,15 +63,14 @@ func (c *Controller) getChainOwner(e echo.Context) error {
 }
 
 func (c *Controller) getAllowedStateControllerAddresses(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	addresses, err := corecontracts.GetAllowedStateControllerAddresses(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	encodedAddresses := make([]string, len(addresses))

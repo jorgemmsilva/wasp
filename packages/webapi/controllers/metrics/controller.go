@@ -5,6 +5,7 @@ import (
 
 	"github.com/pangpanglabs/echoswagger/v2"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/authentication"
 	"github.com/iotaledger/wasp/packages/authentication/shared/permissions"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
@@ -15,12 +16,15 @@ import (
 type Controller struct {
 	chainService   interfaces.ChainService
 	metricsService interfaces.MetricsService
+
+	l1API iotago.API
 }
 
-func NewMetricsController(chainService interfaces.ChainService, metricsService interfaces.MetricsService) interfaces.APIController {
+func NewMetricsController(chainService interfaces.ChainService, metricsService interfaces.MetricsService, l1API iotago.API) interfaces.APIController {
 	return &Controller{
 		chainService:   chainService,
 		metricsService: metricsService,
+		l1API:          l1API,
 	}
 }
 

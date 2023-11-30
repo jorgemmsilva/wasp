@@ -5,7 +5,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/params"
 )
@@ -15,10 +14,11 @@ type ErrorMessageFormatResponse struct {
 }
 
 func (c *Controller) getErrorMessageFormat(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
+
 	contractHname, err := params.DecodeHNameFromHNameHexString(e, "contractHname")
 	if err != nil {
 		return err
@@ -29,10 +29,9 @@ func (c *Controller) getErrorMessageFormat(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	messageFormat, err := corecontracts.ErrorMessageFormat(invoker, contractHname, uint16(errorID), e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	errorMessageFormatResponse := &ErrorMessageFormatResponse{

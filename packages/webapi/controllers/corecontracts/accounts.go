@@ -9,22 +9,20 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
-	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 	"github.com/iotaledger/wasp/packages/webapi/params"
 )
 
 func (c *Controller) getAccounts(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	accounts, err := corecontracts.GetAccounts(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	accountsResponse := &models.AccountListResponse{
@@ -39,15 +37,14 @@ func (c *Controller) getAccounts(e echo.Context) error {
 }
 
 func (c *Controller) getTotalAssets(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	assets, err := corecontracts.GetTotalAssets(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	assetsResponse := &models.FungibleTokensResponse{
@@ -59,9 +56,9 @@ func (c *Controller) getTotalAssets(e echo.Context) error {
 }
 
 func (c *Controller) getAccountBalance(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	agentID, err := params.DecodeAgentID(e)
@@ -69,10 +66,9 @@ func (c *Controller) getAccountBalance(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	assets, err := corecontracts.GetAccountBalance(invoker, agentID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	assetsResponse := &models.FungibleTokensResponse{
@@ -84,9 +80,9 @@ func (c *Controller) getAccountBalance(e echo.Context) error {
 }
 
 func (c *Controller) getAccountNFTs(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	agentID, err := params.DecodeAgentID(e)
@@ -94,10 +90,9 @@ func (c *Controller) getAccountNFTs(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	nfts, err := corecontracts.GetAccountNFTs(invoker, agentID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	nftsResponse := &models.AccountNFTsResponse{
@@ -112,19 +107,19 @@ func (c *Controller) getAccountNFTs(e echo.Context) error {
 }
 
 func (c *Controller) getAccountFoundries(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
+
 	agentID, err := params.DecodeAgentID(e)
 	if err != nil {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	foundries, err := corecontracts.GetAccountFoundries(invoker, agentID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	return e.JSON(http.StatusOK, &models.AccountFoundriesResponse{
@@ -133,9 +128,9 @@ func (c *Controller) getAccountFoundries(e echo.Context) error {
 }
 
 func (c *Controller) getAccountNonce(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	agentID, err := params.DecodeAgentID(e)
@@ -143,10 +138,9 @@ func (c *Controller) getAccountNonce(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	nonce, err := corecontracts.GetAccountNonce(invoker, agentID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	nonceResponse := &models.AccountNonceResponse{
@@ -157,9 +151,9 @@ func (c *Controller) getAccountNonce(e echo.Context) error {
 }
 
 func (c *Controller) getNFTData(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	nftID, err := params.DecodeNFTID(e)
@@ -167,10 +161,9 @@ func (c *Controller) getNFTData(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	nftData, err := corecontracts.GetNFTData(invoker, *nftID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	nftDataResponse := isc.NFTToJSONObject(nftData, c.l1Api)
@@ -179,15 +172,14 @@ func (c *Controller) getNFTData(e echo.Context) error {
 }
 
 func (c *Controller) getNativeTokenIDRegistry(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	registries, err := corecontracts.GetNativeTokenIDRegistry(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	nativeTokenIDRegistryResponse := &models.NativeTokenIDRegistryResponse{
@@ -202,9 +194,9 @@ func (c *Controller) getNativeTokenIDRegistry(e echo.Context) error {
 }
 
 func (c *Controller) getFoundryOutput(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	serialNumber, err := params.DecodeUInt(e, "serialNumber")
@@ -212,10 +204,9 @@ func (c *Controller) getFoundryOutput(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	foundryOutput, err := corecontracts.GetFoundryOutput(invoker, c.l1Api, uint32(serialNumber), e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	foundryOutputID, err := foundryOutput.FoundryID()

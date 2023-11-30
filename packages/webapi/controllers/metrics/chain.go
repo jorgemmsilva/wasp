@@ -11,7 +11,7 @@ import (
 
 func (c *Controller) getNodeMessageMetrics(e echo.Context) error {
 	metricsReport := c.metricsService.GetNodeMessageMetrics()
-	mappedMetrics := models.MapNodeMessageMetrics(metricsReport)
+	mappedMetrics := models.MapNodeMessageMetrics(c.l1API, metricsReport)
 
 	return e.JSON(http.StatusOK, mappedMetrics)
 }
@@ -23,7 +23,7 @@ func (c *Controller) getChainMessageMetrics(e echo.Context) error {
 	}
 
 	metricsReport := c.metricsService.GetChainMessageMetrics(chainID)
-	mappedMetrics := models.MapChainMessageMetrics(metricsReport)
+	mappedMetrics := models.MapChainMessageMetrics(c.l1API, metricsReport)
 
 	return e.JSON(http.StatusOK, mappedMetrics)
 }

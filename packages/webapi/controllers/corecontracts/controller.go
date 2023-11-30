@@ -4,13 +4,17 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pangpanglabs/echoswagger/v2"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/authentication"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
+	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
+	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 	"github.com/iotaledger/wasp/packages/webapi/params"
@@ -35,6 +39,16 @@ func (c *Controller) handleViewCallError(err error, chainID isc.ChainID) error {
 		return apierrors.ChainNotFoundError(chainID.String())
 	}
 	return apierrors.ContractExecutionError(err)
+}
+
+func (c *Controller) createCallViewInvoker(e echo.Context) (corecontracts.CallViewInvoker, chaintypes.Chain, error) {
+	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	if err != nil {
+		return nil, nil, c.handleViewCallError(err, chainID)
+	}
+
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	return invoker, ch, nil
 }
 
 func (c *Controller) addAccountContractRoutes(api echoswagger.ApiGroup, mocker interfaces.Mocker) {

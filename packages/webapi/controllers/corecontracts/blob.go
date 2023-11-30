@@ -7,7 +7,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/iotaledger/iota.go/v4/hexutil"
-	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/params"
 )
@@ -22,15 +21,14 @@ type BlobListResponse struct {
 }
 
 func (c *Controller) listBlobs(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	blobList, err := corecontracts.ListBlobs(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	blobListResponse := &BlobListResponse{
@@ -52,9 +50,9 @@ type BlobValueResponse struct {
 }
 
 func (c *Controller) getBlobValue(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
 	blobHash, err := params.DecodeBlobHash(e)
@@ -64,10 +62,9 @@ func (c *Controller) getBlobValue(e echo.Context) error {
 
 	fieldKey := e.Param(params.ParamFieldKey)
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	blobValueBytes, err := corecontracts.GetBlobValue(invoker, *blobHash, fieldKey, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	blobValueResponse := &BlobValueResponse{
@@ -82,11 +79,9 @@ type BlobInfoResponse struct {
 }
 
 func (c *Controller) getBlobInfo(e echo.Context) error {
-	fmt.Println("GET BLOB INFO")
-
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
 	blobHash, err := params.DecodeBlobHash(e)
@@ -94,13 +89,10 @@ func (c *Controller) getBlobInfo(e echo.Context) error {
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
 	blobInfo, ok, err := corecontracts.GetBlobInfo(invoker, *blobHash, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
-
-	fmt.Printf("GET BLOB INFO: ok:%v, err:%v", ok, err)
 
 	blobInfoResponse := &BlobInfoResponse{
 		Fields: map[string]uint32{},

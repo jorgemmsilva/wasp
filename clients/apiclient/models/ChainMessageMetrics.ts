@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import { AliasOutputMetricItem } from '../models/AliasOutputMetricItem';
+import { AnchorOutputMetricItem } from '../models/AnchorOutputMetricItem';
 import { InOutputMetricItem } from '../models/InOutputMetricItem';
 import { InStateOutputMetricItem } from '../models/InStateOutputMetricItem';
 import { InterfaceMetricItem } from '../models/InterfaceMetricItem';
@@ -23,7 +23,7 @@ import { UTXOInputMetricItem } from '../models/UTXOInputMetricItem';
 import { HttpFile } from '../http/http';
 
 export class ChainMessageMetrics {
-    'inAliasOutput': AliasOutputMetricItem;
+    'inAnchorOutput': AnchorOutputMetricItem;
     'inOnLedgerRequest': OnLedgerRequestMetricItem;
     'inOutput': InOutputMetricItem;
     'inStateOutput': InStateOutputMetricItem;
@@ -38,9 +38,9 @@ export class ChainMessageMetrics {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "inAliasOutput",
-            "baseName": "inAliasOutput",
-            "type": "AliasOutputMetricItem",
+            "name": "inAnchorOutput",
+            "baseName": "inAnchorOutput",
+            "type": "AnchorOutputMetricItem",
             "format": ""
         },
         {

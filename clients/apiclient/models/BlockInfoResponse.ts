@@ -24,7 +24,7 @@ export class BlockInfoResponse {
     'gasFeeCharged': string;
     'numOffLedgerRequests': number;
     'numSuccessfulRequests': number;
-    'previousAliasOutput': string;
+    'previousAnchorOutput': string;
     'timestamp': Date;
     'totalRequests': number;
 
@@ -62,8 +62,8 @@ export class BlockInfoResponse {
             "format": "int32"
         },
         {
-            "name": "previousAliasOutput",
-            "baseName": "previousAliasOutput",
+            "name": "previousAnchorOutput",
+            "baseName": "previousAnchorOutput",
             "type": "string",
             "format": "string"
         },

@@ -15,7 +15,7 @@ import { HttpFile } from '../http/http';
 export class NFTJSON {
     'id': string;
     'issuer': string;
-    'metadata': string;
+    'metadata': { [key: string]: string; };
     'owner': string;
 
     static readonly discriminator: string | undefined = undefined;
@@ -36,7 +36,7 @@ export class NFTJSON {
         {
             "name": "metadata",
             "baseName": "metadata",
-            "type": "string",
+            "type": "{ [key: string]: string; }",
             "format": "string"
         },
         {

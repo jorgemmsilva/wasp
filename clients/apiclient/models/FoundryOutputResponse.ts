@@ -10,25 +10,37 @@
  * Do not edit the class manually.
  */
 
-import { AssetsResponse } from '../models/AssetsResponse';
 import { HttpFile } from '../http/http';
 
 export class FoundryOutputResponse {
-    'assets': AssetsResponse;
+    /**
+    * The base tokens (uint64 as string)
+    */
+    'baseTokens': string;
     'foundryId': string;
+    /**
+    * The native token id
+    */
+    'nativeTokenId': string;
 
     static readonly discriminator: string | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "assets",
-            "baseName": "assets",
-            "type": "AssetsResponse",
-            "format": ""
+            "name": "baseTokens",
+            "baseName": "baseTokens",
+            "type": "string",
+            "format": "string"
         },
         {
             "name": "foundryId",
             "baseName": "foundryId",
+            "type": "string",
+            "format": "string"
+        },
+        {
+            "name": "nativeTokenId",
+            "baseName": "nativeTokenId",
             "type": "string",
             "format": "string"
         }    ];

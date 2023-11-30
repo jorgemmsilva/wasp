@@ -12,13 +12,12 @@
 
 import { HttpFile } from '../http/http';
 
-export class AssetsJSON {
+export class FungibleTokensResponse {
     /**
     * The base tokens (uint64 as string)
     */
     'baseTokens': string;
     'nativeTokens': { [key: string]: string; };
-    'nfts': Array<string>;
 
     static readonly discriminator: string | undefined = undefined;
 
@@ -34,16 +33,10 @@ export class AssetsJSON {
             "baseName": "nativeTokens",
             "type": "{ [key: string]: string; }",
             "format": "string"
-        },
-        {
-            "name": "nfts",
-            "baseName": "nfts",
-            "type": "Array<string>",
-            "format": "string"
         }    ];
 
     static getAttributeTypeMap() {
-        return AssetsJSON.attributeTypeMap;
+        return FungibleTokensResponse.attributeTypeMap;
     }
 
     public constructor() {

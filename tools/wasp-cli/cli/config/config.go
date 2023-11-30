@@ -7,7 +7,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/testutil/privtangle/privtangledefaults"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
@@ -36,26 +35,12 @@ func Read() {
 
 func L1APIAddress() string {
 	host := viper.GetString("l1.apiAddress")
-	if host != "" {
-		return host
-	}
-	return fmt.Sprintf(
-		"%s:%d",
-		privtangledefaults.Host,
-		privtangledefaults.BasePort+privtangledefaults.NodePortOffsetRestAPI,
-	)
+	return host
 }
 
 func L1FaucetAddress() string {
 	address := viper.GetString("l1.faucetAddress")
-	if address != "" {
-		return address
-	}
-	return fmt.Sprintf(
-		"%s:%d",
-		privtangledefaults.Host,
-		privtangledefaults.BasePort+privtangledefaults.NodePortOffsetFaucet,
-	)
+	return address
 }
 
 func GetToken(node string) string {

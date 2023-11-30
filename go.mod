@@ -31,8 +31,8 @@ require (
 	github.com/iotaledger/hive.go/runtime v0.0.0-20231130122510-e3dddb0214f0
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231113110812-4ca2b6cc9a42
 	github.com/iotaledger/hive.go/web v0.0.0-20231106113411-94ac829adbb2
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231127144558-80fc60998ef4
-	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231124154447-f20fb8921e8c
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231128163614-c82e1fa40733
+	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231128162307-cc6b309e93ef
 	github.com/iotaledger/iota.go/v4 v4.0.0-20231130141733-c67ebff1b5ed
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
@@ -58,7 +58,7 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.16.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/net v0.18.0
+	golang.org/x/net v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.10
 	pgregory.net/rapid v1.0.0
@@ -211,7 +211,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

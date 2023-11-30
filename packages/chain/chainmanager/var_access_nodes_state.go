@@ -22,7 +22,7 @@ type VarAccessNodeState interface {
 	// Considers the produced (not yet confirmed) block / TX and returns new tip AO.
 	// The returned bool indicates if the tip has changed because of this call.
 	// This function should return L1 commitment, if the corresponding block should be added to the store.
-	BlockProduced(tx *iotago.Transaction) (*isc.ChainOutputs, bool, *state.L1Commitment)
+	BlockProduced(tx *iotago.SignedTransaction) (*isc.ChainOutputs, bool, *state.L1Commitment)
 	// Considers a confirmed AO and returns new tip AO.
 	// The returned bool indicates if the tip has changed because of this call.
 	BlockConfirmed(ao *isc.ChainOutputs) (*isc.ChainOutputs, bool)
@@ -55,7 +55,7 @@ func (vas *varAccessNodeStateImpl) Tip() *isc.ChainOutputs {
 	return vas.tipAO
 }
 
-func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.ChainOutputs, bool, *state.L1Commitment) {
+func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.SignedTransaction) (*isc.ChainOutputs, bool, *state.L1Commitment) {
 	txID, err := tx.ID()
 	if err != nil {
 		vas.log.Debugf("BlockProduced: Ignoring, cannot extract txID: %v", err)
@@ -76,7 +76,7 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.Transaction) (*isc.C
 	if !ok {
 		entries = []*varAccessNodeStateEntry{}
 	}
-	publishedL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(published.GetAnchorOutput())
+	publishedL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(published.AnchorOutput)
 	if err != nil {
 		vas.log.Warnf("Cannot extract L1Commitment from the published AO: %v", err)
 		publishedL1Commitment = nil // Will ignore it.
@@ -133,7 +133,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (
 				break
 			}
 			es = lo.Filter(es, func(e *varAccessNodeStateEntry, _ int) bool {
-				if lo.ContainsBy(losing, func(o *isc.AliasOutputWithID) bool { return o.OutputID() == e.consumed }) {
+				if lo.ContainsBy(losing, func(o *isc.ChainOutputs) bool { return o.AnchorOutputID == e.consumed }) {
 					vas.log.Debugf("⊳ Removing[losing_fork,consumes=%v] %v", e.consumed, e.output)
 					losing = append(losing, e.output)
 					return false
@@ -203,7 +203,7 @@ func (vas *varAccessNodeStateImpl) findLatestPending() *isc.ChainOutputs {
 		if len(entries) != 1 {
 			return nil // Alternatives exist.
 		}
-		if latest.OutputID() != entries[0].consumed {
+		if latest.AnchorOutputID != entries[0].consumed {
 			return nil // Don't form a chain.
 		}
 		latest = entries[0].output
@@ -211,21 +211,21 @@ func (vas *varAccessNodeStateImpl) findLatestPending() *isc.ChainOutputs {
 	return latest
 }
 
-func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transaction) (iotago.OutputID, *isc.ChainOutputs, error) {
+func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.SignedTransaction) (iotago.OutputID, *isc.ChainOutputs, error) {
 	var consumed iotago.OutputID
 	var published *isc.ChainOutputs
 	var err error
 	if vas.confirmed == nil {
 		return consumed, nil, fmt.Errorf("don't have the confirmed AO")
 	}
-	if err = vas.verifyTxSignature(tx, vas.confirmed.GetStateAddress()); err != nil {
+	if err = vas.verifyTxSignature(tx, vas.confirmed.AnchorOutput.StateController()); err != nil {
 		return consumed, nil, fmt.Errorf("cannot validate tx: %v", err)
 	}
 	//
 	// Validate the TX:
 	//   - Signature is valid and is by the latest known confirmed state controller.
 	//   - Previous known AO is among the TX inputs.
-	published, err = isc.ChainOutputsFromTx(tx, vas.chainID.AsAddress())
+	published, err = isc.ChainOutputsFromTx(tx.Transaction, vas.chainID.AsAddress())
 	if err != nil {
 		return consumed, nil, fmt.Errorf("cannot extract anchor output from the block: %v", err)
 	}
@@ -241,20 +241,20 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 	}
 	haveOutputs := map[iotago.OutputID]struct{}{}
 	if publishedSI == confirmedSI+1 {
-		haveOutputs[vas.confirmed.OutputID()] = struct{}{}
+		haveOutputs[vas.confirmed.AnchorOutputID] = struct{}{}
 	} else {
 		entries, found := vas.pending.Get(publishedSI - 1)
 		if !found {
 			return consumed, nil, fmt.Errorf("there is no outputs with prev SI")
 		}
 		for _, entry := range entries {
-			haveOutputs[entry.output.OutputID()] = struct{}{}
+			haveOutputs[entry.output.AnchorOutputID] = struct{}{}
 		}
 	}
 	//
 	// Check if we have TX input corresponding to some candidates we already know.
 	consumedFound := false
-	for _, input := range tx.Essence.Inputs {
+	for _, input := range tx.Transaction.TransactionEssence.Inputs {
 		if input.Type() != iotago.InputUTXO {
 			continue
 		}
@@ -262,7 +262,7 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 		if !ok {
 			continue
 		}
-		utxoInpOID := utxoInp.ID()
+		utxoInpOID := utxoInp.OutputID()
 		if _, ok := haveOutputs[utxoInpOID]; ok {
 			if consumedFound {
 				return consumed, nil, fmt.Errorf("found more that 1 output that is consumed")
@@ -277,8 +277,8 @@ func (vas *varAccessNodeStateImpl) extractConsumedPublished(tx *iotago.Transacti
 	return consumed, published, nil
 }
 
-func (vas *varAccessNodeStateImpl) verifyTxSignature(tx *iotago.Transaction, stateController iotago.Address) error {
-	signingMessage, err := tx.Essence.SigningMessage()
+func (vas *varAccessNodeStateImpl) verifyTxSignature(tx *iotago.SignedTransaction, stateController iotago.Address) error {
+	signingMessage, err := tx.Transaction.SigningMessage()
 	if err != nil {
 		return fmt.Errorf("cannot extract signing message: %w", err)
 	}
@@ -300,7 +300,7 @@ func (vas *varAccessNodeStateImpl) verifyTxSignature(tx *iotago.Transaction, sta
 			continue
 		}
 
-		if err := ed25519Signature.Valid(signingMessage, &ed25519SignatureBy); err != nil {
+		if err := ed25519Signature.Valid(signingMessage, ed25519SignatureBy); err != nil {
 			return fmt.Errorf("signature by stateController invalid: %w", err)
 		}
 		return nil

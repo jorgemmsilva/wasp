@@ -143,7 +143,7 @@ type NeedPublishTX struct {
 	CommitteeAddr      iotago.Ed25519Address
 	LogIndex           cmt_log.LogIndex
 	TxID               iotago.TransactionID
-	Tx                 *iotago.Transaction
+	Tx                 *iotago.SignedTransaction
 	BaseAnchorOutputID iotago.OutputID   // The consumed AnchorOutput.
 	NextAnchorOutput   *isc.ChainOutputs // The next one (produced by the TX.)
 }
@@ -281,7 +281,7 @@ func (cmi *chainMgrImpl) handleInputAnchorOutputConfirmed(input *inputAnchorOutp
 	vsaTip, vsaUpdated := cmi.varAccessNodeState.BlockConfirmed(input.anchorOutput)
 	cmi.latestConfirmedAO = input.anchorOutput
 	msgs := gpa.NoMessages()
-	committeeAddr := input.anchorOutput.GetAnchorOutput().StateController().(*iotago.Ed25519Address)
+	committeeAddr := input.anchorOutput.AnchorOutput.StateController().(*iotago.Ed25519Address)
 	committeeLog, err := cmi.ensureCmtLog(*committeeAddr)
 	if errors.Is(err, ErrNotInCommittee) {
 		// >     IF this node is in the committee THEN ... ELSE
@@ -350,7 +350,7 @@ func (cmi *chainMgrImpl) handleInputConsensusOutputDone(input *inputConsensusOut
 	// >     IF ConsensusOutput.BaseAO == NeedConsensus THEN
 	// >         Add ConsensusOutput.TX to NeedPublishTX
 	if true { // TODO: Reconsider this condition. Several recent consensus instances should be published, if we run consensus instances in parallel.
-		txID := input.consensusResult.NextAnchorOutput.TransactionID()
+		txID := input.consensusResult.NextAnchorOutput.AnchorOutputID.TransactionID()
 		if !cmi.needPublishTX.Has(txID) && input.consensusResult.Block != nil {
 			// Inform the access nodes on new block produced.
 			block := input.consensusResult.Block
@@ -494,7 +494,7 @@ func (cmi *chainMgrImpl) ensureNeedConsensus(cli *cmtLogInst, outputUntyped gpa.
 		// Not changed, keep it.
 		return
 	}
-	committeeAddress := output.GetBaseAnchorOutput().GetStateAddress()
+	committeeAddress := output.GetBaseAnchorOutput().AnchorOutput.StateController()
 	dkShare, err := cmi.dkShareRegistryProvider.LoadDKShare(committeeAddress)
 	if errors.Is(err, tcrypto.ErrDKShareNotFound) {
 		// Rotated to other nodes, so we don't need to start the next consensus.

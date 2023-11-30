@@ -10,6 +10,7 @@ import (
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 )
@@ -20,6 +21,7 @@ type typedPool[V isc.Request] struct {
 	sizeMetric func(int)
 	timeMetric func(time.Duration)
 	log        *logger.Logger
+	l1API      iotago.API
 }
 
 type typedPoolEntry[V isc.Request] struct {
@@ -29,9 +31,10 @@ type typedPoolEntry[V isc.Request] struct {
 
 var _ RequestPool[isc.OffLedgerRequest] = &typedPool[isc.OffLedgerRequest]{}
 
-func NewTypedPool[V isc.Request](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger) RequestPool[V] {
+func NewTypedPool[V isc.Request](waitReq WaitReq, l1API iotago.API, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger) RequestPool[V] {
 	return &typedPool[V]{
 		waitReq:    waitReq,
+		l1API:      l1API,
 		requests:   shrinkingmap.New[isc.RequestRefKey, *typedPoolEntry[V]](),
 		sizeMetric: sizeMetric,
 		timeMetric: timeMetric,
@@ -98,7 +101,7 @@ func (olp *typedPool[V]) StatusString() string {
 
 func (olp *typedPool[V]) WriteContent(w io.Writer) {
 	olp.requests.ForEach(func(_ isc.RequestRefKey, entry *typedPoolEntry[V]) bool {
-		jsonData, err := isc.RequestToJSON(entry.req)
+		jsonData, err := isc.RequestToJSON(entry.req, olp.l1API)
 		if err != nil {
 			return false // stop iteration
 		}

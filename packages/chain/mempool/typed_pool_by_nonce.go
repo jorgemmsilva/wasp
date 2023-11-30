@@ -11,6 +11,7 @@ import (
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
 	consGR "github.com/iotaledger/wasp/packages/chain/cons/cons_gr"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -25,9 +26,10 @@ type TypedPoolByNonce[V isc.OffLedgerRequest] struct {
 	sizeMetric          func(int)
 	timeMetric          func(time.Duration)
 	log                 *logger.Logger
+	l1API               iotago.API
 }
 
-func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger) *TypedPoolByNonce[V] {
+func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger, l1API iotago.API) *TypedPoolByNonce[V] {
 	return &TypedPoolByNonce[V]{
 		waitReq:             waitReq,
 		reqsByAcountOrdered: shrinkingmap.New[string, []*OrderedPoolEntry[V]](),
@@ -35,6 +37,7 @@ func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric fun
 		sizeMetric:          sizeMetric,
 		timeMetric:          timeMetric,
 		log:                 log,
+		l1API:               l1API,
 	}
 }
 
@@ -172,7 +175,7 @@ func (p *TypedPoolByNonce[V]) StatusString() string {
 func (p *TypedPoolByNonce[V]) WriteContent(w io.Writer) {
 	p.reqsByAcountOrdered.ForEach(func(_ string, list []*OrderedPoolEntry[V]) bool {
 		for _, entry := range list {
-			jsonData, err := isc.RequestToJSON(entry.req)
+			jsonData, err := isc.RequestToJSON(entry.req, p.l1API)
 			if err != nil {
 				return false // stop iteration
 			}

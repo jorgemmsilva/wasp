@@ -4,18 +4,18 @@
 package chains
 
 import (
-	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
 )
 
 type chainsListener struct {
-	parent        chain.ChainListener
+	parent        chaintypes.ChainListener
 	accessNodesCB func(chainID isc.ChainID, accessNodes []*cryptolib.PublicKey)
 }
 
-func NewChainsListener(parent chain.ChainListener, accessNodesCB func(chainID isc.ChainID, accessNodes []*cryptolib.PublicKey)) chain.ChainListener {
+func NewChainsListener(parent chaintypes.ChainListener, accessNodesCB func(chainID isc.ChainID, accessNodes []*cryptolib.PublicKey)) chaintypes.ChainListener {
 	return &chainsListener{parent: parent, accessNodesCB: accessNodesCB}
 }
 

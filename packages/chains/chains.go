@@ -144,8 +144,8 @@ func New(
 		if err != nil {
 			panic(fmt.Errorf("error parsing validator.address: %s", err.Error()))
 		}
-		if bechPrefix != nodeConnection.GetL1Params().Protocol.Bech32HRP() {
-			panic(fmt.Errorf("validator.address Bech32 HRP does not match network HRP, expected: %s, got: %s", nodeConnection.GetL1Params().Protocol.Bech32HRP, bechPrefix))
+		if bechPrefix != nodeConnection.Bech32HRP() {
+			panic(fmt.Errorf("validator.address Bech32 HRP does not match network HRP, expected: %s, got: %s", nodeConnection.Bech32HRP(), bechPrefix))
 		}
 		validatorFeeAddr = addr
 	}

@@ -387,6 +387,7 @@ func New(
 	}
 	mempool := mempool.New(
 		ctx,
+		nodeConn.L1API(),
 		chainID,
 		nodeIdentity,
 		net,
@@ -429,7 +430,7 @@ func New(
 			return
 		}
 		if req.IsInternalUTXO(cni.chainID) {
-			cni.log.Debugf("Ignoring internal UTXO with ID=%v, will not consider it a request: %v", outputInfo.OutputID.ToHex(), req.String())
+			cni.log.Debugf("Ignoring internal UTXO with ID=%v, will not consider it a request: %v", outputInfo.OutputID.ToHex(), req.String(nodeConn.Bech32HRP()))
 			return
 		}
 		cni.mempool.ReceiveOnLedgerRequest(req)
@@ -442,7 +443,8 @@ func New(
 			// we don't need to send consumed anchor outputs to the pipe
 			return
 		}
-		recvAnchorOutputPipeInCh <- outputInfo.ChainOutputs()
+		// TODO: <lmoe> Turned the output manually into an AnchorOutput
+		recvAnchorOutputPipeInCh <- isc.NewChainOutputs(outputInfo.Output.(*iotago.AnchorOutput), outputInfo.OutputID, nil, iotago.OutputID{})
 	}
 	recvMilestonePipeInCh := cni.recvMilestonePipe.In()
 	recvMilestoneCB := func(timestamp time.Time) {
@@ -672,7 +674,7 @@ func (cni *chainNodeImpl) handleTxPublished(ctx context.Context, txPubResult *tx
 func (cni *chainNodeImpl) handleAnchorOutput(ctx context.Context, anchorOutput *isc.ChainOutputs) {
 	cni.log.Debugf("handleAnchorOutput: %v", anchorOutput)
 	if anchorOutput.GetStateIndex() == 0 {
-		initBlock, err := origin.InitChainByAnchorOutput(cni.chainStore, anchorOutput)
+		initBlock, err := origin.InitChainByAnchorOutput(cni.chainStore, anchorOutput, cni.nodeConn.L1API())
 		if err != nil {
 			cni.log.Errorf("Ignoring InitialAO for the chain: %v", err)
 			return
@@ -780,14 +782,14 @@ func (cni *chainNodeImpl) handleConsensusOutput(ctx context.Context, out *consOu
 		chainMgrInput = chainmanager.NewInputConsensusOutputDone(
 			out.request.CommitteeAddr,
 			out.request.LogIndex,
-			out.request.BaseAnchorOutput.OutputID(),
+			out.request.BaseAnchorOutput.AnchorOutputID,
 			out.output.Result,
 		)
 	case cons.Skipped:
 		chainMgrInput = chainmanager.NewInputConsensusOutputSkip(
 			out.request.CommitteeAddr,
 			out.request.LogIndex,
-			out.request.BaseAnchorOutput.OutputID(),
+			out.request.BaseAnchorOutput.AnchorOutputID,
 		)
 	default:
 		panic(fmt.Errorf("unexpected output state from consensus: %+v", out))
@@ -840,7 +842,7 @@ func (cni *chainNodeImpl) ensureConsensusInst(ctx context.Context, needConsensus
 			consGrCtx, consGrCancel := context.WithCancel(ctx)
 			logIndexCopy := addLogIndex
 			cgr := consGR.New(
-				consGrCtx, cni.chainID, cni.chainStore, dkShare, &logIndexCopy, cni.nodeIdentity,
+				consGrCtx, cni.chainID, cni.chainStore, dkShare, &logIndexCopy, cni.nodeConn.L1API(), cni.nodeIdentity,
 				cni.procCache, cni.mempool, cni.stateMgr, cni.net,
 				cni.validatorAgentID,
 				cni.recoveryTimeout, RedeliveryPeriod, PrintStatusPeriod,

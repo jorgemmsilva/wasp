@@ -598,7 +598,7 @@ func (ncc *ncChain) queryChainState(ctx context.Context) (iotago.SlotIndex, time
 // It takes care that milestone index of the current confirmed milestone and the ledger index of the anchor output match.
 // Afterwards all owned outputs of the chain are applied.
 // The chain is marked as synchronized after all pending ledger updates were applied,
-// which could have beed added in parallel by handleLedgerUpdate.
+// which could have beed added in parallel by handleAcceptedTransactions.
 func (ncc *ncChain) SyncChainStateWithL1(ctx context.Context) error {
 	ncc.LogInfof("Synchronizing chain state and owned outputs for %s...", ncc.chainID)
 

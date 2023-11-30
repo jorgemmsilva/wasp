@@ -318,7 +318,7 @@ func (nc *nodeConnection) GetL1ProtocolParams() iotago.ProtocolParameters {
 }
 
 func (nc *nodeConnection) subscribeToLedgerUpdates() {
-	if err := nc.nodeBridge.ListenToLedgerUpdates(nc.ctx, 0, 0, nc.handleLedgerUpdate); err != nil && !errors.Is(err, io.EOF) {
+	if err := nc.nodeBridge.ListenToAcceptedTransactions(nc.ctx, nc.handleAcceptedTransactions); err != nil && !errors.Is(err, io.EOF) {
 		nc.LogError(err)
 		nc.shutdownHandler.SelfShutdown(
 			fmt.Sprintf("INX connection unexpected error: %s", err.Error()),
@@ -559,7 +559,7 @@ type ledgerUpdate struct {
 	outputsConsumedMap map[iotago.OutputID]*isc.OutputInfo
 }
 
-func (nc *nodeConnection) unwrapLedgerUpdate(update *nodebridge.LedgerUpdate) (*ledgerUpdate, error) {
+func (nc *nodeConnection) unwrapLedgerUpdate(update *nodebridge.AcceptedTransaction) (*ledgerUpdate, error) {
 	var err error
 
 	// TODO update
@@ -568,13 +568,12 @@ func (nc *nodeConnection) unwrapLedgerUpdate(update *nodebridge.LedgerUpdate) (*
 	// if err != nil {
 	// 	return nil, err
 	// }
-
-	outputsConsumed, err := unwrapSpents(update.Consumed, nc.L1API())
+	outputsConsumed, err := unwrapSpents(update.Consumed)
 	if err != nil {
 		return nil, err
 	}
 
-	outputsCreated, err := unwrapOutputs(update.Created, nc.L1API())
+	outputsCreated, err := unwrapOutputs(update.Created)
 	if err != nil {
 		return nil, err
 	}
@@ -596,15 +595,15 @@ func (nc *nodeConnection) unwrapLedgerUpdate(update *nodebridge.LedgerUpdate) (*
 	})
 
 	return &ledgerUpdate{
-		slot:               update.CommitmentID.Slot(),
+		slot:               update.Slot,
 		outputsCreatedMap:  outputsCreatedMap,
 		outputsConsumedMap: outputsConsumedMap,
 	}, nil
 }
 
-func (nc *nodeConnection) handleLedgerUpdate(update *nodebridge.LedgerUpdate) error {
+func (nc *nodeConnection) handleAcceptedTransactions(tx *nodebridge.AcceptedTransaction) error {
 	// unwrap the ledger update into wasp structs
-	ledgerUpdate, err := nc.unwrapLedgerUpdate(update)
+	ledgerUpdate, err := nc.unwrapLedgerUpdate(tx)
 	if err != nil {
 		return err
 	}
@@ -689,7 +688,7 @@ func (nc *nodeConnection) doPostTx(ctx context.Context, tx *iotago.SignedTransac
 }
 
 // TODO remove
-// reattachWorkerpoolFunc is triggered by handleLedgerUpdate for every pending transaction,
+// reattachWorkerpoolFunc is triggered by handleAcceptedTransactions for every pending transaction,
 // if the inputs of the pending transaction were not consumed in the ledger update.
 // func (nc *nodeConnection) reattachWorkerpoolFunc(pendingTx *pendingTransaction) {
 // 	if pendingTx.Conflicting() || pendingTx.Confirmed() {
@@ -786,13 +785,18 @@ func (nc *nodeConnection) PublishTX(
 	callback chain.TxPostHandler,
 ) error {
 	// check if the chain exists
-	ncc, err := nc.GetChain(chainID)
-	if err != nil {
-		return err
-	}
 
-	_, err = nc.doPostTx(ctx, tx, strongParents, weakParents)
-	return err
+	// TODO: <lmoe> Commenting it out to make it compile for now
+	/*
+		ncc, err := nc.GetChain(chainID)
+		if err != nil {
+			return err
+		}
+
+		_, err = nc.doPostTx(ctx, tx, strongParents, weakParents)
+		return err
+	*/
+	// TODO: <lmoe> --------------
 
 	// pendingTx, err := ncc.createPendingTransaction(ctx, tx)
 	// if err != nil {

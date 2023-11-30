@@ -5,7 +5,7 @@ import (
 	"sort"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	inx "github.com/iotaledger/inx/go"
+	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -18,32 +18,18 @@ func getAnchorID(outputID iotago.OutputID, anchorOutput *iotago.AnchorOutput) io
 	return anchorOutput.AnchorID
 }
 
-func outputInfoFromINXOutput(output *inx.LedgerOutput, api iotago.API) (*isc.OutputInfo, error) {
-	outputID := output.UnwrapOutputID()
+func outputInfoFromINXSpent(spent *nodebridge.Output) (*isc.OutputInfo, error) {
+	outputInfo := isc.NewOutputInfo(spent.OutputID, spent.Output, iotago.TransactionID{})
 
-	iotaOutput, err := output.UnwrapOutput(api)
-	if err != nil {
-		return nil, err
-	}
-
-	return isc.NewOutputInfo(outputID, iotaOutput, iotago.TransactionID{}), nil
-}
-
-func outputInfoFromINXSpent(spent *inx.LedgerSpent, api iotago.API) (*isc.OutputInfo, error) {
-	outputInfo, err := outputInfoFromINXOutput(spent.GetOutput(), api)
-	if err != nil {
-		return nil, err
-	}
-
-	outputInfo.TransactionIDSpent = spent.UnwrapTransactionIDSpent()
+	outputInfo.TransactionIDSpent = spent.Metadata.Spent.TransactionID
 	return outputInfo, nil
 }
 
-func unwrapOutputs(outputs []*inx.LedgerOutput, api iotago.API) ([]*isc.OutputInfo, error) {
+func unwrapOutputs(outputs []*nodebridge.Output) ([]*isc.OutputInfo, error) {
 	result := make([]*isc.OutputInfo, len(outputs))
 
 	for i := range outputs {
-		outputInfo, err := outputInfoFromINXOutput(outputs[i], api)
+		outputInfo, err := outputInfoFromINXSpent(outputs[i])
 		if err != nil {
 			return nil, err
 		}
@@ -53,11 +39,11 @@ func unwrapOutputs(outputs []*inx.LedgerOutput, api iotago.API) ([]*isc.OutputIn
 	return result, nil
 }
 
-func unwrapSpents(spents []*inx.LedgerSpent, api iotago.API) ([]*isc.OutputInfo, error) {
+func unwrapSpents(spents []*nodebridge.Output) ([]*isc.OutputInfo, error) {
 	result := make([]*isc.OutputInfo, len(spents))
 
 	for i := range spents {
-		outputInfo, err := outputInfoFromINXSpent(spents[i], api)
+		outputInfo, err := outputInfoFromINXSpent(spents[i])
 		if err != nil {
 			return nil, err
 		}

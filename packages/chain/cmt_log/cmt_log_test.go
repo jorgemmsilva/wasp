@@ -121,7 +121,7 @@ func inputAnchorOutputConfirmed(gpaNodes map[gpa.NodeID]gpa.GPA, ao *isc.ChainOu
 func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Output, nextAO *isc.ChainOutputs) map[gpa.NodeID]gpa.Input {
 	inputs := map[gpa.NodeID]gpa.Input{}
 	for n := range gpaNodes {
-		inputs[n] = cmt_log.NewInputConsensusOutputDone(consReq.GetLogIndex(), consReq.GetBaseAnchorOutput().OutputID(), consReq.GetBaseAnchorOutput().OutputID(), nextAO)
+		inputs[n] = cmt_log.NewInputConsensusOutputDone(consReq.GetLogIndex(), consReq.GetBaseAnchorOutput().AnchorOutputID, consReq.GetBaseAnchorOutput().AnchorOutputID, nextAO)
 	}
 	return inputs
 }
@@ -129,13 +129,15 @@ func inputConsensusOutput(gpaNodes map[gpa.NodeID]gpa.GPA, consReq *cmt_log.Outp
 func randomAnchorOutputWithID(anchorID iotago.AnchorID, governorAddress, stateAddress iotago.Address, stateIndex uint32) *isc.ChainOutputs {
 	outputID := testiotago.RandOutputID()
 	anchorOutput := &iotago.AnchorOutput{
-		AnchorID:      anchorID,
-		StateIndex:    stateIndex,
-		StateMetadata: []byte{},
-		Conditions: iotago.UnlockConditions{
+		AnchorID:   anchorID,
+		StateIndex: stateIndex,
+		UnlockConditions: []iotago.AnchorOutputUnlockCondition{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governorAddress},
 		},
+		ImmutableFeatures: []iotago.Feature{
+			&iotago.StateMetadataFeature{Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{}},
+		},
 	}
-	return isc.NewChainOutputs(anchorOutput, outputID)
+	return isc.NewChainOutputs(anchorOutput, outputID, nil, iotago.OutputID{})
 }

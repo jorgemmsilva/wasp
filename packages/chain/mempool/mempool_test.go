@@ -113,6 +113,7 @@ func testMempoolBasic(t *testing.T, n, f int, reliable bool) {
 			TargetAddress: te.chainID.AsAddress(),
 			Assets:        isc.NewAssetsBaseTokens(10 * isc.Million),
 		},
+		testutil.L1API,
 	)
 	onLedgerReq, err := isc.OnLedgerFromUTXO(output, tpkg.RandOutputID(uint16(0)))
 	require.NoError(t, err)
@@ -202,12 +203,12 @@ func blockFn(te *testEnv, reqs []isc.Request, ao *isc.ChainOutputs, tangleTime t
 
 	store := te.stores[0]
 	vmTask := &vm.VMTask{
-		Processors:           processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
-		AnchorOutput:         ao.GetAnchorOutput(),
-		AnchorOutputID:       ao.OutputID(),
+		Processors: processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
+		Inputs:     isc.NewChainOutputs(ao.AnchorOutput, ao.AnchorOutputID, nil, iotago.OutputID{}),
+
 		Store:                store,
 		Requests:             reqs,
-		TimeAssumption:       tangleTime,
+		Timestamp:            tangleTime,
 		Entropy:              hashing.HashDataBlake2b([]byte{2, 1, 7}),
 		ValidatorFeeTarget:   accounts.CommonAccount(),
 		EstimateGasMode:      false,
@@ -267,22 +268,31 @@ func testTimeLock(t *testing.T, n, f int, reliable bool) { //nolint:gocyclo
 	defer te.close()
 	start := time.Now()
 	requests := getRequestsOnLedger(t, te.chainID.AsAddress(), 6, func(i int, p *isc.RequestParameters) {
+		var timeLock time.Time
+
 		switch i {
 		case 0: // + No time lock
 		case 1: // + Time lock before start
-			p.Options.Timelock = start.Add(-2 * time.Hour)
+			timeLock = start.Add(-2 * time.Hour)
 		case 2: // + Time lock slightly before start due to time.Now() in ReadyNow being called later than in this test
-			p.Options.Timelock = start
+			timeLock = start
 		case 3: // - Time lock 5s after start
-			p.Options.Timelock = start.Add(5 * time.Second)
+			timeLock = start.Add(5 * time.Second)
 		case 4: // - Time lock 2h after start
-			p.Options.Timelock = start.Add(2 * time.Hour)
+			timeLock = start.Add(2 * time.Hour)
 		case 5: // - Time lock after expiration
-			p.Options.Timelock = start.Add(3 * time.Second)
-			p.Options.Expiration = &isc.Expiration{
-				Time:          start.Add(2 * time.Second),
+			timeLock = start.Add(3 * time.Second)
+			expirationSlot := testutil.L1API.TimeProvider().SlotFromTime(start.Add(2 * time.Second))
+
+			p.UnlockConditions = append(p.UnlockConditions, &iotago.ExpirationUnlockCondition{
+				Slot:          expirationSlot,
 				ReturnAddress: te.chainID.AsAddress(),
-			}
+			})
+		}
+
+		if !timeLock.IsZero() {
+			slot := testutil.L1API.TimeProvider().SlotFromTime(timeLock)
+			p.UnlockConditions = append(p.UnlockConditions, &iotago.TimelockUnlockCondition{Slot: slot})
 		}
 	})
 	reqRefs := []*isc.RequestRef{
@@ -378,28 +388,36 @@ func TestExpiration(t *testing.T) {
 	}
 }
 
+// TODO: <lmoe> As we don't handle time as before, we need to restructure the tests.
+// I recreated RequestConsideredExpiredWindow just to keep the test logic intact for now.
+// Definitely check the logic here.
+const RequestConsideredExpiredWindow time.Duration = 5 * time.Minute
+
 func testExpiration(t *testing.T, n, f int, reliable bool) {
 	t.Parallel()
 	te := newEnv(t, n, f, reliable)
 	defer te.close()
 	start := time.Now()
 	requests := getRequestsOnLedger(t, te.chainID.AsAddress(), 4, func(i int, p *isc.RequestParameters) {
+
+		// TODO: <lmoe> As we don't handle time as before, I recreated RequestConsideredExpiredWindow just to enable this test.
+		var expiration time.Time
+
 		switch i {
 		case 1: // expired
-			p.Options.Expiration = &isc.Expiration{
-				Time:          start.Add(-isc.RequestConsideredExpiredWindow),
-				ReturnAddress: te.chainID.AsAddress(),
-			}
+			expiration = start.Add(-RequestConsideredExpiredWindow)
+
 		case 2: // will expire soon
-			p.Options.Expiration = &isc.Expiration{
-				Time:          start.Add(isc.RequestConsideredExpiredWindow / 2),
-				ReturnAddress: te.chainID.AsAddress(),
-			}
+			expiration = start.Add(-RequestConsideredExpiredWindow / 2)
+
 		case 3: // not expired yet
-			p.Options.Expiration = &isc.Expiration{
-				Time:          start.Add(isc.RequestConsideredExpiredWindow * 2),
-				ReturnAddress: te.chainID.AsAddress(),
-			}
+			expiration = start.Add(-RequestConsideredExpiredWindow * 2)
+
+		}
+
+		if !expiration.IsZero() {
+			slot := testutil.L1API.TimeProvider().SlotFromTime(expiration)
+			p.UnlockConditions = append(p.UnlockConditions, &iotago.ExpirationUnlockCondition{Slot: slot, ReturnAddress: te.chainID.AsAddress()})
 		}
 	})
 	reqRefs := []*isc.RequestRef{
@@ -432,7 +450,7 @@ func testExpiration(t *testing.T, n, f int, reliable bool) {
 	//
 	// The remaining request with an expiry expires some time after.
 	for _, mp := range te.mempools {
-		mp.TangleTimeUpdated(start.Add(10 * isc.RequestConsideredExpiredWindow))
+		mp.TangleTimeUpdated(start.Add(10 * RequestConsideredExpiredWindow))
 	}
 	time.Sleep(100 * time.Millisecond) // Just to make sure all the events have been consumed.
 	for _, mp := range te.mempools {
@@ -478,6 +496,7 @@ func TestMempoolsNonceGaps(t *testing.T) {
 			TargetAddress: te.chainID.AsAddress(),
 			Assets:        isc.NewAssetsBaseTokens(10 * isc.Million),
 		},
+		testutil.L1API,
 	)
 	onLedgerReq, err := isc.OnLedgerFromUTXO(output, tpkg.RandOutputID(uint16(0)))
 	require.NoError(t, err)
@@ -626,6 +645,7 @@ func TestMempoolOverrideNonce(t *testing.T) {
 			TargetAddress: te.chainID.AsAddress(),
 			Assets:        isc.NewAssetsBaseTokens(10 * isc.Million),
 		},
+		testutil.L1API,
 	)
 	onLedgerReq, err := isc.OnLedgerFromUTXO(output, tpkg.RandOutputID(uint16(0)))
 	require.NoError(t, err)
@@ -670,6 +690,7 @@ func TestTTL(t *testing.T) {
 	chainMetrics := metrics.NewChainMetricsProvider().GetChainMetrics(isc.EmptyChainID())
 	te.mempools[0] = mempool.New(
 		te.ctx,
+		testutil.L1API,
 		te.chainID,
 		te.peerIdentities[0],
 		te.networkProviders[0],
@@ -695,6 +716,7 @@ func TestTTL(t *testing.T) {
 			TargetAddress: te.chainID.AsAddress(),
 			Assets:        isc.NewAssetsBaseTokens(10 * isc.Million),
 		},
+		testutil.L1API,
 	)
 	onLedgerReq, err := isc.OnLedgerFromUTXO(output, tpkg.RandOutputID(uint16(0)))
 	require.NoError(t, err)
@@ -790,11 +812,12 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.stores = make([]state.Store, len(te.peerIdentities))
 	for i := range te.peerIdentities {
 		te.stores[i] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAnchorOutput(te.stores[i], te.originAO)
+		_, err := origin.InitChainByAnchorOutput(te.stores[i], te.originAO, testutil.L1API)
 		require.NoError(t, err)
 		chainMetrics := metrics.NewChainMetricsProvider().GetChainMetrics(isc.EmptyChainID())
 		te.mempools[i] = mempool.New(
 			te.ctx,
+			testutil.L1API,
 			te.chainID,
 			te.peerIdentities[i],
 			te.networkProviders[i],
@@ -810,7 +833,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 }
 
 func (te *testEnv) stateForAO(i int, ao *isc.ChainOutputs) state.State {
-	l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(ao.GetAnchorOutput())
+	l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(ao.AnchorOutput)
 	require.NoError(te.t, err)
 	st, err := te.stores[i].StateByTrieRoot(l1Commitment.TrieRoot())
 	require.NoError(te.t, err)
@@ -847,6 +870,7 @@ func getRequestsOnLedger(t *testing.T, chainAddress iotago.Address, amount int, 
 			tpkg.RandEd25519Address(),
 			isc.EmptyContractIdentity(),
 			requestParams,
+			testutil.L1API,
 		)
 		outputID := tpkg.RandOutputID(uint16(i))
 		var err error

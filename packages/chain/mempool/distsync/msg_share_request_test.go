@@ -42,17 +42,18 @@ func TestMsgShareRequestSerialization(t *testing.T) {
 		}
 		basicOutput := &iotago.BasicOutput{
 			Amount: 123,
-			NativeTokens: []*iotago.NativeTokenFeature{
+
+			Features: []iotago.Feature{
+				&iotago.SenderFeature{Address: sender},
+				&iotago.MetadataFeature{Entries: map[iotago.MetadataFeatureEntriesKey]iotago.MetadataFeatureEntriesValue{
+					"": requestMetadata.Bytes(),
+				}},
 				&iotago.NativeTokenFeature{
-					ID:     [iotago.NativeTokenIDLength]byte{1},
 					Amount: big.NewInt(100),
+					ID:     [iotago.NativeTokenIDLength]byte{1},
 				},
 			},
-			Features: iotago.Features{
-				&iotago.SenderFeature{Address: sender},
-				&iotago.MetadataFeature{Data: requestMetadata.Bytes()},
-			},
-			Conditions: iotago.UnlockConditions{
+			UnlockConditions: []iotago.BasicOutputUnlockCondition{
 				&iotago.AddressUnlockCondition{Address: sender},
 			},
 		}

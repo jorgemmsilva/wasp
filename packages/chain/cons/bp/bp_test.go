@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/cons/bp"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
@@ -33,21 +34,24 @@ func TestOffLedgerOrdering(t *testing.T) {
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
-	outputs, outIDs := utxoDB.GetUnspentOutputs(originator.Address())
+	outputs := utxoDB.GetUnspentOutputs(originator.Address())
+
 	originTX, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
 		cmtKP.Address(),
 		originator.Address(),
 		0,
+		0,
 		nil,
 		outputs,
-		outIDs,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
-	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
 	require.NoError(t, err)
-	ao0 := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID)
+	ao0 := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID, nil, iotago.OutputID{})
 	//
 	// Create some requests.
 	senderKP := cryptolib.NewKeyPair()

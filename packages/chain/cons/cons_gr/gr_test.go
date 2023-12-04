@@ -114,13 +114,13 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)
 		require.NoError(t, err)
 		chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err = origin.InitChainByAnchorOutput(chainStore, originAO)
+		_, err = origin.InitChainByAnchorOutput(chainStore, originAO, testutil.L1API)
 		require.NoError(t, err)
 		mempools[i] = newTestMempool(t)
 		stateMgrs[i] = newTestStateMgr(t, chainStore)
 		chainMetrics := chainMetricsProvider.GetChainMetrics(isc.EmptyChainID())
 		nodes[i] = consGR.New(
-			ctx, chainID, chainStore, dkShare, &logIndex, peerIdentities[i],
+			ctx, chainID, chainStore, dkShare, &logIndex, testutil.L1API, peerIdentities[i],
 			procCache, mempools[i], stateMgrs[i],
 			networkProviders[i],
 			accounts.CommonAccount(),
@@ -274,7 +274,9 @@ func newTestStateMgr(t *testing.T, chainStore state.Store) *testStateMgr {
 }
 
 func (tsm *testStateMgr) addOriginState(originAO *isc.ChainOutputs) {
-	originAOStateMetadata, err := transaction.StateMetadataFromBytes(originAO.AnchorOutput.FeatureSet().StateMetadata())
+	// TODO: <lmoe> Previously StateMetadata was just a []byte storage, now it's a map. We need to define either one or multiple keys
+	// For now I've set "" as key, as it was done previously as well. We most likely want to use something more fitting.
+	originAOStateMetadata, err := transaction.StateMetadataFromBytes(originAO.AnchorOutput.FeatureSet().StateMetadata().Entries[""])
 	require.NoError(tsm.t, err)
 	chainState, err := tsm.chainStore.StateByTrieRoot(
 		originAOStateMetadata.L1Commitment.TrieRoot(),

@@ -17,6 +17,7 @@ import (
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -101,12 +102,12 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 		}
 	}()
 
-	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(te.originTx)
+	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(te.originTx.Transaction)
 	require.NoError(t, err)
-	deployBaseAO := isc.NewChainOutputs(deployBaseAONoID, deployBaseAnchor.OutputID)
+	deployBaseAO := isc.NewChainOutputs(deployBaseAONoID, deployBaseAnchor.OutputID, nil, iotago.OutputID{})
 	for _, tnc := range te.nodeConns {
 		tnc.recvAnchorOutput(
-			isc.NewOutputInfo(deployBaseAO.OutputID(), deployBaseAO.GetAnchorOutput(), iotago.TransactionID{}),
+			isc.NewOutputInfo(deployBaseAO.AnchorOutputID, deployBaseAO.AnchorOutput, iotago.TransactionID{}),
 		)
 	}
 
@@ -204,9 +205,9 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 		}
 		// Check if LastAnchorOutput() works as expected.
 		awaitPredicate(te, ctxTimeout, "LatestAnchorOutput", func() bool {
-			confirmedAO, err := node.LatestAnchorOutput(chaintypes.ConfirmedState)
+			confirmedAO, err := node.LatestChainOutputs(chaintypes.ConfirmedState)
 			require.NoError(t, err)
-			activeAO, err := node.LatestAnchorOutput(chaintypes.ActiveState)
+			activeAO, err := node.LatestChainOutputs(chaintypes.ActiveState)
 			require.NoError(t, err)
 			lastPublishedTX := te.nodeConns[i].published[len(te.nodeConns[i].published)-1]
 			lastPublishedAO, err := isc.ChainOutputsFromTx(lastPublishedTX, te.chainID.AsAddress())
@@ -293,7 +294,7 @@ func newTestNodeConn(t *testing.T) *testNodeConn {
 func (tnc *testNodeConn) PublishTX(
 	ctx context.Context,
 	chainID isc.ChainID,
-	tx *iotago.Transaction,
+	tx *iotago.SignedTransaction,
 	callback chain.TxPostHandler,
 ) error {
 	if tnc.chainID.Empty() {
@@ -307,16 +308,16 @@ func (tnc *testNodeConn) PublishTX(
 	existing := lo.ContainsBy(tnc.published, func(publishedTX *iotago.Transaction) bool {
 		publishedID, err2 := publishedTX.ID()
 		require.NoError(tnc.t, err2)
-		return txID == publishedID
+		return iotago.TransactionID(txID) == publishedID
 	})
 	if existing {
 		tnc.t.Logf("Already seen a TX with ID=%v", txID)
 		return nil
 	}
-	tnc.published = append(tnc.published, tx)
-	callback(tx, true)
+	tnc.published = append(tnc.published, tx.Transaction)
+	callback(tx.Transaction, true)
 
-	stateAnchor, aoNoID, err := transaction.GetAnchorFromTransaction(tx)
+	stateAnchor, aoNoID, err := transaction.GetAnchorFromTransaction(tx.Transaction)
 	if err != nil {
 		return err
 	}
@@ -359,11 +360,23 @@ func (tnc *testNodeConn) WaitUntilInitiallySynced(ctx context.Context) error {
 }
 
 func (tnc *testNodeConn) GetBech32HRP() iotago.NetworkPrefix {
-	return testutil.L1API.ProtocolParameters().Bech32HRP()
+	return tnc.L1API().ProtocolParameters().Bech32HRP()
 }
 
 func (tnc *testNodeConn) GetL1ProtocolParams() iotago.ProtocolParameters {
-	return testutil.L1API.ProtocolParameters()
+	return tnc.L1API().ProtocolParameters()
+}
+
+func (tnc *testNodeConn) Bech32HRP() iotago.NetworkPrefix {
+	return tnc.L1API().ProtocolParameters().Bech32HRP()
+}
+
+func (tnc *testNodeConn) BaseTokenInfo() api.InfoResBaseToken {
+	return *testutil.TokenInfo
+}
+
+func (tnc *testNodeConn) L1API() iotago.API {
+	return testutil.L1API
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -386,7 +399,7 @@ type testEnv struct {
 	cmtAddress       iotago.Address
 	chainID          isc.ChainID
 	originAO         *isc.ChainOutputs
-	originTx         *iotago.Transaction
+	originTx         *iotago.SignedTransaction
 	nodeConns        []*testNodeConn
 	nodes            []chaintypes.Chain
 }

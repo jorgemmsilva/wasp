@@ -14,7 +14,7 @@ import (
 
 func TestSomething(t *testing.T) {
 	waitReq := NewWaitReq(waitRequestCleanupEvery)
-	pool := NewTypedPoolByNonce[isc.OffLedgerRequest](waitReq, func(int) {}, func(time.Duration) {}, testlogger.NewSilentLogger("", true))
+	pool := NewTypedPoolByNonce[isc.OffLedgerRequest](waitReq, func(int) {}, func(time.Duration) {}, testlogger.NewSilentLogger("", true), testutil.L1API)
 
 	// generate a bunch of requests for the same account
 	kp, addr := testkey.GenKeyAddr()

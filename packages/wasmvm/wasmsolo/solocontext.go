@@ -72,7 +72,7 @@ type SoloContext struct {
 	nfts           map[iotago.NFTID]*isc.NFT
 	offLedger      bool
 	scName         string
-	Tx             *iotago.Transaction
+	Tx             *iotago.SignedTransaction
 	wc             *wasmhost.WasmContext
 }
 
@@ -238,7 +238,7 @@ func StartChain(t testing.TB, chainName string, env ...*solo.Solo) *solo.Chain {
 			AutoAdjustStorageDeposit: true,
 		})
 	}
-	chain, _ := soloEnv.NewChainExt(nil, 0, chainName)
+	chain, _ := soloEnv.NewChainExt(nil, 0, 0, chainName)
 	chain.MustDepositBaseTokensToL2(L2FundsOriginator, chain.OriginatorPrivateKey)
 	return chain
 }
@@ -261,7 +261,7 @@ func (ctx *SoloContext) AccountID() wasmtypes.ScAgentID {
 
 // AdvanceClockBy is used to forward the internal clock by the provided step duration.
 func (ctx *SoloContext) AdvanceClockBy(step time.Duration) {
-	ctx.Chain.Env.AdvanceClockBy(step)
+	ctx.Chain.Env.AdvanceTime(step)
 }
 
 // Balance returns the account balance of the specified agent on the chain associated with ctx.
@@ -272,7 +272,7 @@ func (ctx *SoloContext) Balance(agent *SoloAgent, nativeTokenID ...wasmtypes.ScT
 	switch len(nativeTokenID) {
 	case 0:
 		baseTokens := ctx.Chain.L2BaseTokens(account)
-		return baseTokens
+		return uint64(baseTokens)
 	case 1:
 		token := cvt.IscTokenID(&nativeTokenID[0])
 		tokens := ctx.Chain.L2NativeTokens(account, token).Uint64()
@@ -389,7 +389,11 @@ func (ctx *SoloContext) MintNFT(agent *SoloAgent, metadata []byte) wasmtypes.ScN
 		ctx.Err = errors.New("agent should be an address")
 		return wasmtypes.NftIDFromBytes(nil)
 	}
-	nft, _, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr, metadata)
+	nft, _, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr,
+		map[iotago.MetadataFeatureEntriesKey]iotago.MetadataFeatureEntriesValue{
+			"": metadata,
+		},
+	)
 	if err != nil {
 		ctx.Err = err
 		return wasmtypes.NftIDFromBytes(nil)
@@ -405,7 +409,7 @@ func (ctx *SoloContext) MintNFT(agent *SoloAgent, metadata []byte) wasmtypes.ScN
 // tokens in its address and pre-deposits 10Mi into the corresponding chain account
 func (ctx *SoloContext) NewSoloAgent(name string) *SoloAgent {
 	agent := NewSoloAgent(ctx.Chain.Env, name)
-	ctx.Chain.MustDepositBaseTokensToL2(L2FundsAgent+wasmlib.MinGasFee, agent.Pair)
+	ctx.Chain.MustDepositBaseTokensToL2(L2FundsAgent+iotago.BaseToken(wasmlib.MinGasFee), agent.Pair)
 	return agent
 }
 
@@ -461,8 +465,8 @@ func (ctx *SoloContext) UpdateGasFees() {
 	if receipt == nil {
 		panic("UpdateGasFees: missing last receipt")
 	}
-	ctx.Gas = receipt.GasBurned
-	ctx.GasFee = receipt.GasFeeCharged
+	ctx.Gas = uint64(receipt.GasBurned)
+	ctx.GasFee = uint64(receipt.GasFeeCharged)
 }
 
 func (ctx *SoloContext) uploadWasm(keyPair *cryptolib.KeyPair) {

@@ -202,14 +202,17 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 		// TODO refactor to use inx.BlockMetadata_TRANSACTION_STATE_[...] variables (?)
 		// check if block was included
 		switch metadata.BlockState {
-		case "confirmed", "finalized":
+		case api.BlockStateConfirmed, api.BlockStateFinalized:
 			return blockID, nil // success
 
-		case "rejected":
+		case api.BlockStateRejected:
 			return iotago.EmptyBlockID, fmt.Errorf("block was not included in the ledger. IsTransaction: %t, LedgerInclusionState: %s, ConflictReason: %d",
 				isTransactionPayload, metadata.BlockState, metadata.BlockFailureReason)
 
-		case "pending", "conflicting":
+			// TODO: <lmoe> used to be  "pending", "conflicting".
+			// Conflicting does not exist anymore, accepted seemed to be a sensible alternative here.
+			// We need to revalidate the logic here soon anyway.
+		case api.BlockStatePending, api.BlockStateAccepted:
 			// do nothing
 
 		default:

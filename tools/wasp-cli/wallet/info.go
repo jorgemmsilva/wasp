@@ -5,7 +5,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -20,7 +19,7 @@ func initAddressCmd() *cobra.Command {
 			myWallet := wallet.Load()
 			address := myWallet.Address()
 
-			model := &AddressModel{Address: address.Bech32(parameters.NetworkPrefix())}
+			model := &AddressModel{Address: address.Bech32(cliclients.L1Client().Bech32HRP())}
 
 			if log.VerboseFlag {
 				verboseOutput := make(map[string]string)
@@ -67,7 +66,7 @@ func initBalanceCmd() *cobra.Command {
 			balance := isc.AssetsFromOutputMap(outs)
 
 			model := &BalanceModel{
-				Address:      address.Bech32(parameters.NetworkPrefix()),
+				Address:      address.Bech32(cliclients.L1Client().Bech32HRP()),
 				AddressIndex: myWallet.AddressIndex,
 				NativeTokens: balance.NativeTokens,
 				BaseTokens:   balance.BaseTokens,
@@ -76,9 +75,9 @@ func initBalanceCmd() *cobra.Command {
 			if log.VerboseFlag {
 				model.VerboseOutputs = map[uint16]string{}
 
-				for i, out := range outs {
-					tokens := isc.AssetsFromOutput(out)
-					model.VerboseOutputs[i.Index()] = tokens.String()
+				for oid, out := range outs {
+					tokens := isc.AssetsFromOutput(out, oid)
+					model.VerboseOutputs[oid.Index()] = tokens.String()
 				}
 			}
 
@@ -90,10 +89,10 @@ func initBalanceCmd() *cobra.Command {
 var _ log.CLIOutput = &BalanceModel{}
 
 type BalanceModel struct {
-	AddressIndex int                 `json:"AddressIndex"`
-	Address      string              `json:"Address"`
-	BaseTokens   uint64              `json:"BaseTokens"`
-	NativeTokens []*iotago.NativeTokenFeature `json:"NativeTokens"`
+	AddressIndex int                   `json:"AddressIndex"`
+	Address      string                `json:"Address"`
+	BaseTokens   iotago.BaseToken      `json:"BaseTokens"`
+	NativeTokens iotago.NativeTokenSum `json:"NativeTokens"`
 
 	OutputMap      iotago.OutputSet `json:"-"`
 	VerboseOutputs map[uint16]string

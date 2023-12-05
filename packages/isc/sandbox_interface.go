@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -52,6 +53,10 @@ type SandboxBase interface {
 	CallView(contractHname Hname, entryPoint Hname, params dict.Dict) dict.Dict
 	// StateR returns the immutable k/v store of the current call (in the context of the smart contract)
 	StateR() kv.KVStoreReader
+	// L1 API returns the L1 api
+	L1API() iotago.API
+	// TokenInfo returns information about the base token
+	TokenInfo() api.InfoResBaseToken
 }
 
 type Params struct {
@@ -76,7 +81,7 @@ type Balance interface {
 	// BalanceNativeToken returns number of native token or nil if it is empty
 	BalanceNativeToken(iotago.NativeTokenID) *big.Int
 	// BalanceNativeTokens returns all native tokens owned by the smart contract
-	BalanceNativeTokens() []*NativeTokenAmount
+	BalanceNativeTokens() iotago.NativeTokenSum
 	// OwnedNFTs returns the NFTIDs of NFTs owned by the smart contract
 	OwnedNFTs() []iotago.NFTID
 	// returns whether a given user owns a given amount of tokens
@@ -154,7 +159,7 @@ type Privileged interface {
 	SendOnBehalfOf(caller ContractIdentity, metadata RequestParameters)
 }
 
-type CoreCallbackFunc func(contractPartition kv.KVStore, gasBurned uint64)
+type CoreCallbackFunc func(contractPartition kv.KVStore, gasBurned gas.GasUnits)
 
 // RequestParameters represents parameters of the on-ledger request. The output is build from these parameters
 type RequestParameters struct {
@@ -174,8 +179,8 @@ type RequestParameters struct {
 
 type Gas interface {
 	Burn(burnCode gas.BurnCode, par ...uint64)
-	Budget() uint64
-	Burned() uint64
+	Budget() gas.GasUnits
+	Burned() gas.GasUnits
 	EstimateGasMode() bool
 }
 
@@ -198,7 +203,7 @@ type SendMetadata struct {
 	EntryPoint     Hname
 	Params         dict.Dict
 	Allowance      *Assets
-	GasBudget      uint64
+	GasBudget      gas.GasUnits
 }
 
 // Utils implement various utilities which are faster on host side than on wasm VM

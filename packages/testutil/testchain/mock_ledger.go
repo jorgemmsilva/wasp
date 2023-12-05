@@ -11,17 +11,18 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/samber/lo"
 )
 
 type MockedLedger struct {
 	latestOutputID                 iotago.OutputID
 	outputs                        map[iotago.OutputID]*iotago.AnchorOutput
 	txIDs                          map[iotago.TransactionID]bool
-	publishTransactionAllowedFun   func(tx *iotago.Transaction) bool
+	publishTransactionAllowedFun   func(tx *iotago.SignedTransaction) bool
 	pullLatestOutputAllowed        bool
 	pullTxInclusionStateAllowedFun func(iotago.TransactionID) bool
 	pullOutputByIDAllowedFun       func(iotago.OutputID) bool
-	pushOutputToNodesNeededFun     func(*iotago.Transaction, iotago.OutputID, iotago.Output) bool
+	pushOutputToNodesNeededFun     func(*iotago.SignedTransaction, iotago.OutputID, iotago.Output) bool
 	stateOutputHandlerFuns         map[string]func(iotago.OutputID, iotago.Output)
 	outputHandlerFuns              map[string]func(iotago.OutputID, iotago.Output)
 	inclusionStateEvents           map[string]*event.Event2[iotago.TransactionID, string]
@@ -31,21 +32,25 @@ type MockedLedger struct {
 
 func NewMockedLedger(stateAddress iotago.Address, log *logger.Logger) (*MockedLedger, isc.ChainID) {
 	originOutput := &iotago.AnchorOutput{
-		Amount:        tpkg.TestTokenSupply,
-		StateMetadata: testutil.DummyStateMetadata(origin.L1Commitment(nil, 0)).Bytes(),
-		Conditions: iotago.UnlockConditions{
+		Amount: tpkg.TestTokenSupply,
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: stateAddress},
 		},
-		Features: iotago.Features{
+		Features: iotago.AnchorOutputFeatures{
 			&iotago.SenderFeature{
 				Address: stateAddress,
+			},
+			&iotago.StateMetadataFeature{
+				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
+					"": testutil.DummyStateMetadata(origin.L1Commitment(nil, 0)).Bytes(),
+				},
 			},
 		},
 	}
 	outputID := getOriginOutputID()
-	chainID := isc.ChainIDFromAliasID(iotago.AliasIDFromOutputID(outputID))
-	originOutput.AccountID = chainID.AsAliasID() // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
+	chainID := isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(outputID))
+	originOutput.AnchorID = chainID.AsAnchorID() // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
 	outputs := make(map[iotago.OutputID]*iotago.AnchorOutput)
 	outputs[outputID] = originOutput
 	ret := &MockedLedger{
@@ -86,25 +91,25 @@ func (mlT *MockedLedger) Unregister(nodeID string) {
 	delete(mlT.outputHandlerFuns, nodeID)
 }
 
-func (mlT *MockedLedger) PublishTransaction(tx *iotago.Transaction) error {
+func (mlT *MockedLedger) PublishTransaction(tx *iotago.SignedTransaction) error {
 	mlT.mutex.Lock()
 	defer mlT.mutex.Unlock()
 
 	if mlT.publishTransactionAllowedFun(tx) {
 		mlT.log.Debugf("Publishing transaction allowed, transaction has %v inputs, %v outputs, %v unlock blocks",
-			len(tx.Essence.Inputs), len(tx.Outputs), len(tx.Unlocks))
-		txID, err := tx.ID()
+			len(lo.Must(tx.Transaction.Inputs())), len(tx.Transaction.Outputs), len(tx.Unlocks))
+		txID, err := tx.Transaction.ID()
 		if err != nil {
 			mlT.log.Panicf("Publishing transaction: cannot calculate transaction id: %v", err)
 		}
 		mlT.log.Debugf("Publishing transaction: transaction id is %s", txID.ToHex())
 		mlT.txIDs[txID] = true
-		for index, output := range tx.Outputs {
+		for index, output := range tx.Transaction.Outputs {
 			anchorOutput, ok := output.(*iotago.AnchorOutput)
 			outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
 			mlT.log.Debugf("Publishing transaction: outputs[%v] has id %v", index, outputID.ToHex())
 			if ok {
-				mlT.log.Debugf("Publishing transaction: outputs[%v] is alias output", index)
+				mlT.log.Debugf("Publishing transaction: outputs[%v] is anchor output", index)
 				mlT.outputs[outputID] = anchorOutput
 				currentLatestAnchorOutput := mlT.getAnchorOutput(mlT.latestOutputID)
 				if currentLatestAnchorOutput == nil || currentLatestAnchorOutput.StateIndex < anchorOutput.StateIndex {
@@ -200,12 +205,13 @@ func (mlT *MockedLedger) PullStateOutputByID(nodeID string, outputID iotago.Outp
 	}
 }
 
-func (mlT *MockedLedger) GetLatestOutput() *isc.AnchorOutputWithID {
+func (mlT *MockedLedger) GetLatestOutput() *isc.ChainOutputs {
 	mlT.mutex.RLock()
 	defer mlT.mutex.RUnlock()
 
 	mlT.log.Debugf("Getting latest output")
-	return isc.NewAnchorOutputWithID(mlT.getLatestOutput(), mlT.latestOutputID)
+	// TODO fill account outputs
+	return isc.NewChainOutputs(mlT.getLatestOutput(), mlT.latestOutputID, nil, iotago.EmptyOutputID)
 }
 
 func (mlT *MockedLedger) getLatestOutput() *iotago.AnchorOutput {
@@ -220,7 +226,7 @@ func (mlT *MockedLedger) GetAnchorOutputByID(outputID iotago.OutputID) *iotago.A
 	mlT.mutex.RLock()
 	defer mlT.mutex.RUnlock()
 
-	mlT.log.Debugf("Getting alias output by ID %v", outputID.ToHex())
+	mlT.log.Debugf("Getting anchor output by ID %v", outputID.ToHex())
 	return mlT.getAnchorOutput(outputID)
 }
 
@@ -233,10 +239,10 @@ func (mlT *MockedLedger) getAnchorOutput(outputID iotago.OutputID) *iotago.Ancho
 }
 
 func (mlT *MockedLedger) SetPublishStateTransactionAllowed(flag bool) {
-	mlT.SetPublishStateTransactionAllowedFun(func(*iotago.Transaction) bool { return flag })
+	mlT.SetPublishStateTransactionAllowedFun(func(*iotago.SignedTransaction) bool { return flag })
 }
 
-func (mlT *MockedLedger) SetPublishStateTransactionAllowedFun(fun func(tx *iotago.Transaction) bool) {
+func (mlT *MockedLedger) SetPublishStateTransactionAllowedFun(fun func(tx *iotago.SignedTransaction) bool) {
 	mlT.mutex.Lock()
 	defer mlT.mutex.Unlock()
 
@@ -244,10 +250,10 @@ func (mlT *MockedLedger) SetPublishStateTransactionAllowedFun(fun func(tx *iotag
 }
 
 func (mlT *MockedLedger) SetPublishGovernanceTransactionAllowed(flag bool) {
-	mlT.SetPublishGovernanceTransactionAllowedFun(func(*iotago.Transaction) bool { return flag })
+	mlT.SetPublishGovernanceTransactionAllowedFun(func(*iotago.SignedTransaction) bool { return flag })
 }
 
-func (mlT *MockedLedger) SetPublishGovernanceTransactionAllowedFun(fun func(tx *iotago.Transaction) bool) {
+func (mlT *MockedLedger) SetPublishGovernanceTransactionAllowedFun(fun func(tx *iotago.SignedTransaction) bool) {
 	mlT.mutex.Lock()
 	defer mlT.mutex.Unlock()
 
@@ -284,10 +290,10 @@ func (mlT *MockedLedger) SetPullOutputByIDAllowedFun(fun func(outputID iotago.Ou
 }
 
 func (mlT *MockedLedger) SetPushOutputToNodesNeeded(flag bool) {
-	mlT.SetPushOutputToNodesNeededFun(func(*iotago.Transaction, iotago.OutputID, iotago.Output) bool { return flag })
+	mlT.SetPushOutputToNodesNeededFun(func(*iotago.SignedTransaction, iotago.OutputID, iotago.Output) bool { return flag })
 }
 
-func (mlT *MockedLedger) SetPushOutputToNodesNeededFun(fun func(tx *iotago.Transaction, outputID iotago.OutputID, output iotago.Output) bool) {
+func (mlT *MockedLedger) SetPushOutputToNodesNeededFun(fun func(tx *iotago.SignedTransaction, outputID iotago.OutputID, output iotago.Output) bool) {
 	mlT.mutex.Lock()
 	defer mlT.mutex.Unlock()
 
@@ -298,14 +304,15 @@ func getOriginOutputID() iotago.OutputID {
 	return iotago.OutputID{}
 }
 
-func (mlT *MockedLedger) GetOriginOutput() *isc.AnchorOutputWithID {
-	mlT.mutex.RLock()
-	defer mlT.mutex.RUnlock()
+// TODO remove, unused?
+// func (mlT *MockedLedger) GetOriginOutput() *isc.ChainOutputs {
+// 	mlT.mutex.RLock()
+// 	defer mlT.mutex.RUnlock()
 
-	outputID := getOriginOutputID()
-	anchorOutput := mlT.getAnchorOutput(outputID)
-	if anchorOutput == nil {
-		return nil
-	}
-	return isc.NewAnchorOutputWithID(anchorOutput, outputID)
-}
+// 	outputID := getOriginOutputID()
+// 	anchorOutput := mlT.getAnchorOutput(outputID)
+// 	if anchorOutput == nil {
+// 		return nil
+// 	}
+// 	return isc.NewChainOutputs(anchorOutput, outputID)
+// }

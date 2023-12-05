@@ -31,6 +31,9 @@ func NewSandbox(reqctx *requestContext) isc.Sandbox {
 
 // Call calls an entry point of contract, passes parameters and funds
 func (s *contractSandbox) Call(target, entryPoint isc.Hname, params dict.Dict, transfer *isc.Assets) dict.Dict {
+	if transfer == nil {
+		transfer = isc.NewEmptyAssets()
+	}
 	s.Ctx.GasBurn(gas.BurnCodeCallContract)
 	return s.Ctx.Call(target, entryPoint, params, transfer)
 }
@@ -80,7 +83,7 @@ func (s *contractSandbox) Send(par isc.RequestParameters) {
 
 func (s *contractSandbox) EstimateRequiredStorageDeposit(par isc.RequestParameters) iotago.BaseToken {
 	s.Ctx.GasBurn(gas.BurnCodeEstimateStorageDepositCost)
-	return s.reqctx.estimateRequiredStorageDeposit(par)
+	return s.reqctx.estimateRequiredStorageDeposit(par, s.reqctx.L1API())
 }
 
 func (s *contractSandbox) State() kv.KVStore {
@@ -199,6 +202,9 @@ func (s *contractSandbox) totalGasTokens() *isc.Assets {
 }
 
 func (s *contractSandbox) CallOnBehalfOf(caller isc.AgentID, target, entryPoint isc.Hname, params dict.Dict, transfer *isc.Assets) dict.Dict {
+	if transfer == nil {
+		transfer = isc.NewEmptyAssets()
+	}
 	s.Ctx.GasBurn(gas.BurnCodeCallContract)
 	return s.reqctx.CallOnBehalfOf(caller, target, entryPoint, params, transfer)
 }

@@ -224,7 +224,8 @@ func provide(c *dig.Container) error {
 		ChainRecordRegistryProvider registry.ChainRecordRegistryProvider
 		DKShareRegistryProvider     registry.DKShareRegistryProvider
 		NodeIdentityProvider        registry.NodeIdentityProvider
-		NetworkProvider             peering.NetworkProvider       `name:"networkProvider"`
+		NetworkProvider             peering.NetworkProvider `name:"networkProvider"`
+		NodeConnection              chain.NodeConnection
 		TrustedNetworkManager       peering.TrustedNetworkManager `name:"trustedNetworkManager"`
 		Node                        *dkg.Node
 		UserManager                 *users.UserManager
@@ -260,7 +261,7 @@ func provide(c *dig.Container) error {
 			publisher.ISCEventKindReceipt,
 			publisher.ISCEventIssuerVM,
 			publisher.ISCEventKindBlockEvents,
-		}, deps.Publisher, websocket.WithMaxTopicSubscriptionsPerClient(ParamsWebAPI.Limits.MaxTopicSubscriptionsPerClient))
+		}, deps.Publisher, deps.NodeConnection.L1API(), websocket.WithMaxTopicSubscriptionsPerClient(ParamsWebAPI.Limits.MaxTopicSubscriptionsPerClient))
 
 		if ParamsWebAPI.DebugRequestLoggerEnabled {
 			echoSwagger.Echo().Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
@@ -296,6 +297,8 @@ func provide(c *dig.Container) error {
 				ParamsWebAPI.Limits.Jsonrpc.MaxBlocksInLogsFilterRange,
 				ParamsWebAPI.Limits.Jsonrpc.MaxLogsInResult,
 			),
+			deps.NodeConnection.L1API(),
+			deps.NodeConnection.BaseTokenInfo(),
 		)
 
 		return webapiServerResult{

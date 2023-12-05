@@ -619,7 +619,7 @@ func TestL1Metadata(t *testing.T) {
 	resMetadata := res.Get(governance.ParamPublicURL)
 	require.Equal(t, publicURLMetadata, string(resMetadata))
 
-	// assert metadata is correct on L1 alias output
+	// assert metadata is correct on L1 anchor output
 	co, err := ch.LatestChainOutputs(chaintypes.ActiveOrCommittedState)
 	require.NoError(t, err)
 	sm, err := transaction.StateMetadataFromAnchorOutput(co.AnchorOutput)

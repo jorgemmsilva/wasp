@@ -2,22 +2,22 @@ package transaction
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type AssetsWithMana struct {
-	*isc.Assets
+	isc.Assets
 	Mana iotago.Mana
 }
 
 func NewAssetsWithMana(assets *isc.Assets, mana iotago.Mana) *AssetsWithMana {
-	return &AssetsWithMana{Assets: assets, Mana: mana}
+	return &AssetsWithMana{Assets: *assets, Mana: mana}
 }
 
 func NewEmptyAssetsWithMana() *AssetsWithMana {
@@ -33,40 +33,48 @@ func (a *AssetsWithMana) String() string {
 }
 
 func (a *AssetsWithMana) Geq(b *AssetsWithMana) bool {
-	if !a.Assets.Geq(b.Assets) {
+	if !a.Assets.Geq(&b.Assets) {
 		return false
 	}
 	return a.Mana > b.Mana
 }
 
 func (a *AssetsWithMana) Equals(b *AssetsWithMana) bool {
-	return a.Assets.Equals(b.Assets) && a.Mana == b.Mana
+	return a.Assets.Equals(&b.Assets) && a.Mana == b.Mana
 }
 
 func (a *AssetsWithMana) Add(b *AssetsWithMana) {
-	a.Assets.Add(b.Assets)
+	a.Assets.Add(&b.Assets)
 	a.Mana += b.Mana
 }
 
-func MustSingleNativeToken(a *isc.FungibleTokens) *isc.NativeTokenAmount {
+func (a *AssetsWithMana) Clone() *AssetsWithMana {
+	return &AssetsWithMana{
+		Assets: *a.Assets.Clone(),
+		Mana:   a.Mana,
+	}
+}
+
+func MustSingleNativeToken(a *isc.FungibleTokens) (iotago.NativeTokenID, *big.Int, bool) {
 	if len(a.NativeTokens) > 1 {
 		panic("expected at most 1 native token")
 	}
-	if len(a.NativeTokens) == 0 {
-		return nil
+	for id, n := range a.NativeTokens {
+		return id, n, true
 	}
-	return a.NativeTokens[0]
+	return iotago.NativeTokenID{}, nil, false
 }
 
 func AssetsAndAvailableManaFromOutput(
 	oID iotago.OutputID,
 	o iotago.Output,
 	slotIndex iotago.SlotIndex,
+	l1API iotago.API,
 ) (*AssetsWithMana, error) {
 	assets := isc.AssetsFromOutput(o, oID)
 	mana, err := vm.TotalManaIn(
-		parameters.L1API().ManaDecayProvider(),
-		parameters.Storage(),
+		l1API.ManaDecayProvider(),
+		l1API.StorageScoreStructure(),
 		slotIndex,
 		vm.InputSet{oID: o},
 		vm.RewardsInputSet{},
@@ -77,8 +85,8 @@ func AssetsAndAvailableManaFromOutput(
 	return NewAssetsWithMana(assets, mana), nil
 }
 
-func AdjustToMinimumStorageDeposit[T iotago.Output](out T) T {
-	storageDeposit := lo.Must(parameters.Storage().MinDeposit(out))
+func AdjustToMinimumStorageDeposit[T iotago.Output](out T, l1API iotago.API) T {
+	storageDeposit := lo.Must(l1API.StorageScoreStructure().MinDeposit(out))
 	if out.BaseTokenAmount() >= storageDeposit {
 		return out
 	}

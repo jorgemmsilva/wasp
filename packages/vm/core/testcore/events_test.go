@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 var (
@@ -67,7 +68,7 @@ func checkNEvents(t *testing.T, ch *solo.Chain, reqid isc.RequestID, n int) {
 	require.Len(t, events, n)
 }
 
-func getBurnedGas(ch *solo.Chain, tx *iotago.Transaction, err error) (uint64, error) {
+func getBurnedGas(ch *solo.Chain, tx *iotago.Transaction, err error) (gas.GasUnits, error) {
 	reqs, err2 := ch.Env.RequestsForChain(tx, ch.ChainID)
 	require.NoError(ch.Env.T, err2)
 	require.EqualValues(ch.Env.T, 1, len(reqs))
@@ -83,7 +84,7 @@ func getBurnedGas(ch *solo.Chain, tx *iotago.Transaction, err error) (uint64, er
 func TestManyEvents(t *testing.T) {
 	ch := setupTest(t)
 
-	postEvents := func(n uint32) (uint64, error) {
+	postEvents := func(n uint32) (gas.GasUnits, error) {
 		// post a request that issues too many events (nEvents)
 		tx, _, err := ch.PostRequestSyncTx(
 			solo.NewCallParams(manyEventsContract.Name, funcManyEvents.Name, "n", n).
@@ -116,7 +117,7 @@ func TestManyEvents(t *testing.T) {
 func TestEventTooLarge(t *testing.T) {
 	ch := setupTest(t)
 
-	postEvent := func(n uint32) (uint64, error) {
+	postEvent := func(n uint32) (gas.GasUnits, error) {
 		// post a request that issues too many events (nEvents)
 		tx, _, err := ch.PostRequestSyncTx(
 			solo.NewCallParams(manyEventsContract.Name, funcBigEvent.Name, "n", n).

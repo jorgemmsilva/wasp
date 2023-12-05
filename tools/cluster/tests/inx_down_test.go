@@ -16,7 +16,7 @@ func TestInxShutdownTest(t *testing.T) {
 	env := setupNativeInccounterTest(t, 4, []int{0, 1, 2, 3}, dataPath)
 
 	// restart the privtangle, this will cause an INX disconnection on wasp
-	l1.Stop()
+	l1.Pause()
 
 	// assert wasp nodes are down
 	_, err := env.Clu.MultiClient().NodeVersion()
@@ -24,7 +24,7 @@ func TestInxShutdownTest(t *testing.T) {
 	require.Regexp(t, `connection refused`, err.Error())
 
 	// start privatangle again
-	l1.StartExistingServers()
+	l1.Resume()
 
 	// start the nodes again
 	err = env.Clu.Start()

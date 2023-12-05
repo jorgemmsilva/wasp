@@ -9,11 +9,11 @@ import (
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/iota.go/v4/vm"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
 )
 
 func TestRequestFunds(t *testing.T) {
-	u := New(parameters.L1API())
+	u := New(testutil.L1API)
 	addr := tpkg.RandEd25519Address()
 	tx, err := u.GetFundsFromFaucet(addr)
 	require.NoError(t, err)
@@ -26,7 +26,7 @@ func TestRequestFunds(t *testing.T) {
 }
 
 func TestAddTransactionFail(t *testing.T) {
-	u := New(parameters.L1API())
+	u := New(testutil.L1API)
 
 	addr := tpkg.RandEd25519Address()
 	tx, err := u.GetFundsFromFaucet(addr)
@@ -43,7 +43,7 @@ func TestDoubleSpend(t *testing.T) {
 	addr2 := tpkg.RandEd25519Address()
 	addr3 := tpkg.RandEd25519Address()
 
-	u := New(parameters.L1API())
+	u := New(testutil.L1API)
 
 	tx1, err := u.GetFundsFromFaucet(addr1)
 	require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestDoubleSpend(t *testing.T) {
 }
 
 func TestGetOutput(t *testing.T) {
-	u := New(parameters.L1API())
+	u := New(testutil.L1API)
 	addr := tpkg.RandEd25519Address()
 	tx, err := u.GetFundsFromFaucet(addr)
 	require.NoError(t, err)

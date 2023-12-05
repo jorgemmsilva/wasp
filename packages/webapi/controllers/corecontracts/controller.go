@@ -4,22 +4,30 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/labstack/echo/v4"
 	"github.com/pangpanglabs/echoswagger/v2"
 
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/authentication"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
+	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
+	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 	"github.com/iotaledger/wasp/packages/webapi/params"
 )
 
 type Controller struct {
-	chainService interfaces.ChainService
+	chainService  interfaces.ChainService
+	l1Api         iotago.API
+	baseTokenInfo api.InfoResBaseToken
 }
 
-func NewCoreContractsController(chainService interfaces.ChainService) interfaces.APIController {
-	return &Controller{chainService}
+func NewCoreContractsController(chainService interfaces.ChainService, l1Api iotago.API, baseTokenInfo api.InfoResBaseToken) interfaces.APIController {
+	return &Controller{chainService, l1Api, baseTokenInfo}
 }
 
 func (c *Controller) Name() string {
@@ -31,6 +39,16 @@ func (c *Controller) handleViewCallError(err error, chainID isc.ChainID) error {
 		return apierrors.ChainNotFoundError(chainID.String())
 	}
 	return apierrors.ContractExecutionError(err)
+}
+
+func (c *Controller) createCallViewInvoker(e echo.Context) (corecontracts.CallViewInvoker, chaintypes.Chain, error) {
+	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	if err != nil {
+		return nil, nil, c.handleViewCallError(err, chainID)
+	}
+
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	return invoker, ch, nil
 }
 
 func (c *Controller) addAccountContractRoutes(api echoswagger.ApiGroup, mocker interfaces.Mocker) {
@@ -47,7 +65,7 @@ func (c *Controller) addAccountContractRoutes(api echoswagger.ApiGroup, mocker i
 		AddParamPath("", params.ParamAgentID, params.DescriptionAgentID).
 		AddParamQuery("", params.ParamBlockIndexOrTrieRoot, params.DescriptionBlockIndexOrTrieRoot, false).
 		AddResponse(http.StatusUnauthorized, "Unauthorized (Wrong permissions, missing token)", authentication.ValidationError{}, nil).
-		AddResponse(http.StatusOK, "All assets belonging to an account", mocker.Get(models.AssetsResponse{}), nil).
+		AddResponse(http.StatusOK, "All assets belonging to an account", mocker.Get(models.FungibleTokensResponse{}), nil).
 		SetOperationId("accountsGetAccountBalance").
 		SetSummary("Get all assets belonging to an account")
 
@@ -113,7 +131,7 @@ func (c *Controller) addAccountContractRoutes(api echoswagger.ApiGroup, mocker i
 		AddParamPath("", params.ParamChainID, params.DescriptionChainID).
 		AddParamQuery("", params.ParamBlockIndexOrTrieRoot, params.DescriptionBlockIndexOrTrieRoot, false).
 		AddResponse(http.StatusUnauthorized, "Unauthorized (Wrong permissions, missing token)", authentication.ValidationError{}, nil).
-		AddResponse(http.StatusOK, "All stored assets", mocker.Get(models.AssetsResponse{}), nil).
+		AddResponse(http.StatusOK, "All stored assets", mocker.Get(models.FungibleTokensResponse{}), nil).
 		SetOperationId("accountsGetTotalAssets").
 		SetSummary("Get all stored assets")
 }

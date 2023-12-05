@@ -2,16 +2,14 @@ package corecontracts
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
-	"github.com/iotaledger/wasp/packages/webapi/common"
 )
 
-func GetAllowedStateControllerAddresses(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]iotago.Address, error) {
-	res, err := common.CallView(ch, governance.Contract.Hname(), governance.ViewGetAllowedStateControllerAddresses.Hname(), nil, blockIndexOrTrieRoot)
+func GetAllowedStateControllerAddresses(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) ([]iotago.Address, error) {
+	_, res, err := callViewInvoker(governance.Contract.Hname(), governance.ViewGetAllowedStateControllerAddresses.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -27,8 +25,8 @@ func GetAllowedStateControllerAddresses(ch chaintypes.Chain, blockIndexOrTrieRoo
 	return ret, nil
 }
 
-func GetChainOwner(ch chaintypes.Chain, blockIndexOrTrieRoot string) (isc.AgentID, error) {
-	ret, err := common.CallView(ch, governance.Contract.Hname(), governance.ViewGetChainOwner.Hname(), nil, blockIndexOrTrieRoot)
+func GetChainOwner(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (isc.AgentID, error) {
+	_, ret, err := callViewInvoker(governance.Contract.Hname(), governance.ViewGetChainOwner.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -42,15 +40,15 @@ func GetChainOwner(ch chaintypes.Chain, blockIndexOrTrieRoot string) (isc.AgentI
 	return ownerID, nil
 }
 
-func GetChainInfo(ch chaintypes.Chain, blockIndexOrTrieRoot string) (*isc.ChainInfo, error) {
-	ret, err := common.CallView(ch, governance.Contract.Hname(), governance.ViewGetChainInfo.Hname(), nil, blockIndexOrTrieRoot)
+func GetChainInfo(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*isc.ChainInfo, error) {
+	chainID, ret, err := callViewInvoker(governance.Contract.Hname(), governance.ViewGetChainInfo.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
 
 	var chainInfo *isc.ChainInfo
 
-	if chainInfo, err = governance.GetChainInfo(ret, ch.ID()); err != nil {
+	if chainInfo, err = governance.GetChainInfo(ret, chainID); err != nil {
 		return nil, err
 	}
 

@@ -4,12 +4,11 @@ import (
 	"errors"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
-func OutputFromBytes(data []byte) (ret iotago.Output, err error) {
+func OutputFromBytes(data []byte, l1API iotago.API) (ret iotago.Output, err error) {
 	var n int
-	n, err = parameters.L1API().Decode(data, &ret)
+	n, err = l1API.Decode(data, &ret)
 	if err != nil {
 		return nil, err
 	}

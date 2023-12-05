@@ -29,7 +29,8 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
+
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
@@ -170,7 +171,7 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 		T:                               t,
 		logger:                          opt.Log,
 		db:                              mapdb.NewMapDB(),
-		utxoDB:                          utxodb.New(parameters.L1API()),
+		utxoDB:                          utxodb.New(testutil.L1API),
 		chains:                          make(map[isc.ChainID]*Chain),
 		processorConfig:                 coreprocessors.NewConfigWithCoreContracts(),
 		disableAutoAdjustStorageDeposit: !opt.AutoAdjustStorageDeposit,
@@ -320,6 +321,7 @@ func (env *Solo) deployChain(
 		outs,
 		env.SlotIndex(),
 		0,
+		testutil.L1API,
 	)
 	require.NoError(env.T, err)
 
@@ -331,14 +333,14 @@ func (env *Solo) deployChain(
 	env.AssertL1BaseTokens(originatorAddr, initialL1Balance-anchor.Deposit)
 
 	env.logger.Infof("deploying new chain '%s'. ID: %s, state controller address: %s",
-		name, chainID.String(), stateControllerAddr.Bech32(parameters.NetworkPrefix()))
-	env.logger.Infof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(parameters.NetworkPrefix()))
-	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(parameters.NetworkPrefix()))
+		name, chainID.String(), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	env.logger.Infof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
 	chainDB := env.getDB(dbKindChainState, chainID)
 	require.NoError(env.T, err)
 	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(chainDB))
-	_, err = origin.InitChainByAnchorOutput(store, chainOutputs)
+	_, err = origin.InitChainByAnchorOutput(store, chainOutputs, testutil.L1API)
 	require.NoError(env.T, err)
 
 	{
@@ -421,7 +423,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 func (env *Solo) AddToLedger(tx *iotago.SignedTransaction) error {
 	env.logger.Debugf("adding tx to L1 (ID: %s) %s",
 		lo.Must(tx.Transaction.ID()).ToHex(),
-		string(lo.Must(parameters.L1API().JSONEncode(tx))),
+		string(lo.Must(testutil.L1API.JSONEncode(tx))),
 	)
 	return env.utxoDB.AddToLedger(tx)
 }
@@ -570,7 +572,7 @@ func (env *Solo) L1NFTs(addr iotago.Address) map[iotago.OutputID]*iotago.NFTOutp
 // L1NativeTokens returns number of native tokens contained in the given address on the UTXODB ledger
 func (env *Solo) L1NativeTokens(addr iotago.Address, nativeTokenID iotago.NativeTokenID) *big.Int {
 	assets := env.L1Assets(addr)
-	return assets.AmountNativeToken(nativeTokenID)
+	return assets.NativeTokens.ValueOrBigInt0(nativeTokenID)
 }
 
 func (env *Solo) L1BaseTokens(addr iotago.Address) iotago.BaseToken {
@@ -625,6 +627,7 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 		immutableMetadata,
 		allOuts,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -665,8 +668,7 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.Assets, wallet *cryptolib.KeyPair) {
 	allOuts := env.utxoDB.GetUnspentOutputs(wallet.Address())
 	tx, err := transaction.NewTransferTransaction(
-		assets.BaseTokens,
-		transaction.MustSingleNativeToken(assets.FungibleTokens),
+		&assets.FungibleTokens,
 		0,
 		wallet.Address(),
 		wallet,
@@ -675,6 +677,7 @@ func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.Assets, wallet
 		nil,
 		env.SlotIndex(),
 		env.disableAutoAdjustStorageDeposit,
+		testutil.L1API,
 	)
 	require.NoError(env.T, err)
 	err = env.AddToLedger(tx)

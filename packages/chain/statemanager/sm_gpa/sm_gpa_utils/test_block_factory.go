@@ -44,7 +44,6 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 	chainID := isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(anchorOutput0ID))
 	stateAddress := cryptolib.NewKeyPair().GetPublicKey().AsEd25519Address()
 	originCommitment := origin.L1Commitment(chainInitParams, 0)
-	stateMetadata := testutil.DummyStateMetadata(originCommitment)
 	anchorOutput0 := &iotago.AnchorOutput{
 		Amount:   tpkg.TestTokenSupply,
 		AnchorID: chainID.AsAnchorID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier

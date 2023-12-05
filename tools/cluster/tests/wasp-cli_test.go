@@ -21,7 +21,7 @@ import (
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testkey"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
@@ -850,7 +850,7 @@ func TestEVMISCReceipt(t *testing.T) {
 	w.MustRun("chain", "deposit", ethAddr.String(), "base:100000000", "--node=0")
 
 	// send some arbitrary EVM tx
-	gasPrice := gas.DefaultFeePolicy().GasPriceWei(parameters.BaseToken().Decimals)
+	gasPrice := gas.DefaultFeePolicy().GasPriceWei(testutil.TokenInfo.Decimals)
 	jsonRPCClient := NewEVMJSONRPClient(t, w.ChainID(0), w.Cluster, 0)
 	tx, err := types.SignTx(
 		types.NewTransaction(0, ethAddr, big.NewInt(123), 100000, gasPrice, []byte{}),

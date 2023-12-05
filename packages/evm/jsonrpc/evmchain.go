@@ -28,7 +28,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -134,10 +134,10 @@ func (e *EVMChain) ChainID() uint16 {
 	return e.chainID
 }
 
-func (e *EVMChain) ViewCaller(chainState state.State) vmerrors.ViewCaller {
+func (e *EVMChain) ViewCaller(chainState state.State, l1API iotago.API) vmerrors.ViewCaller {
 	e.log.Debugf("ViewCaller(chainState=%v)", chainState)
 	return func(contractName string, funcName string, params dict.Dict) (dict.Dict, error) {
-		return e.backend.ISCCallView(chainState, contractName, funcName, params)
+		return e.backend.ISCCallView(chainState, contractName, funcName, params, l1API)
 	}
 }
 
@@ -193,7 +193,7 @@ func (e *EVMChain) SendTransaction(tx *types.Transaction) error {
 	if err := e.checkEnoughL2FundsForGasBudget(sender, tx.Gas(), gasFeePolicy); err != nil {
 		return err
 	}
-	if err := evmutil.CheckGasPrice(tx, gasFeePolicy); err != nil {
+	if err := evmutil.CheckGasPrice(tx, gasFeePolicy, e.backend.BaseTokenDecimals()); err != nil {
 		return err
 	}
 	return e.backend.EVMSendTransaction(tx)
@@ -308,7 +308,7 @@ func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockN
 		isc.NewEthereumAddressAgentID(*e.backend.ISCChainID(), address),
 		*e.backend.ISCChainID(),
 	)
-	ether, _ := util.BaseTokensDecimalsToEthereumDecimals(baseTokens, parameters.BaseToken().Decimals)
+	ether, _ := util.BaseTokensDecimalsToEthereumDecimals(baseTokens, e.backend.BaseTokenDecimals())
 	// discard remainder
 	return ether, nil
 }
@@ -432,27 +432,27 @@ func (e *EVMChain) TransactionCount(address common.Address, blockNumberOrHash *r
 	return emulator.GetNonce(stateDBSubrealmR(chainState), address), nil
 }
 
-func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {
+func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash, l1API iotago.API) ([]byte, error) {
 	e.log.Debugf("CallContract(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
 	chainOutputs, err := e.iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return nil, err
 	}
-	return e.backend.EVMCall(chainOutputs, callMsg)
+	return e.backend.EVMCall(chainOutputs, callMsg, l1API)
 }
 
-func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) (uint64, error) {
+func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash, l1API iotago.API) (uint64, error) {
 	e.log.Debugf("EstimateGas(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
 	chainOutputs, err := e.iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return 0, err
 	}
-	return e.backend.EVMEstimateGas(chainOutputs, callMsg)
+	return e.backend.EVMEstimateGas(chainOutputs, callMsg, l1API)
 }
 
 func (e *EVMChain) GasPrice() *big.Int {
 	e.log.Debugf("GasPrice()")
-	return e.GasFeePolicy().GasPriceWei(parameters.BaseToken().Decimals)
+	return e.GasFeePolicy().GasPriceWei(e.backend.BaseTokenDecimals())
 }
 
 func (e *EVMChain) StorageAt(address common.Address, key common.Hash, blockNumberOrHash *rpc.BlockNumberOrHash) (common.Hash, error) {
@@ -570,11 +570,6 @@ func filterAndAppendToLogs(query *ethereum.FilterQuery, receipts []*types.Receip
 	return nil
 }
 
-func (e *EVMChain) BaseToken() *parameters.BaseTokenInfo {
-	e.log.Debugf("BaseToken()")
-	return e.backend.BaseToken()
-}
-
 func (e *EVMChain) SubscribeNewHeads(ch chan<- *types.Header) (unsubscribe func()) {
 	e.log.Debugf("SubscribeNewHeads(ch=?)")
 	return e.newBlock.Hook(func(ev *NewBlockEvent) {
@@ -617,7 +612,7 @@ func (e *EVMChain) iscRequestsInBlock(evmBlockNumber uint64) (*blocklog.BlockInf
 	return blocklog.GetRequestsInBlock(blocklogStatePartition, iscBlockIndex)
 }
 
-func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig) (any, error) {
+func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig, l1API iotago.API) (any, error) {
 	e.log.Debugf("TraceTransaction(txHash=%v, config=?)", txHash)
 	tracerType := "callTracer"
 	if config.Tracer != nil {
@@ -647,6 +642,7 @@ func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceCon
 		iscRequestsInBlock,
 		txIndex,
 		tracer,
+		l1API,
 	)
 	if err != nil {
 		return nil, err

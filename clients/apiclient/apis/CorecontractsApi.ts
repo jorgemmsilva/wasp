@@ -12,7 +12,6 @@ import { AccountFoundriesResponse } from '../models/AccountFoundriesResponse';
 import { AccountListResponse } from '../models/AccountListResponse';
 import { AccountNFTsResponse } from '../models/AccountNFTsResponse';
 import { AccountNonceResponse } from '../models/AccountNonceResponse';
-import { AssetsResponse } from '../models/AssetsResponse';
 import { BlobInfoResponse } from '../models/BlobInfoResponse';
 import { BlobListResponse } from '../models/BlobListResponse';
 import { BlobValueResponse } from '../models/BlobValueResponse';
@@ -21,6 +20,7 @@ import { ControlAddressesResponse } from '../models/ControlAddressesResponse';
 import { ErrorMessageFormatResponse } from '../models/ErrorMessageFormatResponse';
 import { EventsResponse } from '../models/EventsResponse';
 import { FoundryOutputResponse } from '../models/FoundryOutputResponse';
+import { FungibleTokensResponse } from '../models/FungibleTokensResponse';
 import { GovAllowedStateControllerAddressesResponse } from '../models/GovAllowedStateControllerAddressesResponse';
 import { GovChainInfoResponse } from '../models/GovChainInfoResponse';
 import { GovChainOwnerResponse } from '../models/GovChainOwnerResponse';
@@ -1304,13 +1304,13 @@ export class CorecontractsApiResponseProcessor {
      * @params response Response returned by the server for a request to accountsGetAccountBalance
      * @throws ApiException if the response code was not in [200, 299]
      */
-     public async accountsGetAccountBalance(response: ResponseContext): Promise<AssetsResponse > {
+     public async accountsGetAccountBalance(response: ResponseContext): Promise<FungibleTokensResponse > {
         const contentType = ObjectSerializer.normalizeMediaType(response.headers["content-type"]);
         if (isCodeInRange("200", response.httpStatusCode)) {
-            const body: AssetsResponse = ObjectSerializer.deserialize(
+            const body: FungibleTokensResponse = ObjectSerializer.deserialize(
                 ObjectSerializer.parse(await response.body.text(), contentType),
-                "AssetsResponse", ""
-            ) as AssetsResponse;
+                "FungibleTokensResponse", ""
+            ) as FungibleTokensResponse;
             return body;
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
@@ -1323,10 +1323,10 @@ export class CorecontractsApiResponseProcessor {
 
         // Work around for missing responses in specification, e.g. for petstore.yaml
         if (response.httpStatusCode >= 200 && response.httpStatusCode <= 299) {
-            const body: AssetsResponse = ObjectSerializer.deserialize(
+            const body: FungibleTokensResponse = ObjectSerializer.deserialize(
                 ObjectSerializer.parse(await response.body.text(), contentType),
-                "AssetsResponse", ""
-            ) as AssetsResponse;
+                "FungibleTokensResponse", ""
+            ) as FungibleTokensResponse;
             return body;
         }
 
@@ -1592,13 +1592,13 @@ export class CorecontractsApiResponseProcessor {
      * @params response Response returned by the server for a request to accountsGetTotalAssets
      * @throws ApiException if the response code was not in [200, 299]
      */
-     public async accountsGetTotalAssets(response: ResponseContext): Promise<AssetsResponse > {
+     public async accountsGetTotalAssets(response: ResponseContext): Promise<FungibleTokensResponse > {
         const contentType = ObjectSerializer.normalizeMediaType(response.headers["content-type"]);
         if (isCodeInRange("200", response.httpStatusCode)) {
-            const body: AssetsResponse = ObjectSerializer.deserialize(
+            const body: FungibleTokensResponse = ObjectSerializer.deserialize(
                 ObjectSerializer.parse(await response.body.text(), contentType),
-                "AssetsResponse", ""
-            ) as AssetsResponse;
+                "FungibleTokensResponse", ""
+            ) as FungibleTokensResponse;
             return body;
         }
         if (isCodeInRange("401", response.httpStatusCode)) {
@@ -1611,10 +1611,10 @@ export class CorecontractsApiResponseProcessor {
 
         // Work around for missing responses in specification, e.g. for petstore.yaml
         if (response.httpStatusCode >= 200 && response.httpStatusCode <= 299) {
-            const body: AssetsResponse = ObjectSerializer.deserialize(
+            const body: FungibleTokensResponse = ObjectSerializer.deserialize(
                 ObjectSerializer.parse(await response.body.text(), contentType),
-                "AssetsResponse", ""
-            ) as AssetsResponse;
+                "FungibleTokensResponse", ""
+            ) as FungibleTokensResponse;
             return body;
         }
 

@@ -171,7 +171,7 @@ func TestBigBlob(t *testing.T) {
 	ch := env.NewChain()
 	ch.MustDepositBaseTokensToL2(1*isc.Million, nil)
 
-	upload := func(n int) uint64 {
+	upload := func(n int) gas.GasUnits {
 		blobBin := make([]byte, n)
 		_, err := ch.UploadWasm(ch.OriginatorPrivateKey, blobBin)
 		require.NoError(t, err)

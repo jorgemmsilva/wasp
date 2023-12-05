@@ -29,7 +29,7 @@ func allFoundriesMapR(state kv.KVStoreReader) *collections.ImmutableMap {
 }
 
 // SaveFoundryOutput stores foundry output into the map of all foundry outputs (compressed form)
-func SaveFoundryOutput(state kv.KVStore, f *iotago.FoundryOutput, outputIndex uint16) {
+func SaveFoundryOutput(state kv.KVStore, f *iotago.FoundryOutput, outputIndex uint16, l1API iotago.API) {
 	foundryRec := foundryOutputRec{
 		// TransactionID is unknown yet, will be filled next block
 		OutputID:    iotago.OutputIDFromTransactionIDAndIndex(iotago.TransactionID{}, outputIndex),
@@ -41,7 +41,7 @@ func SaveFoundryOutput(state kv.KVStore, f *iotago.FoundryOutput, outputIndex ui
 	newFoundriesArray(state).Push(codec.EncodeUint32(f.SerialNumber))
 }
 
-func updateFoundryOutputIDs(state kv.KVStore, anchorTxID iotago.TransactionID) {
+func updateFoundryOutputIDs(state kv.KVStore, anchorTxID iotago.TransactionID, l1API iotago.API) {
 	newFoundries := newFoundriesArray(state)
 	allFoundries := AllFoundriesMap(state)
 	n := newFoundries.Len()
@@ -60,7 +60,7 @@ func DeleteFoundryOutput(state kv.KVStore, sn uint32) {
 }
 
 // GetFoundryOutput returns foundry output, its block number and output index
-func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainAccountID iotago.AccountID) (*iotago.FoundryOutput, iotago.OutputID) {
+func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainAccountID iotago.AccountID, l1API iotago.API) (*iotago.FoundryOutput, iotago.OutputID) {
 	data := allFoundriesMapR(state).GetAt(codec.EncodeUint32(sn))
 	if data == nil {
 		return nil, iotago.OutputID{}

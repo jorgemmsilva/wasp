@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenScheme, err error) {
@@ -14,7 +13,8 @@ func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenSche
 		}
 		return nil, errors.New("wrong data length")
 	}
-	n, err := parameters.L1API().Decode(b, &ts)
+	l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
+	n, err := l1API.Decode(b, &ts)
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +33,8 @@ func MustDecodeTokenScheme(b []byte, def ...iotago.TokenScheme) iotago.TokenSche
 }
 
 func EncodeTokenScheme(value iotago.TokenScheme) []byte {
-	b, err := parameters.L1API().Encode(value)
+	l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
+	b, err := l1API.Encode(value)
 	if err != nil {
 		panic(err)
 	}

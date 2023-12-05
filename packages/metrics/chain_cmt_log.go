@@ -31,7 +31,7 @@ func newChainCmtLogMetricsProvider() *ChainCmtLogMetricsProvider {
 			Namespace: "iota_wasp",
 			Subsystem: "cmt_log",
 			Name:      "log_index_inc_reason_L1RepAO",
-			Help:      "Number if times LogIndex was increased because L1 replaced TIP alias output.",
+			Help:      "Number if times LogIndex was increased because L1 replaced TIP anchor output.",
 		}, []string{labelNameChain}),
 		logIndexIncReasonStarted: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Namespace: "iota_wasp",

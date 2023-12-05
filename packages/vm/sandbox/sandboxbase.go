@@ -8,11 +8,12 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/assert"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/execution"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -51,7 +52,7 @@ func (s *SandboxBase) BalanceNativeToken(nativeTokenID iotago.NativeTokenID) *bi
 	return s.Ctx.GetNativeTokenBalance(s.AccountID(), nativeTokenID)
 }
 
-func (s *SandboxBase) BalanceNativeTokens() []*isc.NativeTokenAmount {
+func (s *SandboxBase) BalanceNativeTokens() iotago.NativeTokenSum {
 	s.Ctx.GasBurn(gas.BurnCodeGetBalance)
 	return s.Ctx.GetNativeTokens(s.AccountID())
 }
@@ -106,7 +107,8 @@ func (s *SandboxBase) Timestamp() time.Time {
 }
 
 func (s *SandboxBase) SlotIndex() iotago.SlotIndex {
-	return parameters.L1API().TimeProvider().SlotFromTime(s.Ctx.Timestamp())
+	panic("not implemented") // TODO does it really make sense for this function to exist?
+	// return parameters.L1API().TimeProvider().SlotFromTime(s.Ctx.Timestamp())
 }
 
 func (s *SandboxBase) Log() isc.LogInterface {
@@ -127,7 +129,7 @@ func (s *SandboxBase) Gas() isc.Gas {
 	return s
 }
 
-func (s *SandboxBase) Burned() uint64 {
+func (s *SandboxBase) Burned() gas.GasUnits {
 	return s.Ctx.GasBurned()
 }
 
@@ -135,7 +137,7 @@ func (s *SandboxBase) Burn(burnCode gas.BurnCode, par ...uint64) {
 	s.Ctx.GasBurn(burnCode, par...)
 }
 
-func (s *SandboxBase) Budget() uint64 {
+func (s *SandboxBase) Budget() gas.GasUnits {
 	return s.Ctx.GasBudgetLeft()
 }
 
@@ -162,4 +164,12 @@ func (s *SandboxBase) CallView(contractHname, entryPoint isc.Hname, params dict.
 
 func (s *SandboxBase) StateR() kv.KVStoreReader {
 	return s.Ctx.ContractStateReaderWithGasBurn()
+}
+
+func (s *SandboxBase) L1API() iotago.API {
+	return s.Ctx.L1API()
+}
+
+func (s *SandboxBase) TokenInfo() api.InfoResBaseToken {
+	return s.Ctx.TokenInfo()
 }

@@ -9,10 +9,10 @@ import (
 )
 
 type Limits struct {
-	MaxGasPerBlock         uint64 `json:"maxGasPerBlock" swagger:"desc(The maximum gas per block),required"`
-	MinGasPerRequest       uint64 `json:"minGasPerRequest" swagger:"desc(The minimum gas per request),required"`
-	MaxGasPerRequest       uint64 `json:"maxGasPerRequest" swagger:"desc(The maximum gas per request),required"`
-	MaxGasExternalViewCall uint64 `json:"maxGasExternalViewCall" swagger:"desc(The maximum gas per external view call),required"`
+	MaxGasPerBlock         GasUnits `json:"maxGasPerBlock" swagger:"desc(The maximum gas per block),required"`
+	MinGasPerRequest       GasUnits `json:"minGasPerRequest" swagger:"desc(The minimum gas per request),required"`
+	MaxGasPerRequest       GasUnits `json:"maxGasPerRequest" swagger:"desc(The maximum gas per request),required"`
+	MaxGasExternalViewCall GasUnits `json:"maxGasExternalViewCall" swagger:"desc(The maximum gas per external view call),required"`
 }
 
 var LimitsDefault = &Limits{
@@ -58,10 +58,10 @@ func (gl *Limits) String() string {
 
 func (gl *Limits) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
-	gl.MaxGasPerBlock = rr.ReadGas64()
-	gl.MinGasPerRequest = rr.ReadGas64()
-	gl.MaxGasPerRequest = rr.ReadGas64()
-	gl.MaxGasExternalViewCall = rr.ReadGas64()
+	gl.MaxGasPerBlock = GasUnits(rr.ReadGas64())
+	gl.MinGasPerRequest = GasUnits(rr.ReadGas64())
+	gl.MaxGasPerRequest = GasUnits(rr.ReadGas64())
+	gl.MaxGasExternalViewCall = GasUnits(rr.ReadGas64())
 	if rr.Err == nil && !gl.IsValid() {
 		rr.Err = errors.New("invalid gas limits")
 	}
@@ -70,9 +70,9 @@ func (gl *Limits) Read(r io.Reader) error {
 
 func (gl *Limits) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
-	ww.WriteGas64(gl.MaxGasPerBlock)
-	ww.WriteGas64(gl.MinGasPerRequest)
-	ww.WriteGas64(gl.MaxGasPerRequest)
-	ww.WriteGas64(gl.MaxGasExternalViewCall)
+	ww.WriteGas64(uint64(gl.MaxGasPerBlock))
+	ww.WriteGas64(uint64(gl.MinGasPerRequest))
+	ww.WriteGas64(uint64(gl.MaxGasPerRequest))
+	ww.WriteGas64(uint64(gl.MaxGasExternalViewCall))
 	return ww.Err
 }

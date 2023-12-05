@@ -4,6 +4,7 @@
 package iscmagic
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // ISCChainID matches the type definition in ISCTypes.sol
@@ -61,24 +62,21 @@ func (a NativeTokenID) MustUnwrap() (ret iotago.NativeTokenID) {
 	return
 }
 
-// NativeToken matches the struct definition in ISCTypes.sol
+// NativeToken represents an amount of native tokens
 type NativeToken struct {
 	ID     NativeTokenID
 	Amount *big.Int
 }
 
-func WrapNativeToken(nativeToken *isc.NativeTokenAmount) NativeToken {
+func WrapNativeToken(id iotago.NativeTokenID, amount *big.Int) NativeToken {
 	return NativeToken{
-		ID:     WrapNativeTokenID(nativeToken.ID),
-		Amount: nativeToken.Amount,
+		ID:     WrapNativeTokenID(id),
+		Amount: amount,
 	}
 }
 
-func (nt NativeToken) Unwrap() *isc.NativeTokenAmount {
-	return &isc.NativeTokenAmount{
-		ID:     nt.ID.Unwrap(),
-		Amount: nt.Amount,
-	}
+func (nt NativeToken) Unwrap() (id iotago.NativeTokenID, amount *big.Int) {
+	return nt.ID.Unwrap(), nt.Amount
 }
 
 // L1Address matches the struct definition in ISCTypes.sol
@@ -184,7 +182,7 @@ func WrapISCNFT(n *isc.NFT) ISCNFT {
 	r := ISCNFT{
 		ID:       WrapNFTID(n.ID),
 		Issuer:   WrapL1Address(n.Issuer),
-		Metadata: lo.Must(parameters.L1API().Encode(n.Metadata)),
+		Metadata: lo.Must(iotago.CommonSerixAPI().Encode(context.Background(), n.Metadata)),
 	}
 	if n.Owner != nil {
 		r.Owner = WrapISCAgentID(n.Owner)
@@ -198,7 +196,7 @@ func (n ISCNFT) Unwrap() (*isc.NFT, error) {
 		return nil, err
 	}
 	var metadata iotago.MetadataFeatureEntries
-	nr, err := parameters.L1API().Decode(n.Metadata, &metadata)
+	nr, err := iotago.CommonSerixAPI().Decode(context.Background(), n.Metadata, &metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -254,12 +252,9 @@ type ISCAssets struct {
 }
 
 func WrapISCAssets(a *isc.Assets) ISCAssets {
-	if a == nil {
-		return WrapISCAssets(isc.NewEmptyAssets())
-	}
-	tokens := make([]NativeToken, len(a.NativeTokens))
-	for i, nativeToken := range a.NativeTokens {
-		tokens[i] = WrapNativeToken(nativeToken)
+	tokens := make([]NativeToken, 0, len(a.NativeTokens))
+	for _, id := range a.NativeTokenIDsSorted() {
+		tokens = append(tokens, WrapNativeToken(id, a.NativeTokens[id]))
 	}
 	nfts := make([]NFTID, len(a.NFTs))
 	for i, id := range a.NFTs {
@@ -273,15 +268,14 @@ func WrapISCAssets(a *isc.Assets) ISCAssets {
 }
 
 func (a ISCAssets) Unwrap() *isc.Assets {
-	tokens := make([]*isc.NativeTokenAmount, len(a.NativeTokens))
-	for i, nativeToken := range a.NativeTokens {
-		tokens[i] = nativeToken.Unwrap()
+	ret := isc.NewAssets(iotago.BaseToken(a.BaseTokens), nil)
+	for _, nativeToken := range a.NativeTokens {
+		ret.AddNativeTokens(nativeToken.ID.MustUnwrap(), nativeToken.Amount)
 	}
-	nfts := make([]iotago.NFTID, len(a.Nfts))
-	for i, id := range a.Nfts {
-		nfts[i] = id.Unwrap()
+	for _, id := range a.Nfts {
+		ret.AddNFTs(id.Unwrap())
 	}
-	return isc.NewAssets(iotago.BaseToken(a.BaseTokens), tokens, nfts...)
+	return ret
 }
 
 // ISCDictItem matches the struct definition in ISCTypes.sol
@@ -316,7 +310,7 @@ type ISCSendMetadata struct {
 	Entrypoint     uint32
 	Params         ISCDict
 	Allowance      ISCAssets
-	GasBudget      uint64
+	GasBudget      gas.GasUnits
 }
 
 func WrapISCSendMetadata(metadata isc.SendMetadata) ISCSendMetadata {

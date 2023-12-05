@@ -4,14 +4,15 @@
 package chain
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/chainclient"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
@@ -32,8 +33,9 @@ func initRotateCmd() *cobra.Command {
 
 			prefix, newStateControllerAddr, err := iotago.ParseBech32(args[0])
 			log.Check(err)
-			if parameters.NetworkPrefix() != prefix {
-				log.Fatalf("unexpected prefix. expected: %s, actual: %s", parameters.NetworkPrefix(), prefix)
+			expectedPrefix := cliclients.L1Client().Bech32HRP()
+			if expectedPrefix != prefix {
+				log.Fatalf("unexpected prefix. expected: %s, actual: %s", expectedPrefix, prefix)
 			}
 			rotateTo(chain, newStateControllerAddr)
 		},
@@ -86,36 +88,41 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 	l1Client := cliclients.L1Client()
 
 	myWallet := wallet.Load()
-	aliasID := config.GetChain(chain).AsAliasID()
+	anchorID := config.GetChain(chain).AsAnchorID()
 
-	chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(aliasID)
+	chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(anchorID)
 	log.Check(err)
 
 	tx, err := transaction.NewRotateChainStateControllerTx(
-		aliasID,
+		anchorID,
 		newStateControllerAddr,
 		chainOutputID,
 		chainOutput,
+		cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+		cliclients.L1Client().API(),
 		myWallet.KeyPair,
 	)
 	log.Check(err)
 
 	// debug logging
 	if log.DebugFlag {
-		s, err2 := chainOutput.MarshalJSON()
+		s, err2 := json.Marshal(chainOutput)
 		log.Check(err2)
-		minSD := parameters.Storage().MinDeposit(chainOutput)
+
+		minSD, err2 := cliclients.L1Client().API().StorageScoreStructure().MinDeposit(chainOutput)
+		log.Check(err2)
 		log.Printf("original chain output: %s, minSD: %d\n", s, minSD)
 
-		rotOut := tx.Outputs[0]
-		s, err2 = rotOut.MarshalJSON()
+		rotOut := tx.Transaction.Outputs[0]
+		s, err2 = json.Marshal(rotOut)
 		log.Check(err2)
-		minSD = parameters.Storage().MinDeposit(rotOut)
+		minSD, err2 = cliclients.L1Client().API().StorageScoreStructure().MinDeposit(rotOut)
+		log.Check(err2)
 		log.Printf("new chain output: %s, minSD: %d\n", s, minSD)
 
-		json, err2 := tx.MarshalJSON()
+		json, err2 := json.Marshal(tx)
 		log.Check(err2)
-		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(parameters.NetworkPrefix()))
+		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(cliclients.L1Client().Bech32HRP()))
 		log.Printf("rotation tx: %s", string(json))
 	}
 
@@ -166,9 +173,11 @@ func initChangeGovControllerCmd() *cobra.Command {
 			log.Check(err)
 
 			tx, err := transaction.NewChangeGovControllerTx(
-				chain.AsAliasID(),
+				chain.AsAnchorID(),
 				newGovController,
 				outputSet,
+				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+				cliclients.L1Client().API(),
 				myWallet.KeyPair,
 			)
 			log.Check(err)

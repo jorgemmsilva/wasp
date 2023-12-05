@@ -2,7 +2,6 @@ package util
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type ComparableString string
@@ -34,5 +33,5 @@ func (c *ComparableAddress) Key() string {
 }
 
 func (c *ComparableAddress) String() string {
-	return c.address.Bech32(parameters.NetworkPrefix())
+	return c.address.String()
 }

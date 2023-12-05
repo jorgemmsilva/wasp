@@ -13,8 +13,8 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
@@ -25,12 +25,13 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/vm/core/testcore/sbtests/sbtestsc"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 func GetStorageDeposit(tx *iotago.Transaction) []iotago.BaseToken {
 	ret := make([]iotago.BaseToken, len(tx.Outputs))
 	for i, out := range tx.Outputs {
-		ret[i] = lo.Must(parameters.Storage().MinDeposit(out))
+		ret[i] = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(out))
 	}
 	return ret
 }
@@ -45,7 +46,7 @@ func TestInitLoad(t *testing.T) {
 
 	cassets := ch.L2CommonAccountAssets()
 	require.EqualValues(t,
-		originAmount-lo.Must(parameters.Storage().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput)),
+		originAmount-lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput)),
 		cassets.BaseTokens)
 	require.EqualValues(t, 0, len(cassets.NativeTokens))
 
@@ -76,7 +77,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	// what has left on L1 address
 	env.AssertL1BaseTokens(ch.OriginatorAddress, utxodb.FundsFromFaucetAmount-10*isc.Million)
 
-	// check if there's a single alias output on chain's address
+	// check if there's a single anchor output on chain's address
 	chainOutputs := ch.GetChainOutputsFromL1()
 
 	// check total on chain assets
@@ -84,10 +85,10 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	// no native tokens expected
 	require.EqualValues(t, 0, len(totalL2Assets.NativeTokens))
 
-	// what spent all goes to the alias output
+	// what spent all goes to the anchor output
 	// require.EqualValues(t, int(totalSpent), int(aliasOut.Amount))
-	// total base tokens on L2 must be equal to alias output base tokens - storage deposit
-	anchorSD := lo.Must(parameters.Storage().MinDeposit(chainOutputs.AnchorOutput))
+	// total base tokens on L2 must be equal to anchor output base tokens - storage deposit
+	anchorSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
 	require.False(t, chainOutputs.HasAccountOutput())
 
 	ch.AssertL2TotalBaseTokens(chainOutputs.AnchorOutput.Amount - anchorSD)
@@ -98,8 +99,8 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	ch.DepositBaseTokensToL2(1*isc.Million, someUserWallet)
 
 	chainOutputs = ch.GetChainOutputsFromL1()
-	anchorSD = lo.Must(parameters.Storage().MinDeposit(chainOutputs.AnchorOutput))
-	accountSD := lo.Must(parameters.Storage().MinDeposit(chainOutputs.MustAccountOutput()))
+	anchorSD = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
+	accountSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.MustAccountOutput()))
 	require.EqualValues(t, accountSD, chainOutputs.MustAccountOutput().BaseTokenAmount())
 
 	ch.AssertL2TotalBaseTokens(chainOutputs.AnchorOutput.Amount - anchorSD)
@@ -111,7 +112,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
 		originatorsL2BaseTokensBefore := ch.L2BaseTokens(ch.OriginatorAgentID)
@@ -129,7 +130,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -147,7 +148,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID := isc.NewAgentID(senderAddr)
@@ -169,7 +170,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -192,7 +193,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no EP,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
 		originatorsL2BaseTokensBefore := ch.L2BaseTokens(ch.OriginatorAgentID)
@@ -212,7 +213,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -228,7 +229,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no EP,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
-		oldSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID := isc.NewAgentID(senderAddr)
@@ -250,7 +251,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
-		newSD := ch.GetChainOutputsFromL1().StorageDeposit()
+		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1API)
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
@@ -312,7 +313,7 @@ func TestEstimateGas(t *testing.T) {
 		return n
 	}
 
-	var estimatedGas uint64
+	var estimatedGas gas.GasUnits
 	var estimatedGasFee iotago.BaseToken
 	{
 		keyPair, _ := env.NewKeyPairWithFunds()
@@ -331,7 +332,7 @@ func TestEstimateGas(t *testing.T) {
 	for _, testCase := range []struct {
 		Desc          string
 		L2Balance     iotago.BaseToken
-		GasBudget     uint64
+		GasBudget     gas.GasUnits
 		ExpectedError string
 	}{
 		{

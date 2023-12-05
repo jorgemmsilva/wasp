@@ -58,7 +58,7 @@ func testSeveralOutputsInASingleCall(t *testing.T, w bool) {
 	tx, _, err := ch.PostRequestSyncTx(req, wallet)
 	require.NoError(t, err)
 
-	storageDeposit := tx.Outputs[0].Deposit()
+	storageDeposit := tx.Transaction.Outputs[0].BaseTokenAmount()
 	ch.Env.AssertL1BaseTokens(walletAddr, beforeWallet.AssetsL1.BaseTokens+allowance-storageDeposit)
 }
 
@@ -105,7 +105,7 @@ func testSplitTokensFail(t *testing.T, w bool) {
 	require.NoError(t, err)
 
 	// this will FAIL because it will result in 100 outputs in the single call
-	allowance := isc.NewAssetsBaseTokens(100*isc.Million).AddNativeTokens(nativeTokenID, 100)
+	allowance := isc.NewAssetsBaseTokens(100*isc.Million).AddNativeTokens(nativeTokenID, big.NewInt(100))
 	req := solo.NewCallParams(ScName, sbtestsc.FuncSplitFundsNativeTokens.Name).
 		AddAllowance(allowance).
 		AddBaseTokens(200 * isc.Million).
@@ -135,7 +135,7 @@ func testSplitTokensSuccess(t *testing.T, w bool) {
 	require.NoError(t, err)
 
 	amountTokensToSend := int64(3)
-	allowance := isc.NewAssetsBaseTokens(2*isc.Million).AddNativeTokens(nativeTokenID, amountTokensToSend)
+	allowance := isc.NewAssetsBaseTokens(2*isc.Million).AddNativeTokens(nativeTokenID, big.NewInt(amountTokensToSend))
 	req := solo.NewCallParams(ScName, sbtestsc.FuncSplitFundsNativeTokens.Name).
 		AddAllowance(allowance).
 		AddBaseTokens(2 * isc.Million).
@@ -215,7 +215,9 @@ func testEstimateMinimumStorageDeposit(t *testing.T, w bool) {
 
 func mintDummyNFT(t *testing.T, ch *solo.Chain, issuer *cryptolib.KeyPair, owner iotago.Address) (*isc.NFT, *solo.NFTMintedInfo) {
 	nftMetadata := []byte("foobar")
-	nft, nftInfo, err := ch.Env.MintNFTL1(issuer, owner, nftMetadata)
+	nft, nftInfo, err := ch.Env.MintNFTL1(issuer, owner, iotago.MetadataFeatureEntries{
+		"": nftMetadata, // TODO should this be on a specific key?
+	})
 	require.NoError(t, err)
 	return nft, nftInfo
 }
@@ -230,14 +232,13 @@ func testSendNFTsBack(t *testing.T, w bool) {
 
 	nft, _ := mintDummyNFT(t, ch, wallet, addr)
 
-	baseTokensToSend := uint64(300_000)
-	baseTokensForGas := uint64(100_000)
-	assetsToSend := isc.NewAssetsBaseTokens(baseTokensToSend)
+	baseTokensToSend := iotago.BaseToken(300_000)
+	baseTokensForGas := iotago.BaseToken(100_000)
 	assetsToAllow := isc.NewAssetsBaseTokens(baseTokensToSend - baseTokensForGas)
 
 	// receive an NFT back that is sent in the same request
 	req := solo.NewCallParams(ScName, sbtestsc.FuncSendNFTsBack.Name).
-		AddFungibleTokens(assetsToSend).
+		AddBaseTokens(baseTokensToSend).
 		WithNFT(nft).
 		AddAllowance(assetsToAllow.AddNFTs(nft.ID)).
 		WithMaxAffordableGasBudget()
@@ -263,7 +264,7 @@ func testNFTOffledgerWithdraw(t *testing.T, w bool) {
 	require.False(t, ch.HasL2NFT(isc.NewAgentID(issuerAddr), &nft.ID))
 
 	req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).
-		AddFungibleTokens(isc.NewAssetsBaseTokens(1_000_000)).
+		AddBaseTokens(1_000_000).
 		WithNFT(nft).
 		WithMaxAffordableGasBudget()
 
@@ -297,17 +298,16 @@ func testNFTMintToChain(t *testing.T, w bool) {
 	nftToBeMinted := &isc.NFT{
 		ID:       iotago.NFTID{},
 		Issuer:   addr,
-		Metadata: []byte("foobar"),
+		Metadata: iotago.MetadataFeatureEntries{"": []byte("foobar")}, // TODO does this need to be on a specific key?
 	}
 
-	baseTokensToSend := uint64(300_000)
-	baseTokensForGas := uint64(100_000)
-	assetsToSend := isc.NewAssetsBaseTokens(baseTokensToSend)
+	baseTokensToSend := iotago.BaseToken(300_000)
+	baseTokensForGas := iotago.BaseToken(100_000)
 	assetsToAllow := isc.NewAssetsBaseTokens(baseTokensToSend - baseTokensForGas)
 
 	// receive an NFT back that is sent in the same request
 	req := solo.NewCallParams(ScName, sbtestsc.FuncClaimAllowance.Name).
-		AddFungibleTokens(assetsToSend).
+		AddBaseTokens(baseTokensToSend).
 		WithNFT(nftToBeMinted).
 		AddAllowance(assetsToAllow.AddNFTs(iotago.NFTID{})). // empty NFTID
 		WithMaxAffordableGasBudget()

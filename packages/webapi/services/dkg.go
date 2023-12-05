@@ -9,7 +9,7 @@ import (
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/dkg"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
@@ -24,13 +24,15 @@ const (
 type DKGService struct {
 	dkShareRegistryProvider registry.DKShareRegistryProvider
 	dkgNodeProvider         dkg.NodeProvider
+	l1API                   iotago.API
 	trustedNetworkManager   peering.TrustedNetworkManager
 }
 
-func NewDKGService(dkShareRegistryProvider registry.DKShareRegistryProvider, dkgNodeProvider dkg.NodeProvider, trustedNetworkManager peering.TrustedNetworkManager) *DKGService {
+func NewDKGService(dkShareRegistryProvider registry.DKShareRegistryProvider, dkgNodeProvider dkg.NodeProvider, l1API iotago.API, trustedNetworkManager peering.TrustedNetworkManager) *DKGService {
 	return &DKGService{
 		dkShareRegistryProvider: dkShareRegistryProvider,
 		dkgNodeProvider:         dkgNodeProvider,
+		l1API:                   l1API,
 		trustedNetworkManager:   trustedNetworkManager,
 	}
 }
@@ -95,7 +97,7 @@ func (d *DKGService) createDKModel(dkShare tcrypto.DKShare) (*models.DKSharesInf
 	}
 
 	dkShareInfo := &models.DKSharesInfo{
-		Address:         dkShare.GetAddress().Bech32(parameters.NetworkPrefix()),
+		Address:         dkShare.GetAddress().Bech32(d.l1API.ProtocolParameters().Bech32HRP()),
 		PeerIdentities:  peerIdentitiesHex,
 		PeerIndex:       dkShare.GetIndex(),
 		PublicKey:       hexutil.EncodeHex(publicKey),

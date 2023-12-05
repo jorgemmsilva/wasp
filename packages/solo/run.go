@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -65,6 +66,8 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 		EnableGasBurnLogging: ch.Env.enableGasBurnLogging,
 		EstimateGasMode:      estimateGas,
 		MigrationsOverride:   ch.migrationScheme,
+		L1API:                testutil.L1API,
+		TokenInfo:            *testutil.TokenInfo,
 	}
 
 	res, err := vmimpl.Run(task)

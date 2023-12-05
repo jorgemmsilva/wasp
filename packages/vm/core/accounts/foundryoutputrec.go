@@ -1,6 +1,7 @@
 package accounts
 
 import (
+	"bytes"
 	"io"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -21,7 +22,9 @@ func (rec *foundryOutputRec) Bytes() []byte {
 }
 
 func foundryOutputRecFromBytes(data []byte) (*foundryOutputRec, error) {
-	return rwutil.ReadFromBytes(data, new(foundryOutputRec))
+	f := new(foundryOutputRec)
+	err := f.Read(bytes.NewBuffer(data))
+	return f, err
 }
 
 func mustFoundryOutputRecFromBytes(data []byte) *foundryOutputRec {

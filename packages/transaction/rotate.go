@@ -6,7 +6,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -16,6 +15,7 @@ func NewRotateChainStateControllerTx(
 	chainOutputID iotago.OutputID,
 	chainOutput iotago.Output,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 	kp *cryptolib.KeyPair,
 ) (*iotago.SignedTransaction, error) {
 	o, ok := chainOutput.(*iotago.AnchorOutput)
@@ -25,8 +25,8 @@ func NewRotateChainStateControllerTx(
 	resolvedAnchorID := util.AnchorIDFromAnchorOutput(o, chainOutputID)
 	if resolvedAnchorID != anchorID {
 		return nil, fmt.Errorf("provided output is not the correct one. Expected ChainID: %s, got: %s",
-			anchorID.ToAddress().Bech32(parameters.NetworkPrefix()),
-			chainOutput.(*iotago.AnchorOutput).AnchorID.ToAddress().Bech32(parameters.NetworkPrefix()),
+			anchorID.ToHex(),
+			chainOutput.(*iotago.AnchorOutput).AnchorID.ToHex(),
 		)
 	}
 
@@ -71,5 +71,6 @@ func NewRotateChainStateControllerTx(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }

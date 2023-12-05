@@ -6,11 +6,9 @@ import { AccountListResponse } from '../models/AccountListResponse';
 import { AccountNFTsResponse } from '../models/AccountNFTsResponse';
 import { AccountNonceResponse } from '../models/AccountNonceResponse';
 import { AddUserRequest } from '../models/AddUserRequest';
-import { AliasOutputMetricItem } from '../models/AliasOutputMetricItem';
+import { AnchorOutputMetricItem } from '../models/AnchorOutputMetricItem';
 import { AssetsJSON } from '../models/AssetsJSON';
-import { AssetsResponse } from '../models/AssetsResponse';
 import { AuthInfoModel } from '../models/AuthInfoModel';
-import { BaseToken } from '../models/BaseToken';
 import { Blob } from '../models/Blob';
 import { BlobInfoResponse } from '../models/BlobInfoResponse';
 import { BlobListResponse } from '../models/BlobListResponse';
@@ -37,6 +35,7 @@ import { EventJSON } from '../models/EventJSON';
 import { EventsResponse } from '../models/EventsResponse';
 import { FeePolicy } from '../models/FeePolicy';
 import { FoundryOutputResponse } from '../models/FoundryOutputResponse';
+import { FungibleTokensResponse } from '../models/FungibleTokensResponse';
 import { GovAllowedStateControllerAddressesResponse } from '../models/GovAllowedStateControllerAddressesResponse';
 import { GovChainInfoResponse } from '../models/GovChainInfoResponse';
 import { GovChainOwnerResponse } from '../models/GovChainOwnerResponse';
@@ -49,15 +48,11 @@ import { InfoResponse } from '../models/InfoResponse';
 import { InterfaceMetricItem } from '../models/InterfaceMetricItem';
 import { Item } from '../models/Item';
 import { JSONDict } from '../models/JSONDict';
-import { L1Params } from '../models/L1Params';
 import { Limits } from '../models/Limits';
 import { LoginRequest } from '../models/LoginRequest';
 import { LoginResponse } from '../models/LoginResponse';
-import { MilestoneInfo } from '../models/MilestoneInfo';
-import { MilestoneMetricItem } from '../models/MilestoneMetricItem';
 import { NFTJSON } from '../models/NFTJSON';
 import { NativeTokenIDRegistryResponse } from '../models/NativeTokenIDRegistryResponse';
-import { NativeTokenJSON } from '../models/NativeTokenJSON';
 import { NodeMessageMetrics } from '../models/NodeMessageMetrics';
 import { NodeOwnerCertificateResponse } from '../models/NodeOwnerCertificateResponse';
 import { OffLedgerRequest } from '../models/OffLedgerRequest';
@@ -68,12 +63,10 @@ import { OutputID } from '../models/OutputID';
 import { PeeringNodeIdentityResponse } from '../models/PeeringNodeIdentityResponse';
 import { PeeringNodeStatusResponse } from '../models/PeeringNodeStatusResponse';
 import { PeeringTrustRequest } from '../models/PeeringTrustRequest';
-import { ProtocolParameters } from '../models/ProtocolParameters';
 import { PublicChainMetadata } from '../models/PublicChainMetadata';
 import { PublisherStateTransactionItem } from '../models/PublisherStateTransactionItem';
 import { Ratio32 } from '../models/Ratio32';
 import { ReceiptResponse } from '../models/ReceiptResponse';
-import { RentStructure } from '../models/RentStructure';
 import { RequestIDsResponse } from '../models/RequestIDsResponse';
 import { RequestJSON } from '../models/RequestJSON';
 import { RequestProcessedResponse } from '../models/RequestProcessedResponse';
@@ -1092,7 +1085,7 @@ export class ObjectCorecontractsApi {
      * Get all assets belonging to an account
      * @param param the request object
      */
-    public accountsGetAccountBalance(param: CorecontractsApiAccountsGetAccountBalanceRequest, options?: Configuration): Promise<AssetsResponse> {
+    public accountsGetAccountBalance(param: CorecontractsApiAccountsGetAccountBalanceRequest, options?: Configuration): Promise<FungibleTokensResponse> {
         return this.api.accountsGetAccountBalance(param.chainID, param.agentID, param.block,  options).toPromise();
     }
 
@@ -1156,7 +1149,7 @@ export class ObjectCorecontractsApi {
      * Get all stored assets
      * @param param the request object
      */
-    public accountsGetTotalAssets(param: CorecontractsApiAccountsGetTotalAssetsRequest, options?: Configuration): Promise<AssetsResponse> {
+    public accountsGetTotalAssets(param: CorecontractsApiAccountsGetTotalAssetsRequest, options?: Configuration): Promise<FungibleTokensResponse> {
         return this.api.accountsGetTotalAssets(param.chainID, param.block,  options).toPromise();
     }
 

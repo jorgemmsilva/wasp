@@ -6,7 +6,6 @@ import (
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type Output struct {
@@ -14,13 +13,12 @@ type Output struct {
 	Raw        string            `json:"raw" swagger:"desc(The raw data of the output (Hex)),required"`
 }
 
-func OutputFromIotaGoOutput(output iotago.Output) *Output {
+func OutputFromIotaGoOutput(l1Api iotago.API, output iotago.Output) *Output {
 	if typeutils.IsInterfaceNil(output) {
 		return nil
 	}
-
 	// TODO: <lmoe> Did output.Serialize really change to this? / Handle error
-	bytes, _ := parameters.L1API().Encode(output)
+	bytes, _ := l1Api.Encode(output)
 
 	return &Output{
 		OutputType: output.Type(),
@@ -35,7 +33,7 @@ type OnLedgerRequest struct {
 	Raw      string  `json:"raw" swagger:"desc(The raw data of the request (Hex)),required"`
 }
 
-func OnLedgerRequestFromISC(request isc.OnLedgerRequest) *OnLedgerRequest {
+func OnLedgerRequestFromISC(l1Api iotago.API, request isc.OnLedgerRequest) *OnLedgerRequest {
 	if typeutils.IsInterfaceNil(request) {
 		return nil
 	}
@@ -43,7 +41,7 @@ func OnLedgerRequestFromISC(request isc.OnLedgerRequest) *OnLedgerRequest {
 	return &OnLedgerRequest{
 		ID:       request.ID().String(),
 		OutputID: request.ID().OutputID().ToHex(),
-		Output:   OutputFromIotaGoOutput(request.Output()),
+		Output:   OutputFromIotaGoOutput(l1Api, request.Output()),
 		Raw:      hexutil.EncodeHex(request.Bytes()),
 	}
 }
@@ -53,14 +51,14 @@ type InOutput struct {
 	Output   *Output `json:"output" swagger:"desc(The parsed output),required"`
 }
 
-func InOutputFromISCInOutput(output *metrics.InOutput) *InOutput {
+func InOutputFromISCInOutput(l1Api iotago.API, output *metrics.InOutput) *InOutput {
 	if output == nil {
 		return nil
 	}
 
 	return &InOutput{
 		OutputID: output.OutputID.ToHex(),
-		Output:   OutputFromIotaGoOutput(output.Output),
+		Output:   OutputFromIotaGoOutput(l1Api, output.Output),
 	}
 }
 
@@ -69,14 +67,14 @@ type InStateOutput struct {
 	Output   *Output `json:"output" swagger:"desc(The parsed output),required"`
 }
 
-func InStateOutputFromISCInStateOutput(output *metrics.InStateOutput) *InStateOutput {
+func InStateOutputFromISCInStateOutput(l1Api iotago.API, output *metrics.InStateOutput) *InStateOutput {
 	if output == nil {
 		return nil
 	}
 
 	return &InStateOutput{
 		OutputID: output.OutputID.ToHex(),
-		Output:   OutputFromIotaGoOutput(output.Output),
+		Output:   OutputFromIotaGoOutput(l1Api, output.Output),
 	}
 }
 

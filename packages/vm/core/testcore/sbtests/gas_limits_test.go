@@ -12,10 +12,11 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/testcore/sbtests/sbtestsc"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
-func infiniteLoopRequest(ch *solo.Chain, gasBudget ...uint64) (*solo.CallParams, *cryptolib.KeyPair) {
-	budget := uint64(math.MaxUint64)
+func infiniteLoopRequest(ch *solo.Chain, gasBudget ...gas.GasUnits) (*solo.CallParams, *cryptolib.KeyPair) {
+	budget := gas.GasUnits(math.MaxUint64)
 	if len(gasBudget) > 0 {
 		budget = gasBudget[0]
 	}

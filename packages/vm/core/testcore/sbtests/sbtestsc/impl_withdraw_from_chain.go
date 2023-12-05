@@ -24,8 +24,8 @@ func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
 	ctx.TransferAllowedFunds(ctx.AccountID())
 
 	// gasReserve is the gas fee for the 'TransferAllowanceTo' function call ub 'TransferAccountToChain'
-	gasReserve := params.MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest)
-	gasReserveTransferAccountToChain := iotago.BaseToken(params.MustGetUint64(ParamGasReserveTransferAccountToChain, gas.LimitsDefault.MinGasPerRequest))
+	gasReserve := params.MustGetUint64(ParamGasReserve, uint64(gas.LimitsDefault.MinGasPerRequest))
+	gasReserveTransferAccountToChain := iotago.BaseToken(params.MustGetUint64(ParamGasReserveTransferAccountToChain, uint64(gas.LimitsDefault.MinGasPerRequest)))
 	const storageDeposit = iotago.BaseToken(wasmlib.StorageDeposit)
 
 	// make sure to send enough to cover the storage deposit and gas fees
@@ -39,7 +39,7 @@ func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
 			Params: dict.Dict{
 				accounts.ParamGasReserve: codec.EncodeUint64(uint64(gasReserve)),
 			},
-			GasBudget: gasReserve,
+			GasBudget: gas.GasUnits(gasReserve),
 			Allowance: isc.NewAssetsBaseTokens(withdrawal + storageDeposit + iotago.BaseToken(gasReserve)),
 		},
 	})

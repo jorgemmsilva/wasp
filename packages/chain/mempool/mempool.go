@@ -51,6 +51,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
 	consGR "github.com/iotaledger/wasp/packages/chain/cons/cons_gr"
 	"github.com/iotaledger/wasp/packages/chain/mempool/distsync"
 	"github.com/iotaledger/wasp/packages/chain/mempool/mempooltypes"
@@ -79,13 +80,13 @@ const (
 
 type Mempool interface {
 	consGR.Mempool
-	// Invoked by the chain, when new alias output is considered as a tip/head
+	// Invoked by the chain, when new anchor output is considered as a tip/head
 	// of the chain. Mempool can reorganize its state by removing/rejecting
 	// or re-adding some requests, depending on how the head has changed.
 	// It can mean simple advance of the chain, or a rollback or a reorg.
 	// This function is guaranteed to be called in the order, which is
 	// considered the chain block order by the ChainMgr.
-	TrackNewChainHead(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block) <-chan bool
+	TrackNewChainHead(st state.State, from, till *isc.ChainOutputs, added, removed []state.Block) <-chan bool
 	// Invoked by the chain when a new off-ledger request is received from a node user.
 	// Inter-node off-ledger dissemination is NOT performed via this function.
 	ReceiveOnLedgerRequest(request isc.OnLedgerRequest)
@@ -116,19 +117,24 @@ type RequestPool[V isc.Request] interface {
 }
 
 // This implementation tracks single branch of the chain only. I.e. all the consensus
-// instances that are asking for requests for alias outputs different than the current
+// instances that are asking for requests for anchor outputs different than the current
 // head (as considered by the ChainMgr) will get empty proposal sets.
 //
 // In general we can track several branches, but then we have to remember, which
 // requests are available in which branches. Can be implemented later, if needed.
 type mempoolImpl struct {
-	chainID                        isc.ChainID
-	tangleTime                     time.Time
+	chainID    isc.ChainID
+	tangleTime time.Time
+	l1API      iotago.API
+
+	// TODO: <lmoe> this was added artificially to support the timeLock logic below. It's not set anywhere, just read atm.
+	currentSlotIndex iotago.SlotIndex
+
 	timePool                       TimePool
 	onLedgerPool                   RequestPool[isc.OnLedgerRequest]
 	offLedgerPool                  *TypedPoolByNonce[isc.OffLedgerRequest]
 	distSync                       gpa.GPA
-	chainHeadAO                    *isc.AnchorOutputWithID
+	chainHeadAO                    *isc.ChainOutputs
 	chainHeadState                 state.State
 	serverNodesUpdatedPipe         pipe.Pipe[*reqServerNodesUpdated]
 	serverNodes                    []*cryptolib.PublicKey
@@ -178,10 +184,10 @@ type reqConsensusInstancesUpdated struct {
 }
 
 type reqConsensusProposal struct {
-	ctx            context.Context
-	accoountOutput *isc.AnchorOutputWithID
-	consensusID    consGR.ConsensusID
-	responseCh     chan<- []*isc.RequestRef
+	ctx           context.Context
+	accountOutput *isc.ChainOutputs
+	consensusID   consGR.ConsensusID
+	responseCh    chan<- []*isc.RequestRef
 }
 
 func (r *reqConsensusProposal) Respond(reqRefs []*isc.RequestRef) {
@@ -197,8 +203,8 @@ type reqConsensusRequests struct {
 
 type reqTrackNewChainHead struct {
 	st         state.State
-	from       *isc.AnchorOutputWithID
-	till       *isc.AnchorOutputWithID
+	from       *isc.ChainOutputs
+	till       *isc.ChainOutputs
 	added      []state.Block
 	removed    []state.Block
 	responseCh chan<- bool // only for tests, shouldn't be used in the chain package
@@ -206,6 +212,7 @@ type reqTrackNewChainHead struct {
 
 func New(
 	ctx context.Context,
+	l1API iotago.API,
 	chainID isc.ChainID,
 	nodeIdentity *cryptolib.KeyPair,
 	net peering.NetworkProvider,
@@ -221,9 +228,10 @@ func New(
 	mpi := &mempoolImpl{
 		chainID:                        chainID,
 		tangleTime:                     time.Time{},
+		l1API:                          l1API,
 		timePool:                       NewTimePool(metrics.SetTimePoolSize, log.Named("TIM")),
-		onLedgerPool:                   NewTypedPool[isc.OnLedgerRequest](waitReq, metrics.SetOnLedgerPoolSize, metrics.SetOnLedgerReqTime, log.Named("ONL")),
-		offLedgerPool:                  NewTypedPoolByNonce[isc.OffLedgerRequest](waitReq, metrics.SetOffLedgerPoolSize, metrics.SetOffLedgerReqTime, log.Named("OFF")),
+		onLedgerPool:                   NewTypedPool[isc.OnLedgerRequest](waitReq, l1API, metrics.SetOnLedgerPoolSize, metrics.SetOnLedgerReqTime, log.Named("ONL")),
+		offLedgerPool:                  NewTypedPoolByNonce[isc.OffLedgerRequest](waitReq, metrics.SetOffLedgerPoolSize, metrics.SetOffLedgerReqTime, log.Named("OFF"), l1API),
 		chainHeadAO:                    nil,
 		serverNodesUpdatedPipe:         pipe.NewInfinitePipe[*reqServerNodesUpdated](),
 		serverNodes:                    []*cryptolib.PublicKey{},
@@ -285,7 +293,7 @@ func (mpi *mempoolImpl) TangleTimeUpdated(tangleTime time.Time) {
 	mpi.reqTangleTimeUpdatedPipe.In() <- tangleTime
 }
 
-func (mpi *mempoolImpl) TrackNewChainHead(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block) <-chan bool {
+func (mpi *mempoolImpl) TrackNewChainHead(st state.State, from, till *isc.ChainOutputs, added, removed []state.Block) <-chan bool {
 	responseCh := make(chan bool)
 	mpi.reqTrackNewChainHeadPipe.In() <- &reqTrackNewChainHead{st, from, till, added, removed, responseCh}
 	return responseCh
@@ -323,11 +331,11 @@ func (mpi *mempoolImpl) ConsensusInstancesUpdated(activeConsensusInstances []con
 	}
 }
 
-func (mpi *mempoolImpl) ConsensusProposalAsync(ctx context.Context, anchorOutput *isc.AnchorOutputWithID, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
+func (mpi *mempoolImpl) ConsensusProposalAsync(ctx context.Context, accountOutput *isc.ChainOutputs, consensusID consGR.ConsensusID) <-chan []*isc.RequestRef {
 	res := make(chan []*isc.RequestRef, 1)
 	req := &reqConsensusProposal{
 		ctx:           ctx,
-		anchorOutput: anchorOutput,
+		accountOutput: accountOutput,
 		consensusID:   consensusID,
 		responseCh:    res,
 	}
@@ -563,12 +571,12 @@ func (mpi *mempoolImpl) handleAccessNodesUpdated(recv *reqAccessNodesUpdated) {
 // This implementation only tracks a single branch. So, we will only respond
 // to the request matching the TrackNewChainHead call.
 func (mpi *mempoolImpl) handleConsensusProposal(recv *reqConsensusProposal) {
-	if mpi.chainHeadAO == nil || !recv.anchorOutput.Equals(mpi.chainHeadAO) {
-		mpi.log.Debugf("handleConsensusProposal, have to wait for chain head to become %v", recv.anchorOutput)
+	if mpi.chainHeadAO == nil || !recv.accountOutput.Equals(mpi.chainHeadAO) {
+		mpi.log.Debugf("handleConsensusProposal, have to wait for chain head to become %v", recv.accountOutput)
 		mpi.waitChainHead = append(mpi.waitChainHead, recv)
 		return
 	}
-	mpi.log.Debugf("handleConsensusProposal, already have the chain head %v", recv.anchorOutput)
+	mpi.log.Debugf("handleConsensusProposal, already have the chain head %v", recv.accountOutput)
 	mpi.handleConsensusProposalForChainHead(recv)
 }
 
@@ -578,10 +586,13 @@ func (mpi *mempoolImpl) refsToPropose(consensusID consGR.ConsensusID) []*isc.Req
 	reqRefs := []*isc.RequestRef{}
 	if !mpi.tangleTime.IsZero() { // Wait for tangle-time to process the on ledger requests.
 		mpi.onLedgerPool.Filter(func(request isc.OnLedgerRequest, _ time.Time) bool {
-			if isc.RequestIsExpired(request, mpi.tangleTime) {
+			// TODO: <lmoe> Switch tangleTime to currentSlotIndex
+			if isc.RequestIsExpired(request, mpi.currentSlotIndex) {
 				return false // Drop it from the mempool
 			}
-			if isc.RequestIsUnlockable(request, mpi.chainID.AsAddress(), mpi.tangleTime) {
+
+			// TODO: <lmoe> Double check if this is correct here (turned from tangleTime to request.Slot/currentSlotIndex)
+			if isc.RequestIsUnlockable(request, mpi.chainID.AsAddress(), request.OutputID().Slot(), mpi.currentSlotIndex) {
 				reqRefs = append(reqRefs, isc.RequestRefFromRequest(request))
 			}
 			return true // Keep them for now
@@ -732,12 +743,14 @@ func (mpi *mempoolImpl) handleReceiveOnLedgerRequest(request isc.OnLedgerRequest
 	timeLock := reqUnlockCondSet.Timelock()
 	if timeLock != nil {
 		expiration := reqUnlockCondSet.Expiration()
-		if expiration != nil && timeLock.UnixTime >= expiration.UnixTime {
+		if expiration != nil && timeLock.Slot >= expiration.Slot {
 			// can never be processed, just reject
 			return
 		}
-		if mpi.tangleTime.IsZero() || timeLock.UnixTime > uint32(mpi.tangleTime.Unix()) {
-			mpi.timePool.AddRequest(time.Unix(int64(timeLock.UnixTime), 0), request)
+
+		if mpi.tangleTime.IsZero() || timeLock.Slot > mpi.currentSlotIndex {
+			// TODO: <lmoe> Commented it out to get rid off the missing unixTime logic
+			//mpi.timePool.AddRequest(time.Unix(int64(timeLock.UnixTime), 0), request)
 			return
 		}
 	}
@@ -844,7 +857,7 @@ func (mpi *mempoolImpl) handleTrackNewChainHead(req *reqTrackNewChainHead) {
 			if waiting.ctx.Err() != nil {
 				continue // Drop it.
 			}
-			if waiting.anchorOutput.Equals(mpi.chainHeadAO) {
+			if waiting.accountOutput.Equals(mpi.chainHeadAO) {
 				mpi.handleConsensusProposalForChainHead(waiting)
 				continue // Drop it from wait queue.
 			}

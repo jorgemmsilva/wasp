@@ -1,10 +1,13 @@
 package isc
 
 import (
+	"context"
 	"io"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -20,7 +23,12 @@ func NewAddressAgentID(addr iotago.Address) *AddressAgentID {
 }
 
 func addressAgentIDFromString(s string) (*AddressAgentID, error) {
-	_, addr, err := iotago.ParseBech32(s)
+	b, err := hexutil.Decode(s)
+	if err != nil {
+		return nil, err
+	}
+	var addr iotago.Address
+	_, err = iotago.CommonSerixAPI().Decode(context.Background(), b, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +66,7 @@ func (a *AddressAgentID) Kind() AgentIDKind {
 }
 
 func (a *AddressAgentID) String() string {
-	return a.a.Bech32(parameters.NetworkPrefix())
+	return a.a.String()
 }
 
 func (a *AddressAgentID) Read(r io.Reader) error {

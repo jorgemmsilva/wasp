@@ -121,9 +121,9 @@ func testConcurrency2(t *testing.T, w bool) {
 	require.EqualValues(t, sum, res)
 
 	for i := range users {
-		expectedBalance := uint64(repeats[i]) * (baseTokensSentPerRequest - predictedGasFee)
+		expectedBalance := iotago.BaseToken(repeats[i]) * (baseTokensSentPerRequest - predictedGasFee)
 		chain.AssertL2BaseTokens(isc.NewAgentID(userAddr[i]), expectedBalance)
-		chain.Env.AssertL1BaseTokens(userAddr[i], utxodb.FundsFromFaucetAmount-uint64(repeats[i])*baseTokensSentPerRequest)
+		chain.Env.AssertL1BaseTokens(userAddr[i], utxodb.FundsFromFaucetAmount-iotago.BaseToken(repeats[i])*baseTokensSentPerRequest)
 	}
 
 	commonAccountFinalBalance := chain.L2BaseTokens(accounts.CommonAccount())

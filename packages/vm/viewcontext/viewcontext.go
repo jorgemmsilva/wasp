@@ -8,6 +8,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -39,15 +40,17 @@ type ViewContext struct {
 	log                   *logger.Logger
 	chainInfo             *isc.ChainInfo
 	gasBurnLog            *gas.BurnLog
-	gasBudget             uint64
+	gasBudget             gas.GasUnits
 	gasBurnEnabled        bool
 	gasBurnLoggingEnabled bool
 	callStack             []*callContext
+	l1API                 iotago.API
+	tokenInfo             api.InfoResBaseToken
 }
 
 var _ execution.WaspCallContext = &ViewContext{}
 
-func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled bool) (*ViewContext, error) {
+func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled bool, l1API iotago.API, tokenInfo api.InfoResBaseToken) (*ViewContext, error) {
 	chainID := ch.ID()
 	return &ViewContext{
 		processors:            ch.Processors(),
@@ -55,6 +58,8 @@ func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled
 		chainID:               chainID,
 		log:                   ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
 		gasBurnLoggingEnabled: gasBurnLoggingEnabled,
+		l1API:                 l1API,
+		tokenInfo:             tokenInfo,
 	}, nil
 }
 
@@ -111,7 +116,7 @@ func (ctx *ViewContext) Processors() *processors.Cache {
 	return ctx.processors
 }
 
-func (ctx *ViewContext) GetNativeTokens(agentID isc.AgentID) []*isc.NativeTokenAmount {
+func (ctx *ViewContext) GetNativeTokens(agentID isc.AgentID) iotago.NativeTokenSum {
 	return accounts.GetNativeTokens(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID)
 }
 
@@ -172,11 +177,11 @@ func (ctx *ViewContext) ContractStateReaderWithGasBurn() kv.KVStoreReader {
 	return ctx.contractStateReaderWithGasBurn(ctx.CurrentContractHname())
 }
 
-func (ctx *ViewContext) GasBudgetLeft() uint64 {
+func (ctx *ViewContext) GasBudgetLeft() gas.GasUnits {
 	return ctx.gasBudget
 }
 
-func (ctx *ViewContext) GasBurned() uint64 {
+func (ctx *ViewContext) GasBurned() gas.GasUnits {
 	// view calls start with max gas
 	return ctx.chainInfo.GasLimits.MaxGasExternalViewCall - ctx.gasBudget
 }
@@ -320,4 +325,12 @@ func (ctx *ViewContext) GasBurnEnable(enable bool) {
 
 func (ctx *ViewContext) GasBurnEnabled() bool {
 	return ctx.gasBurnEnabled
+}
+
+func (ctx *ViewContext) L1API() iotago.API {
+	return ctx.l1API
+}
+
+func (ctx *ViewContext) TokenInfo() api.InfoResBaseToken {
+	return ctx.tokenInfo
 }

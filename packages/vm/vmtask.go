@@ -5,6 +5,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -33,6 +34,10 @@ type VMTask struct {
 	EnableGasBurnLogging bool // for testing and Solo only
 
 	MigrationsOverride *migrations.MigrationScheme // for testing and Solo only
+
+	// TODO these 2 below are not assigned anywhere (!!!)
+	L1API     iotago.API
+	TokenInfo api.InfoResBaseToken
 
 	Log *logger.Logger
 }

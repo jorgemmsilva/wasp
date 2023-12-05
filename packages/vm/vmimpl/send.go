@@ -36,6 +36,7 @@ func (reqctx *requestContext) doSend(caller isc.ContractIdentity, par isc.Reques
 			caller,
 			par,
 			nft,
+			reqctx.vm.task.L1API,
 		)
 		debitNFTFromAccount(reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), nft.ID, reqctx.ChainID())
 		reqctx.sendOutput(out)
@@ -46,6 +47,7 @@ func (reqctx *requestContext) doSend(caller isc.ContractIdentity, par isc.Reques
 		reqctx.vm.task.Inputs.AnchorOutput.AnchorID.ToAddress(),
 		caller,
 		par,
+		reqctx.L1API(),
 	)
 	reqctx.sendOutput(out)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -35,7 +36,9 @@ func TestSaveSnapshot(t *testing.T) {
 	ch.AssertL2NativeTokens(ch.OriginatorAgentID, nativeTokenID, 1000)
 
 	// create NFT on L1 and deposit on L2
-	nft, _, err := ch.Env.MintNFTL1(ch.OriginatorPrivateKey, ch.OriginatorAddress, []byte("foobar"))
+	nft, _, err := ch.Env.MintNFTL1(ch.OriginatorPrivateKey, ch.OriginatorAddress, iotago.MetadataFeatureEntries{
+		"": []byte("foobar"), // TODO does this need some special key?
+	})
 	require.NoError(t, err)
 	_, err = ch.PostRequestSync(
 		solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).

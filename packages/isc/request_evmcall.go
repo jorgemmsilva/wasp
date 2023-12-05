@@ -108,7 +108,7 @@ func (req *evmOffLedgerCallRequest) SenderAccount() AgentID {
 	return NewEthereumAddressAgentID(req.chainID, req.callMsg.From)
 }
 
-func (req *evmOffLedgerCallRequest) String() string {
+func (req *evmOffLedgerCallRequest) String(_ iotago.NetworkPrefix) string {
 	// ignore error so String does not crash the app
 	data, _ := json.MarshalIndent(req.callMsg, " ", " ")
 	return fmt.Sprintf("%T::{ ID: %s, callMsg: %s }",

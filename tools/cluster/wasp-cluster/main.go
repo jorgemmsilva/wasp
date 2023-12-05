@@ -91,7 +91,7 @@ func main() {
 		}
 
 		l1.StartPrivtangleIfNecessary(log.Printf)
-		defer l1.Stop()
+		defer l1.Cleanup(log.Printf)
 
 		dataPath := flags.Arg(0)
 		clusterConfig := cluster.NewConfig(
@@ -149,7 +149,7 @@ func main() {
 			check(err2)
 		} else {
 			l1.StartPrivtangleIfNecessary(log.Printf)
-			defer l1.Stop()
+			defer l1.Cleanup(log.Printf)
 			clusterConfig = cluster.NewConfig(
 				waspConfig,
 				l1.Config,

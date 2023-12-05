@@ -14,13 +14,13 @@ import (
 // produced so that they can update their active state faster.
 type msgBlockProduced struct {
 	gpa.BasicMessage
-	tx    *iotago.Transaction
+	tx    *iotago.SignedTransaction
 	block state.Block
 }
 
 var _ gpa.Message = new(msgBlockProduced)
 
-func NewMsgBlockProduced(recipient gpa.NodeID, tx *iotago.Transaction, block state.Block) gpa.Message {
+func NewMsgBlockProduced(recipient gpa.NodeID, tx *iotago.SignedTransaction, block state.Block) gpa.Message {
 	return &msgBlockProduced{
 		BasicMessage: gpa.NewBasicMessage(recipient),
 		tx:           tx,
@@ -42,7 +42,7 @@ func (msg *msgBlockProduced) String() string {
 func (msg *msgBlockProduced) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	msgTypeBlockProduced.ReadAndVerify(rr)
-	msg.tx = new(iotago.Transaction)
+	msg.tx = new(iotago.SignedTransaction)
 	rr.ReadSerialized(msg.tx)
 	msg.block = state.NewBlock()
 	rr.Read(msg.block)

@@ -66,7 +66,7 @@ func (m *ChainPipeMetrics) cleanup() {
 
 func (m *ChainPipeMetrics) makeLabels(pipeName string) prometheus.Labels {
 	return prometheus.Labels{
-		labelNameChain:    m.chainID.String(),
+		labelNameChain:    m.chainID.ShortString(),
 		labelNamePipeName: pipeName,
 	}
 }

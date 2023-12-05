@@ -16,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/vmtypes"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 	"github.com/iotaledger/wasp/tools/wasp-cli/util"
 	"github.com/iotaledger/wasp/tools/wasp-cli/waspcmd"
@@ -75,7 +76,7 @@ func deployContract(client *apiclient.APIClient, chainID isc.ChainID, node, name
 			root.ParamProgramHash: progHash,
 		})
 		args.Extend(initParams)
-		return cliclients.ChainClient(client, chainID).PostOffLedgerRequest(context.Background(),
+		return wallet.ChainClient(client, chainID).PostOffLedgerRequest(context.Background(),
 			root.Contract.Hname(),
 			root.FuncDeployContract.Hname(),
 			chainclient.PostRequestParams{

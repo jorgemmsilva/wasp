@@ -123,7 +123,7 @@ func initAccountNFTsCmd() *cobra.Command {
 }
 
 // baseTokensForDepositFee calculates the amount of tokens needed to pay for a deposit
-func baseTokensForDepositFee(client *apiclient.APIClient, chain string) uint64 {
+func baseTokensForDepositFee(client *apiclient.APIClient, chain string) iotago.BaseToken {
 	callGovView := func(viewName string) dict.Dict {
 		result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain).String()).
 			ContractCallViewRequest(apiclient.ContractCallViewRequest{
@@ -166,10 +166,10 @@ func initDepositCmd() *cobra.Command {
 				// deposit to own agentID
 				tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args))
 
-				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.Transaction, error) {
+				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.SignedTransaction, error) {
 					client := cliclients.WaspClient(node)
 
-					return cliclients.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
+					return wallet.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
 						accounts.FuncDeposit.Name,
 						chainclient.PostRequestParams{
 							Transfer:                 tokens,
@@ -194,15 +194,15 @@ func initDepositCmd() *cobra.Command {
 					senderOnChainBaseTokens, err := strconv.ParseUint(senderOnChainBalance.BaseTokens, 10, 64)
 					log.Check(err)
 
-					if senderOnChainBaseTokens < feeNeeded {
-						allowance.Spend(isc.NewAssetsBaseTokens(feeNeeded - senderOnChainBaseTokens))
+					if iotago.BaseToken(senderOnChainBaseTokens) < feeNeeded {
+						allowance.Spend(isc.NewAssetsBaseTokens(feeNeeded - iotago.BaseToken(senderOnChainBaseTokens)))
 					}
 				}
 
-				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.Transaction, error) {
+				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.SignedTransaction, error) {
 					client := cliclients.WaspClient(node)
 
-					return cliclients.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
+					return wallet.SCClient(client, chainID, accounts.Contract.Hname()).PostRequest(
 						accounts.FuncTransferAllowanceTo.Name,
 						chainclient.PostRequestParams{
 							Args: dict.Dict{

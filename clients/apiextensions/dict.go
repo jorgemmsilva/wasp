@@ -50,8 +50,8 @@ func APIJsonDictToDict(apiJSONDict apiclient.JSONDict) (dict.Dict, error) {
 	return dict.FromJSONDict(jsonDict)
 }
 
-func APIWaitUntilAllRequestsProcessed(client *apiclient.APIClient, chainID isc.ChainID, tx *iotago.Transaction, waitForL1Confirmation bool, timeout time.Duration) ([]*apiclient.ReceiptResponse, error) {
-	reqs, err := isc.RequestsInTransaction(tx)
+func APIWaitUntilAllRequestsProcessed(client *apiclient.APIClient, chainID isc.ChainID, tx *iotago.SignedTransaction, waitForL1Confirmation bool, timeout time.Duration) ([]*apiclient.ReceiptResponse, error) {
+	reqs, err := isc.RequestsInTransaction(tx.Transaction)
 	if err != nil {
 		return nil, err
 	}

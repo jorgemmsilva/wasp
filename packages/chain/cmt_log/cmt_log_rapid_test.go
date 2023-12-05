@@ -94,7 +94,7 @@ func (sm *cmtLogTestRapidSM) nextChainOutputs(stateIndex uint32) *isc.ChainOutpu
 			iotago.MetadataFeature{},
 		},
 	}
-	return isc.NewChainOutputs(anchorOutput, outputID)
+	return isc.NewChainOutputs(anchorOutput, outputID, nil, iotago.OutputID{})
 }
 
 // func (sm *cmtLogTestRapidSM) ConsDone(t *rapid.T) {

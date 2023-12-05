@@ -10,11 +10,10 @@
  * Do not edit the class manually.
  */
 
-import { AliasOutputMetricItem } from '../models/AliasOutputMetricItem';
+import { AnchorOutputMetricItem } from '../models/AnchorOutputMetricItem';
 import { InOutputMetricItem } from '../models/InOutputMetricItem';
 import { InStateOutputMetricItem } from '../models/InStateOutputMetricItem';
 import { InterfaceMetricItem } from '../models/InterfaceMetricItem';
-import { MilestoneMetricItem } from '../models/MilestoneMetricItem';
 import { OnLedgerRequestMetricItem } from '../models/OnLedgerRequestMetricItem';
 import { PublisherStateTransactionItem } from '../models/PublisherStateTransactionItem';
 import { TransactionIDMetricItem } from '../models/TransactionIDMetricItem';
@@ -24,8 +23,7 @@ import { UTXOInputMetricItem } from '../models/UTXOInputMetricItem';
 import { HttpFile } from '../http/http';
 
 export class NodeMessageMetrics {
-    'inAliasOutput': AliasOutputMetricItem;
-    'inMilestone': MilestoneMetricItem;
+    'inAnchorOutput': AnchorOutputMetricItem;
     'inOnLedgerRequest': OnLedgerRequestMetricItem;
     'inOutput': InOutputMetricItem;
     'inStateOutput': InStateOutputMetricItem;
@@ -41,15 +39,9 @@ export class NodeMessageMetrics {
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
         {
-            "name": "inAliasOutput",
-            "baseName": "inAliasOutput",
-            "type": "AliasOutputMetricItem",
-            "format": ""
-        },
-        {
-            "name": "inMilestone",
-            "baseName": "inMilestone",
-            "type": "MilestoneMetricItem",
+            "name": "inAnchorOutput",
+            "baseName": "inAnchorOutput",
+            "type": "AnchorOutputMetricItem",
             "format": ""
         },
         {

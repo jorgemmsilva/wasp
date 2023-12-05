@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/hive.go/runtime/options"
 	"github.com/iotaledger/hive.go/web/subscriptionmanager"
 	"github.com/iotaledger/hive.go/web/websockethub"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/webapi/websocket/commands"
 )
@@ -35,7 +36,7 @@ func WithMaxTopicSubscriptionsPerClient(maxTopicSubscriptionsPerClient int) opti
 	}
 }
 
-func NewWebsocketService(log *logger.Logger, hub *websockethub.Hub, msgTypes []publisher.ISCEventType, pub *publisher.Publisher, opts ...options.Option[Service]) *Service {
+func NewWebsocketService(log *logger.Logger, hub *websockethub.Hub, msgTypes []publisher.ISCEventType, pub *publisher.Publisher, l1Api iotago.API, opts ...options.Option[Service]) *Service {
 	serviceOptions := options.Apply(&Service{
 		maxTopicSubscriptionsPerClient: 0,
 	}, opts)
@@ -52,7 +53,7 @@ func NewWebsocketService(log *logger.Logger, hub *websockethub.Hub, msgTypes []p
 	)
 
 	subscriptionValidator := NewSubscriptionValidator(msgTypesMap, subscriptionManager)
-	eventHandler := NewEventHandler(pub, publishEvent, subscriptionValidator)
+	eventHandler := NewEventHandler(pub, publishEvent, subscriptionValidator, l1Api)
 	commandHandler := commands.NewCommandHandler(log, subscriptionManager)
 
 	return &Service{

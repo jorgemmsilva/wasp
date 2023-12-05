@@ -69,7 +69,7 @@ var (
 
 type RequestOutputHandler = func(outputInfo *isc.OutputInfo)
 
-// The Alias Outputs must be passed here in-order. The last alias output in the list
+// The Anchor Outputs must be passed here in-order. The last anchor output in the list
 // is the unspent one (if there is a chain of outputs confirmed in a milestone).
 type AnchorOutputHandler = func(outputInfo *isc.OutputInfo)
 
@@ -84,14 +84,14 @@ type ChainNodeConn interface {
 	PublishTX(
 		ctx context.Context,
 		chainID isc.ChainID,
-		tx *iotago.Transaction,
+		tx *iotago.SignedTransaction,
 		callback TxPostHandler,
 	) error
 	// Alias outputs are expected to be returned in order. Considering the Hornet node, the rules are:
-	//   - Upon Attach -- existing unspent alias output is returned FIRST.
+	//   - Upon Attach -- existing unspent anchor output is returned FIRST.
 	//   - Upon receiving a spent/unspent AO from L1 they are returned in
 	//     the same order, as the milestones are issued.
-	//   - If a single milestone has several alias outputs, they have to be ordered
+	//   - If a single milestone has several anchor outputs, they have to be ordered
 	//     according to the chain of TXes.
 	//
 	// NOTE: Any out-of-order AO will be considered as a rollback or AO by the chain impl.
@@ -107,30 +107,30 @@ type ChainNodeConn interface {
 }
 
 type chainNodeImpl struct {
-	me                    gpa.NodeID
-	nodeIdentity          *cryptolib.KeyPair
-	chainID               isc.ChainID
-	chainMgr              gpa.AckHandler
-	chainStore            indexedstore.IndexedStore
-	nodeConn              NodeConnection
-	tangleTime            time.Time
-	mempool               mempool.Mempool
-	stateMgr              statemanager.StateMgr
-	recvAnchorOutputPipe pipe.Pipe[*isc.AnchorOutputWithID]
-	recvTxPublishedPipe   pipe.Pipe[*txPublished]
-	recvMilestonePipe     pipe.Pipe[time.Time]
-	consensusInsts        *shrinkingmap.ShrinkingMap[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]] // Running consensus instances.
-	consOutputPipe        pipe.Pipe[*consOutput]
-	consRecoverPipe       pipe.Pipe[*consRecover]
-	publishingTXes        *shrinkingmap.ShrinkingMap[iotago.TransactionID, context.CancelFunc] // TX'es now being published.
-	procCache             *processors.Cache                                                    // Cache for the SC processors.
-	configUpdatedCh       chan *configUpdate
-	serversUpdatedPipe    pipe.Pipe[*serversUpdate]
-	awaitReceiptActCh     chan *awaitReceiptReq
-	awaitReceiptCnfCh     chan *awaitReceiptReq
-	stateTrackerAct       StateTracker
-	stateTrackerCnf       StateTracker
-	blockWAL              sm_gpa_utils.BlockWAL
+	me                   gpa.NodeID
+	nodeIdentity         *cryptolib.KeyPair
+	chainID              isc.ChainID
+	chainMgr             gpa.AckHandler
+	chainStore           indexedstore.IndexedStore
+	nodeConn             NodeConnection
+	tangleTime           time.Time
+	mempool              mempool.Mempool
+	stateMgr             statemanager.StateMgr
+	recvAnchorOutputPipe pipe.Pipe[*isc.ChainOutputs]
+	recvTxPublishedPipe  pipe.Pipe[*txPublished]
+	recvMilestonePipe    pipe.Pipe[time.Time]
+	consensusInsts       *shrinkingmap.ShrinkingMap[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]] // Running consensus instances.
+	consOutputPipe       pipe.Pipe[*consOutput]
+	consRecoverPipe      pipe.Pipe[*consRecover]
+	publishingTXes       *shrinkingmap.ShrinkingMap[iotago.TransactionID, context.CancelFunc] // TX'es now being published.
+	procCache            *processors.Cache                                                    // Cache for the SC processors.
+	configUpdatedCh      chan *configUpdate
+	serversUpdatedPipe   pipe.Pipe[*serversUpdate]
+	awaitReceiptActCh    chan *awaitReceiptReq
+	awaitReceiptCnfCh    chan *awaitReceiptReq
+	stateTrackerAct      StateTracker
+	stateTrackerCnf      StateTracker
+	blockWAL             sm_gpa_utils.BlockWAL
 	//
 	// Configuration values.
 	consensusDelay   time.Duration
@@ -147,12 +147,12 @@ type chainNodeImpl struct {
 	accessNodesFromCNF     []*cryptolib.PublicKey   // Access nodes, as configured in the governance contract (for the active state).
 	accessNodesFromACT     []*cryptolib.PublicKey   // Access nodes, as configured in the governance contract (for the confirmed state).
 	serverNodes            []*cryptolib.PublicKey   // The nodes we can query (because they consider us an access node).
-	latestConfirmedAO      *isc.AnchorOutputWithID // Confirmed by L1, can be lagging from latestActiveAO.
+	latestConfirmedAO      *isc.ChainOutputs        // Confirmed by L1, can be lagging from latestActiveAO.
 	latestConfirmedState   state.State              // State corresponding to latestConfirmedAO, for performance reasons.
-	latestConfirmedStateAO *isc.AnchorOutputWithID // Set only when the corresponding state is retrieved.
-	latestActiveAO         *isc.AnchorOutputWithID // This is the AO the chain is build on.
+	latestConfirmedStateAO *isc.ChainOutputs        // Set only when the corresponding state is retrieved.
+	latestActiveAO         *isc.ChainOutputs        // This is the AO the chain is build on.
 	latestActiveState      state.State              // State corresponding to latestActiveAO, for performance reasons.
-	latestActiveStateAO    *isc.AnchorOutputWithID // Set only when the corresponding state is retrieved.
+	latestActiveStateAO    *isc.ChainOutputs        // Set only when the corresponding state is retrieved.
 	//
 	// Infrastructure.
 	netRecvPipe         pipe.Pipe[*peering.PeerMessageIn]
@@ -200,11 +200,11 @@ func (cr *consRecover) String() string {
 
 // This is event received from the NodeConn as response to PublishTX
 type txPublished struct {
-	committeeAddr     iotago.Ed25519Address
-	logIndex          cmt_log.LogIndex
-	txID              iotago.TransactionID
-	nextAnchorOutput *isc.AnchorOutputWithID
-	confirmed         bool
+	committeeAddr    iotago.Ed25519Address
+	logIndex         cmt_log.LogIndex
+	txID             iotago.TransactionID
+	nextAnchorOutput *isc.ChainOutputs
+	confirmed        bool
 }
 
 // Represents config update event locally on this node.
@@ -262,7 +262,7 @@ func New(
 		chainStore:             chainStore,
 		nodeConn:               nodeConn,
 		tangleTime:             time.Time{}, // Zero time, while we haven't received it from the L1.
-		recvAnchorOutputPipe:  pipe.NewInfinitePipe[*isc.AnchorOutputWithID](),
+		recvAnchorOutputPipe:   pipe.NewInfinitePipe[*isc.ChainOutputs](),
 		recvTxPublishedPipe:    pipe.NewInfinitePipe[*txPublished](),
 		recvMilestonePipe:      pipe.NewInfinitePipe[time.Time](),
 		consensusInsts:         shrinkingmap.New[iotago.Ed25519Address, *shrinkingmap.ShrinkingMap[cmt_log.LogIndex, *consensusInst]](),
@@ -330,7 +330,7 @@ func New(
 			defer cni.accessLock.RUnlock()
 			return cni.activeAccessNodes, cni.activeCommitteeNodes
 		},
-		func(ao *isc.AnchorOutputWithID) {
+		func(ao *isc.ChainOutputs) {
 			cni.stateTrackerAct.TrackAnchorOutput(ao, true)
 		},
 		func(block state.Block) {
@@ -387,6 +387,7 @@ func New(
 	}
 	mempool := mempool.New(
 		ctx,
+		nodeConn.L1API(),
 		chainID,
 		nodeIdentity,
 		net,
@@ -429,7 +430,7 @@ func New(
 			return
 		}
 		if req.IsInternalUTXO(cni.chainID) {
-			cni.log.Debugf("Ignoring internal UTXO with ID=%v, will not consider it a request: %v", outputInfo.OutputID.ToHex(), req.String())
+			cni.log.Debugf("Ignoring internal UTXO with ID=%v, will not consider it a request: %v", outputInfo.OutputID.ToHex(), req.String(nodeConn.Bech32HRP()))
 			return
 		}
 		cni.mempool.ReceiveOnLedgerRequest(req)
@@ -439,10 +440,11 @@ func New(
 		log.Debugf("recvAnchorOutputCB[%p], %v", cni, outputInfo.OutputID.ToHex())
 		cni.chainMetrics.NodeConn.L1AnchorOutputReceived()
 		if outputInfo.Consumed() {
-			// we don't need to send consumed alias outputs to the pipe
+			// we don't need to send consumed anchor outputs to the pipe
 			return
 		}
-		recvAnchorOutputPipeInCh <- outputInfo.AnchorOutputWithID()
+		// TODO: <lmoe> Turned the output manually into an AnchorOutput
+		recvAnchorOutputPipeInCh <- isc.NewChainOutputs(outputInfo.Output.(*iotago.AnchorOutput), outputInfo.OutputID, nil, iotago.OutputID{})
 	}
 	recvMilestonePipeInCh := cni.recvMilestonePipe.In()
 	recvMilestoneCB := func(timestamp time.Time) {
@@ -586,7 +588,7 @@ func (cni *chainNodeImpl) run(ctx context.Context, cleanupFunc context.CancelFun
 
 // The active state is needed by the mempool to cleanup the processed requests, etc.
 // The request/receipt awaits are already handled in the StateTracker.
-func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block) {
+func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *isc.ChainOutputs, added, removed []state.Block) {
 	cni.log.Debugf("handleStateTrackerActCB: till %v from %v", till, from)
 	cni.accessLock.Lock()
 	cni.latestActiveState = st
@@ -596,7 +598,7 @@ func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *is
 
 	// Set the state to match the ActiveOrConfirmed state.
 	if latestConfirmedAO == nil || till.GetStateIndex() > latestConfirmedAO.GetStateIndex() {
-		l1Commitment := transaction.MustL1CommitmentFromAnchorOutput(till.GetAnchorOutput())
+		l1Commitment := transaction.MustL1CommitmentFromAnchorOutput(till.AnchorOutput)
 		if err := cni.chainStore.SetLatest(l1Commitment.TrieRoot()); err != nil {
 			panic(fmt.Errorf("cannot set L1Commitment=%v as latest: %w", l1Commitment, err))
 		}
@@ -618,7 +620,7 @@ func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *is
 //   - We set it as latest here. This is then used in many places to access the latest version of the state.
 //
 // The request/receipt awaits are already handled in the StateTracker.
-func (cni *chainNodeImpl) handleStateTrackerCnfCB(st state.State, from, till *isc.AnchorOutputWithID, added, removed []state.Block) {
+func (cni *chainNodeImpl) handleStateTrackerCnfCB(st state.State, from, till *isc.ChainOutputs, added, removed []state.Block) {
 	cni.log.Debugf("handleStateTrackerCnfCB: till %v from %v", till, from)
 	cni.accessLock.Lock()
 	cni.latestConfirmedState = st
@@ -635,7 +637,7 @@ func (cni *chainNodeImpl) handleStateTrackerCnfCB(st state.State, from, till *is
 
 	// Set the state to match the ActiveOrConfirmed state.
 	if latestActiveStateAO == nil || latestActiveStateAO.GetStateIndex() <= till.GetStateIndex() {
-		l1Commitment := transaction.MustL1CommitmentFromAnchorOutput(till.GetAnchorOutput())
+		l1Commitment := transaction.MustL1CommitmentFromAnchorOutput(till.AnchorOutput)
 		if err := cni.chainStore.SetLatest(l1Commitment.TrieRoot()); err != nil {
 			panic(fmt.Errorf("cannot set L1Commitment=%v as latest: %w", l1Commitment, err))
 		}
@@ -669,10 +671,10 @@ func (cni *chainNodeImpl) handleTxPublished(ctx context.Context, txPubResult *tx
 	cni.handleChainMgrOutput(ctx, cni.chainMgr.Output())
 }
 
-func (cni *chainNodeImpl) handleAnchorOutput(ctx context.Context, anchorOutput *isc.AnchorOutputWithID) {
+func (cni *chainNodeImpl) handleAnchorOutput(ctx context.Context, anchorOutput *isc.ChainOutputs) {
 	cni.log.Debugf("handleAnchorOutput: %v", anchorOutput)
 	if anchorOutput.GetStateIndex() == 0 {
-		initBlock, err := origin.InitChainByAnchorOutput(cni.chainStore, anchorOutput)
+		initBlock, err := origin.InitChainByAnchorOutput(cni.chainStore, anchorOutput, cni.nodeConn.L1API())
 		if err != nil {
 			cni.log.Errorf("Ignoring InitialAO for the chain: %v", err)
 			return
@@ -744,11 +746,11 @@ func (cni *chainNodeImpl) handleChainMgrOutput(ctx context.Context, outputUntype
 			if err := cni.nodeConn.PublishTX(subCtx, cni.chainID, txToPost.Tx, func(_ *iotago.Transaction, confirmed bool) {
 				cni.chainMetrics.NodeConn.TXPublishResult(confirmed, time.Since(publishStart))
 				cni.recvTxPublishedPipe.In() <- &txPublished{
-					committeeAddr:     txToPost.CommitteeAddr,
-					logIndex:          txToPost.LogIndex,
-					txID:              txToPost.TxID,
+					committeeAddr:    txToPost.CommitteeAddr,
+					logIndex:         txToPost.LogIndex,
+					txID:             txToPost.TxID,
 					nextAnchorOutput: txToPost.NextAnchorOutput,
-					confirmed:         confirmed,
+					confirmed:        confirmed,
 				}
 			}); err != nil {
 				cni.log.Error(err.Error())
@@ -780,14 +782,14 @@ func (cni *chainNodeImpl) handleConsensusOutput(ctx context.Context, out *consOu
 		chainMgrInput = chainmanager.NewInputConsensusOutputDone(
 			out.request.CommitteeAddr,
 			out.request.LogIndex,
-			out.request.BaseAnchorOutput.OutputID(),
+			out.request.BaseAnchorOutput.AnchorOutputID,
 			out.output.Result,
 		)
 	case cons.Skipped:
 		chainMgrInput = chainmanager.NewInputConsensusOutputSkip(
 			out.request.CommitteeAddr,
 			out.request.LogIndex,
-			out.request.BaseAnchorOutput.OutputID(),
+			out.request.BaseAnchorOutput.AnchorOutputID,
 		)
 	default:
 		panic(fmt.Errorf("unexpected output state from consensus: %+v", out))
@@ -840,7 +842,7 @@ func (cni *chainNodeImpl) ensureConsensusInst(ctx context.Context, needConsensus
 			consGrCtx, consGrCancel := context.WithCancel(ctx)
 			logIndexCopy := addLogIndex
 			cgr := consGR.New(
-				consGrCtx, cni.chainID, cni.chainStore, dkShare, &logIndexCopy, cni.nodeIdentity,
+				consGrCtx, cni.chainID, cni.chainStore, dkShare, &logIndexCopy, cni.nodeConn.L1API(), cni.nodeIdentity,
 				cni.procCache, cni.mempool, cni.stateMgr, cni.net,
 				cni.validatorAgentID,
 				cni.recoveryTimeout, RedeliveryPeriod, PrintStatusPeriod,
@@ -1032,7 +1034,7 @@ func (cni *chainNodeImpl) Log() *logger.Logger {
 	return cni.log
 }
 
-func (cni *chainNodeImpl) LatestAnchorOutput(freshness chaintypes.StateFreshness) (*isc.AnchorOutputWithID, error) {
+func (cni *chainNodeImpl) LatestChainOutputs(freshness chaintypes.StateFreshness) (*isc.ChainOutputs, error) {
 	cni.accessLock.RLock()
 	latestActiveAO := cni.latestActiveStateAO
 	latestConfirmedAO := cni.latestConfirmedStateAO
@@ -1041,24 +1043,24 @@ func (cni *chainNodeImpl) LatestAnchorOutput(freshness chaintypes.StateFreshness
 	case chaintypes.ActiveOrCommittedState:
 		if latestActiveAO != nil {
 			if latestConfirmedAO == nil || latestActiveAO.GetStateIndex() > latestConfirmedAO.GetStateIndex() {
-				cni.log.Debugf("LatestAnchorOutput(%v) => active = %v", freshness, latestActiveAO)
+				cni.log.Debugf("LatestChainOutputs(%v) => active = %v", freshness, latestActiveAO)
 				return latestActiveAO, nil
 			}
 		}
 		if latestConfirmedAO != nil {
-			cni.log.Debugf("LatestAnchorOutput(%v) => confirmed = %v", freshness, latestConfirmedAO)
+			cni.log.Debugf("LatestChainOutputs(%v) => confirmed = %v", freshness, latestConfirmedAO)
 			return latestConfirmedAO, nil
 		}
 		return nil, fmt.Errorf("have no active nor confirmed state")
 	case chaintypes.ConfirmedState:
 		if latestConfirmedAO != nil {
-			cni.log.Debugf("LatestAnchorOutput(%v) => confirmed = %v", freshness, latestConfirmedAO)
+			cni.log.Debugf("LatestChainOutputs(%v) => confirmed = %v", freshness, latestConfirmedAO)
 			return latestConfirmedAO, nil
 		}
 		return nil, fmt.Errorf("have no confirmed state")
 	case chaintypes.ActiveState:
 		if latestActiveAO != nil {
-			cni.log.Debugf("LatestAnchorOutput(%v) => active = %v", freshness, latestActiveAO)
+			cni.log.Debugf("LatestChainOutputs(%v) => active = %v", freshness, latestActiveAO)
 			return latestActiveAO, nil
 		}
 		return nil, fmt.Errorf("have no active state")

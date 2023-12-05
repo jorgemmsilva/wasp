@@ -72,7 +72,6 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/tcrypto"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -144,6 +143,7 @@ type consImpl struct {
 	edSuite          suites.Suite // For signatures.
 	blsSuite         suites.Suite // For randomness only.
 	dkShare          tcrypto.DKShare
+	l1API            iotago.API
 	processorCache   *processors.Cache
 	nodeIDs          []gpa.NodeID
 	me               gpa.NodeID
@@ -176,6 +176,7 @@ var (
 )
 
 func New(
+	l1API iotago.API,
 	chainID isc.ChainID,
 	chainStore state.Store,
 	me gpa.NodeID,
@@ -224,6 +225,7 @@ func New(
 		dkShare:          dkShare,
 		processorCache:   processorCache,
 		nodeIDs:          nodeIDs,
+		l1API:            l1API,
 		me:               me,
 		f:                f,
 		dss:              dss.New(edSuite, nodeIDs, nodePKs, f, me, myKyberKeys.Private, longTermDKS, log.Named("DSS")),
@@ -551,7 +553,7 @@ func (c *consImpl) uponRNDSigSharesReady(dataToSign []byte, partialSigs map[gpa.
 
 func (c *consImpl) uponVMInputsReceived(aggregatedProposals *bp.AggregatedBatchProposals, chainState state.State, randomness *hashing.HashValue, requests []isc.Request) gpa.OutMessages {
 	// TODO: chainState state.State is not used for now. That's because VM takes it form the store by itself.
-	// The decided base alias output can be different from that we have proposed!
+	// The decided base anchor output can be different from that we have proposed!
 	decidedBaseAnchorOutput := aggregatedProposals.DecidedBaseAnchorOutput()
 	c.output.NeedVMResult = &vm.VMTask{
 		Processors: c.processorCache,
@@ -586,8 +588,8 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 		tx, _, err := rotate.MakeRotationTransactionForSelfManagedChain(
 			vmResult.RotationAddress,
 			vmResult.Task.Inputs,
-			// TODO: <lmoe> Guess this call could be placed into a separate module? It seems to be used by a few components already.
-			parameters.L1API().TimeProvider().SlotFromTime(vmResult.Task.Timestamp),
+			c.l1API.TimeProvider().SlotFromTime(vmResult.Task.Timestamp),
+			c.l1API,
 		)
 		if err != nil {
 			c.log.Warnf("Cannot create rotation TX, failed to make TX essence: %w", err)

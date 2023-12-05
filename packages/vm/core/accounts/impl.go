@@ -119,7 +119,7 @@ func withdraw(ctx isc.Sandbox) dict.Dict {
 		panic(errCallerMustHaveL1Address)
 	}
 	remains := ctx.TransferAllowedFunds(ctx.AccountID())
-	ctx.Requiref(remains.IsEmpty(), "internal: allowance remains must be empty")
+	ctx.Requiref(remains.IsEmpty(), "internal: allowance remains must be empty, but is: %s", remains)
 	ctx.Send(isc.RequestParameters{
 		TargetAddress: callerAddress,
 		Assets:        allowance,
@@ -197,7 +197,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 	assets := allowance.Clone()
 
 	// deduct the gas reserve GAS2 from the allowance, if possible
-	gasReserve := ctx.Params().MustGetUint64(ParamGasReserve, gas.LimitsDefault.MinGasPerRequest)
+	gasReserve := ctx.Params().MustGetUint64(ParamGasReserve, uint64(gas.LimitsDefault.MinGasPerRequest))
 	// FIXME: add a solo test for FuncTransferAccountToChain and fix the ParamGasReserve logic
 	/*
 		if allowance.BaseTokens < gasReserve {
@@ -223,7 +223,7 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 			EntryPoint:     FuncTransferAllowanceTo.Hname(),
 			Allowance:      allowance,
 			Params:         dict.Dict{ParamAgentID: callerContract.Bytes()},
-			GasBudget:      gasReserve,
+			GasBudget:      gas.GasUnits(gasReserve),
 		},
 	})
 	ctx.Log().Debugf("accounts.transferAccountToChain.success. Sent to contract %s: %s",
@@ -274,7 +274,7 @@ func foundryDestroy(ctx isc.Sandbox) dict.Dict {
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(state, sn, accountID)
+	out, _ := GetFoundryOutput(state, sn, accountID, ctx.L1API())
 	simpleTokenScheme := util.MustTokenScheme(out.TokenScheme)
 	if !util.IsZeroBigInt(big.NewInt(0).Sub(simpleTokenScheme.MintedTokens, simpleTokenScheme.MeltedTokens)) {
 		panic(errFoundryWithCirculatingSupply)
@@ -313,7 +313,7 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(state, sn, accountID)
+	out, _ := GetFoundryOutput(state, sn, accountID, ctx.L1API())
 	nativeTokenID, err := out.NativeTokenID()
 	ctx.RequireNoError(err, "internal")
 
@@ -323,14 +323,9 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 	if deltaAssets := isc.NewEmptyFungibleTokens().AddNativeTokens(nativeTokenID, delta); destroy {
 		// take tokens to destroy from allowance
 		accountID := ctx.AccountID()
-		ctx.TransferAllowedFunds(accountID,
-			isc.NewAssets(0, []*isc.NativeTokenAmount{
-				{
-					ID:     nativeTokenID,
-					Amount: delta,
-				},
-			}),
-		)
+		ctx.TransferAllowedFunds(accountID, isc.NewAssets(0, iotago.NativeTokenSum{
+			nativeTokenID: delta,
+		}))
 		DebitFromAccount(state, accountID, deltaAssets, ctx.ChainID())
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta.Neg(delta))
 	} else {

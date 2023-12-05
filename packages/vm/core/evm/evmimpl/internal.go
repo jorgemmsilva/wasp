@@ -17,7 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/emulator"
@@ -121,8 +121,8 @@ func (ctx *emulatorContext) Timestamp() uint64 {
 	return timestamp(ctx.sandbox.Timestamp())
 }
 
-func (*emulatorContext) BaseTokensDecimals() uint32 {
-	return parameters.BaseToken().Decimals
+func (ctx *emulatorContext) BaseTokensDecimals() uint32 {
+	return ctx.sandbox.TokenInfo().Decimals
 }
 
 func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.BaseToken {

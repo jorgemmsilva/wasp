@@ -28,7 +28,7 @@ func initConsensusMetricsCmd() *cobra.Command {
 			_, chainAddress, err := iotago.ParseBech32(chainAlias)
 			log.Check(err)
 
-			chainID := isc.ChainIDFromAddress(chainAddress.(*iotago.AccountAddress))
+			chainID := isc.ChainIDFromAddress(chainAddress.(*iotago.AnchorAddress))
 			workflowStatus, _, err := client.MetricsApi.
 				GetChainWorkflowMetrics(context.Background(), chainID.String()).
 				Execute()

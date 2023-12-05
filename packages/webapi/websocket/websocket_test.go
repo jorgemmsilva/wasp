@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 )
 
 func InitWebsocket(ctx context.Context, t *testing.T, eventsToSubscribe []publisher.ISCEventType) (*Service, *websockethub.Hub, *solo.Chain) {
@@ -29,7 +30,7 @@ func InitWebsocket(ctx context.Context, t *testing.T, eventsToSubscribe []publis
 		publisher.ISCEventKindReceipt,
 		publisher.ISCEventKindBlockEvents,
 		publisher.ISCEventIssuerVM,
-	}, env.Publisher())
+	}, env.Publisher(), testutil.L1API)
 
 	ws.subscriptionManager.Connect(websockethub.ClientID(0))
 	ws.subscriptionManager.Subscribe(websockethub.ClientID(0), "chains")

@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -49,11 +50,8 @@ func TestNoSenderFeature(t *testing.T) {
 	).
 		AddBaseTokens(baseTokensToSend).
 		AddAllowanceBaseTokens(allowance).
-		AddAllowanceNativeTokensVect(&isc.NativeTokenAmount{
-			ID:     nativeTokenID,
-			Amount: nativeTokenAmount,
-		}).
-		WithGasBudget(uint64(gasFee)),
+		AddAllowanceNativeTokens(nativeTokenID, nativeTokenAmount).
+		WithMaxAffordableGasBudget(),
 		wallet)
 	require.NoError(t, err)
 
@@ -74,7 +72,7 @@ func TestNoSenderFeature(t *testing.T) {
 			TargetAddress: ch.ChainID.AsAddress(),
 			Assets: isc.NewAssets(
 				5*isc.Million,
-				[]*isc.NativeTokenAmount{{ID: nativeTokenID, Amount: nativeTokenAmount}},
+				iotago.NativeTokenSum{nativeTokenID: nativeTokenAmount},
 			).AddNFTs(nft.ID),
 			Metadata: &isc.SendMetadata{
 				TargetContract: inccounter.Contract.Hname(),
@@ -85,6 +83,7 @@ func TestNoSenderFeature(t *testing.T) {
 		nft,
 		env.SlotIndex(),
 		false,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -107,6 +106,7 @@ func TestNoSenderFeature(t *testing.T) {
 		tx.Transaction.TransactionEssence.Inputs,
 		tx.Transaction.Outputs,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
@@ -123,8 +123,11 @@ func TestNoSenderFeature(t *testing.T) {
 	// assert the assets were credited to the payout address
 	payoutAgentIDBalance := ch.L2Assets(ch.OriginatorAgentID)
 	require.Greater(t, payoutAgentIDBalance.BaseTokens, payoutAgentIDBalanceBefore.BaseTokens)
-	require.EqualValues(t, payoutAgentIDBalance.NativeTokens[0].ID, nativeTokenID)
-	require.EqualValues(t, payoutAgentIDBalance.NativeTokens[0].Amount.Uint64(), nativeTokenAmount.Uint64())
+	require.Len(t, payoutAgentIDBalance.NativeTokens, 1)
+	for id, n := range payoutAgentIDBalance.NativeTokens {
+		require.EqualValues(t, id, nativeTokenID)
+		require.EqualValues(t, n.Uint64(), nativeTokenAmount.Uint64())
+	}
 	require.EqualValues(t, payoutAgentIDBalance.NFTs[0], nft.ID)
 }
 
@@ -171,6 +174,7 @@ func TestSendBack(t *testing.T) {
 		nil,
 		env.SlotIndex(),
 		false,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -195,6 +199,7 @@ func TestSendBack(t *testing.T) {
 		tx.Transaction.TransactionEssence.Inputs,
 		tx.Transaction.Outputs,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 	err = ch.Env.AddToLedger(tx)
@@ -238,6 +243,7 @@ func TestBadMetadata(t *testing.T) {
 		nil,
 		env.SlotIndex(),
 		false,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -262,6 +268,7 @@ func TestBadMetadata(t *testing.T) {
 		tx.Transaction.TransactionEssence.Inputs,
 		tx.Transaction.Outputs,
 		env.SlotIndex(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
 	require.Zero(t, ch.L2BaseTokens(isc.NewAddressAgentID(addr)))

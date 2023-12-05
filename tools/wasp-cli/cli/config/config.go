@@ -6,10 +6,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-	"github.com/iotaledger/wasp/packages/testutil/privtangle/privtangledefaults"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
@@ -31,23 +28,6 @@ func L1ParamsExpired() bool {
 	return viper.GetTime(l1ParamsTimestampKey).Add(l1ParamsExpiration).Before(time.Now())
 }
 
-func RefreshL1ParamsFromNode() {
-	if log.VerboseFlag {
-		log.Printf("Getting L1 params from node at %s...\n", L1APIAddress())
-	}
-
-	Set(l1ParamsKey, parameters.L1NoLock())
-	Set(l1ParamsTimestampKey, time.Now())
-}
-
-func LoadL1ParamsFromConfig() {
-	// read L1 params from config file
-	var params *parameters.L1Params
-	err := viper.UnmarshalKey("l1.params", &params)
-	log.Check(err)
-	parameters.InitL1(params)
-}
-
 func Read() {
 	viper.SetConfigFile(ConfigPath)
 	_ = viper.ReadInConfig()
@@ -55,26 +35,12 @@ func Read() {
 
 func L1APIAddress() string {
 	host := viper.GetString("l1.apiAddress")
-	if host != "" {
-		return host
-	}
-	return fmt.Sprintf(
-		"%s:%d",
-		privtangledefaults.Host,
-		privtangledefaults.BasePort+privtangledefaults.NodePortOffsetRestAPI,
-	)
+	return host
 }
 
 func L1FaucetAddress() string {
 	address := viper.GetString("l1.faucetAddress")
-	if address != "" {
-		return address
-	}
-	return fmt.Sprintf(
-		"%s:%d",
-		privtangledefaults.Host,
-		privtangledefaults.BasePort+privtangledefaults.NodePortOffsetFaucet,
-	)
+	return address
 }
 
 func GetToken(node string) string {
@@ -123,14 +89,6 @@ func GetChain(name string) isc.ChainID {
 	if configChainID == "" {
 		log.Fatal(fmt.Sprintf("chain '%s' doesn't exist in config file", name))
 	}
-	networkPrefix, _, err := iotago.ParseBech32(configChainID)
-	log.Check(err)
-
-	if networkPrefix != parameters.NetworkPrefix() {
-		err = fmt.Errorf("target network of the L1 node does not match the wasp-cli config")
-	}
-	log.Check(err)
-
 	chainID, err := isc.ChainIDFromString(configChainID)
 	log.Check(err)
 	return chainID

@@ -8,7 +8,7 @@ import (
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 )
@@ -42,7 +42,7 @@ func (txb *AnchorTransactionBuilder) CreateNewFoundry(
 			Entries: metadata,
 		}}
 	}
-	f.Amount = lo.Must(parameters.Storage().MinDeposit(f))
+	f.Amount = lo.Must(txb.l1API.StorageScoreStructure().MinDeposit(f))
 	txb.invokedFoundries[f.SerialNumber] = &foundryInvoked{
 		serialNumber:     f.SerialNumber,
 		accountingInput:  nil,

@@ -8,7 +8,6 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
@@ -21,7 +20,7 @@ import (
 func (reqctx *requestContext) earlyCheckReasonToSkip(maintenanceMode bool) error {
 	if reqctx.vm.task.Inputs.AnchorOutput.FeatureSet().NativeToken() != nil {
 		if reqctx.vm.task.Inputs.AnchorOutput.StateIndex == 0 {
-			return errors.New("can't init chain with native assets on the origin alias output")
+			return errors.New("can't init chain with native assets on the origin anchor output")
 		} else {
 			panic("inconsistency: native assets on the anchor output")
 		}
@@ -85,7 +84,7 @@ func (reqctx *requestContext) checkReasonToSkipOffLedger() error {
 	}
 
 	if evmTx := offledgerReq.EVMTransaction(); evmTx != nil {
-		if err := evmutil.CheckGasPrice(evmTx, reqctx.vm.chainInfo.GasFeePolicy); err != nil {
+		if err := evmutil.CheckGasPrice(evmTx, reqctx.vm.chainInfo.GasFeePolicy, reqctx.vm.task.TokenInfo.Decimals); err != nil {
 			return err
 		}
 	}
@@ -122,10 +121,9 @@ func (reqctx *requestContext) checkInternalOutput() error {
 
 // checkReasonUnlockable checks if the request output is unlockable
 func (reqctx *requestContext) checkReasonUnlockable() error {
-	params := parameters.Protocol()
 	slot := reqctx.vm.CreationSlot()
-	pastBoundedSlotIndex := slot + params.MaxCommittableAge()
-	futureBoundedSlotIndex := slot + params.MinCommittableAge()
+	pastBoundedSlotIndex := slot + reqctx.vm.task.L1API.ProtocolParameters().MaxCommittableAge()
+	futureBoundedSlotIndex := slot + reqctx.vm.task.L1API.ProtocolParameters().MinCommittableAge()
 
 	req := reqctx.req.(isc.OnLedgerRequest)
 	switch out := req.Output().(type) {

@@ -157,7 +157,7 @@ func (wc *WasmContext) FunctionFromCode(code uint32) string {
 // just before returning to the Wasm code.
 func (wc *WasmContext) GasBudget() uint64 {
 	if wc.wcSandbox != nil {
-		return wc.wcSandbox.common.Gas().Budget()
+		return uint64(wc.wcSandbox.common.Gas().Budget())
 	}
 	return 0
 }

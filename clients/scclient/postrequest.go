@@ -8,11 +8,11 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
-func (c *SCClient) PostRequest(fname string, params ...chainclient.PostRequestParams) (*iotago.Transaction, error) {
+func (c *SCClient) PostRequest(fname string, params ...chainclient.PostRequestParams) (*iotago.SignedTransaction, error) {
 	return c.ChainClient.Post1Request(c.ContractHname, isc.Hn(fname), params...)
 }
 
-func (c *SCClient) PostNRequests(fname string, n int, params ...chainclient.PostRequestParams) ([]*iotago.Transaction, error) {
+func (c *SCClient) PostNRequests(fname string, n int, params ...chainclient.PostRequestParams) ([]*iotago.SignedTransaction, error) {
 	return c.ChainClient.PostNRequests(c.ContractHname, isc.Hn(fname), n, params...)
 }
 

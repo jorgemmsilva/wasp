@@ -6,16 +6,16 @@ import (
 	"time"
 
 	"github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
-	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 	"github.com/iotaledger/wasp/packages/webapi/common"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
@@ -25,6 +25,8 @@ import (
 
 type ChainService struct {
 	log                         *logger.Logger
+	l1API                       iotago.API
+	baseTokenInfo               api.InfoResBaseToken
 	chainsProvider              chains.Provider
 	chainMetricsProvider        *metrics.ChainMetricsProvider
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider
@@ -32,12 +34,16 @@ type ChainService struct {
 
 func NewChainService(
 	logger *logger.Logger,
+	l1API iotago.API,
+	baseTokenInfo api.InfoResBaseToken,
 	chainsProvider chains.Provider,
 	chainMetricsProvider *metrics.ChainMetricsProvider,
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
 ) interfaces.ChainService {
 	return &ChainService{
 		log:                         logger,
+		l1API:                       l1API,
+		baseTokenInfo:               baseTokenInfo,
 		chainsProvider:              chainsProvider,
 		chainMetricsProvider:        chainMetricsProvider,
 		chainRecordRegistryProvider: chainRecordRegistryProvider,
@@ -127,7 +133,7 @@ func (c *ChainService) GetEVMChainID(chainID isc.ChainID, blockIndexOrTrieRoot s
 	if err != nil {
 		return 0, err
 	}
-	ret, err := common.CallView(ch, evm.Contract.Hname(), evm.FuncGetChainID.Hname(), nil, blockIndexOrTrieRoot)
+	ret, err := common.CallView(ch, c.l1API, c.baseTokenInfo, evm.Contract.Hname(), evm.FuncGetChainID.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return 0, err
 	}
@@ -161,7 +167,8 @@ func (c *ChainService) GetChainInfoByChainID(chainID isc.ChainID, blockIndexOrTr
 		return nil, err
 	}
 
-	governanceChainInfo, err := corecontracts.GetChainInfo(ch, blockIndexOrTrieRoot)
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1API, c.baseTokenInfo)
+	governanceChainInfo, err := corecontracts.GetChainInfo(invoker, blockIndexOrTrieRoot)
 	if err != nil {
 		if chainRecord != nil && errors.Is(err, interfaces.ErrChainNotFound) {
 			return &dto.ChainInfo{ChainID: chainID, IsActive: false}, nil
@@ -180,12 +187,9 @@ func (c *ChainService) GetContracts(chainID isc.ChainID, blockIndexOrTrieRoot st
 	if err != nil {
 		return nil, err
 	}
-	recs, err := common.CallView(ch, root.Contract.Hname(), root.ViewGetContractRecords.Hname(), nil, blockIndexOrTrieRoot)
-	if err != nil {
-		return nil, err
-	}
 
-	contracts, err := root.DecodeContractRegistry(collections.NewMapReadOnly(recs, root.VarContractRegistry))
+	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1API, c.baseTokenInfo)
+	contracts, err := corecontracts.GetContractRecords(invoker, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}

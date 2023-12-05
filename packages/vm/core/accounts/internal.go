@@ -117,8 +117,8 @@ func HasEnoughForAllowance(state kv.KVStoreReader, agentID isc.AgentID, allowanc
 		if getBaseTokens(state, accountKey) < allowance.BaseTokens {
 			return false
 		}
-		for _, nativeToken := range allowance.NativeTokens {
-			if getNativeTokenAmount(state, accountKey, nativeToken.ID).Cmp(nativeToken.Amount) < 0 {
+		for id, amount := range allowance.NativeTokens {
+			if getNativeTokenAmount(state, accountKey, id).Cmp(amount) < 0 {
 				return false
 			}
 		}
@@ -141,10 +141,10 @@ func MoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, a
 		return nil
 	}
 
-	if !debitFromAccount(state, accountKey(fromAgentID, chainID), assets.FungibleTokens) {
+	if !debitFromAccount(state, accountKey(fromAgentID, chainID), &assets.FungibleTokens) {
 		return errors.New("MoveBetweenAccounts: not enough funds")
 	}
-	creditToAccount(state, accountKey(toAgentID, chainID), assets.FungibleTokens)
+	creditToAccount(state, accountKey(toAgentID, chainID), &assets.FungibleTokens)
 
 	for _, nftID := range assets.NFTs {
 		nft := GetNFTData(state, nftID)
@@ -177,12 +177,12 @@ func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chai
 	}
 	storageDepositAssets := isc.NewAssetsBaseTokens(amount)
 	ctx.TransferAllowedFunds(CommonAccount(), storageDepositAssets)
-	DebitFromAccount(ctx.State(), CommonAccount(), storageDepositAssets.FungibleTokens, chainID)
+	DebitFromAccount(ctx.State(), CommonAccount(), &storageDepositAssets.FungibleTokens, chainID)
 }
 
-func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32) {
+func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32, l1API iotago.API) {
 	updateNativeTokenOutputIDs(state, anchorTxID)
-	updateFoundryOutputIDs(state, anchorTxID)
+	updateFoundryOutputIDs(state, anchorTxID, l1API)
 	updateNFTOutputIDs(state, anchorTxID)
 	updateNewlyMintedNFTOutputIDs(state, anchorTxID, blockIndex)
 }

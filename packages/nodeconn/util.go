@@ -5,46 +5,31 @@ import (
 	"sort"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/serializer/v2"
-	inx "github.com/iotaledger/inx/go"
+	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
-func getAliasID(outputID iotago.OutputID, anchorOutput *iotago.AnchorOutput) iotago.AccountID {
-	if anchorOutput.AccountID.Empty() {
-		return iotago.AliasIDFromOutputID(outputID)
+func getAnchorID(outputID iotago.OutputID, anchorOutput *iotago.AnchorOutput) iotago.AnchorID {
+	if anchorOutput.AnchorID.Empty() {
+		return iotago.AnchorIDFromOutputID(outputID)
 	}
 
-	return anchorOutput.AccountID
+	return anchorOutput.AnchorID
 }
 
-func outputInfoFromINXOutput(output *inx.LedgerOutput) (*isc.OutputInfo, error) {
-	outputID := output.UnwrapOutputID()
+func outputInfoFromINXSpent(spent *nodebridge.Output) (*isc.OutputInfo, error) {
+	outputInfo := isc.NewOutputInfo(spent.OutputID, spent.Output, iotago.TransactionID{})
 
-	iotaOutput, err := output.UnwrapOutput(serializer.DeSeriModeNoValidation, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return isc.NewOutputInfo(outputID, iotaOutput, iotago.TransactionID{}), nil
-}
-
-func outputInfoFromINXSpent(spent *inx.LedgerSpent) (*isc.OutputInfo, error) {
-	outputInfo, err := outputInfoFromINXOutput(spent.GetOutput())
-	if err != nil {
-		return nil, err
-	}
-
-	outputInfo.TransactionIDSpent = spent.UnwrapTransactionIDSpent()
+	outputInfo.TransactionIDSpent = spent.Metadata.Spent.TransactionID
 	return outputInfo, nil
 }
 
-func unwrapOutputs(outputs []*inx.LedgerOutput) ([]*isc.OutputInfo, error) {
+func unwrapOutputs(outputs []*nodebridge.Output) ([]*isc.OutputInfo, error) {
 	result := make([]*isc.OutputInfo, len(outputs))
 
 	for i := range outputs {
-		outputInfo, err := outputInfoFromINXOutput(outputs[i])
+		outputInfo, err := outputInfoFromINXSpent(outputs[i])
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +39,7 @@ func unwrapOutputs(outputs []*inx.LedgerOutput) ([]*isc.OutputInfo, error) {
 	return result, nil
 }
 
-func unwrapSpents(spents []*inx.LedgerSpent) ([]*isc.OutputInfo, error) {
+func unwrapSpents(spents []*nodebridge.Output) ([]*isc.OutputInfo, error) {
 	result := make([]*isc.OutputInfo, len(spents))
 
 	for i := range spents {
@@ -114,8 +99,8 @@ func sortAnchorOutputsOfChain(trackedChainAnchorOutputsCreated []*isc.OutputInfo
 		// in case of a governance transition, the state index is equal.
 		if !outputInfo1.Consumed() {
 			if !outputInfo2.Consumed() {
-				// this should never happen because there can't be two alias outputs with the same alias ID that are unspent.
-				innerErr = fmt.Errorf("two unspent alias outputs with same AccountID found (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
+				// this should never happen because there can't be two anchor outputs with the same alias ID that are unspent.
+				innerErr = fmt.Errorf("two unspent anchor outputs with same AccountID found (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
 			}
 			return false
 		}
@@ -134,30 +119,30 @@ func sortAnchorOutputsOfChain(trackedChainAnchorOutputsCreated []*isc.OutputInfo
 			return false
 		}
 
-		innerErr = fmt.Errorf("two consumed alias outputs with same AccountID found, but ordering is unclear (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
+		innerErr = fmt.Errorf("two consumed anchor outputs with same AccountID found, but ordering is unclear (Output1: %s, Output2: %s", outputID1.ToHex(), outputID2.ToHex())
 		return false
 	})
 
 	return innerErr
 }
 
-func getAliasIDAnchorOutput(outputInfo *isc.OutputInfo) iotago.AccountID {
-	if outputInfo.Output.Type() != iotago.OutputAlias {
-		return iotago.AccountID{}
+func getAnchorIDAnchorOutput(outputInfo *isc.OutputInfo) iotago.AnchorID {
+	if outputInfo.Output.Type() != iotago.OutputAnchor {
+		return iotago.AnchorID{}
 	}
 
-	return getAliasID(outputInfo.OutputID, outputInfo.Output.(*iotago.AnchorOutput))
+	return getAnchorID(outputInfo.OutputID, outputInfo.Output.(*iotago.AnchorOutput))
 }
 
-func getAliasIDOtherOutputs(output iotago.Output) iotago.AccountID {
+func getAnchorIDFromOtherOutputs(output iotago.Output) iotago.AnchorID {
 	var addressToCheck iotago.Address
 	switch output.Type() {
 	case iotago.OutputBasic:
 		addressToCheck = output.(*iotago.BasicOutput).Ident()
 
-	case iotago.OutputAlias:
-		// TODO: chains can't own other alias outputs for now
-		return iotago.AccountID{}
+	case iotago.OutputAnchor:
+		// chains can't own other anchor outputs
+		return iotago.AnchorID{}
 
 	case iotago.OutputFoundry:
 		addressToCheck = output.(*iotago.FoundryOutput).Ident()
@@ -169,32 +154,32 @@ func getAliasIDOtherOutputs(output iotago.Output) iotago.AccountID {
 		panic(fmt.Errorf("%w: type %d", iotago.ErrUnknownOutputType, output.Type()))
 	}
 
-	if addressToCheck.Type() != iotago.AddressAccount {
+	if addressToCheck.Type() != iotago.AddressAnchor {
 		// output is not owned by an account address => ignore it
 		// nested ownerships are also ignored (Chain owns NFT that owns NFT's etc).
-		return iotago.AccountID{}
+		return iotago.AnchorID{}
 	}
 
-	return addressToCheck.(*iotago.AccountAddress).AccountID()
+	return addressToCheck.(*iotago.AnchorAddress).AnchorID()
 }
 
-// filterAndSortAnchorOutputs filters and groups all alias outputs by chain ID and then sorts them,
-// because they could have been transitioned several times in the same milestone. applying the alias outputs to the consensus
+// filterAndSortAnchorOutputs filters and groups all anchor outputs by chain ID and then sorts them,
+// because they could have been transitioned several times in the same milestone. applying the anchor outputs to the consensus
 // we need to apply them in correct order.
 // chainsLock needs to be read locked outside
 func filterAndSortAnchorOutputs(chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID, *ncChain], ledgerUpdate *ledgerUpdate) (map[isc.ChainID][]*isc.OutputInfo, map[iotago.OutputID]struct{}, error) {
-	// filter and group "created alias outputs" by chain ID and also remember the tracked outputs
+	// filter and group "created anchor outputs" by chain ID and also remember the tracked outputs
 	trackedAnchorOutputsCreatedMapByOutputID := make(map[iotago.OutputID]struct{})
 	trackedAnchorOutputsCreatedMapByChainID := make(map[isc.ChainID][]*isc.OutputInfo)
 	for outputID := range ledgerUpdate.outputsCreatedMap {
 		outputInfo := ledgerUpdate.outputsCreatedMap[outputID]
 
-		aliasID := getAliasIDAnchorOutput(outputInfo)
-		if aliasID.Empty() {
+		anchorID := getAnchorIDAnchorOutput(outputInfo)
+		if anchorID.Empty() {
 			continue
 		}
 
-		chainID := isc.ChainIDFromAliasID(aliasID)
+		chainID := isc.ChainIDFromAnchorID(anchorID)
 
 		// only allow tracked chains
 		if !chainsMap.Has(chainID) {
@@ -211,17 +196,17 @@ func filterAndSortAnchorOutputs(chainsMap *shrinkingmap.ShrinkingMap[isc.ChainID
 	}
 
 	// create a map for faster lookups of output IDs that were spent by a transaction ID.
-	// this is needed to figure out the correct ordering of alias outputs in case of governance transitions.
+	// this is needed to figure out the correct ordering of anchor outputs in case of governance transitions.
 	trackedAnchorOutputsConsumedMapByTransactionID := make(map[iotago.TransactionID]map[iotago.OutputID]struct{})
 	for outputID := range ledgerUpdate.outputsConsumedMap {
 		outputInfo := ledgerUpdate.outputsConsumedMap[outputID]
 
-		aliasID := getAliasIDAnchorOutput(outputInfo)
-		if aliasID.Empty() {
+		anchorID := getAnchorIDAnchorOutput(outputInfo)
+		if anchorID.Empty() {
 			continue
 		}
 
-		chainID := isc.ChainIDFromAliasID(aliasID)
+		chainID := isc.ChainIDFromAnchorID(anchorID)
 
 		// only allow tracked chains
 		if !chainsMap.Has(chainID) {
@@ -267,17 +252,17 @@ func filterOtherOutputs(
 		}
 
 		if outputInfo.Consumed() {
-			// output is not an important alias output that belongs to a chain,
+			// output is not an important anchor output that belongs to a chain,
 			// and it was already consumed in the same milestone => ignore it
 			continue
 		}
 
-		aliasID := getAliasIDOtherOutputs(outputInfo.Output)
-		if aliasID.Empty() {
+		anchorID := getAnchorIDFromOtherOutputs(outputInfo.Output)
+		if anchorID.Empty() {
 			continue
 		}
 
-		chainID := isc.ChainIDFromAliasID(aliasID)
+		chainID := isc.ChainIDFromAnchorID(anchorID)
 
 		// allow only tracked chains
 		if !chainsMap.Has(chainID) {

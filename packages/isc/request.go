@@ -1,7 +1,6 @@
 package isc
 
 import (
-	"fmt"
 	"io"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -10,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // Request wraps any data which can be potentially be interpreted as a request
@@ -18,7 +18,7 @@ type Request interface {
 
 	Bytes() []byte
 	IsOffLedger() bool
-	String() string
+	String(iotago.NetworkPrefix) string
 
 	Read(r io.Reader) error
 	Write(w io.Writer) error
@@ -33,7 +33,7 @@ type Calldata interface {
 	NFT() *NFT // Not nil if the request is an NFT request
 	Params() dict.Dict
 	SenderAccount() AgentID
-	TargetAddress() iotago.Address // TODO implement properly. Target depends on time assumptions and UTXO type
+	TargetAddress() iotago.Address
 }
 
 type Features interface {
@@ -45,7 +45,7 @@ type Features interface {
 type UnsignedOffLedgerRequest interface {
 	Bytes() []byte
 	WithNonce(nonce uint64) UnsignedOffLedgerRequest
-	WithGasBudget(gasBudget uint64) UnsignedOffLedgerRequest
+	WithGasBudget(gasBudget gas.GasUnits) UnsignedOffLedgerRequest
 	WithAllowance(allowance *Assets) UnsignedOffLedgerRequest
 	WithSender(sender *cryptolib.PublicKey) UnsignedOffLedgerRequest
 	Sign(key *cryptolib.KeyPair) OffLedgerRequest
@@ -71,18 +71,6 @@ type OnLedgerRequest interface {
 type ReturnAmountOptions interface {
 	ReturnTo() iotago.Address
 	Amount() uint64
-}
-
-func MustLogRequestsInTransaction(tx *iotago.Transaction, log func(msg string, args ...interface{}), prefix string) {
-	txReqs, err := RequestsInTransaction(tx)
-	if err != nil {
-		panic(fmt.Errorf("cannot extract requests from TX: %w", err))
-	}
-	for chainID, chainReqs := range txReqs {
-		for i, req := range chainReqs {
-			log("%v, ChainID=%v, Req[%v]=%v", prefix, chainID.ShortString(), i, req.String())
-		}
-	}
 }
 
 // RequestsInTransaction parses the transaction and extracts those outputs which are interpreted as a request to a chain

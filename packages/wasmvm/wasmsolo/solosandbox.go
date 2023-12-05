@@ -6,6 +6,7 @@ package wasmsolo
 import (
 	"bytes"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
@@ -34,11 +35,11 @@ func (s *SoloSandbox) Burn(burnCode gas.BurnCode, par ...uint64) {
 	// just do nothing
 }
 
-func (s *SoloSandbox) Budget() uint64 {
+func (s *SoloSandbox) Budget() gas.GasUnits {
 	panic("implement Budget")
 }
 
-func (s *SoloSandbox) Burned() uint64 {
+func (s *SoloSandbox) Burned() gas.GasUnits {
 	panic("implement Burned")
 }
 
@@ -89,13 +90,13 @@ func (s *SoloSandbox) postSync(contract, function string, params dict.Dict, allo
 	// excess can always be reclaimed from the chain account by the user
 	// This also removes the silly requirement to transfer 1 base token
 	if transfer.IsEmpty() && !ctx.offLedger {
-		transfer = isc.NewAssetsBaseTokens(wasmlib.StorageDeposit)
+		transfer = isc.NewAssetsBaseTokens(iotago.BaseToken(wasmlib.StorageDeposit))
 	}
-	if !transfer.IsEmpty() && transfer.BaseTokens < wasmlib.StorageDeposit {
+	if !transfer.IsEmpty() && uint64(transfer.BaseTokens) < wasmlib.StorageDeposit {
 		transfer = transfer.Clone()
-		transfer.BaseTokens = wasmlib.StorageDeposit
+		transfer.BaseTokens = iotago.BaseToken(wasmlib.StorageDeposit)
 	}
-	req.AddFungibleTokens(transfer)
+	req.WithFungibleTokens(transfer)
 	if len(transfer.NFTs) != 0 {
 		if len(transfer.NFTs) != 1 {
 			panic("cannot transfer multiple NFTs")

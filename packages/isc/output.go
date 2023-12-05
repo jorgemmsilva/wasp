@@ -12,14 +12,14 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/testutil/testiotago"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
 type OutputInfo struct {
-	ChainOutputs
+	OutputID           iotago.OutputID
+	Output             iotago.Output
 	TransactionIDSpent iotago.TransactionID
 }
 
@@ -27,9 +27,10 @@ func (o *OutputInfo) Consumed() bool {
 	return o.TransactionIDSpent != iotago.EmptyTransactionID
 }
 
-func NewOutputInfo(chainOutputs ChainOutputs, transactionIDSpent iotago.TransactionID) *OutputInfo {
+func NewOutputInfo(outputID iotago.OutputID, output iotago.Output, transactionIDSpent iotago.TransactionID) *OutputInfo {
 	return &OutputInfo{
-		ChainOutputs:       chainOutputs,
+		OutputID:           outputID,
+		Output:             output,
 		TransactionIDSpent: transactionIDSpent,
 	}
 }
@@ -136,8 +137,8 @@ func (a *ChainOutputs) Hash() hashing.HashValue {
 	return hashing.HashDataBlake2b(a.Bytes())
 }
 
-func (a *ChainOutputs) StorageDeposit() iotago.BaseToken {
-	sd := lo.Must(parameters.L1Provider().APIForSlot(a.AnchorOutputID.CreationSlot()).StorageScoreStructure().MinDeposit(a.AnchorOutput))
+func (a *ChainOutputs) StorageDeposit(api iotago.API) iotago.BaseToken {
+	sd := lo.Must(api.StorageScoreStructure().MinDeposit(a.AnchorOutput))
 	if a.HasAccountOutput() {
 		sd += a.accountOutput.Amount
 	}

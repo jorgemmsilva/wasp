@@ -55,7 +55,7 @@ func keyAllowance(from, to common.Address) kv.Key {
 func getAllowance(ctx isc.SandboxBase, from, to common.Address) *isc.Assets {
 	state := evm.ISCMagicSubrealmR(ctx.StateR())
 	key := keyAllowance(from, to)
-	return isc.MustAssetsFromBytes(state.Get(key))
+	return lo.Must(isc.AssetsFromBytes(state.Get(key)))
 }
 
 var errBaseTokensMustBeUint64 = coreerrors.Register("base tokens amount must be an uint64").Create()
@@ -76,11 +76,7 @@ func setAllowanceBaseTokens(ctx isc.Sandbox, from, to common.Address, numTokens 
 
 func setAllowanceNativeTokens(ctx isc.Sandbox, from, to common.Address, nativeTokenID iscmagic.NativeTokenID, numTokens *big.Int) {
 	withAllowance(ctx, from, to, func(allowance *isc.Assets) {
-		ntSet := allowance.NativeTokenSum()
-		ntSet[nativeTokenID.MustUnwrap()] = numTokens
-		allowance.NativeTokens = lo.MapToSlice(ntSet, func(id iotago.FoundryID, v *big.Int) *isc.NativeTokenAmount {
-			return &isc.NativeTokenAmount{ID: id, Amount: v}
-		})
+		allowance.NativeTokens[nativeTokenID.MustUnwrap()] = numTokens
 	})
 }
 
@@ -93,7 +89,7 @@ func addToAllowance(ctx isc.Sandbox, from, to common.Address, add *isc.Assets) {
 func withAllowance(ctx isc.Sandbox, from, to common.Address, f func(*isc.Assets)) {
 	state := evm.ISCMagicSubrealm(ctx.State())
 	key := keyAllowance(from, to)
-	allowance := isc.MustAssetsFromBytes(state.Get(key))
+	allowance := lo.Must(isc.AssetsFromBytes(state.Get(key)))
 	f(allowance)
 	state.Set(key, allowance.Bytes())
 }
@@ -104,7 +100,7 @@ func subtractFromAllowance(ctx isc.Sandbox, from, to common.Address, taken *isc.
 	state := evm.ISCMagicSubrealm(ctx.State())
 	key := keyAllowance(from, to)
 
-	remaining := isc.MustAssetsFromBytes(state.Get(key))
+	remaining := lo.Must(isc.AssetsFromBytes(state.Get(key)))
 	if taken.IsEmpty() {
 		taken = remaining.Clone()
 	}

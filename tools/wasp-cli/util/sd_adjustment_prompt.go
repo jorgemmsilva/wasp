@@ -6,13 +6,15 @@ import (
 	"strings"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
+
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
 func SDAdjustmentPrompt(output iotago.Output) {
-	minStorageDeposit := parameters.Storage().MinDeposit(output)
-	if output.Deposit() < minStorageDeposit {
+	minStorageDeposit, err := cliclients.L1Client().API().StorageScoreStructure().MinDeposit(output)
+	log.Check(err)
+	if output.BaseTokenAmount() < minStorageDeposit {
 		// don't prompt if running in a script // https://stackoverflow.com/a/43947435/6749639
 		fi, _ := os.Stdin.Stat()
 		if (fi.Mode() & os.ModeCharDevice) == 0 {
@@ -24,7 +26,7 @@ func SDAdjustmentPrompt(output iotago.Output) {
 The amount of base tokens to be sent are not enough to cover the Storage Deposit for the new output.
 (minimum:%d, have:%d)
 Do you wish to continue by sending %d base tokens? [Y/n] (you can automatically accept this prompt with: -s or --adjust-storage-deposit)
-`, minStorageDeposit, output.Deposit(), minStorageDeposit)
+`, minStorageDeposit, output.BaseTokenAmount(), minStorageDeposit)
 
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()

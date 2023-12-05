@@ -5,7 +5,7 @@ import (
 	"slices"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/vmexceptions"
 )
 
@@ -108,7 +108,7 @@ func (txb *AnchorTransactionBuilder) internalNFTOutputFromRequest(nftOutput *iot
 
 	// set amount to the min SD
 	var err error
-	out.Amount, err = parameters.Storage().MinDeposit(out)
+	out.Amount, err = txb.l1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}
@@ -207,7 +207,7 @@ func (txb *AnchorTransactionBuilder) MintNFT(addr iotago.Address, immutableMetad
 		},
 	}
 	var err error
-	nftOutput.Amount, err = parameters.Storage().MinDeposit(nftOutput)
+	nftOutput.Amount, err = txb.l1API.StorageScoreStructure().MinDeposit(nftOutput)
 	if err != nil {
 		panic(err)
 	}

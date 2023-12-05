@@ -6,9 +6,10 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -18,6 +19,8 @@ func EVMCall(
 	ch chaintypes.ChainCore,
 	chainOutputs *isc.ChainOutputs,
 	call ethereum.CallMsg,
+	l1API iotago.API,
+	tokenInfo api.InfoResBaseToken,
 ) ([]byte, error) {
 	info := getChainInfo(ch)
 
@@ -28,13 +31,13 @@ func EVMCall(
 	}
 
 	if call.GasPrice == nil {
-		call.GasPrice = info.GasFeePolicy.GasPriceWei(parameters.BaseToken().Decimals)
+		call.GasPrice = info.GasFeePolicy.GasPriceWei(tokenInfo.Decimals)
 	}
 
 	iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 	// TODO: setting EstimateGasMode = true feels wrong here
 	timestamp := time.Now()
-	res, err := runISCRequest(ch, chainOutputs, timestamp, iscReq, true)
+	res, err := runISCRequest(ch, chainOutputs, timestamp, iscReq, true, l1API, tokenInfo)
 	if err != nil {
 		return nil, err
 	}

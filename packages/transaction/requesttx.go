@@ -7,14 +7,12 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
 // NewTransferTransaction creates a basic output transaction that sends L1 Token to another L1 address
 func NewTransferTransaction(
-	baseTokens iotago.BaseToken,
-	nativeToken *isc.NativeTokenAmount,
+	ftokens *isc.FungibleTokens,
 	mana iotago.Mana,
 	senderAddress iotago.Address,
 	senderKeyPair *cryptolib.KeyPair,
@@ -23,21 +21,21 @@ func NewTransferTransaction(
 	unlockConditions []iotago.UnlockCondition,
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, error) {
 	output := MakeBasicOutput(
 		targetAddress,
 		senderAddress,
-		baseTokens,
-		nativeToken,
+		ftokens,
 		mana,
 		nil,
 		unlockConditions,
 	)
 	if !disableAutoAdjustStorageDeposit {
-		output = AdjustToMinimumStorageDeposit(output)
+		output = AdjustToMinimumStorageDeposit(output, l1API)
 	}
 
-	storageDeposit, err := parameters.Storage().MinDeposit(output)
+	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(output)
 	if err != nil {
 		return nil, err
 	}
@@ -46,15 +44,12 @@ func NewTransferTransaction(
 			ErrNotEnoughBaseTokensForStorageDeposit, output.BaseTokenAmount(), storageDeposit)
 	}
 
-	assets := isc.NewAssets(baseTokens, nil)
-	if nativeToken != nil {
-		assets.AddNativeTokens(nativeToken.ID, nativeToken.Amount)
-	}
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
 		senderAddress,
 		unspentOutputs,
-		NewAssetsWithMana(assets, mana),
+		NewAssetsWithMana(ftokens.ToAssets(), mana),
 		creationSlot,
+		l1API,
 	)
 	if err != nil {
 		return nil, err
@@ -67,6 +62,7 @@ func NewTransferTransaction(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }
 
@@ -82,15 +78,16 @@ func NewRequestTransaction(
 	nft *isc.NFT,
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, error) {
 	outputs := iotago.TxEssenceOutputs{}
 
 	out := MakeRequestTransactionOutput(senderAddress, request, nft)
 	if !disableAutoAdjustStorageDeposit {
-		out = AdjustToMinimumStorageDeposit(out)
+		out = AdjustToMinimumStorageDeposit(out, l1API)
 	}
 
-	storageDeposit, err := parameters.Storage().MinDeposit(out)
+	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		return nil, err
 	}
@@ -108,6 +105,7 @@ func NewRequestTransaction(
 		outputs,
 		outputAssets,
 		creationSlot,
+		l1API,
 	)
 
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
@@ -115,6 +113,7 @@ func NewRequestTransaction(
 		unspentOutputs,
 		outputAssets,
 		creationSlot,
+		l1API,
 	)
 	if err != nil {
 		return nil, err
@@ -127,6 +126,7 @@ func NewRequestTransaction(
 		inputIDs.UTXOInputs(),
 		outputs,
 		creationSlot,
+		l1API,
 	)
 }
 
@@ -144,8 +144,7 @@ func MakeRequestTransactionOutput(
 	out = MakeBasicOutput(
 		req.TargetAddress,
 		senderAddress,
-		assets.BaseTokens,
-		MustSingleNativeToken(assets.FungibleTokens),
+		&assets.FungibleTokens,
 		0,
 		&isc.RequestMetadata{
 			SenderContract: isc.EmptyContractIdentity(),
@@ -195,6 +194,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 	outputs iotago.TxEssenceOutputs,
 	outputAssets *AssetsWithMana,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 ) (
 	iotago.TxEssenceOutputs,
 	*AssetsWithMana,
@@ -217,7 +217,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 		}
 		// found the needed output
 		outputs = append(outputs, updateID(out, outID))
-		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot)
+		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot, l1API)
 		if err != nil {
 			panic(err)
 		}

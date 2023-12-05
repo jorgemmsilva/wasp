@@ -41,7 +41,7 @@ func setupChain(t *testing.T, keyPairOriginator *cryptolib.KeyPair) (*solo.Solo,
 		AutoAdjustStorageDeposit: true,
 	}).
 		WithNativeContract(sbtestsc.Processor)
-	chain, _ := env.NewChainExt(keyPairOriginator, 10_000, "chain1")
+	chain, _ := env.NewChainExt(keyPairOriginator, 10_000, 0, "chain1")
 	err := chain.SendFromL1ToL2AccountBaseTokens(1000, utxodb.FundsFromFaucetAmount/2, chain.OriginatorAgentID, chain.OriginatorPrivateKey)
 	require.NoError(t, err)
 	return env, chain
@@ -51,7 +51,7 @@ func setupDeployer(t *testing.T, ch *solo.Chain) (*cryptolib.KeyPair, isc.AgentI
 	user, userAddr := ch.Env.NewKeyPairWithFunds()
 	ch.Env.AssertL1BaseTokens(userAddr, utxodb.FundsFromFaucetAmount)
 
-	err := ch.DepositBaseTokensToL2(10*gas.LimitsDefault.MinGasPerRequest, user)
+	err := ch.DepositBaseTokensToL2(gas.DefaultFeePolicy().FeeFromGas(10*gas.LimitsDefault.MinGasPerRequest), user)
 	require.NoError(t, err)
 
 	req := solo.NewCallParams(root.Contract.Name, root.FuncGrantDeployPermission.Name,

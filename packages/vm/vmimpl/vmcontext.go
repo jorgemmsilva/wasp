@@ -3,14 +3,11 @@ package vmimpl
 import (
 	"time"
 
-	"github.com/samber/lo"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -37,7 +34,7 @@ type vmContext struct {
 }
 
 type blockGas struct {
-	burned     uint64
+	burned     gas.GasUnits
 	feeCharged iotago.BaseToken
 }
 
@@ -72,9 +69,9 @@ type requestGas struct {
 	// max tokens that can be charged for gas fee
 	maxTokensToSpendForGasFee iotago.BaseToken
 	// final gas budget set for the run
-	budgetAdjusted uint64
+	budgetAdjusted gas.GasUnits
 	// gas already burned
-	burned uint64
+	burned gas.GasUnits
 	// tokens charged
 	feeCharged iotago.BaseToken
 	// burn history. If disabled, it is nil
@@ -172,18 +169,12 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 // 4. produced outputs
 // 5. unprocessable requests
 func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
-	// create a mock AO, with a nil statecommitment, just to calculate changes in the minimum SD
-	mockAnchor, mockAccount := vmctx.txbuilder.CreateAnchorAndAccountOutputs(
+	oldSD, newSD, changeInSD := vmctx.txbuilder.ChangeInSD(
 		vmctx.stateMetadata(state.L1CommitmentNil),
 		vmctx.CreationSlot(),
-		iotago.OutputSet{vmctx.task.Inputs.AnchorOutputID: vmctx.task.Inputs.AnchorOutput},
 	)
-	newSD := lo.Must(parameters.Storage().MinDeposit(mockAnchor)) + mockAccount.Amount
-	oldSD := vmctx.getSDInChainOutputs()
-	changeInSD := int64(oldSD) - int64(newSD)
-
 	if changeInSD != 0 {
-		vmctx.task.Log.Debugf("adjusting commonAccount because AO SD cost changed, old:%d new:%d change:%d", oldSD, newSD, changeInSD)
+		vmctx.task.Log.Debugf("adjusting commonAccount because AO SD cost changed, change:%d", oldSD, newSD, changeInSD)
 		// update the commonAccount with the change in SD cost
 		withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
 			accounts.AdjustAccountBaseTokens(s, accounts.CommonAccount(), changeInSD, vmctx.ChainID())
@@ -217,7 +208,7 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 		// update foundry UTXOs
 		for _, foundryID := range foundryIDsToBeUpdated {
 			vmctx.task.Log.Debugf("saving foundry %d, outputIndex: %d", foundryID, outputIndex)
-			accounts.SaveFoundryOutput(s, foundryOutputsMap[foundryID], outputIndex)
+			accounts.SaveFoundryOutput(s, foundryOutputsMap[foundryID], outputIndex, vmctx.task.L1API)
 			outputIndex++
 		}
 		for _, sn := range foundriesToBeRemoved {
@@ -254,7 +245,7 @@ func (vmctx *vmContext) removeUnprocessable(reqID isc.RequestID) {
 }
 
 func (vmctx *vmContext) assertConsistentGasTotals(requestResults []*vm.RequestResult) {
-	var sumGasBurned uint64
+	var sumGasBurned gas.GasUnits
 	var sumGasFeeCharged iotago.BaseToken
 
 	for _, r := range requestResults {

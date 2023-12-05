@@ -7,12 +7,14 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/cons/bp"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/origin"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -26,27 +28,30 @@ func TestOffLedgerOrdering(t *testing.T) {
 	log := testlogger.NewLogger(t)
 	nodeIDs := gpa.MakeTestNodeIDs(1)
 	//
-	// Produce an alias output.
+	// Produce an anchor output.
 	cmtKP := cryptolib.NewKeyPair()
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
-	outputs, outIDs := utxoDB.GetUnspentOutputs(originator.Address())
+	outputs := utxoDB.GetUnspentOutputs(originator.Address())
+
 	originTX, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
 		cmtKP.Address(),
 		originator.Address(),
 		0,
+		0,
 		nil,
 		outputs,
-		outIDs,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
-	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
 	require.NoError(t, err)
-	ao0 := isc.NewAnchorOutputWithID(anchorOutput, stateAnchor.OutputID)
+	ao0 := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID, nil, iotago.OutputID{})
 	//
 	// Create some requests.
 	senderKP := cryptolib.NewKeyPair()

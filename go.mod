@@ -15,25 +15,25 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/dgryski/go-clockpro v0.0.0-20140817124034-edc6d3eeb96e
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.13.4
+	github.com/ethereum/go-ethereum v1.13.5
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/iancoleman/orderedmap v0.3.0
-	github.com/iotaledger/hive.go/app v0.0.0-20231110120127-f90b276b7c05
-	github.com/iotaledger/hive.go/constraints v0.0.0-20231110120127-f90b276b7c05
-	github.com/iotaledger/hive.go/crypto v0.0.0-20231110120127-f90b276b7c05
-	github.com/iotaledger/hive.go/ds v0.0.0-20231110120127-f90b276b7c05
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20231110120127-f90b276b7c05
+	github.com/iotaledger/hive.go/app v0.0.0-20231113110812-4ca2b6cc9a42
+	github.com/iotaledger/hive.go/constraints v0.0.0-20231130122510-e3dddb0214f0
+	github.com/iotaledger/hive.go/crypto v0.0.0-20231130122510-e3dddb0214f0
+	github.com/iotaledger/hive.go/ds v0.0.0-20231113110812-4ca2b6cc9a42
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20231130122510-e3dddb0214f0
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20231106113411-94ac829adbb2
-	github.com/iotaledger/hive.go/lo v0.0.0-20231110120127-f90b276b7c05
-	github.com/iotaledger/hive.go/logger v0.0.0-20231110120127-f90b276b7c05
+	github.com/iotaledger/hive.go/lo v0.0.0-20231130122510-e3dddb0214f0
+	github.com/iotaledger/hive.go/logger v0.0.0-20231113110812-4ca2b6cc9a42
 	github.com/iotaledger/hive.go/objectstorage v0.0.0-20231010133617-cdbd5387e2af
-	github.com/iotaledger/hive.go/runtime v0.0.0-20231110120127-f90b276b7c05
-	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231110120127-f90b276b7c05
+	github.com/iotaledger/hive.go/runtime v0.0.0-20231130122510-e3dddb0214f0
+	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231113110812-4ca2b6cc9a42
 	github.com/iotaledger/hive.go/web v0.0.0-20231106113411-94ac829adbb2
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231110132801-e38d9fbdd467
-	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231110132251-8abdb05cce43
-	github.com/iotaledger/iota.go/v4 v4.0.0-20231110131407-263d0662856b
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231201123347-1c44b3f24221
+	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231201114846-3bb5c3fd5665
+	github.com/iotaledger/iota.go/v4 v4.0.0-20231204084048-9c12053adaf6
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
 	github.com/labstack/echo/v4 v4.11.3
@@ -56,9 +56,9 @@ require (
 	go.uber.org/atomic v1.11.0
 	go.uber.org/dig v1.17.1
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.15.0
+	golang.org/x/crypto v0.16.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/net v0.18.0
+	golang.org/x/net v0.19.0
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.10
 	pgregory.net/rapid v1.0.0
@@ -118,11 +118,11 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
-	github.com/holiman/uint256 v1.2.3 // indirect
+	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/huin/goupnp v1.2.0 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
-	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231110120127-f90b276b7c05 // indirect
-	github.com/iotaledger/hive.go/stringify v0.0.0-20231110120127-f90b276b7c05 // indirect
+	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231113110812-4ca2b6cc9a42 // indirect
+	github.com/iotaledger/hive.go/stringify v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
@@ -207,11 +207,11 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231106174013-bbf56f31fb17 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

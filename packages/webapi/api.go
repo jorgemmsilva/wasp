@@ -11,6 +11,8 @@ import (
 	"github.com/iotaledger/hive.go/app/configuration"
 	"github.com/iotaledger/hive.go/app/shutdown"
 	loggerpkg "github.com/iotaledger/hive.go/logger"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/authentication"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/dkg"
@@ -95,32 +97,34 @@ func Init(
 	indexDbPath string,
 	pub *publisher.Publisher,
 	jsonrpcParams *jsonrpc.Parameters,
+	l1API iotago.API,
+	baseTokenInfo api.InfoResBaseToken,
 ) {
 	// load mock files to generate correct echo swagger documentation
 	mocker := NewMocker()
 	mocker.LoadMockFiles()
 
-	chainService := services.NewChainService(logger, chainsProvider, chainMetricsProvider, chainRecordRegistryProvider)
+	chainService := services.NewChainService(logger, l1API, baseTokenInfo, chainsProvider, chainMetricsProvider, chainRecordRegistryProvider)
 	committeeService := services.NewCommitteeService(chainsProvider, networkProvider, dkShareRegistryProvider)
 	registryService := services.NewRegistryService(chainsProvider, chainRecordRegistryProvider)
 	offLedgerService := services.NewOffLedgerService(chainService, networkProvider, requestCacheTTL)
 	metricsService := services.NewMetricsService(chainsProvider, chainMetricsProvider)
 	peeringService := services.NewPeeringService(chainsProvider, networkProvider, trustedNetworkManager)
-	evmService := services.NewEVMService(chainsProvider, chainService, networkProvider, pub, indexDbPath, chainMetricsProvider, jsonrpcParams, logger.Named("EVMService"))
+	evmService := services.NewEVMService(baseTokenInfo, chainsProvider, chainService, l1API, networkProvider, pub, indexDbPath, chainMetricsProvider, jsonrpcParams, logger.Named("EVMService"))
 	nodeService := services.NewNodeService(chainRecordRegistryProvider, nodeIdentityProvider, chainsProvider, shutdownHandler, trustedNetworkManager)
-	dkgService := services.NewDKGService(dkShareRegistryProvider, dkgNodeProvider, trustedNetworkManager)
+	dkgService := services.NewDKGService(dkShareRegistryProvider, dkgNodeProvider, l1API, trustedNetworkManager)
 	userService := services.NewUserService(userManager)
 	// --
 
 	authMiddleware := authentication.AddAuthentication(server, userManager, nodeIdentityProvider, authConfig, mocker)
 
 	controllersToLoad := []interfaces.APIController{
-		chain.NewChainController(logger, chainService, committeeService, evmService, nodeService, offLedgerService, registryService),
-		apimetrics.NewMetricsController(chainService, metricsService),
+		chain.NewChainController(logger, l1API, baseTokenInfo, chainService, committeeService, evmService, nodeService, offLedgerService, registryService),
+		apimetrics.NewMetricsController(chainService, metricsService, l1API),
 		node.NewNodeController(waspVersion, config, dkgService, nodeService, peeringService),
 		requests.NewRequestsController(chainService, offLedgerService, peeringService),
 		users.NewUsersController(userService),
-		corecontracts.NewCoreContractsController(chainService),
+		corecontracts.NewCoreContractsController(chainService, l1API, baseTokenInfo),
 	}
 
 	AddHealthEndpoint(server, chainService, metricsService)

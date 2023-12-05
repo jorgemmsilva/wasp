@@ -9,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 const (
@@ -22,7 +23,7 @@ type BlockInfo struct {
 	NumSuccessfulRequests uint16 // which didn't panic
 	NumOffLedgerRequests  uint16
 	PreviousChainOutputs  *isc.ChainOutputs // nil for block #0
-	GasBurned             uint64
+	GasBurned             gas.GasUnits
 	GasFeeCharged         iotago.BaseToken
 }
 
@@ -76,7 +77,7 @@ func (bi *BlockInfo) Read(r io.Reader) error {
 		bi.PreviousChainOutputs = &isc.ChainOutputs{}
 		rr.Read(bi.PreviousChainOutputs)
 	}
-	bi.GasBurned = rr.ReadGas64()
+	bi.GasBurned = gas.GasUnits(rr.ReadGas64())
 	bi.GasFeeCharged = iotago.BaseToken(rr.ReadGas64())
 	return rr.Err
 }
@@ -95,7 +96,7 @@ func (bi *BlockInfo) Write(w io.Writer) error {
 	if bi.PreviousChainOutputs != nil {
 		ww.Write(bi.PreviousChainOutputs)
 	}
-	ww.WriteGas64(bi.GasBurned)
+	ww.WriteGas64(uint64(bi.GasBurned))
 	ww.WriteGas64(uint64(bi.GasFeeCharged))
 	return ww.Err
 }

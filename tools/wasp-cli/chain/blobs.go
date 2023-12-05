@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 	"github.com/iotaledger/wasp/tools/wasp-cli/util"
 	"github.com/iotaledger/wasp/tools/wasp-cli/waspcmd"
@@ -46,7 +47,7 @@ func initStoreBlobCmd() *cobra.Command {
 }
 
 func uploadBlob(client *apiclient.APIClient, chainID isc.ChainID, fieldValues dict.Dict) (hash hashing.HashValue) {
-	chainClient := cliclients.ChainClient(client, chainID)
+	chainClient := wallet.ChainClient(client, chainID)
 
 	hash, _, receipt, err := chainClient.UploadBlob(context.Background(), fieldValues)
 	log.Check(err)

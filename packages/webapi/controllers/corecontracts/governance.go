@@ -6,8 +6,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-	"github.com/iotaledger/wasp/packages/webapi/controllers/controllerutils"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 	"github.com/iotaledger/wasp/packages/webapi/params"
@@ -31,14 +29,14 @@ func MapGovChainInfoResponse(chainInfo *isc.ChainInfo) models.GovChainInfoRespon
 }
 
 func (c *Controller) getChainInfo(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	chainInfo, err := corecontracts.GetChainInfo(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	chainInfo, err := corecontracts.GetChainInfo(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	chainInfoResponse := MapGovChainInfoResponse(chainInfo)
@@ -47,14 +45,14 @@ func (c *Controller) getChainInfo(e echo.Context) error {
 }
 
 func (c *Controller) getChainOwner(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	chainOwner, err := corecontracts.GetChainOwner(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	chainOwner, err := corecontracts.GetChainOwner(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	chainOwnerResponse := models.GovChainOwnerResponse{
@@ -65,20 +63,20 @@ func (c *Controller) getChainOwner(e echo.Context) error {
 }
 
 func (c *Controller) getAllowedStateControllerAddresses(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	invoker, ch, err := c.createCallViewInvoker(e)
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return err
 	}
 
-	addresses, err := corecontracts.GetAllowedStateControllerAddresses(ch, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	addresses, err := corecontracts.GetAllowedStateControllerAddresses(invoker, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
-		return c.handleViewCallError(err, chainID)
+		return c.handleViewCallError(err, ch.ID())
 	}
 
 	encodedAddresses := make([]string, len(addresses))
 
 	for k, v := range addresses {
-		encodedAddresses[k] = v.Bech32(parameters.NetworkPrefix())
+		encodedAddresses[k] = v.Bech32(c.l1Api.ProtocolParameters().Bech32HRP())
 	}
 
 	addressesResponse := models.GovAllowedStateControllerAddressesResponse{

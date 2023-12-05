@@ -10,7 +10,6 @@
  * Do not edit the class manually.
  */
 
-import { NativeTokenJSON } from '../models/NativeTokenJSON';
 import { HttpFile } from '../http/http';
 
 export class AssetsJSON {
@@ -18,7 +17,7 @@ export class AssetsJSON {
     * The base tokens (uint64 as string)
     */
     'baseTokens': string;
-    'nativeTokens': Array<NativeTokenJSON>;
+    'nativeTokens': { [key: string]: string; };
     'nfts': Array<string>;
 
     static readonly discriminator: string | undefined = undefined;
@@ -33,8 +32,8 @@ export class AssetsJSON {
         {
             "name": "nativeTokens",
             "baseName": "nativeTokens",
-            "type": "Array<NativeTokenJSON>",
-            "format": ""
+            "type": "{ [key: string]: string; }",
+            "format": "string"
         },
         {
             "name": "nfts",

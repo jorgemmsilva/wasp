@@ -1,5 +1,8 @@
 # Cluster Tests
 
+
+# TODO this is outdated, privatangle is not used anymore
+
 To run cluster tests, ensure you have installed the necessary dependencies in [INX](#inx).
 
 Privtangle is used to build the L1 network for running the cluster tests. For more information about privtangle, please check [privtangle.go](packages/testutil/privtangle/privtangle.go).

@@ -24,9 +24,9 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testchain"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
@@ -77,7 +77,7 @@ func testConsBasic(t *testing.T, n, f int) {
 	committeeAddress, dkShareProviders := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
 	//
 	// Construct the chain on L1.
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	//
 	// Construct the chain on L1: Create the accounts.
 	originator := cryptolib.NewKeyPair()
@@ -85,48 +85,44 @@ func testConsBasic(t *testing.T, n, f int) {
 	require.NoError(t, err)
 	//
 	// Construct the chain on L1: Create the origin TX.
-	outputs, outIDs := utxoDB.GetUnspentOutputs(originator.Address())
+	outputs := utxoDB.GetUnspentOutputs(originator.Address())
 	originTX, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
 		committeeAddress,
 		originator.Address(),
 		0,
+		0,
 		nil,
 		outputs,
-		outIDs,
+		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
+		testutil.L1API,
 	)
 	require.NoError(t, err)
-	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
 	require.NoError(t, err)
 	require.NotNil(t, stateAnchor)
 	require.NotNil(t, anchorOutput)
-	ao0 := isc.NewAnchorOutputWithID(anchorOutput, stateAnchor.OutputID)
+	ao0 := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID, nil, iotago.OutputID{})
 	err = utxoDB.AddToLedger(originTX)
 	require.NoError(t, err)
 
 	//
 	// Deposit some funds
-	outputs, outIDs = utxoDB.GetUnspentOutputs(originator.Address())
-	depositTx, err := transaction.NewRequestTransaction(
-		transaction.NewRequestTransactionParams{
-			SenderKeyPair:    originator,
-			SenderAddress:    originator.Address(),
-			UnspentOutputs:   outputs,
-			UnspentOutputIDs: outIDs,
-			Request: &isc.RequestParameters{
-				TargetAddress:                 chainID.AsAddress(),
-				Assets:                        isc.NewAssetsBaseTokens(100_000_000),
-				AdjustToMinimumStorageDeposit: false,
-				Metadata: &isc.SendMetadata{
-					TargetContract: accounts.Contract.Hname(),
-					EntryPoint:     accounts.FuncDeposit.Hname(),
-					GasBudget:      10_000,
-				},
-			},
+	outputs = utxoDB.GetUnspentOutputs(originator.Address())
+
+	depositTx, err := transaction.NewRequestTransaction(originator, originator.Address(), outputs, &isc.RequestParameters{
+		TargetAddress:                 chainID.AsAddress(),
+		Assets:                        isc.NewAssetsBaseTokens(100_000_000),
+		AdjustToMinimumStorageDeposit: false,
+		Metadata: &isc.SendMetadata{
+			TargetContract: accounts.Contract.Hname(),
+			EntryPoint:     accounts.FuncDeposit.Hname(),
+			GasBudget:      10_000,
 		},
-	)
+	}, nil, testutil.L1API.TimeProvider().SlotFromTime(time.Now()), true, testutil.L1API)
 	require.NoError(t, err)
+
 	err = utxoDB.AddToLedger(depositTx)
 	require.NoError(t, err)
 
@@ -134,17 +130,17 @@ func testConsBasic(t *testing.T, n, f int) {
 	// Construct the chain on L1: Find the requests (the first request).
 	reqs := []isc.Request{}
 	reqRefs := []*isc.RequestRef{}
-	outputs, _ = utxoDB.GetUnspentOutputs(chainID.AsAddress())
+	outputs = utxoDB.GetUnspentOutputs(chainID.AsAddress())
 	for outputID, output := range outputs {
-		if output.Type() == iotago.OutputAlias {
+		if output.Type() == iotago.OutputAnchor {
 			anchorOutput := output.(*iotago.AnchorOutput)
-			if anchorOutput.AccountID == chainID.AsAliasID() {
-				continue // That's our alias output, not the request, skip it here.
+			if anchorOutput.AnchorID == chainID.AsAnchorID() {
+				continue // That's our anchor output, not the request, skip it here.
 			}
-			if anchorOutput.AccountID.Empty() {
-				implicitAliasID := iotago.AliasIDFromOutputID(outputID)
-				if implicitAliasID == chainID.AsAliasID() {
-					continue // That's our origin alias output, not the request, skip it here.
+			if anchorOutput.AnchorID.Empty() {
+				implicitAnchorID := iotago.AnchorIDFromOutputID(outputID)
+				if implicitAnchorID == chainID.AsAnchorID() {
+					continue // That's our origin anchor output, not the request, skip it here.
 				}
 			}
 		}
@@ -168,9 +164,19 @@ func testConsBasic(t *testing.T, n, f int) {
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareProviders[i].LoadDKShare(committeeAddress)
 		chainStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		origin.InitChainByAnchorOutput(chainStates[nid], ao0)
+		_, err = origin.InitChainByAnchorOutput(chainStates[nid], ao0, testutil.L1API)
 		require.NoError(t, err)
-		nodes[nid] = cons.New(chainID, chainStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, accounts.CommonAccount(), nodeLog).AsGPA()
+		nodes[nid] = cons.New(testutil.L1API,
+			chainID,
+			chainStates[nid],
+			nid,
+			nodeSK,
+			nodeDKShare,
+			procCache,
+			consInstID,
+			gpa.NodeIDFromPublicKey,
+			accounts.CommonAccount(),
+			nodeLog).AsGPA()
 	}
 	tc := gpa.NewTestContext(nodes)
 	//
@@ -207,7 +213,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		require.Nil(t, out.NeedStateMgrStateProposal)
 		require.NotNil(t, out.NeedMempoolRequests)
 		require.NotNil(t, out.NeedStateMgrDecidedState)
-		l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(out.NeedStateMgrDecidedState.GetAnchorOutput())
+		l1Commitment, err := transaction.L1CommitmentFromAnchorOutput(out.NeedStateMgrDecidedState.AnchorOutput)
 		require.NoError(t, err)
 		chainState, err := chainStates[nid].StateByTrieRoot(l1Commitment.TrieRoot())
 		require.NoError(t, err)
@@ -320,7 +326,7 @@ func testChained(t *testing.T, n, f, b int) {
 	_, peerIdentities := testpeers.SetupKeys(uint16(n))
 	committeeAddress, dkShareProviders := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
 	nodeIDs := gpa.NodeIDsFromPublicKeys(testpeers.PublicKeys(peerIdentities))
-	utxoDB := utxodb.New(utxodb.DefaultInitParams())
+	utxoDB := utxodb.New(testutil.L1API)
 	//
 	// Create the accounts.
 	scClient := cryptolib.NewKeyPair()
@@ -366,7 +372,7 @@ func testChained(t *testing.T, n, f, b int) {
 	testNodeStates := map[gpa.NodeID]state.Store{}
 	for _, nid := range nodeIDs {
 		testNodeStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO)
+		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO, testutil.L1API)
 	}
 	testChainInsts := make([]testConsInst, b)
 	for i := range testChainInsts {
@@ -391,7 +397,7 @@ func testChained(t *testing.T, n, f, b int) {
 	// Start the process by providing input to the first instance.
 	for _, nid := range nodeIDs {
 		t.Log("Going to provide inputs.")
-		originL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(originAO.GetAnchorOutput())
+		originL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(originAO.AnchorOutput)
 		require.NoError(t, err)
 		originState, err := testNodeStates[nid].StateByTrieRoot(originL1Commitment.TrieRoot())
 		require.NoError(t, err)
@@ -422,7 +428,7 @@ func testChained(t *testing.T, n, f, b int) {
 
 type testInstInput struct {
 	nodeID           gpa.NodeID
-	baseAnchorOutput *isc.AnchorOutputWithID
+	baseAnchorOutput *isc.ChainOutputs
 	baseState        state.State // State committed with the baseAnchorOutput
 }
 
@@ -480,7 +486,7 @@ func newTestConsInst(
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareRegistryProviders[i].LoadDKShare(committeeAddress)
 		require.NoError(t, err)
-		nodes[nid] = cons.New(chainID, nodeStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, accounts.CommonAccount(), nodeLog).AsGPA()
+		nodes[nid] = cons.New(testutil.L1API, chainID, nodeStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, accounts.CommonAccount(), nodeLog).AsGPA()
 	}
 	tci := &testConsInst{
 		t:                                t,
@@ -681,7 +687,7 @@ func (tci *testConsInst) tryHandledNeedMempoolRequests(nodeID gpa.NodeID, out *c
 
 func (tci *testConsInst) tryHandledNeedStateMgrDecidedState(nodeID gpa.NodeID, out *cons.Output, inp *testInstInput) {
 	if out.NeedStateMgrDecidedState != nil && !tci.handledNeedStateMgrDecidedState[nodeID] {
-		if out.NeedStateMgrDecidedState.OutputID() == inp.baseAnchorOutput.OutputID() {
+		if out.NeedStateMgrDecidedState.AnchorOutputID == inp.baseAnchorOutput.AnchorOutputID {
 			tci.compInputPipe <- map[gpa.NodeID]gpa.Input{nodeID: cons.NewInputStateMgrDecidedVirtualState(inp.baseState)}
 		} else {
 			tci.t.Error("we have to sync between state managers, should not happen in this test")

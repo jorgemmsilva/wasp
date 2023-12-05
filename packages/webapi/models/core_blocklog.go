@@ -41,7 +41,7 @@ func MapBlockInfoResponse(info *blocklog.BlockInfo) *BlockInfoResponse {
 		TotalRequests:         info.TotalRequests,
 		NumSuccessfulRequests: info.NumSuccessfulRequests,
 		NumOffLedgerRequests:  info.NumOffLedgerRequests,
-		GasBurned:             hexutil.EncodeUint64(info.GasBurned),
+		GasBurned:             hexutil.EncodeUint64(uint64(info.GasBurned)),
 		GasFeeCharged:         hexutil.EncodeUint64(uint64(info.GasFeeCharged)),
 	}
 }

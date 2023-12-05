@@ -55,7 +55,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	defer log.Sync()
 	//
 	// Create ledger accounts.
-	utxoDB := utxodb.New(parameters.L1API())
+	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
 	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
@@ -81,12 +81,12 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	for i, nid := range nodeIDs {
 		consensusStateRegistry := testutil.NewConsensusStateRegistry()
 		stores[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAnchorOutput(stores[nid], originAO)
+		_, err := origin.InitChainByAnchorOutput(stores[nid], originAO, testutil.L1API)
 		require.NoError(t, err)
 		activeAccessNodesCB := func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey) {
 			return []*cryptolib.PublicKey{}, []*cryptolib.PublicKey{}
 		}
-		trackActiveStateCB := func(ao *isc.AnchorOutputWithID) {
+		trackActiveStateCB := func(ao *isc.ChainOutputs) {
 			// Nothing
 		}
 		savePreliminaryBlockCB := func(state.Block) {
@@ -134,11 +134,11 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		// TODO: Commit a block to the store, if needed.
 		tc.WithInput(nid, chainmanager.NewInputConsensusOutputDone( // TODO: Consider the SKIP cases as well.
 			*cmtAddrA.(*iotago.Ed25519Address),
-			consReq.LogIndex, consReq.BaseAnchorOutput.OutputID(),
+			consReq.LogIndex, consReq.BaseAnchorOutput.AnchorOutputID,
 			&cons.Result{
 				Transaction:      step2TX,
 				Block:            block0,
-				BaseAnchorOutput: consReq.BaseAnchorOutput.OutputID(),
+				BaseAnchorOutput: consReq.BaseAnchorOutput.AnchorOutputID,
 				NextAnchorOutput: step2AO,
 			},
 		))
@@ -149,13 +149,16 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		out := n.Output().(*chainmanager.Output)
 		t.Logf("node=%v should have 1 TX to publish, have out=%v", nodeID, out)
 		require.Equal(t, 1, out.NeedPublishTX().Size(), "node=%v should have 1 TX to publish, have out=%v", nodeID, out)
-		require.Equal(t, step2TX, func() *iotago.Transaction { tx, _ := out.NeedPublishTX().Get(step2AO.TransactionID()); return tx.Tx }())
-		require.Equal(t, originAO.OutputID(), func() iotago.OutputID {
-			tx, _ := out.NeedPublishTX().Get(step2AO.TransactionID())
+		require.Equal(t, step2TX, func() *iotago.Transaction {
+			tx, _ := out.NeedPublishTX().Get(step2AO.AnchorOutputID.TransactionID())
+			return tx.Tx.Transaction
+		}())
+		require.Equal(t, originAO.AnchorOutputID, func() iotago.OutputID {
+			tx, _ := out.NeedPublishTX().Get(step2AO.AnchorOutputID.TransactionID())
 			return tx.BaseAnchorOutputID
 		}())
 		require.Equal(t, cmtAddrA, func() iotago.Address {
-			tx, _ := out.NeedPublishTX().Get(step2AO.TransactionID())
+			tx, _ := out.NeedPublishTX().Get(step2AO.AnchorOutputID.TransactionID())
 			return &tx.CommitteeAddr
 		}())
 		require.NotNil(t, out.NeedConsensus())
@@ -166,7 +169,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	//
 	// Say TX is published
 	for nid := range nodes {
-		consReq, _ := nodes[nid].Output().(*chainmanager.Output).NeedPublishTX().Get(step2AO.TransactionID())
+		consReq, _ := nodes[nid].Output().(*chainmanager.Output).NeedPublishTX().Get(step2AO.AnchorOutputID.TransactionID())
 		tc.WithInput(nid, chainmanager.NewInputChainTxPublishResult(consReq.CommitteeAddr, consReq.LogIndex, consReq.TxID, consReq.NextAnchorOutput, true))
 	}
 	tc.RunAll()

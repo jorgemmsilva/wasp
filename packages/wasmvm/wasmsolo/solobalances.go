@@ -80,22 +80,23 @@ func (bal *SoloBalances) DumpBalances() {
 		if hname.IsNil() {
 			txt += fmt.Sprintf(",\tL1: %10d", l1.BaseTokens)
 		}
-		for _, nativeToken := range l2.NativeTokens {
-			txt += fmt.Sprintf("\n\tL2: %10d", nativeToken.Amount)
+		for l2NativeTokenID, l2NativeTokenAmount := range l2.NativeTokens {
+			txt += fmt.Sprintf("\n\tL2: %10d", l2NativeTokenAmount)
 			tokTxt := ",\t           "
 			if hname.IsNil() {
-				for i := range l1.NativeTokens {
-					if *l1.NativeTokens[i] == *nativeToken {
-						l1.NativeTokens = append(l1.NativeTokens[:i], l1.NativeTokens[i+1:]...)
+				for l1NativeTokenID, _ := range l1.NativeTokens {
+					if l1NativeTokenID == l2NativeTokenID {
+						// TODO: <lmoe> Revisit this native token dump
+						//l1.NativeTokens = append(l1.NativeTokens, l1.NativeTokens[i+1:]...)
 						tokTxt = fmt.Sprintf(",\tL1: %10d", l1.BaseTokens)
 						break
 					}
 				}
 			}
-			txt += fmt.Sprintf("%s,\t%s", tokTxt, nativeToken.ID.String())
+			txt += fmt.Sprintf("%s,\t%s", tokTxt, l2NativeTokenID.String())
 		}
-		for _, token := range l1.NativeTokens {
-			txt += fmt.Sprintf("\n\tL2: %10d,\tL1: %10d,\t%s", 0, l1.BaseTokens, token.ID.String())
+		for nativeTokenID, _ := range l1.NativeTokens {
+			txt += fmt.Sprintf("\n\tL2: %10d,\tL1: %10d,\t%s", 0, l1.BaseTokens, nativeTokenID.String())
 		}
 	}
 	receipt := ctx.Chain.LastReceipt()
@@ -129,9 +130,9 @@ func (bal *SoloBalances) findName(id string) string {
 
 func (bal *SoloBalances) UpdateFeeBalances(gasfee uint64) {
 	bal.Common += gasfee
-	if bal.Common > governance.DefaultMinBaseTokensOnCommonAccount {
-		exceess := bal.Common - governance.DefaultMinBaseTokensOnCommonAccount
-		bal.Common = governance.DefaultMinBaseTokensOnCommonAccount
+	if bal.Common > uint64(governance.DefaultMinBaseTokensOnCommonAccount) {
+		exceess := bal.Common - uint64(governance.DefaultMinBaseTokensOnCommonAccount)
+		bal.Common = uint64(governance.DefaultMinBaseTokensOnCommonAccount)
 		bal.Originator += exceess
 	}
 }

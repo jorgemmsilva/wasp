@@ -15,6 +15,7 @@ import (
 	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/publisher"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
@@ -39,7 +40,7 @@ func initTest(ctx context.Context) (*publisher.Publisher, *EventHandler, *event.
 		publisher.ISCEventKindNewBlock: true,
 	}, subscriptionManager)
 
-	eventHandler := NewEventHandler(pub, publisherEvent, subscriptionValidator)
+	eventHandler := NewEventHandler(pub, publisherEvent, subscriptionValidator, testutil.L1API)
 	eventHandler.AttachToEvents()
 
 	return pub, eventHandler, publisherEvent, subscriptionManager

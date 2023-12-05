@@ -3,11 +3,9 @@ export * from '../models/AccountListResponse';
 export * from '../models/AccountNFTsResponse';
 export * from '../models/AccountNonceResponse';
 export * from '../models/AddUserRequest';
-export * from '../models/AliasOutputMetricItem';
+export * from '../models/AnchorOutputMetricItem';
 export * from '../models/AssetsJSON';
-export * from '../models/AssetsResponse';
 export * from '../models/AuthInfoModel';
-export * from '../models/BaseToken';
 export * from '../models/Blob';
 export * from '../models/BlobInfoResponse';
 export * from '../models/BlobListResponse';
@@ -34,6 +32,7 @@ export * from '../models/EventJSON';
 export * from '../models/EventsResponse';
 export * from '../models/FeePolicy';
 export * from '../models/FoundryOutputResponse';
+export * from '../models/FungibleTokensResponse';
 export * from '../models/GovAllowedStateControllerAddressesResponse';
 export * from '../models/GovChainInfoResponse';
 export * from '../models/GovChainOwnerResponse';
@@ -46,15 +45,11 @@ export * from '../models/InfoResponse';
 export * from '../models/InterfaceMetricItem';
 export * from '../models/Item';
 export * from '../models/JSONDict';
-export * from '../models/L1Params';
 export * from '../models/Limits';
 export * from '../models/LoginRequest';
 export * from '../models/LoginResponse';
-export * from '../models/MilestoneInfo';
-export * from '../models/MilestoneMetricItem';
 export * from '../models/NFTJSON';
 export * from '../models/NativeTokenIDRegistryResponse';
-export * from '../models/NativeTokenJSON';
 export * from '../models/NodeMessageMetrics';
 export * from '../models/NodeOwnerCertificateResponse';
 export * from '../models/OffLedgerRequest';
@@ -65,12 +60,10 @@ export * from '../models/OutputID';
 export * from '../models/PeeringNodeIdentityResponse';
 export * from '../models/PeeringNodeStatusResponse';
 export * from '../models/PeeringTrustRequest';
-export * from '../models/ProtocolParameters';
 export * from '../models/PublicChainMetadata';
 export * from '../models/PublisherStateTransactionItem';
 export * from '../models/Ratio32';
 export * from '../models/ReceiptResponse';
-export * from '../models/RentStructure';
 export * from '../models/RequestIDsResponse';
 export * from '../models/RequestJSON';
 export * from '../models/RequestProcessedResponse';
@@ -94,11 +87,9 @@ import { AccountListResponse } from '../models/AccountListResponse';
 import { AccountNFTsResponse } from '../models/AccountNFTsResponse';
 import { AccountNonceResponse } from '../models/AccountNonceResponse';
 import { AddUserRequest } from '../models/AddUserRequest';
-import { AliasOutputMetricItem } from '../models/AliasOutputMetricItem';
+import { AnchorOutputMetricItem } from '../models/AnchorOutputMetricItem';
 import { AssetsJSON } from '../models/AssetsJSON';
-import { AssetsResponse } from '../models/AssetsResponse';
 import { AuthInfoModel } from '../models/AuthInfoModel';
-import { BaseToken } from '../models/BaseToken';
 import { Blob } from '../models/Blob';
 import { BlobInfoResponse } from '../models/BlobInfoResponse';
 import { BlobListResponse } from '../models/BlobListResponse';
@@ -125,6 +116,7 @@ import { EventJSON } from '../models/EventJSON';
 import { EventsResponse } from '../models/EventsResponse';
 import { FeePolicy } from '../models/FeePolicy';
 import { FoundryOutputResponse } from '../models/FoundryOutputResponse';
+import { FungibleTokensResponse } from '../models/FungibleTokensResponse';
 import { GovAllowedStateControllerAddressesResponse } from '../models/GovAllowedStateControllerAddressesResponse';
 import { GovChainInfoResponse } from '../models/GovChainInfoResponse';
 import { GovChainOwnerResponse } from '../models/GovChainOwnerResponse';
@@ -137,15 +129,11 @@ import { InfoResponse } from '../models/InfoResponse';
 import { InterfaceMetricItem } from '../models/InterfaceMetricItem';
 import { Item } from '../models/Item';
 import { JSONDict } from '../models/JSONDict';
-import { L1Params } from '../models/L1Params';
 import { Limits } from '../models/Limits';
 import { LoginRequest } from '../models/LoginRequest';
 import { LoginResponse } from '../models/LoginResponse';
-import { MilestoneInfo } from '../models/MilestoneInfo';
-import { MilestoneMetricItem } from '../models/MilestoneMetricItem';
 import { NFTJSON } from '../models/NFTJSON';
 import { NativeTokenIDRegistryResponse } from '../models/NativeTokenIDRegistryResponse';
-import { NativeTokenJSON } from '../models/NativeTokenJSON';
 import { NodeMessageMetrics } from '../models/NodeMessageMetrics';
 import { NodeOwnerCertificateResponse } from '../models/NodeOwnerCertificateResponse';
 import { OffLedgerRequest } from '../models/OffLedgerRequest';
@@ -156,12 +144,10 @@ import { OutputID } from '../models/OutputID';
 import { PeeringNodeIdentityResponse } from '../models/PeeringNodeIdentityResponse';
 import { PeeringNodeStatusResponse } from '../models/PeeringNodeStatusResponse';
 import { PeeringTrustRequest } from '../models/PeeringTrustRequest';
-import { ProtocolParameters } from '../models/ProtocolParameters';
 import { PublicChainMetadata } from '../models/PublicChainMetadata';
 import { PublisherStateTransactionItem } from '../models/PublisherStateTransactionItem';
 import { Ratio32 } from '../models/Ratio32';
 import { ReceiptResponse } from '../models/ReceiptResponse';
-import { RentStructure } from '../models/RentStructure';
 import { RequestIDsResponse } from '../models/RequestIDsResponse';
 import { RequestJSON } from '../models/RequestJSON';
 import { RequestProcessedResponse } from '../models/RequestProcessedResponse';
@@ -208,11 +194,9 @@ let typeMap: {[index: string]: any} = {
     "AccountNFTsResponse": AccountNFTsResponse,
     "AccountNonceResponse": AccountNonceResponse,
     "AddUserRequest": AddUserRequest,
-    "AliasOutputMetricItem": AliasOutputMetricItem,
+    "AnchorOutputMetricItem": AnchorOutputMetricItem,
     "AssetsJSON": AssetsJSON,
-    "AssetsResponse": AssetsResponse,
     "AuthInfoModel": AuthInfoModel,
-    "BaseToken": BaseToken,
     "Blob": Blob,
     "BlobInfoResponse": BlobInfoResponse,
     "BlobListResponse": BlobListResponse,
@@ -239,6 +223,7 @@ let typeMap: {[index: string]: any} = {
     "EventsResponse": EventsResponse,
     "FeePolicy": FeePolicy,
     "FoundryOutputResponse": FoundryOutputResponse,
+    "FungibleTokensResponse": FungibleTokensResponse,
     "GovAllowedStateControllerAddressesResponse": GovAllowedStateControllerAddressesResponse,
     "GovChainInfoResponse": GovChainInfoResponse,
     "GovChainOwnerResponse": GovChainOwnerResponse,
@@ -251,15 +236,11 @@ let typeMap: {[index: string]: any} = {
     "InterfaceMetricItem": InterfaceMetricItem,
     "Item": Item,
     "JSONDict": JSONDict,
-    "L1Params": L1Params,
     "Limits": Limits,
     "LoginRequest": LoginRequest,
     "LoginResponse": LoginResponse,
-    "MilestoneInfo": MilestoneInfo,
-    "MilestoneMetricItem": MilestoneMetricItem,
     "NFTJSON": NFTJSON,
     "NativeTokenIDRegistryResponse": NativeTokenIDRegistryResponse,
-    "NativeTokenJSON": NativeTokenJSON,
     "NodeMessageMetrics": NodeMessageMetrics,
     "NodeOwnerCertificateResponse": NodeOwnerCertificateResponse,
     "OffLedgerRequest": OffLedgerRequest,
@@ -270,12 +251,10 @@ let typeMap: {[index: string]: any} = {
     "PeeringNodeIdentityResponse": PeeringNodeIdentityResponse,
     "PeeringNodeStatusResponse": PeeringNodeStatusResponse,
     "PeeringTrustRequest": PeeringTrustRequest,
-    "ProtocolParameters": ProtocolParameters,
     "PublicChainMetadata": PublicChainMetadata,
     "PublisherStateTransactionItem": PublisherStateTransactionItem,
     "Ratio32": Ratio32,
     "ReceiptResponse": ReceiptResponse,
-    "RentStructure": RentStructure,
     "RequestIDsResponse": RequestIDsResponse,
     "RequestJSON": RequestJSON,
     "RequestProcessedResponse": RequestProcessedResponse,

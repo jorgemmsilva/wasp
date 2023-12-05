@@ -1,10 +1,11 @@
 package wallet
 
 import (
+	"time"
+
 	"github.com/spf13/cobra"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
@@ -40,23 +41,26 @@ func initSendFundsCmd() *cobra.Command {
 				output := transaction.MakeBasicOutput(
 					targetAddress,
 					senderAddress,
-					tokens,
+					&tokens.FungibleTokens,
+					0, // TODO is this correct?
 					nil,
-					isc.SendOptions{},
+					[]iotago.UnlockCondition{},
 				)
 				util.SDAdjustmentPrompt(output)
 			}
 
-			tx, err := transaction.NewTransferTransaction(transaction.NewTransferTransactionParams{
-				DisableAutoAdjustStorageDeposit: false,
-				FungibleTokens:                  tokens,
-				SendOptions:                     isc.SendOptions{},
-				SenderAddress:                   senderAddress,
-				SenderKeyPair:                   myWallet.KeyPair,
-				TargetAddress:                   targetAddress,
-				UnspentOutputs:                  outputSet,
-				UnspentOutputIDs:                isc.OutputSetToOutputIDs(outputSet),
-			})
+			tx, err := transaction.NewTransferTransaction(
+				&tokens.FungibleTokens,
+				0,
+				senderAddress,
+				myWallet.KeyPair,
+				targetAddress,
+				outputSet,
+				[]iotago.UnlockCondition{},
+				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+				false,
+				cliclients.L1Client().API(),
+			)
 			log.Check(err)
 
 			txID, err := tx.ID()

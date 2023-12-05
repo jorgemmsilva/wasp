@@ -4,14 +4,11 @@
 package wasmhost
 
 import (
-	"time"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmrequests"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
@@ -165,9 +162,9 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 
 	// Force a minimum transfer of WasmStorageDeposit base tokens for storage deposit
 	// excess can always be reclaimed from the chain account by the user
-	if !transfer.IsEmpty() && transfer.BaseTokens < wasmlib.StorageDeposit {
+	if !transfer.IsEmpty() && transfer.BaseTokens < iotago.BaseToken(wasmlib.StorageDeposit) {
 		transfer = transfer.Clone()
-		transfer.BaseTokens = wasmlib.StorageDeposit
+		transfer.BaseTokens = iotago.BaseToken(wasmlib.StorageDeposit)
 	}
 
 	s.Tracef("POST %s.%s, chain %s", contract.String(), function.String(), chainID.String())
@@ -184,9 +181,17 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 		},
 	}
 	if req.Delay != 0 {
-		timeLock := s.ctx.Timestamp()
+		/*timeLock := s.ctx.Timestamp()
 		timeLock = timeLock.Add(time.Duration(req.Delay) * time.Second)
 		sendReq.Options.Timelock = timeLock
+		*/
+
+		slotIndex := s.ctx.SlotIndex() + iotago.SlotIndex(req.Delay)
+
+		sendReq.UnlockConditions = append(sendReq.UnlockConditions, &iotago.TimelockUnlockCondition{
+			Slot: slotIndex,
+		})
+
 	}
 	return sendReq
 }
@@ -216,7 +221,7 @@ func (s *WasmContextSandbox) fnAllowance(_ []byte) []byte {
 
 func (s *WasmContextSandbox) fnBalance(args []byte) []byte {
 	if len(args) == 0 {
-		return codec.EncodeUint64(s.common.BalanceBaseTokens())
+		return codec.EncodeUint64(uint64(s.common.BalanceBaseTokens()))
 	}
 	tokenID := wasmtypes.TokenIDFromBytes(args)
 	token := cvt.IscTokenID(&tokenID)
@@ -299,7 +304,7 @@ func (s *WasmContextSandbox) fnEntropy(_ []byte) []byte {
 
 func (s *WasmContextSandbox) fnEstimateStorageDeposit(args []byte) []byte {
 	storageDeposit := s.ctx.EstimateRequiredStorageDeposit(s.makeRequest(args))
-	return codec.EncodeUint64(storageDeposit)
+	return codec.EncodeUint64(uint64(storageDeposit))
 }
 
 func (s *WasmContextSandbox) fnEvent(args []byte) []byte {
@@ -413,7 +418,9 @@ func (s WasmContextSandbox) fnUtilsBech32Decode(args []byte) []byte {
 	s.checkErr(err)
 	// Wasm VM will never be able to go outside the current network,
 	// so it probably does not make sense to use any external addresses
-	if hrp != parameters.NetworkPrefix() {
+
+	networkPrefix := s.common.L1API().ProtocolParameters().Bech32HRP()
+	if hrp != networkPrefix {
 		s.Panicf("Invalid protocol prefix: %s", string(hrp))
 	}
 	return cvt.ScAddress(addr).Bytes()
@@ -422,7 +429,9 @@ func (s WasmContextSandbox) fnUtilsBech32Decode(args []byte) []byte {
 func (s WasmContextSandbox) fnUtilsBech32Encode(args []byte) []byte {
 	scAddress := wasmtypes.AddressFromBytes(args)
 	addr := cvt.IscAddress(&scAddress)
-	return []byte(addr.Bech32(parameters.NetworkPrefix()))
+	networkPrefix := s.common.L1API().ProtocolParameters().Bech32HRP()
+
+	return []byte(addr.Bech32(networkPrefix))
 }
 
 func (s WasmContextSandbox) fnUtilsBlsAddress(args []byte) []byte {

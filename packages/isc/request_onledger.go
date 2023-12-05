@@ -137,7 +137,7 @@ func (req *onLedgerRequestData) GasBudget() (gasBudget uint64, isEVM bool) {
 	if req.requestMetadata == nil {
 		return 0, false
 	}
-	return req.requestMetadata.GasBudget, false
+	return uint64(req.requestMetadata.GasBudget), false
 }
 
 func (req *onLedgerRequestData) ID() RequestID {
@@ -232,13 +232,14 @@ func (req *onLedgerRequestData) senderAddress() iotago.Address {
 	return senderBlock.Address
 }
 
-func (req *onLedgerRequestData) String() string {
+func (req *onLedgerRequestData) String(bech32HRP iotago.NetworkPrefix) string {
 	metadata := req.requestMetadata
 	if metadata == nil {
 		return "onledger request without metadata"
 	}
-	return fmt.Sprintf("onLedgerRequestData::{ ID: %s, sender: %s, target: %s, entrypoint: %s, Params: %s, GasBudget: %d }",
+	return fmt.Sprintf("onLedgerRequestData::{ ID: %s, sender: %s, senderContract: %s, target: %s, entrypoint: %s, Params: %s, GasBudget: %d }",
 		req.ID().String(),
+		req.senderAddress().Bech32(bech32HRP),
 		metadata.SenderContract.String(),
 		metadata.TargetContract.String(),
 		metadata.EntryPoint.String(),

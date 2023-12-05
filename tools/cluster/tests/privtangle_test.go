@@ -18,15 +18,12 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 )
 
-func TestHornetStartup(t *testing.T) {
+func TestPrivtangleStartup(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping privtangle test in short mode")
 	}
 	l1.StartPrivtangleIfNecessary(t.Logf)
 
-	if l1.Privtangle == nil {
-		t.Skip("tests running against live network, skipping pvt tangle tests")
-	}
 	// pvt tangle is already stated by the cluster l1_init
 	ctx := context.Background()
 
@@ -35,8 +32,9 @@ func TestHornetStartup(t *testing.T) {
 	myKeyPair := cryptolib.NewKeyPair()
 	myAddress := myKeyPair.GetPublicKey().AsEd25519Address()
 
-	nc := nodeclient.New(l1.Config.APIAddress)
-	_, err := nc.Info(ctx)
+	nc, err := nodeclient.New(l1.Config.APIAddress)
+	require.NoError(t, err)
+	_, err = nc.Info(ctx)
 	require.NoError(t, err)
 
 	log := testlogger.NewSilentLogger(t.Name(), true)

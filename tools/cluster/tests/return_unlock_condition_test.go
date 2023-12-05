@@ -11,7 +11,7 @@ import (
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
 )
 
@@ -49,7 +49,7 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 	}
 
 	// tweak the tx , so the request output has a StorageDepositReturn unlock condition
-	for i, out := range tx.Outputs {
+	for i, out := range tx.Transaction.Outputs {
 		if out.FeatureSet().MetadataFeature() == nil {
 			// skip if not the request output
 			continue
@@ -60,11 +60,11 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 			Amount:        1 * isc.Million,
 		}
 		customOut.Conditions = append(customOut.Conditions, sendBackCondition)
-		tx.Outputs[i] = customOut
+		tx.Transaction.Outputs[i] = customOut
 	}
 
-	inputsCommitment := outputIDs.OrderedSet(outputs).MustCommitment()
-	tx, err = transaction.CreateAndSignTx(outputIDs.UTXOInputs(), inputsCommitment, tx.Outputs, keyPair, parameters.L1().Protocol.NetworkID())
+	// parameters.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
+	tx, err = transaction.CreateAndSignTx(keyPair, outputIDs.UTXOInputs(), tx.Transaction.Outputs, testutil.L1API.TimeProvider().SlotFromTime(time.Now()))
 	require.NoError(t, err)
 	return tx
 }

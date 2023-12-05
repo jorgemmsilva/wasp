@@ -10,11 +10,9 @@
  * Do not edit the class manually.
  */
 
-import { L1Params } from '../models/L1Params';
 import { HttpFile } from '../http/http';
 
 export class InfoResponse {
-    'l1Params': L1Params;
     /**
     * The net id of the node
     */
@@ -31,12 +29,6 @@ export class InfoResponse {
     static readonly discriminator: string | undefined = undefined;
 
     static readonly attributeTypeMap: Array<{name: string, baseName: string, type: string, format: string}> = [
-        {
-            "name": "l1Params",
-            "baseName": "l1Params",
-            "type": "L1Params",
-            "format": ""
-        },
         {
             "name": "peeringURL",
             "baseName": "peeringURL",

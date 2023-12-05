@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlib"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
 	"github.com/iotaledger/wasp/tools/cluster/templates"
@@ -71,7 +72,7 @@ func setupClient(t *testing.T) *wasmclient.WasmClientContext {
 	ctx := wasmclient.NewWasmClientContext(svc, testwasmlib.ScName)
 	require.NoError(t, ctx.Err)
 
-	wallet := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(wasmtypes.BytesFromString(mySeed), 0))
+	wallet := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(wasmtypes.BytesFromString(mySeed), 0, testutil.L1API.ProtocolParameters().Bech32HRP()))
 	ctx.SignRequests(wallet)
 	require.NoError(t, ctx.Err)
 	return ctx
@@ -110,7 +111,7 @@ func TestErrorHandling(t *testing.T) {
 	// fmt.Println("Error: " + ctx.Err.Error())
 
 	// sign with wrong wallet
-	wallet := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(wasmtypes.BytesFromString(mySeed), 1))
+	wallet := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(wasmtypes.BytesFromString(mySeed), 1, testutil.L1API.ProtocolParameters().Bech32HRP()))
 	ctx.SignRequests(wallet)
 	f := testwasmlib.ScFuncs.Random(ctx)
 	f.Func.Post()

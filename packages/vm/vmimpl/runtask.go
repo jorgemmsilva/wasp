@@ -6,15 +6,11 @@ import (
 	"math"
 	"slices"
 
-	"github.com/samber/lo"
-
 	"github.com/iotaledger/hive.go/logger"
-	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
@@ -107,6 +103,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 			taskResult.RotationAddress,
 			vmctx.task.Inputs,
 			vmctx.CreationSlot(),
+			task.L1API,
 		)
 		if err != nil {
 			panic(fmt.Sprintf("MakeRotateStateControllerTransaction: %s", err.Error()))
@@ -149,7 +146,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	// save the OutputID of the newly created tokens, foundries and NFTs in the previous block
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex)
+			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex, vmctx.task.L1API)
 		})
 	})
 
@@ -161,6 +158,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 			NFTOutput:           vmctx.loadNFT,
 			TotalFungibleTokens: vmctx.loadTotalFungibleTokens,
 		},
+		vmctx.task.L1API,
 	)
 }
 
@@ -169,15 +167,6 @@ func (vmctx *vmContext) getMigrations() *migrations.MigrationScheme {
 		return vmctx.task.MigrationsOverride
 	}
 	return allmigrations.DefaultScheme
-}
-
-func (vmctx *vmContext) getSDInChainOutputs() iotago.BaseToken {
-	api := parameters.L1Provider().APIForSlot(vmctx.task.Inputs.AnchorOutputID.CreationSlot())
-	ret := lo.Must(api.StorageScoreStructure().MinDeposit(vmctx.task.Inputs.AnchorOutput))
-	if _, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
-		ret += out.Amount
-	}
-	return ret
 }
 
 func (vmctx *vmContext) runRequests(

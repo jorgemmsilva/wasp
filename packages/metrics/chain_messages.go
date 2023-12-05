@@ -26,16 +26,16 @@ type ChainMessageMetricsProvider struct {
 
 	// TODO: adapt to iota 2.0 or remove
 	// inMilestone                     *MessageMetric[*nodeclient.MilestoneInfo] // TODO: Outdated and should be removed?
-	inStateOutput                   *MessageMetric[*InStateOutput]        // TODO: Outdated and should be removed?
-	inAnchorOutput                 *MessageMetric[*iotago.AnchorOutput] // TODO: Outdated and should be removed?
-	inOutput                        *MessageMetric[*InOutput]             // TODO: Outdated and should be removed?
-	inOnLedgerRequest               *MessageMetric[isc.OnLedgerRequest]   // TODO: Outdated and should be removed?
-	inTxInclusionState              *MessageMetric[*TxInclusionStateMsg]  // TODO: Outdated and should be removed?
-	outPublishStateTransaction      *MessageMetric[*StateTransaction]     // TODO: Outdated and should be removed?
-	outPublishGovernanceTransaction *MessageMetric[*iotago.Transaction]   // TODO: Outdated and should be removed?
-	outPullLatestOutput             *MessageMetric[interface{}]           // TODO: Outdated and should be removed?
-	outPullTxInclusionState         *MessageMetric[iotago.TransactionID]  // TODO: Outdated and should be removed?
-	outPullOutputByID               *MessageMetric[iotago.OutputID]       // TODO: Outdated and should be removed?
+	inStateOutput                   *MessageMetric[*InStateOutput]       // TODO: Outdated and should be removed?
+	inAnchorOutput                  *MessageMetric[*iotago.AnchorOutput] // TODO: Outdated and should be removed?
+	inOutput                        *MessageMetric[*InOutput]            // TODO: Outdated and should be removed?
+	inOnLedgerRequest               *MessageMetric[isc.OnLedgerRequest]  // TODO: Outdated and should be removed?
+	inTxInclusionState              *MessageMetric[*TxInclusionStateMsg] // TODO: Outdated and should be removed?
+	outPublishStateTransaction      *MessageMetric[*StateTransaction]    // TODO: Outdated and should be removed?
+	outPublishGovernanceTransaction *MessageMetric[*iotago.Transaction]  // TODO: Outdated and should be removed?
+	outPullLatestOutput             *MessageMetric[interface{}]          // TODO: Outdated and should be removed?
+	outPullTxInclusionState         *MessageMetric[iotago.TransactionID] // TODO: Outdated and should be removed?
+	outPullOutputByID               *MessageMetric[iotago.OutputID]      // TODO: Outdated and should be removed?
 }
 
 func newChainMessageMetricsProvider() *ChainMessageMetricsProvider {
@@ -93,7 +93,7 @@ func (p *ChainMessageMetricsProvider) register(reg prometheus.Registerer) {
 func (p *ChainMessageMetricsProvider) createForChain(chainID isc.ChainID) *ChainMessageMetrics {
 	return &ChainMessageMetrics{
 		inStateOutput:                   createChainMessageMetric(p, chainID, labelNameInStateOutputMetrics, p.inStateOutput),
-		inAnchorOutput:                 createChainMessageMetric(p, chainID, labelNameInAnchorOutputMetrics, p.inAnchorOutput),
+		inAnchorOutput:                  createChainMessageMetric(p, chainID, labelNameInAnchorOutputMetrics, p.inAnchorOutput),
 		inOutput:                        createChainMessageMetric(p, chainID, labelNameInOutputMetrics, p.inOutput),
 		inOnLedgerRequest:               createChainMessageMetric(p, chainID, labelNameInOnLedgerRequestMetrics, p.inOnLedgerRequest),
 		inTxInclusionState:              createChainMessageMetric(p, chainID, labelNameInTxInclusionStateMetrics, p.inTxInclusionState),
@@ -271,7 +271,7 @@ func (m *ChainMessageMetric[T]) LastMessage() T {
 
 type ChainMessageMetrics struct {
 	inStateOutput      *ChainMessageMetric[*InStateOutput]
-	inAnchorOutput    *ChainMessageMetric[*iotago.AnchorOutput]
+	inAnchorOutput     *ChainMessageMetric[*iotago.AnchorOutput]
 	inOutput           *ChainMessageMetric[*InOutput]
 	inOnLedgerRequest  *ChainMessageMetric[isc.OnLedgerRequest]
 	inTxInclusionState *ChainMessageMetric[*TxInclusionStateMsg]

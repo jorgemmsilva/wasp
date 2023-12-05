@@ -7,8 +7,8 @@ import (
 
 	"github.com/samber/lo"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 )
 
 type RequestJSON struct {
@@ -25,7 +25,7 @@ type RequestJSON struct {
 	TargetAddress string         `json:"targetAddress" swagger:"required"`
 }
 
-func RequestToJSONObject(request Request) RequestJSON {
+func RequestToJSONObject(request Request, l1API iotago.API) RequestJSON {
 	gasBudget, isEVM := request.GasBudget()
 
 	return RequestJSON{
@@ -35,23 +35,23 @@ func RequestToJSONObject(request Request) RequestJSON {
 		GasBudget:     strconv.FormatUint(gasBudget, 10),
 		IsEVM:         isEVM,
 		IsOffLedger:   request.IsOffLedger(),
-		NFT:           NFTToJSONObject(request.NFT()),
+		NFT:           NFTToJSONObject(request.NFT(), l1API),
 		Params:        request.Params().JSONDict(),
 		RequestID:     request.ID().String(),
 		SenderAccount: request.SenderAccount().String(),
-		TargetAddress: request.TargetAddress().Bech32(parameters.NetworkPrefix()),
+		TargetAddress: request.TargetAddress().Bech32(l1API.ProtocolParameters().Bech32HRP()),
 	}
 }
 
-func RequestToJSON(req Request) ([]byte, error) {
-	return json.Marshal(RequestToJSONObject(req))
+func RequestToJSON(req Request, l1API iotago.API) ([]byte, error) {
+	return json.Marshal(RequestToJSONObject(req, l1API))
 }
 
 // ----------------------------------------------------------------------------
 
 type AssetsJSON struct {
 	BaseTokens   string             `json:"baseTokens" swagger:"required,desc(The base tokens (uint64 as string))"`
-	NativeTokens []*NativeTokenJSON `json:"nativeTokens" swagger:"required"`
+	NativeTokens NativeTokenMapJSON `json:"nativeTokens" swagger:"required"`
 	NFTs         []string           `json:"nfts" swagger:"required"`
 }
 
@@ -62,7 +62,7 @@ func assetsToJSONObject(assets *Assets) *AssetsJSON {
 
 	ret := &AssetsJSON{
 		BaseTokens:   strconv.FormatUint(uint64(assets.BaseTokens), 10),
-		NativeTokens: NativeTokensToJSONObject(assets.NativeTokens),
+		NativeTokens: NativeTokenMapToJSONObject(assets.NativeTokens),
 		NFTs:         make([]string, len(assets.NFTs)),
 	}
 
@@ -81,7 +81,7 @@ type NFTJSON struct {
 	Owner    string         `json:"owner" swagger:"required"`
 }
 
-func NFTToJSONObject(nft *NFT) *NFTJSON {
+func NFTToJSONObject(nft *NFT, l1API iotago.API) *NFTJSON {
 	if nft == nil {
 		return nil
 	}
@@ -94,30 +94,27 @@ func NFTToJSONObject(nft *NFT) *NFTJSON {
 	return &NFTJSON{
 		ID:       nft.ID.ToHex(),
 		Issuer:   nft.Issuer.String(),
-		Metadata: lo.Must(parameters.L1API().Underlying().MapEncode(context.Background(), nft.Metadata)).Values(),
+		Metadata: lo.Must(l1API.Underlying().MapEncode(context.Background(), nft.Metadata)).Values(),
 		Owner:    ownerString,
 	}
 }
 
 // ----------------------------------------------------------------------------
 
-type NativeTokenJSON struct {
+type NativeTokenMapJSON map[string]string
+
+/*
+type NativeTokenMapJSON struct {
 	ID     string `json:"id" swagger:"required"`
 	Amount string `json:"amount" swagger:"required"`
 }
+*/
 
-func NativeTokenToJSONObject(token *NativeTokenAmount) *NativeTokenJSON {
-	return &NativeTokenJSON{
-		ID:     token.ID.ToHex(),
-		Amount: token.Amount.String(),
-	}
-}
+func NativeTokenMapToJSONObject(tokens iotago.NativeTokenSum) NativeTokenMapJSON {
+	nativeTokens := NativeTokenMapJSON{}
 
-func NativeTokensToJSONObject(tokens []*NativeTokenAmount) []*NativeTokenJSON {
-	nativeTokens := make([]*NativeTokenJSON, len(tokens))
-
-	for k, v := range tokens {
-		nativeTokens[k] = NativeTokenToJSONObject(v)
+	for id, n := range tokens {
+		nativeTokens[id.ToHex()] = n.String()
 	}
 
 	return nativeTokens

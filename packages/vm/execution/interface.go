@@ -5,6 +5,7 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -36,7 +37,7 @@ type WaspCallContext interface {
 	Timestamp() time.Time
 	CurrentContractAccountID() isc.AgentID
 	Caller() isc.AgentID
-	GetNativeTokens(agentID isc.AgentID) []*isc.NativeTokenAmount
+	GetNativeTokens(agentID isc.AgentID) iotago.NativeTokenSum
 	GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken
 	GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int
 	Call(contractHname, entryPoint isc.Hname, params dict.Dict, allowance *isc.Assets) dict.Dict
@@ -47,8 +48,10 @@ type WaspCallContext interface {
 	CurrentContractHname() isc.Hname
 	Params() *isc.Params
 	ContractStateReaderWithGasBurn() kv.KVStoreReader
-	GasBurned() uint64
-	GasBudgetLeft() uint64
+	GasBurned() gas.GasUnits
+	GasBudgetLeft() gas.GasUnits
 	GetAccountNFTs(agentID isc.AgentID) []iotago.NFTID
 	GetNFTData(nftID iotago.NFTID) *isc.NFT
+	L1API() iotago.API
+	TokenInfo() api.InfoResBaseToken
 }

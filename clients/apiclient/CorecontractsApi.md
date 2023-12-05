@@ -36,7 +36,7 @@ Method | HTTP request | Description
 
 
 # **accountsGetAccountBalance**
-> AssetsResponse accountsGetAccountBalance()
+> FungibleTokensResponse accountsGetAccountBalance()
 
 
 ### Example
@@ -75,7 +75,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**AssetsResponse**
+**FungibleTokensResponse**
 
 ### Authorization
 
@@ -510,7 +510,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](README.md#documentation-for-api-endpoints) [[Back to Model list]](README.md#documentation-for-models) [[Back to README]](README.md)
 
 # **accountsGetTotalAssets**
-> AssetsResponse accountsGetTotalAssets()
+> FungibleTokensResponse accountsGetTotalAssets()
 
 
 ### Example
@@ -546,7 +546,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-**AssetsResponse**
+**FungibleTokensResponse**
 
 ### Authorization
 

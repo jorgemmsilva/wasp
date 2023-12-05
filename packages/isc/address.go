@@ -8,8 +8,6 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-const addressIsNil rwutil.Kind = 0x80
-
 // TODO: copied from iota.go/address.go -- should be made public
 func newAddress(addressType iotago.AddressType) (address iotago.Address, err error) {
 	switch addressType {
@@ -31,6 +29,8 @@ func newAddress(addressType iotago.AddressType) (address iotago.Address, err err
 		return nil, fmt.Errorf("no handler for address type %d", addressType)
 	}
 }
+
+const addressIsNil rwutil.Kind = 0x80
 
 func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
 	kind := rr.ReadKind()

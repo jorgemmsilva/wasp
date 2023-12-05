@@ -5,8 +5,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
-	"github.com/iotaledger/wasp/packages/util"
 )
 
 // BasicOutputFromPostData creates extended output object from parameters.
@@ -15,6 +13,7 @@ func BasicOutputFromPostData(
 	senderAddress iotago.Address,
 	senderContract isc.ContractIdentity,
 	par isc.RequestParameters,
+	l1API iotago.API,
 ) *iotago.BasicOutput {
 	metadata := par.Metadata
 	if metadata == nil {
@@ -25,8 +24,7 @@ func BasicOutputFromPostData(
 	ret := MakeBasicOutput(
 		par.TargetAddress,
 		senderAddress,
-		par.Assets.BaseTokens,
-		MustSingleNativeToken(par.Assets.FungibleTokens),
+		&par.Assets.FungibleTokens,
 		0,
 		&isc.RequestMetadata{
 			SenderContract: senderContract,
@@ -39,7 +37,7 @@ func BasicOutputFromPostData(
 		par.UnlockConditions,
 	)
 	if par.AdjustToMinimumStorageDeposit {
-		return AdjustToMinimumStorageDeposit(ret)
+		return AdjustToMinimumStorageDeposit(ret, l1API)
 	}
 	return ret
 }
@@ -48,14 +46,13 @@ func BasicOutputFromPostData(
 func MakeBasicOutput(
 	targetAddress iotago.Address,
 	senderAddress iotago.Address,
-	baseTokens iotago.BaseToken,
-	nativeToken *isc.NativeTokenAmount,
+	ftokens *isc.FungibleTokens,
 	mana iotago.Mana,
 	metadata *isc.RequestMetadata,
 	unlockConditions []iotago.UnlockCondition,
 ) *iotago.BasicOutput {
 	out := &iotago.BasicOutput{
-		Amount: baseTokens,
+		Amount: ftokens.BaseTokens,
 		UnlockConditions: iotago.BasicOutputUnlockConditions{
 			&iotago.AddressUnlockCondition{Address: targetAddress},
 		},
@@ -71,10 +68,10 @@ func MakeBasicOutput(
 			Entries: iotago.MetadataFeatureEntries{"": metadata.Bytes()},
 		})
 	}
-	if nativeToken != nil && nativeToken.Amount.Cmp(util.Big0) > 0 {
+	if id, amount, ok := MustSingleNativeToken(ftokens); ok {
 		out.Features = append(out.Features, &iotago.NativeTokenFeature{
-			ID:     nativeToken.ID,
-			Amount: new(big.Int).Set(nativeToken.Amount),
+			ID:     id,
+			Amount: new(big.Int).Set(amount),
 		})
 	}
 	for _, c := range unlockConditions {
@@ -88,17 +85,18 @@ func NFTOutputFromPostData(
 	senderContract isc.ContractIdentity,
 	par isc.RequestParameters,
 	nft *isc.NFT,
+	l1API iotago.API,
 ) *iotago.NFTOutput {
 	if len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0] {
 		panic("inconsistency: len(par.Assets.NFTs) != 1 || nft.ID != par.Assets.NFTs[0]")
 	}
-	basicOutput := BasicOutputFromPostData(senderAddress, senderContract, par)
+	basicOutput := BasicOutputFromPostData(senderAddress, senderContract, par, l1API)
 	out := NFTOutputFromBasicOutput(basicOutput, nft)
 
 	if !par.AdjustToMinimumStorageDeposit {
 		return out
 	}
-	storageDeposit, err := parameters.Storage().MinDeposit(out)
+	storageDeposit, err := l1API.StorageScoreStructure().MinDeposit(out)
 	if err != nil {
 		panic(err)
 	}

@@ -282,6 +282,9 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 		},
 		stateAddr,
 		stateAddr,
+		0,
+		0,
+		clu.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("DeployChain: %w", err)
@@ -330,7 +333,7 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 	//
 	// Register all nodes as access nodes.
-	addAccessNodesTxs := make([]*iotago.Transaction, len(accessNodes))
+	addAccessNodesTxs := make([]*iotago.SignedTransaction, len(accessNodes))
 	for i, a := range accessNodes {
 		tx, err := clu.addAccessNode(a, chain)
 		if err != nil {
@@ -386,7 +389,7 @@ func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 // addAccessNode introduces node at accessNodeIndex as an access node to the chain.
 // This is done by activating the chain on the node and asking the governance contract
 // to consider it as an access node.
-func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Transaction, error) {
+func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.SignedTransaction, error) {
 	waspClient := clu.WaspClient(accessNodeIndex)
 	if err := apilib.ActivateChainOnNodes(clu.WaspClientFromHostName, clu.Config.APIHosts([]int{accessNodeIndex}), chain.ChainID); err != nil {
 		return nil, err
@@ -832,7 +835,7 @@ func (clu *Cluster) ActiveNodes() []int {
 	return nodes
 }
 
-func (clu *Cluster) PostTransaction(tx *iotago.Transaction) error {
+func (clu *Cluster) PostTransaction(tx *iotago.SignedTransaction) error {
 	_, err := clu.l1.PostTxAndWaitUntilConfirmation(tx)
 	return err
 }
@@ -845,23 +848,23 @@ func (clu *Cluster) AddressBalances(addr iotago.Address) *isc.Assets {
 		return nil
 	}
 	balance := isc.NewEmptyAssets()
-	for _, out := range outputMap {
-		balance.Add(transaction.AssetsFromOutput(out))
+	for oid, out := range outputMap {
+		balance.Add(isc.AssetsFromOutput(out, oid))
 	}
 
-	// if the address is an alias output, we also need to fetch the output itself and add that balance
-	if aliasAddr, ok := addr.(*iotago.AccountAddress); ok {
-		_, anchorOutput, err := clu.l1.GetAnchorOutput(aliasAddr.AccountID())
+	// if the address is an anchor output, we also need to fetch the output itself and add that balance
+	if anchorAddr, ok := addr.(*iotago.AnchorAddress); ok {
+		anchorOutputID, anchorOutput, err := clu.l1.GetAnchorOutput(anchorAddr.AnchorID())
 		if err != nil {
 			fmt.Printf("[cluster] GetAnchorOutput error: %v\n", err)
 			return nil
 		}
-		balance.Add(transaction.AssetsFromOutput(anchorOutput))
+		balance.Add(isc.AssetsFromOutput(anchorOutput, anchorOutputID))
 	}
 	return balance
 }
 
-func (clu *Cluster) L1BaseTokens(addr iotago.Address) uint64 {
+func (clu *Cluster) L1BaseTokens(addr iotago.Address) iotago.BaseToken {
 	tokens := clu.AddressBalances(addr)
 	return tokens.BaseTokens
 }
@@ -879,14 +882,17 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}
-	tx, err := transaction.NewMintNFTsTransaction(transaction.MintNFTsTransactionParams{
-		IssuerKeyPair:      issuerKeypair,
-		CollectionOutputID: nil,
-		Target:             target,
-		ImmutableMetadata:  [][]byte{immutableMetadata},
-		UnspentOutputs:     outputsSet,
-		UnspentOutputIDs:   isc.OutputSetToOutputIDs(outputsSet),
-	})
+	tx, err := transaction.NewMintNFTsTransaction(
+		issuerKeypair,
+		nil,
+		target,
+		[]iotago.MetadataFeatureEntries{
+			{"": immutableMetadata}, // TODO does this need some specific key?
+		},
+		outputsSet,
+		clu.l1.API().TimeProvider().SlotFromTime(time.Now()),
+		clu.l1.API(),
+	)
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}
@@ -896,7 +902,7 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 	}
 
 	// go through the tx and find the newly minted NFT
-	outputSet, err := tx.OutputsSet()
+	outputSet, err := tx.Transaction.OutputsSet()
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}

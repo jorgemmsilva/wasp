@@ -28,11 +28,11 @@ func NewChainFetchStateDiff(ctx context.Context, prevAO, nextAO *isc.ChainOutput
 	}
 	oldCommitment, err := transaction.L1CommitmentFromAnchorOutput(prevAO.AnchorOutput)
 	if err != nil {
-		panic(fmt.Errorf("Cannot make L1 commitment from previous alias output, error: %w", err))
+		panic(fmt.Errorf("Cannot make L1 commitment from previous anchor output, error: %w", err))
 	}
 	newCommitment, err := transaction.L1CommitmentFromAnchorOutput(nextAO.AnchorOutput)
 	if err != nil {
-		panic(fmt.Errorf("Cannot make L1 commitment from next alias output, error: %w", err))
+		panic(fmt.Errorf("Cannot make L1 commitment from next anchor output, error: %w", err))
 	}
 	resultChannel := make(chan *ChainFetchStateDiffResults, 1)
 	return &ChainFetchStateDiff{

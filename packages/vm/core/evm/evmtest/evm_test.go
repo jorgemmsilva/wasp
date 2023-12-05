@@ -35,8 +35,8 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/util"
@@ -322,7 +322,10 @@ func TestEstimateGasWithoutFunds(t *testing.T) {
 		From: common.Address{},
 		To:   &iscTest.address,
 		Data: callData,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
 	t.Log(estimatedGas)
@@ -339,7 +342,11 @@ func TestLoopWithGasLeftEstimateGas(t *testing.T) {
 		From: ethAddr,
 		To:   &iscTest.address,
 		Data: callData,
-	}, nil)
+	},
+		nil,
+
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
 	t.Log(estimatedGas)
@@ -375,7 +382,10 @@ func TestEstimateContractGas(t *testing.T) {
 	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
 		From: contract.address,
 		To:   &ethAddr,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
 }
@@ -393,7 +403,7 @@ func TestCallViewGasLimit(t *testing.T) {
 		Gas:  math.MaxUint64,
 		Data: callArguments,
 	})
-	_, err = loop.chain.evmChain.CallContract(callMsg, nil)
+	_, err = loop.chain.evmChain.CallContract(callMsg, nil, testutil.L1API)
 	require.Contains(t, err.Error(), "out of gas")
 }
 
@@ -1111,22 +1121,22 @@ func TestERC20BaseTokens(t *testing.T) {
 	{
 		var name string
 		require.NoError(t, erc20.callView("name", nil, &name))
-		require.Equal(t, parameters.BaseToken().Name, name)
+		require.Equal(t, testutil.TokenInfo.Name, name)
 	}
 	{
 		var sym string
 		require.NoError(t, erc20.callView("symbol", nil, &sym))
-		require.Equal(t, parameters.BaseToken().TickerSymbol, sym)
+		require.Equal(t, testutil.TokenInfo.TickerSymbol, sym)
 	}
 	{
 		var dec uint8
 		require.NoError(t, erc20.callView("decimals", nil, &dec))
-		require.EqualValues(t, parameters.BaseToken().Decimals, dec)
+		require.EqualValues(t, testutil.TokenInfo.Decimals, dec)
 	}
 	{
 		var supply *big.Int
 		require.NoError(t, erc20.callView("totalSupply", nil, &supply))
-		require.EqualValues(t, parameters.L1().Protocol.TokenSupply(), supply.Uint64())
+		require.EqualValues(t, testutil.L1API.ProtocolParameters().TokenSupply(), supply.Uint64())
 	}
 	{
 		var balance *big.Int
@@ -1229,8 +1239,8 @@ func TestERC20NativeTokens(t *testing.T) {
 	ethKey, ethAddr := env.Chain.NewEthereumAccountWithL2Funds()
 	ethAgentID := isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr)
 
-	err = env.Chain.SendFromL2ToL2Account(isc.NewAssets(0, []*isc.NativeTokenAmount{
-		{ID: nativeTokenID, Amount: supply},
+	err = env.Chain.SendFromL2ToL2Account(isc.NewAssets(0, iotago.NativeTokenSum{
+		nativeTokenID: supply,
 	}), ethAgentID, foundryOwner)
 	require.NoError(t, err)
 
@@ -1286,8 +1296,8 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 	ethAgentID := isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr)
 
 	{
-		assets := isc.NewAssets(0, []*isc.NativeTokenAmount{
-			{ID: nativeTokenID, Amount: supply},
+		assets := isc.NewAssets(0, iotago.NativeTokenSum{
+			nativeTokenID: supply,
 		})
 		err = foundryChain.Withdraw(assets, foundryOwner)
 		require.NoError(t, err)
@@ -1544,7 +1554,7 @@ func TestEVMTransferBaseTokens(t *testing.T) {
 	// try sending 1 million base tokens (expressed in ethereum decimals)
 	value := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		1*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 	sendTx(value)
 	env.Chain.AssertL2BaseTokens(someAgentID, 1*isc.Million)
@@ -1561,7 +1571,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	// try sending funds to `someEthereumAddr` by sending a "value tx" to the isc test contract
 	oneMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		1*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	_, err := iscTest.CallFn([]ethCallOptions{{
@@ -1574,7 +1584,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	// attempt to send more than the contract will have available
 	twoMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		2*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	_, err = iscTest.CallFn([]ethCallOptions{{
@@ -1594,7 +1604,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 
 	tenMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		10*isc.Million,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	_, err = iscTest.CallFn([]ethCallOptions{{
@@ -1624,7 +1634,7 @@ func TestSendEntireBalance(t *testing.T) {
 	// try sending funds to `someEthereumAddr` by sending a "value tx"
 	initialBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		initial,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	unsignedTx := types.NewTransaction(0, someEthereumAddr, initialBalanceInEthDecimals, env.maxGasLimit(), env.evmChain.GasPrice(), []byte{})
@@ -1644,7 +1654,7 @@ func TestSendEntireBalance(t *testing.T) {
 
 	currentBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 
 	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
@@ -1652,19 +1662,22 @@ func TestSendEntireBalance(t *testing.T) {
 		To:    &someEthereumAddr,
 		Value: currentBalanceInEthDecimals,
 		Data:  []byte{},
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(t, err)
 
 	feePolicy := env.Chain.GetGasFeePolicy()
 	tokensForGasBudget := feePolicy.FeeFromGas(gas.EVMGasToISC(estimatedGas, &feePolicy.EVMGasRatio))
 
-	gasLimit := feePolicy.GasBudgetFromTokens(tokensForGasBudget)
+	gasLimit := feePolicy.GasBudgetFromTokens(tokensForGasBudget) // TODO this gas limit seems to be ISC gas, but used as EVM gas (?)
 
 	valueToSendInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
 		currentBalance-tokensForGasBudget,
-		parameters.BaseToken().Decimals,
+		testutil.TokenInfo.Decimals,
 	)
-	unsignedTx = types.NewTransaction(1, someEthereumAddr, valueToSendInEthDecimals, gasLimit, env.evmChain.GasPrice(), []byte{})
+	unsignedTx = types.NewTransaction(1, someEthereumAddr, valueToSendInEthDecimals, uint64(gasLimit), env.evmChain.GasPrice(), []byte{})
 	tx, err = types.SignTx(unsignedTx, evmutil.Signer(big.NewInt(int64(env.evmChainID))), ethKey)
 	require.NoError(t, err)
 	err = env.evmChain.SendTransaction(tx)
@@ -1686,7 +1699,10 @@ func TestSolidityRevertMessage(t *testing.T) {
 		To:   &iscTest.address,
 		Gas:  100_000,
 		Data: callData,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.ErrorContains(t, err, "execution reverted")
 
 	revertData, err := evmerrors.ExtractRevertData(err)
@@ -1912,7 +1928,7 @@ func TestTraceTransaction(t *testing.T) {
 	traceLatestTx := func() *jsonrpc.CallFrame {
 		latestBlock, err := env.evmChain.BlockByNumber(nil)
 		require.NoError(t, err)
-		trace, err := env.evmChain.TraceTransaction(latestBlock.Transactions()[0].Hash(), &tracers.TraceConfig{})
+		trace, err := env.evmChain.TraceTransaction(latestBlock.Transactions()[0].Hash(), &tracers.TraceConfig{}, testutil.L1API)
 		require.NoError(t, err)
 		var ret jsonrpc.CallFrame
 		err = json.Unmarshal(trace.(json.RawMessage), &ret)
@@ -2062,7 +2078,7 @@ func TestL1DepositEVM(t *testing.T) {
 	require.NoError(t, rr.Err)
 
 	require.EqualValues(t,
-		util.MustEthereumDecimalsToBaseTokenDecimalsExact(bal, parameters.L1().BaseToken.Decimals),
+		util.MustEthereumDecimalsToBaseTokenDecimalsExact(bal, testutil.TokenInfo.Decimals),
 		assets.BaseTokens)
 
 	evmRec := env.Chain.EVM().TransactionReceipt(tx.Hash())
@@ -2099,7 +2115,7 @@ func TestDecimalsConversion(t *testing.T) {
 	lessThanOneSMR := new(big.Int).SetUint64(999999999999)
 	valueInBaseTokens, remainder := util.EthereumDecimalsToBaseTokenDecimals(
 		lessThanOneSMR,
-		parameters.L1().BaseToken.Decimals,
+		testutil.TokenInfo.Decimals,
 	)
 	t.Log(valueInBaseTokens)
 	require.Zero(t, valueInBaseTokens)

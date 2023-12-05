@@ -23,6 +23,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
@@ -286,7 +287,10 @@ func (e *SoloChainEnv) DeployContract(creator *ecdsa.PrivateKey, abiJSON string,
 		From:  creatorAddress,
 		Value: value,
 		Data:  data,
-	}, nil)
+	},
+		nil,
+		testutil.L1API,
+	)
 	require.NoError(e.t, err)
 
 	tx, err := types.SignTx(

@@ -14,7 +14,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/apilib"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util/byz_quorum"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -107,7 +106,7 @@ func doDKG(node string, peers []string, quorum int) iotago.Address {
 
 	fmt.Fprintf(os.Stdout,
 		"DKG successful\nAddress: %s\n* committee size = %v\n* quorum = %v\n* members: %s\n",
-		stateControllerAddr.Bech32(parameters.NetworkPrefix()),
+		stateControllerAddr.Bech32(cliclients.L1Client().Bech32HRP()),
 		len(committeePubKeys),
 		quorum,
 		committeeMembersStr,

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -95,11 +96,7 @@ func (reqctx *requestContext) CurrentContractAccountID() isc.AgentID {
 }
 
 func (reqctx *requestContext) allowanceAvailable() *isc.Assets {
-	allowance := reqctx.getCallContext().allowanceAvailable
-	if allowance == nil {
-		return isc.NewEmptyAssets()
-	}
-	return allowance.Clone()
+	return reqctx.getCallContext().allowanceAvailable.Clone()
 }
 
 func (vmctx *vmContext) isCoreAccount(agentID isc.AgentID) bool {
@@ -194,4 +191,12 @@ func (reqctx *requestContext) registerError(messageFormat string) *isc.VMErrorTe
 	reqctx.Debugf("vmcontext.RegisterError: errorCode: '%s'", errorCode)
 
 	return isc.NewVMErrorTemplate(errorCode, messageFormat)
+}
+
+func (reqctx *requestContext) L1API() iotago.API {
+	return reqctx.vm.task.L1API
+}
+
+func (reqctx *requestContext) TokenInfo() api.InfoResBaseToken {
+	return reqctx.vm.task.TokenInfo
 }

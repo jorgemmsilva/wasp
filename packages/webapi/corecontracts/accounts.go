@@ -2,25 +2,23 @@ package corecontracts
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
-	"github.com/iotaledger/wasp/packages/webapi/common"
 )
 
-func GetAccounts(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]isc.AgentID, error) {
-	accountIDs, err := common.CallView(ch, accounts.Contract.Hname(), accounts.ViewAccounts.Hname(), nil, blockIndexOrTrieRoot)
+func GetAccounts(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) ([]isc.AgentID, error) {
+	chainID, accountIDs, err := callViewInvoker(accounts.Contract.Hname(), accounts.ViewAccounts.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
 
 	ret := make([]isc.AgentID, 0)
 	for accountID := range accountIDs {
-		agentID, err := accounts.AgentIDFromKey(accountID, ch.ID())
+		agentID, err := accounts.AgentIDFromKey(accountID, chainID)
 		if err != nil {
 			return nil, err
 		}
@@ -29,8 +27,8 @@ func GetAccounts(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]isc.AgentI
 	return ret, nil
 }
 
-func GetTotalAssets(ch chaintypes.Chain, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
-	ret, err := common.CallView(ch, accounts.Contract.Hname(), accounts.ViewTotalAssets.Hname(), nil, blockIndexOrTrieRoot)
+func GetTotalAssets(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
+	_, ret, err := callViewInvoker(accounts.Contract.Hname(), accounts.ViewTotalAssets.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -38,11 +36,11 @@ func GetTotalAssets(ch chaintypes.Chain, blockIndexOrTrieRoot string) (*isc.Fung
 	return isc.FungibleTokensFromDict(ret)
 }
 
-func GetAccountBalance(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
-	ret, err := common.CallView(
-		ch,
-		accounts.Contract.Hname(),
-		accounts.ViewBalance.Hname(), codec.MakeDict(map[string]interface{}{accounts.ParamAgentID: agentID}),
+func GetAccountBalance(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
+	_, ret, err := callViewInvoker(accounts.Contract.Hname(),
+		accounts.ViewBalance.Hname(), codec.MakeDict(map[string]interface{}{
+			accounts.ParamAgentID: agentID,
+		}),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -52,11 +50,13 @@ func GetAccountBalance(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTri
 	return isc.FungibleTokensFromDict(ret)
 }
 
-func GetAccountNFTs(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]iotago.NFTID, error) {
-	res, err := common.CallView(
-		ch,
+func GetAccountNFTs(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]iotago.NFTID, error) {
+	_, res, err := callViewInvoker(
 		accounts.Contract.Hname(),
-		accounts.ViewAccountNFTs.Hname(), codec.MakeDict(map[string]interface{}{accounts.ParamAgentID: agentID}),
+		accounts.ViewAccountNFTs.Hname(),
+		codec.MakeDict(map[string]interface{}{
+			accounts.ParamAgentID: agentID},
+		),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -71,11 +71,13 @@ func GetAccountNFTs(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRo
 	return ret, nil
 }
 
-func GetAccountFoundries(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]uint32, error) {
-	foundrySNs, err := common.CallView(
-		ch,
+func GetAccountFoundries(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]uint32, error) {
+	_, foundrySNs, err := callViewInvoker(
 		accounts.Contract.Hname(),
-		accounts.ViewAccountFoundries.Hname(), dict.Dict{accounts.ParamAgentID: codec.EncodeAgentID(agentID)},
+		accounts.ViewAccountFoundries.Hname(),
+		dict.Dict{
+			accounts.ParamAgentID: codec.EncodeAgentID(agentID),
+		},
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -92,11 +94,13 @@ func GetAccountFoundries(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrT
 	return ret, nil
 }
 
-func GetAccountNonce(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieRoot string) (uint64, error) {
-	ret, err := common.CallView(
-		ch,
+func GetAccountNonce(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) (uint64, error) {
+	_, ret, err := callViewInvoker(
 		accounts.Contract.Hname(),
-		accounts.ViewGetAccountNonce.Hname(), codec.MakeDict(map[string]interface{}{accounts.ParamAgentID: agentID}),
+		accounts.ViewGetAccountNonce.Hname(),
+		codec.MakeDict(map[string]interface{}{
+			accounts.ParamAgentID: agentID,
+		}),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -108,11 +112,13 @@ func GetAccountNonce(ch chaintypes.Chain, agentID isc.AgentID, blockIndexOrTrieR
 	return codec.DecodeUint64(nonce)
 }
 
-func GetNFTData(ch chaintypes.Chain, nftID iotago.NFTID, blockIndexOrTrieRoot string) (*isc.NFT, error) {
-	ret, err := common.CallView(
-		ch,
+func GetNFTData(callViewInvoker CallViewInvoker, nftID iotago.NFTID, blockIndexOrTrieRoot string) (*isc.NFT, error) {
+	_, ret, err := callViewInvoker(
 		accounts.Contract.Hname(),
-		accounts.ViewNFTData.Hname(), codec.MakeDict(map[string]interface{}{accounts.ParamNFTID: nftID[:]}),
+		accounts.ViewNFTData.Hname(),
+		codec.MakeDict(map[string]interface{}{
+			accounts.ParamNFTID: nftID[:],
+		}),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -127,8 +133,8 @@ func GetNFTData(ch chaintypes.Chain, nftID iotago.NFTID, blockIndexOrTrieRoot st
 	return nftData, nil
 }
 
-func GetNativeTokenIDRegistry(ch chaintypes.Chain, blockIndexOrTrieRoot string) ([]iotago.NativeTokenID, error) {
-	nativeTokenIDs, err := common.CallView(ch, accounts.Contract.Hname(), accounts.ViewGetNativeTokenIDRegistry.Hname(), nil, blockIndexOrTrieRoot)
+func GetNativeTokenIDRegistry(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) ([]iotago.NativeTokenID, error) {
+	_, nativeTokenIDs, err := callViewInvoker(accounts.Contract.Hname(), accounts.ViewGetNativeTokenIDRegistry.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -145,10 +151,8 @@ func GetNativeTokenIDRegistry(ch chaintypes.Chain, blockIndexOrTrieRoot string) 
 	return ret, nil
 }
 
-func GetFoundryOutput(ch chaintypes.Chain, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {
-	res, err := common.CallView(
-		ch,
-		accounts.Contract.Hname(),
+func GetFoundryOutput(callViewInvoker CallViewInvoker, l1Api iotago.API, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {
+	_, res, err := callViewInvoker(accounts.Contract.Hname(),
 		accounts.ViewFoundryOutput.Hname(), codec.MakeDict(map[string]interface{}{accounts.ParamFoundrySN: serialNumber}),
 		blockIndexOrTrieRoot,
 	)
@@ -160,7 +164,7 @@ func GetFoundryOutput(ch chaintypes.Chain, serialNumber uint32, blockIndexOrTrie
 	out := &iotago.FoundryOutput{}
 
 	// TODO: <lmoe> Did this really change to L1API.Decode?
-	_, err = parameters.L1API().Decode(outBin, out)
+	_, err = l1Api.Decode(outBin, out)
 	if err != nil {
 		return nil, err
 	}

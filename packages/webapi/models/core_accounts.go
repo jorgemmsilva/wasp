@@ -10,9 +10,9 @@ type AccountListResponse struct {
 	Accounts []string `json:"accounts" swagger:"required"`
 }
 
-type AssetsResponse struct {
+type FungibleTokensResponse struct {
 	BaseTokens   string                 `json:"baseTokens" swagger:"required,desc(The base tokens (uint64 as string))"`
-	NativeTokens []*isc.NativeTokenJSON `json:"nativeTokens" swagger:"required"`
+	NativeTokens isc.NativeTokenMapJSON `json:"nativeTokens" swagger:"required"`
 }
 
 type AccountNFTsResponse struct {

@@ -5,6 +5,7 @@ import (
 
 	"github.com/iotaledger/hive.go/lo"
 	"github.com/iotaledger/hive.go/runtime/event"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/webapi/models"
@@ -39,13 +40,15 @@ type EventHandler struct {
 	publisher             *publisher.Publisher
 	publishEvent          *event.Event1[*ISCEvent]
 	subscriptionValidator *SubscriptionValidator
+	l1Api                 iotago.API
 }
 
-func NewEventHandler(pub *publisher.Publisher, publishEvent *event.Event1[*ISCEvent], subscriptionValidator *SubscriptionValidator) *EventHandler {
+func NewEventHandler(pub *publisher.Publisher, publishEvent *event.Event1[*ISCEvent], subscriptionValidator *SubscriptionValidator, l1Api iotago.API) *EventHandler {
 	return &EventHandler{
 		publisher:             pub,
 		publishEvent:          publishEvent,
 		subscriptionValidator: subscriptionValidator,
+		l1Api:                 l1Api,
 	}
 }
 
@@ -67,7 +70,7 @@ func (p *EventHandler) AttachToEvents() context.CancelFunc {
 				return
 			}
 
-			receipt := models.MapReceiptResponse(block.Payload.RequestReceipt)
+			receipt := models.MapReceiptResponse(p.l1Api, block.Payload.RequestReceipt)
 			iscEvent := MapISCEvent(block, receipt)
 			p.publishEvent.Trigger(iscEvent)
 		}).Unhook,

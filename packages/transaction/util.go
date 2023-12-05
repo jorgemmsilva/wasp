@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 	"slices"
 
 	"github.com/samber/lo"
@@ -12,7 +11,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -59,6 +58,7 @@ func ComputeInputsAndRemainder(
 	unspentOutputs iotago.OutputSet,
 	target *AssetsWithMana,
 	slotIndex iotago.SlotIndex,
+	l1API iotago.API,
 ) (
 	inputIDs iotago.OutputIDs,
 	remainder iotago.TxEssenceOutputs,
@@ -92,7 +92,7 @@ func ComputeInputsAndRemainder(
 			continue
 		}
 		inputIDs = append(inputIDs, outputID)
-		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex)
+		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex, l1API)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -101,7 +101,7 @@ func ComputeInputsAndRemainder(
 			break
 		}
 	}
-	remainder, err = computeRemainderOutputs(senderAddress, sum, target)
+	remainder, err = computeRemainderOutputs(senderAddress, sum, target, l1API)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -114,48 +114,46 @@ func ComputeInputsAndRemainder(
 // Returns (nil, error) if inputs are not enough (taking into anchor storage deposit requirements)
 // If return (nil, nil) it means remainder is a perfect match between inputs and outputs, remainder not needed
 //
-//nolint:gocyclo
+
 func computeRemainderOutputs(
 	senderAddress iotago.Address,
 	available *AssetsWithMana,
 	target *AssetsWithMana,
+	l1API iotago.API,
 ) (ret iotago.TxEssenceOutputs, err error) {
-	if available.BaseTokens < target.BaseTokens {
+	excess := available.Clone()
+	if excess.BaseTokens < target.BaseTokens {
 		return nil, ErrNotEnoughBaseTokens
 	}
-	excess := *NewEmptyAssetsWithMana()
-	excess.BaseTokens = available.BaseTokens - target.BaseTokens
+	excess.BaseTokens -= target.BaseTokens
 
-	if available.Mana < target.Mana {
+	if excess.Mana < target.Mana {
 		return nil, ErrNotEnoughMana
 	}
-	excess.Mana = available.Mana - target.Mana
+	excess.Mana -= target.Mana
 
-	availableNTs := available.NativeTokenSum()
-	for _, nt := range available.NativeTokens {
-		excess.AddNativeTokens(nt.ID, nt.Amount)
-	}
-	for _, nt := range target.NativeTokens {
-		if availableNTs.ValueOrBigInt0(nt.ID).Cmp(nt.Amount) < 0 {
+	for id, amount := range target.NativeTokens {
+		excessAmount := excess.NativeTokens.ValueOrBigInt0(id)
+		if excessAmount.Cmp(amount) < 0 {
 			return nil, ErrNotEnoughNativeTokens
 		}
-		amount := new(big.Int).Set(nt.Amount)
-		excess.AddNativeTokens(nt.ID, amount.Neg(amount))
+		excess.NativeTokens[id] = excessAmount.Sub(excessAmount, amount)
+		if excessAmount.Sign() == 0 {
+			delete(excess.NativeTokens, id)
+		}
 	}
 
-	for _, nt := range excess.NativeTokens {
-		if nt.Amount.Sign() == 0 {
-			continue
-		}
+	for _, id := range excess.NativeTokenIDsSorted() {
+		amount := excess.NativeTokens[id]
 		out := &iotago.BasicOutput{
 			Features: iotago.BasicOutputFeatures{
-				&iotago.NativeTokenFeature{ID: nt.ID, Amount: nt.Amount},
+				&iotago.NativeTokenFeature{ID: id, Amount: amount},
 			},
 			UnlockConditions: iotago.BasicOutputUnlockConditions{
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := parameters.Storage().MinDeposit(out)
+		sd, err := l1API.StorageScoreStructure().MinDeposit(out)
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +172,7 @@ func computeRemainderOutputs(
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := parameters.Storage().MinDeposit(out)
+		sd, err := l1API.StorageScoreStructure().MinDeposit(out)
 		if err != nil {
 			return nil, err
 		}
@@ -210,11 +208,12 @@ func CreateAndSignTx(
 	inputs iotago.TxEssenceInputs,
 	outputs iotago.TxEssenceOutputs,
 	creationSlot iotago.SlotIndex,
+	l1API iotago.API,
 ) (*iotago.SignedTransaction, error) {
 	tx := &iotago.Transaction{
-		API: parameters.L1API(),
+		API: l1API,
 		TransactionEssence: &iotago.TransactionEssence{
-			NetworkID:    parameters.L1().Protocol.NetworkID(),
+			NetworkID:    l1API.ProtocolParameters().NetworkID(),
 			CreationSlot: creationSlot,
 			Inputs:       inputs,
 		},
@@ -227,7 +226,7 @@ func CreateAndSignTx(
 	}
 
 	return &iotago.SignedTransaction{
-		API:         parameters.L1API(),
+		API:         l1API,
 		Transaction: tx,
 		Unlocks:     MakeSignatureAndReferenceUnlocks(len(inputs), sigs[0]),
 	}, nil

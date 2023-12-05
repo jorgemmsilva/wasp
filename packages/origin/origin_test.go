@@ -15,8 +15,8 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -43,7 +43,7 @@ func TestCreateOrigin(t *testing.T) {
 	var originTxID iotago.TransactionID
 
 	initTest := func() {
-		u = utxodb.New(parameters.L1API())
+		u = utxodb.New(testutil.L1API)
 		userKey = cryptolib.NewKeyPair()
 		userAddr = userKey.GetPublicKey().AsEd25519Address()
 		_, err2 := u.GetFundsFromFaucet(userAddr)
@@ -68,6 +68,7 @@ func TestCreateOrigin(t *testing.T) {
 			allOutputs,
 			u.SlotIndex(),
 			allmigrations.DefaultScheme.LatestSchemaVersion(),
+			testutil.L1API,
 		)
 		require.NoError(t, err)
 
@@ -212,6 +213,6 @@ func TestMismatchOriginCommitment(t *testing.T) {
 		iotago.OutputID{},
 	)
 
-	_, err = origin.InitChainByAnchorOutput(store, ao)
+	_, err = origin.InitChainByAnchorOutput(store, ao, testutil.L1API)
 	testmisc.RequireErrorToBe(t, err, "l1Commitment mismatch between originAO / originBlock")
 }

@@ -29,7 +29,7 @@ func WithOffLedgerRequest(chainID isc.ChainID, nodeName string, f func() (isc.Of
 	}
 }
 
-func WithSCTransaction(chainID isc.ChainID, nodeName string, f func() (*iotago.Transaction, error), forceWait ...bool) *iotago.Transaction {
+func WithSCTransaction(chainID isc.ChainID, nodeName string, f func() (*iotago.SignedTransaction, error), forceWait ...bool) *iotago.SignedTransaction {
 	tx, err := f()
 	log.Check(err)
 	logTx(chainID, tx)
@@ -44,8 +44,8 @@ func WithSCTransaction(chainID isc.ChainID, nodeName string, f func() (*iotago.T
 	return tx
 }
 
-func logTx(chainID isc.ChainID, tx *iotago.Transaction) {
-	allReqs, err := isc.RequestsInTransaction(tx)
+func logTx(chainID isc.ChainID, tx *iotago.SignedTransaction) {
+	allReqs, err := isc.RequestsInTransaction(tx.Transaction)
 	log.Check(err)
 	txid, err := tx.ID()
 	log.Check(err)

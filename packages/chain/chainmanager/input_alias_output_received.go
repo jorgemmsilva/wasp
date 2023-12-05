@@ -11,10 +11,10 @@ import (
 )
 
 type inputAnchorOutputConfirmed struct {
-	anchorOutput *isc.AnchorOutputWithID
+	anchorOutput *isc.ChainOutputs
 }
 
-func NewInputAnchorOutputConfirmed(anchorOutput *isc.AnchorOutputWithID) gpa.Input {
+func NewInputAnchorOutputConfirmed(anchorOutput *isc.ChainOutputs) gpa.Input {
 	return &inputAnchorOutputConfirmed{
 		anchorOutput: anchorOutput,
 	}

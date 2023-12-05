@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/parameters"
+
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -133,10 +133,7 @@ func AgentIDFromString(s string) (AgentID, error) {
 		}
 		return contractAgentIDFromString(contractPart, addrPart)
 	}
-	if strings.HasPrefix(addrPart, string(parameters.NetworkPrefix())) {
-		return addressAgentIDFromString(s)
-	}
-	return nil, errors.New("invalid AgentID string")
+	return addressAgentIDFromString(s)
 }
 
 // NewRandomAgentID creates random AgentID

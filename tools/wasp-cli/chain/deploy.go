@@ -6,6 +6,7 @@ package chain
 import (
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,7 +18,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
@@ -44,9 +44,12 @@ func controllerAddrDefaultFallback(addr string) iotago.Address {
 	}
 	prefix, govControllerAddr, err := iotago.ParseBech32(addr)
 	log.Check(err)
-	if parameters.NetworkPrefix() != prefix {
-		log.Fatalf("unexpected prefix. expected: %s, actual: %s", parameters.NetworkPrefix(), prefix)
+
+	expectedPrefix := cliclients.L1Client().Bech32HRP()
+	if expectedPrefix != prefix {
+		log.Fatalf("unexpected prefix. expected: %s, actual: %s", expectedPrefix, prefix)
 	}
+
 	return govControllerAddr
 }
 
@@ -95,7 +98,14 @@ func initDeployCmd() *cobra.Command {
 				},
 			}
 
-			chainID, err := apilib.DeployChain(par, stateController, govController)
+			chainID, err := apilib.DeployChain(
+				par,
+				stateController,
+				govController,
+				iotago.BaseToken(10*isc.Million), // TODO make this a parameter?
+				0,                                // TODO should this be a different value?  should this be a parameter?
+				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+			)
 			log.Check(err)
 
 			config.AddChain(chainName, chainID.String())

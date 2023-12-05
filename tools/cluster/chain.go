@@ -103,7 +103,7 @@ func (ch *Chain) AllNodesMultiClient() *multiclient.MultiClient {
 	return multiclient.New(resolver, ch.AllAPIHosts()) //.WithLogFunc(ch.Cluster.t.Logf)
 }
 
-func (ch *Chain) DeployContract(name, progHashStr string, initParams map[string]interface{}) (*iotago.Transaction, error) {
+func (ch *Chain) DeployContract(name, progHashStr string, initParams map[string]interface{}) (*iotago.SignedTransaction, error) {
 	programHash, err := hashing.HashValueFromHex(progHashStr)
 	if err != nil {
 		return nil, err

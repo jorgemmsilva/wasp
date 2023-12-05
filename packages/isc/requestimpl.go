@@ -12,6 +12,7 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 type RequestKind rwutil.Kind
@@ -213,7 +214,7 @@ type RequestMetadata struct {
 	// Allowance intended to the target contract to take. Nil means zero allowance
 	Allowance *Assets `json:"allowance"`
 	// gas budget
-	GasBudget uint64 `json:"gasBudget"`
+	GasBudget gas.GasUnits `json:"gasBudget"`
 }
 
 func requestMetadataFromFeatureSet(set iotago.FeatureSet) (*RequestMetadata, error) {
@@ -254,7 +255,7 @@ func (meta *RequestMetadata) Read(r io.Reader) error {
 	rr.Read(&meta.SenderContract)
 	rr.Read(&meta.TargetContract)
 	rr.Read(&meta.EntryPoint)
-	meta.GasBudget = rr.ReadGas64()
+	meta.GasBudget = gas.GasUnits(rr.ReadGas64())
 	meta.Params = dict.New()
 	rr.Read(&meta.Params)
 	meta.Allowance = NewEmptyAssets()
@@ -267,7 +268,7 @@ func (meta *RequestMetadata) Write(w io.Writer) error {
 	ww.Write(&meta.SenderContract)
 	ww.Write(&meta.TargetContract)
 	ww.Write(&meta.EntryPoint)
-	ww.WriteGas64(meta.GasBudget)
+	ww.WriteGas64(uint64(meta.GasBudget))
 	ww.Write(&meta.Params)
 	ww.Write(meta.Allowance)
 	return ww.Err

@@ -133,7 +133,7 @@ func TestCruelWorld(t *testing.T) { //nolint:gocyclo
 		nodeIndex := rand.Intn(nodeCount)
 		blockIndex := getRandomProducedBlockAIndex(blockProduced)
 		t.Logf("Consensus state proposal request for block %v is sent to node %v", blockIndex+1, peeringURLs[nodeIndex])
-		responseCh := sms[nodeIndex].ConsensusStateProposal(context.Background(), bf.GetAnchorOutput(blocks[blockIndex].L1Commitment()))
+		responseCh := sms[nodeIndex].ConsensusStateProposal(context.Background(), bf.GetChainOutputs(blocks[blockIndex].L1Commitment()))
 		<-responseCh
 		return true
 	})
@@ -143,7 +143,7 @@ func TestCruelWorld(t *testing.T) { //nolint:gocyclo
 		nodeIndex := rand.Intn(nodeCount)
 		blockIndex := getRandomProducedBlockAIndex(blockProduced)
 		t.Logf("Consensus decided state proposal for block %v is sent to node %v", blockIndex+1, peeringURLs[nodeIndex])
-		responseCh := sms[nodeIndex].ConsensusDecidedState(context.Background(), bf.GetAnchorOutput(blocks[blockIndex].L1Commitment()))
+		responseCh := sms[nodeIndex].ConsensusDecidedState(context.Background(), bf.GetChainOutputs(blocks[blockIndex].L1Commitment()))
 		state := <-responseCh
 		if !blocks[blockIndex].TrieRoot().Equals(state.TrieRoot()) {
 			t.Logf("Consensus decided state proposal for block %v to node %v return wrong state: expected trie root %s, received %s",
@@ -162,8 +162,8 @@ func TestCruelWorld(t *testing.T) { //nolint:gocyclo
 		}
 		oldBlockIndex := rand.Intn(newBlockIndex)
 		t.Logf("Mempool state request for new block %v and old block %v is sent to node %v", newBlockIndex+1, oldBlockIndex+1, peeringURLs[nodeIndex])
-		oldStateOutput := bf.GetAnchorOutput(blocks[oldBlockIndex].L1Commitment())
-		newStateOutput := bf.GetAnchorOutput(blocks[newBlockIndex].L1Commitment())
+		oldStateOutput := bf.GetChainOutputs(blocks[oldBlockIndex].L1Commitment())
+		newStateOutput := bf.GetChainOutputs(blocks[newBlockIndex].L1Commitment())
 		responseCh := sms[nodeIndex].(*stateManager).ChainFetchStateDiff(context.Background(), oldStateOutput, newStateOutput)
 		results := <-responseCh
 		expectedNewState, err := bf.GetStore().StateByTrieRoot(blocks[newBlockIndex].TrieRoot())

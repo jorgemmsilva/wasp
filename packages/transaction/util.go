@@ -72,6 +72,10 @@ func ComputeInputsAndRemainder(
 	})
 	for _, outputID := range unspentOutputIDs {
 		output := unspentOutputs[outputID]
+		if output.UnlockConditionSet().StorageDepositReturn() != nil {
+			// don't consume anything with SDRUC
+			continue
+		}
 		if nftOutput, ok := output.(*iotago.NFTOutput); ok {
 			nftID := util.NFTIDFromNFTOutput(nftOutput, outputID)
 			if !lo.Contains(target.NFTs, nftID) {
@@ -85,10 +89,6 @@ func ComputeInputsAndRemainder(
 		}
 		if _, ok := output.(*iotago.FoundryOutput); ok {
 			// this is an UTXO that holds an foundry that is not relevant for this tx, should be skipped
-			continue
-		}
-		if output.UnlockConditionSet().StorageDepositReturn() != nil {
-			// don't consume anything with SDRUC
 			continue
 		}
 		inputIDs = append(inputIDs, outputID)

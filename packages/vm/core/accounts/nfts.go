@@ -99,12 +99,17 @@ func GetNFTData(state kv.KVStoreReader, nftID iotago.NFTID) *isc.NFT {
 	if err != nil {
 		panic("error parsing AgentID in NFTToOwnerMap")
 	}
-	return &isc.NFT{
-		ID:       util.NFTIDFromNFTOutput(o, oID),
-		Issuer:   o.ImmutableFeatureSet().Issuer().Address,
-		Metadata: o.ImmutableFeatureSet().Metadata().Entries,
-		Owner:    owner,
+	nft := &isc.NFT{
+		ID:    util.NFTIDFromNFTOutput(o, oID),
+		Owner: owner,
 	}
+	if issuer := o.ImmutableFeatureSet().Issuer(); issuer != nil {
+		nft.Issuer = issuer.Address
+	}
+	if md := o.ImmutableFeatureSet().Metadata(); md != nil {
+		nft.Metadata = md.Entries
+	}
+	return nft
 }
 
 // CreditNFTToAccount credits an NFT to the on chain ledger

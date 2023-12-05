@@ -491,11 +491,12 @@ func TestISCNFTData(t *testing.T) {
 
 	// call getNFTData from EVM
 	ret := new(iscmagic.ISCNFT)
-	env.ISCMagicSandbox(ethKey).callView(
+	err = env.ISCMagicSandbox(ethKey).callView(
 		"getNFTData",
 		[]interface{}{iscmagic.WrapNFTID(nft.ID)},
 		&ret,
 	)
+	require.NoError(t, err)
 
 	require.EqualValues(t, nft.ID, ret.MustUnwrap().ID)
 	require.True(t, issuerAddress.Equal(ret.MustUnwrap().Issuer))

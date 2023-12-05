@@ -91,9 +91,14 @@ func NFTToJSONObject(nft *NFT, l1API iotago.API) *NFTJSON {
 		ownerString = nft.Owner.String()
 	}
 
+	issuerString := ""
+	if nft.Issuer != nil {
+		issuerString = nft.Issuer.String()
+	}
+
 	return &NFTJSON{
 		ID:       nft.ID.ToHex(),
-		Issuer:   nft.Issuer.String(),
+		Issuer:   issuerString,
 		Metadata: lo.Must(l1API.Underlying().MapEncode(context.Background(), nft.Metadata)).Values(),
 		Owner:    ownerString,
 	}

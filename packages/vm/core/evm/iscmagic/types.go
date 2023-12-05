@@ -4,9 +4,10 @@
 package iscmagic
 
 import (
-	"context"
+	"bytes"
 	"errors"
 	"math/big"
+	"slices"
 
 	"github.com/samber/lo"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util/rwutil"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -92,6 +94,9 @@ func WrapL1Address(a iotago.Address) L1Address {
 }
 
 func (a L1Address) Unwrap() (iotago.Address, error) {
+	if len(a.Data) == 0 {
+		return nil, nil
+	}
 	ret, err := isc.AddressFromBytes(a.Data)
 	return ret, err
 }
@@ -180,9 +185,21 @@ type ISCNFT struct {
 
 func WrapISCNFT(n *isc.NFT) ISCNFT {
 	r := ISCNFT{
-		ID:       WrapNFTID(n.ID),
-		Issuer:   WrapL1Address(n.Issuer),
-		Metadata: lo.Must(iotago.CommonSerixAPI().Encode(context.Background(), n.Metadata)),
+		ID:     WrapNFTID(n.ID),
+		Issuer: WrapL1Address(n.Issuer),
+	}
+	if len(n.Metadata) > 0 {
+		// TODO: Encoding by hand since serix.Encode(MetadataFeatureEntries) does not work
+		var buf bytes.Buffer
+		ww := rwutil.NewWriter(&buf)
+		ww.WriteUint8(uint8(len(n.Metadata)))
+		keys := lo.Keys(n.Metadata)
+		slices.Sort(keys)
+		for _, k := range keys {
+			ww.WriteBytes([]byte(k))
+			ww.WriteBytes(n.Metadata[k])
+		}
+		r.Metadata = buf.Bytes()
 	}
 	if n.Owner != nil {
 		r.Owner = WrapISCAgentID(n.Owner)
@@ -196,12 +213,22 @@ func (n ISCNFT) Unwrap() (*isc.NFT, error) {
 		return nil, err
 	}
 	var metadata iotago.MetadataFeatureEntries
-	nr, err := iotago.CommonSerixAPI().Decode(context.Background(), n.Metadata, &metadata)
-	if err != nil {
-		return nil, err
-	}
-	if nr != len(n.Metadata) {
-		return nil, errors.New("cannot decode metadata: excess bytes")
+	if len(n.Metadata) > 0 {
+		metadata = iotago.MetadataFeatureEntries{}
+		buf := bytes.NewBuffer(n.Metadata)
+		rr := rwutil.NewReader(buf)
+		n := rr.ReadUint8()
+		for i := uint8(0); i < n; i++ {
+			k := rr.ReadBytes()
+			v := rr.ReadBytes()
+			metadata[iotago.MetadataFeatureEntriesKey(k)] = v
+		}
+		if rr.Err != nil {
+			return nil, rr.Err
+		}
+		if buf.Len() > 0 {
+			return nil, errors.New("ISCNFT.Unwrap(): remaining bytes")
+		}
 	}
 	return &isc.NFT{
 		ID:       n.ID.Unwrap(),
@@ -291,8 +318,10 @@ type ISCDict struct {
 
 func WrapISCDict(d dict.Dict) ISCDict {
 	items := make([]ISCDictItem, 0, len(d))
-	for k, v := range d {
-		items = append(items, ISCDictItem{Key: []byte(k), Value: v})
+	keys := lo.Keys(d)
+	slices.Sort(keys)
+	for _, k := range keys {
+		items = append(items, ISCDictItem{Key: []byte(k), Value: d[k]})
 	}
 	return ISCDict{Items: items}
 }

@@ -175,13 +175,11 @@ func (req *onLedgerRequestData) NFT() *NFT {
 
 	ret.ID = util.NFTIDFromNFTOutput(nftOutput, req.OutputID())
 
-	for _, featureBlock := range nftOutput.ImmutableFeatures {
-		if block, ok := featureBlock.(*iotago.IssuerFeature); ok {
-			ret.Issuer = block.Address
-		}
-		if block, ok := featureBlock.(*iotago.MetadataFeature); ok {
-			ret.Metadata = block.Entries
-		}
+	if issuer := nftOutput.ImmutableFeatureSet().Issuer(); issuer != nil {
+		ret.Issuer = issuer.Address
+	}
+	if md := nftOutput.ImmutableFeatureSet().Metadata(); md != nil {
+		ret.Metadata = md.Entries
 	}
 
 	return ret

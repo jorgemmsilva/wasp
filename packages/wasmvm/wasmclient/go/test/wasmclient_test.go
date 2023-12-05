@@ -14,7 +14,6 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlib"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient/iscclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
@@ -192,6 +191,7 @@ func TestClientEvents(t *testing.T) {
 	events := testwasmlib.NewTestWasmLibEventHandlers()
 	proc := new(EventProcessor)
 	events.OnTestWasmLibTest(func(e *testwasmlib.EventTest) {
+		fmt.Println(e.Name)
 		proc.name = e.Name
 	})
 	ctx.Register(events)

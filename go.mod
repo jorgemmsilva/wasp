@@ -34,7 +34,6 @@ require (
 	github.com/iotaledger/hive.go/web v0.0.0-20231106113411-94ac829adbb2
 	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231201123347-1c44b3f24221
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231201114846-3bb5c3fd5665
-	github.com/iotaledger/iota.go/v3 v3.0.0-rc.3
 	github.com/iotaledger/iota.go/v4 v4.0.0-20231204084048-9c12053adaf6
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
@@ -125,7 +124,6 @@ require (
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
 	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231113110812-4ca2b6cc9a42 // indirect
 	github.com/iotaledger/hive.go/stringify v0.0.0-20231130122510-e3dddb0214f0 // indirect
-	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect

@@ -38,7 +38,9 @@ func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
 		return nil
 	}
 	rr.PushBack().WriteKind(kind)
-	address, rr.Err = newAddress(iotago.AddressType(kind))
+	if rr.Err == nil {
+		address, rr.Err = newAddress(iotago.AddressType(kind))
+	}
 	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
 	return address
 }

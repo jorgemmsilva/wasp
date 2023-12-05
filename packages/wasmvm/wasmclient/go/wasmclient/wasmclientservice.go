@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -102,7 +101,7 @@ func (svc *WasmClientService) PostRequest(chainID wasmtypes.ScChainID, hContract
 	req.Sign(keyPair)
 
 	_, err = svc.waspClient.RequestsApi.OffLedger(context.Background()).OffLedgerRequest(apiclient.OffLedgerRequest{
-		ChainId: iscChainID.String(),
+		ChainId: chainID.String(),
 		Request: wasmtypes.HexEncode(req.Bytes()),
 	}).Execute()
 	return req.ID(), apiError(err)

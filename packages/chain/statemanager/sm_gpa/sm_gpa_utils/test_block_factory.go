@@ -53,7 +53,9 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 		},
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.StateMetadataFeature{
-				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{"": stateMetadata.Bytes()},
+				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
+					"": testutil.DummyStateMetadata(originCommitment).Bytes(),
+				},
 			},
 			&iotago.SenderFeature{
 				Address: stateAddress,
@@ -155,7 +157,9 @@ func (bfT *BlockFactory) GetNextBlock(
 		_, ok := f.(*iotago.StateMetadataFeature)
 		if ok {
 			return &iotago.StateMetadataFeature{
-				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{"": testutil.DummyStateMetadata(newCommitment).Bytes()},
+				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
+					"": testutil.DummyStateMetadata(newCommitment).Bytes(),
+				},
 			}
 		}
 		return f

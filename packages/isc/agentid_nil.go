@@ -3,6 +3,7 @@ package isc
 import (
 	"io"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -36,6 +37,10 @@ func (a *NilAgentID) Kind() AgentIDKind {
 }
 
 func (a *NilAgentID) String() string {
+	return nilAgentIDString
+}
+
+func (*NilAgentID) Bech32(prefix iotago.NetworkPrefix) string {
 	return nilAgentIDString
 }
 

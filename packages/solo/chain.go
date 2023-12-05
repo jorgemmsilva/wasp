@@ -570,7 +570,7 @@ func (ch *Chain) GetL2FundsFromFaucet(agentID isc.AgentID, baseTokens ...iotago.
 	// deterministically find a L1 address that has 0 balance on L2
 	walletKey, walletAddr := func() (*cryptolib.KeyPair, iotago.Address) {
 		masterSeed := []byte("GetL2FundsFromFaucet")
-		i := uint64(0)
+		i := uint32(0)
 		for {
 			ss := cryptolib.SubSeed(masterSeed, i, testutil.L1API.ProtocolParameters().Bech32HRP())
 			key, addr := ch.Env.NewKeyPair(&ss)

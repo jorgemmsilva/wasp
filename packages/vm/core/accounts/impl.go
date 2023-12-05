@@ -314,6 +314,9 @@ func foundryModifySupply(ctx isc.Sandbox) dict.Dict {
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
 	out, _ := GetFoundryOutput(state, sn, accountID, ctx.L1API())
+	if out == nil {
+		panic(errFoundryNotFound)
+	}
 	nativeTokenID, err := out.NativeTokenID()
 	ctx.RequireNoError(err, "internal")
 

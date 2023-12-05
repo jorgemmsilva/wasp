@@ -4,6 +4,8 @@
 package evmimpl
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -11,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
@@ -54,6 +57,22 @@ func (h *magicContractHandler) TakeAllowedFunds(addr common.Address, allowance i
 
 var errInvalidAllowance = coreerrors.Register("allowance must not be greater than sent tokens").Create()
 
+func (h *magicContractHandler) handleCallValue(callValue *big.Int) iotago.BaseToken {
+	adjustedTxValue, _ := util.EthereumDecimalsToBaseTokenDecimals(callValue, h.ctx.TokenInfo().Decimals)
+
+	evmAddr := isc.NewEthereumAddressAgentID(h.ctx.ChainID(), iscmagic.Address)
+	caller := isc.NewEthereumAddressAgentID(h.ctx.ChainID(), h.caller.Address())
+
+	// Move the already transferred base tokens from the 0x1074 address back to the callers account.
+	h.ctx.Privileged().MustMoveBetweenAccounts(
+		evmAddr,
+		caller,
+		isc.NewAssetsBaseTokens(adjustedTxValue),
+	)
+
+	return adjustedTxValue
+}
+
 // handler for ISCSandbox::send
 func (h *magicContractHandler) Send(
 	targetAddress iscmagic.L1Address,
@@ -79,7 +98,12 @@ func (h *magicContractHandler) Send(
 			ReturnAddress: sendOptions.Expiration.ReturnAddress.MustUnwrap(),
 		})
 	}
-	// 	id := nftID.Unwrap()
+
+	if h.callValue.BitLen() > 0 {
+		additionalCallValue := h.handleCallValue(h.callValue)
+		req.Assets.BaseTokens += additionalCallValue
+	}
+
 	h.adjustStorageDeposit(req)
 
 	// make sure that allowance <= sent tokens, so that the target contract does not

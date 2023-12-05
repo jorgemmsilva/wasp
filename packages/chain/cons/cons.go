@@ -601,6 +601,16 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 		vmResult.StateDraft = nil
 	}
 
+	// Make sure all the fields in the TX are ordered properly.
+	essenceBin, err := vmResult.TransactionEssence.Serialize(serializer.DeSeriModePerformValidation|serializer.DeSeriModePerformLexicalOrdering, nil)
+	if err != nil {
+		panic(fmt.Errorf("uponVMOutputReceived: cannot serialize the essence for lex ordering: %w", err))
+	}
+	_, err = vmResult.TransactionEssence.Deserialize(essenceBin, serializer.DeSeriModePerformValidation, nil)
+	if err != nil {
+		panic(fmt.Errorf("uponVMOutputReceived: cannot deserialize the essence for lex ordering: %w", err))
+	}
+
 	signingMsg, err := vmResult.Transaction.SigningMessage()
 	if err != nil {
 		panic(fmt.Errorf("uponVMOutputReceived: cannot obtain signing message: %w", err))

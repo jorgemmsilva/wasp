@@ -8,7 +8,7 @@ import (
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
-// TODO: copied from iota.go/address.go -- should be made public
+// TODO: copied from iota.go/address.go -- should probably be made public in iotago
 func newAddress(addressType iotago.AddressType) (address iotago.Address, err error) {
 	switch addressType {
 	case iotago.AddressEd25519:

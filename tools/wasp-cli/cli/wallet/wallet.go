@@ -27,7 +27,7 @@ func Load() *Wallet {
 	masterSeed, err := hexutil.DecodeHex(seedHex)
 	log.Check(err)
 
-	kp := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(masterSeed, uint64(AddressIndex), cliclients.L1Client().Bech32HRP(), useLegacyDerivation))
+	kp := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(masterSeed, uint32(AddressIndex), cliclients.L1Client().Bech32HRP(), useLegacyDerivation))
 
 	return &Wallet{KeyPair: kp, AddressIndex: AddressIndex}
 }

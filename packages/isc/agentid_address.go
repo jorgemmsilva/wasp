@@ -1,10 +1,8 @@
 package isc
 
 import (
-	"context"
+	"fmt"
 	"io"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 
@@ -22,15 +20,13 @@ func NewAddressAgentID(addr iotago.Address) *AddressAgentID {
 	return &AddressAgentID{a: addr}
 }
 
-func addressAgentIDFromString(s string) (*AddressAgentID, error) {
-	b, err := hexutil.Decode(s)
+func addressAgentIDFromString(prefix iotago.NetworkPrefix, s string) (*AddressAgentID, error) {
+	p, addr, err := iotago.ParseBech32(s)
 	if err != nil {
 		return nil, err
 	}
-	var addr iotago.Address
-	_, err = iotago.CommonSerixAPI().Decode(context.Background(), b, addr)
-	if err != nil {
-		return nil, err
+	if p != prefix {
+		return nil, fmt.Errorf("expected network prefix %q, got %q", prefix, p)
 	}
 	return &AddressAgentID{a: addr}, nil
 }
@@ -67,6 +63,10 @@ func (a *AddressAgentID) Kind() AgentIDKind {
 
 func (a *AddressAgentID) String() string {
 	return a.a.String()
+}
+
+func (a *AddressAgentID) Bech32(prefix iotago.NetworkPrefix) string {
+	return a.a.Bech32(prefix)
 }
 
 func (a *AddressAgentID) Read(r io.Reader) error {

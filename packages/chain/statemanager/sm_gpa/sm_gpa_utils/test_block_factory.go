@@ -150,7 +150,7 @@ func (bfT *BlockFactory) GetNextBlock(
 	// require.EqualValues(t, stateDraft.BlockIndex(), block.BlockIndex())
 	newCommitment := block.L1Commitment()
 
-	consumedAnchorOutput := bfT.GetAnchorOutput(commitment)
+	consumedAnchorOutput := bfT.GetChainOutputs(commitment).AnchorOutput
 
 	newFeatures := lo.Map(consumedAnchorOutput.Features, func(f iotago.Feature, i int) iotago.Feature {
 		_, ok := f.(*iotago.StateMetadataFeature)
@@ -158,9 +158,8 @@ func (bfT *BlockFactory) GetNextBlock(
 			return &iotago.StateMetadataFeature{
 				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{"": testutil.DummyStateMetadata(newCommitment).Bytes()},
 			}
-		} else {
-			return f
 		}
+		return f
 	})
 
 	anchorOutput := &iotago.AnchorOutput{
@@ -194,10 +193,6 @@ func (bfT *BlockFactory) GetChainOutputs(commitment *state.L1Commitment) *isc.Ch
 	result, ok := bfT.anchorOutputs[commitment.BlockHash()]
 	require.True(bfT.t, ok)
 	return result
-}
-
-func (bfT *BlockFactory) GetAnchorOutput(commitment *state.L1Commitment) *iotago.AnchorOutput {
-	return bfT.GetChainOutputs(commitment).AnchorOutput
 }
 
 func getRandomTxID(t require.TestingT) iotago.TransactionID {

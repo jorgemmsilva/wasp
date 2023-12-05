@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
-	iotago "github.com/iotaledger/iota.go/v3"
-	"github.com/iotaledger/iota.go/v3/tpkg"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -16,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/state/indexedstore"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -30,21 +31,19 @@ func TestNFTDepositNoIssuer(t *testing.T) {
 		EntryPoint:     accounts.FuncDeposit.Hname(),
 	}
 	o := &iotago.NFTOutput{
-		Amount:       100 * isc.Million,
-		NativeTokens: []*iotago.NativeToken{},
-		NFTID:        iotago.NFTID{0x1},
-		Conditions:   []iotago.UnlockCondition{},
-		Features: []iotago.Feature{
+		Amount: 100 * isc.Million,
+		NFTID:  iotago.NFTID{0x1},
+		Features: iotago.NFTOutputFeatures{
 			&iotago.MetadataFeature{
-				Data: metadata.Bytes(),
+				Entries: iotago.MetadataFeatureEntries{"": metadata.Bytes()},
 			},
 			&iotago.SenderFeature{
 				Address: tpkg.RandEd25519Address(),
 			},
 		},
-		ImmutableFeatures: []iotago.Feature{
+		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.MetadataFeature{
-				Data: []byte("foobar"),
+				Entries: iotago.MetadataFeatureEntries{"": []byte("foobar")},
 			},
 		},
 	}
@@ -70,34 +69,31 @@ func simulateRunOutput(t *testing.T, output iotago.Output) *vm.VMTaskResult {
 
 	// create the AO for a new chain
 	chainCreator := cryptolib.KeyPairFromSeed(cryptolib.SeedFromBytes([]byte("foobar")))
-	_, chainAO, _, err := origin.NewChainOriginTransaction(
+	_, chainOutputs, _, err := origin.NewChainOriginTransaction(
 		chainCreator,
 		chainCreator.Address(),
 		chainCreator.Address(),
 		10*isc.Million,
+		0,
 		nil,
 		iotago.OutputSet{
 			iotago.OutputID{}: &iotago.BasicOutput{
-				Amount:       1000 * isc.Million,
-				NativeTokens: []*iotago.NativeToken{},
-				Conditions:   []iotago.UnlockCondition{},
-				Features:     []iotago.Feature{},
+				Amount: 1000 * isc.Million,
 			},
 		},
-		iotago.OutputIDs{{}},
 		0,
+		0,
+		testutil.L1API,
 	)
 	require.NoError(t, err)
-	chainAOID := iotago.OutputID{}
 
 	// create task and run it
 	task := &vm.VMTask{
 		Processors:           processors.MustNew(coreprocessors.NewConfigWithCoreContracts()),
-		AnchorOutput:         chainAO,
-		AnchorOutputID:       chainAOID,
+		Inputs:               chainOutputs,
 		Store:                indexedstore.New(state.NewStore(db, mu)),
 		Requests:             []isc.Request{req},
-		TimeAssumption:       time.Now(),
+		Timestamp:            time.Now(),
 		Entropy:              [32]byte{},
 		ValidatorFeeTarget:   nil,
 		EstimateGasMode:      false,
@@ -107,8 +103,7 @@ func simulateRunOutput(t *testing.T, output iotago.Output) *vm.VMTaskResult {
 		Log:                  testlogger.NewLogger(t),
 	}
 
-	chainAOWithID := isc.NewAliasOutputWithID(chainAO, chainAOID)
-	origin.InitChainByAliasOutput(task.Store, chainAOWithID)
+	origin.InitChainByAnchorOutput(task.Store, chainOutputs, testutil.L1API)
 
 	return runTask(task)
 }

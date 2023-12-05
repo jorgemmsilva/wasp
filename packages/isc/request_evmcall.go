@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -129,12 +128,4 @@ func (req *evmOffLedgerCallRequest) VerifySignature() error {
 
 func (*evmOffLedgerCallRequest) EVMTransaction() *types.Transaction {
 	return nil
-}
-
-func (req *evmOffLedgerCallRequest) EVMCallData() *EVMCallData {
-	return EVMCallDataFromCallMsg(req.callMsg)
-}
-
-func (req *evmOffLedgerCallRequest) TxValue() *big.Int {
-	return req.callMsg.Value
 }

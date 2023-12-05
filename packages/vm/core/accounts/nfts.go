@@ -113,8 +113,8 @@ func CreditNFTToAccount(state kv.KVStore, agentID isc.AgentID, nftOutput *iotago
 		panic("empty NFTID")
 	}
 
-	issuerFeature := nftOutput.ImmutableFeatureSet().IssuerFeature()
 	var issuer iotago.Address
+	issuerFeature := nftOutput.ImmutableFeatureSet().Issuer()
 	if issuerFeature != nil {
 		issuer = issuerFeature.Address
 	}

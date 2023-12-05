@@ -3,8 +3,6 @@ package isc
 import (
 	"fmt"
 	"io"
-	"math/big"
-	"time"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -271,14 +269,6 @@ func (req *onLedgerRequestData) TimeLock() (iotago.SlotIndex, bool) {
 		return 0, false
 	}
 	return timelock.Slot, true
-}
-
-func (req *onLedgerRequestData) TxValue() *big.Int {
-	return new(big.Int).SetUint64(req.output.Deposit())
-}
-
-func (req *onLedgerRequestData) EVMCallData() *EVMCallData {
-	return nil
 }
 
 // region RetryOnLedgerRequest //////////////////////////////////////////////////////////////////

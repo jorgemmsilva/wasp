@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -66,14 +65,6 @@ func (req *OffLedgerRequestData) Read(r io.Reader) error {
 	rr.Read(req.signature.publicKey)
 	req.signature.signature = rr.ReadBytes()
 	return rr.Err
-}
-
-func (req *OffLedgerRequestData) TxValue() *big.Int {
-	return big.NewInt(0)
-}
-
-func (req *OffLedgerRequestData) EVMCallData() *EVMCallData {
-	return nil
 }
 
 func (req *OffLedgerRequestData) Write(w io.Writer) error {

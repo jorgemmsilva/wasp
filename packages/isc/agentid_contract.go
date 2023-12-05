@@ -78,6 +78,10 @@ func (a *ContractAgentID) String() string {
 	return a.hname.String() + AgentIDStringSeparator + a.chainID.String()
 }
 
+func (a *ContractAgentID) Bech32(prefix iotago.NetworkPrefix) string {
+	return a.hname.String() + AgentIDStringSeparator + a.chainID.Bech32(prefix)
+}
+
 func (a *ContractAgentID) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.ReadKindAndVerify(rwutil.Kind(a.Kind()))

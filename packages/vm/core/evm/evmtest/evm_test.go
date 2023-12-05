@@ -615,7 +615,7 @@ func TestSendNonPayableValueTX(t *testing.T) {
 	senderInitialBalance := env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddress))
 
 	// call any function including some value
-	value, remainder := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, parameters.L1().BaseToken.Decimals)
+	value, remainder := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, testutil.TokenInfo.Decimals)
 	require.Zero(t, remainder)
 
 	sandbox := env.ISCMagicSandbox(ethKey)
@@ -645,7 +645,7 @@ func TestSendPayableValueTX(t *testing.T) {
 	require.Zero(t, env.solo.L1BaseTokens(receiver))
 	senderInitialBalance := env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, senderEthAddress))
 
-	value, remainder := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, parameters.L1().BaseToken.Decimals)
+	value, remainder := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, testutil.TokenInfo.Decimals)
 	require.Zero(t, remainder)
 
 	res, err := env.ISCMagicSandbox(ethKey).CallFn(
@@ -664,7 +664,7 @@ func TestSendPayableValueTX(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	decimals := parameters.L1().BaseToken.Decimals
+	decimals := testutil.TokenInfo.Decimals
 	valueInBaseTokens, bigRemainder := util.EthereumDecimalsToBaseTokenDecimals(
 		value,
 		decimals,

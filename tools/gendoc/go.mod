@@ -3,7 +3,7 @@ module github.com/iotaledger/wasp/tools/gendoc
 go 1.21
 
 replace (
-	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.12.2-wasp2
+	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.12.2-wasp3
 	github.com/iotaledger/wasp => ../../
 	go.dedis.ch/kyber/v3 => github.com/kape1395/kyber/v3 v3.0.14-0.20230124095845-ec682ff08c93 // branch: dkg-2suites
 )
@@ -59,7 +59,7 @@ require (
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
-	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.1.0 // indirect
 	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
@@ -78,22 +78,22 @@ require (
 	github.com/huin/goupnp v1.2.0 // indirect
 	github.com/iancoleman/orderedmap v0.3.0 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
-	github.com/iotaledger/hive.go/constraints v0.0.0-20231127113116-6e22aa5eded9 // indirect
+	github.com/iotaledger/hive.go/constraints v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231113110812-4ca2b6cc9a42 // indirect
-	github.com/iotaledger/hive.go/crypto v0.0.0-20231127113116-6e22aa5eded9 // indirect
+	github.com/iotaledger/hive.go/crypto v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/iotaledger/hive.go/ds v0.0.0-20231113110812-4ca2b6cc9a42 // indirect
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20231127113116-6e22aa5eded9 // indirect
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20231106113411-94ac829adbb2 // indirect
-	github.com/iotaledger/hive.go/lo v0.0.0-20231127113116-6e22aa5eded9 // indirect
+	github.com/iotaledger/hive.go/lo v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/iotaledger/hive.go/logger v0.0.0-20231113110812-4ca2b6cc9a42 // indirect
 	github.com/iotaledger/hive.go/objectstorage v0.0.0-20231010133617-cdbd5387e2af // indirect
-	github.com/iotaledger/hive.go/runtime v0.0.0-20231127113116-6e22aa5eded9 // indirect
+	github.com/iotaledger/hive.go/runtime v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20231113110812-4ca2b6cc9a42 // indirect
-	github.com/iotaledger/hive.go/stringify v0.0.0-20231127113116-6e22aa5eded9 // indirect
+	github.com/iotaledger/hive.go/stringify v0.0.0-20231130122510-e3dddb0214f0 // indirect
 	github.com/iotaledger/hive.go/web v0.0.0-20231106113411-94ac829adbb2 // indirect
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231127144558-80fc60998ef4 // indirect
-	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231124154447-f20fb8921e8c // indirect
-	github.com/iotaledger/iota.go/v4 v4.0.0-20231124103306-ad44904e2b86 // indirect
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20231201123347-1c44b3f24221 // indirect
+	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20231201114846-3bb5c3fd5665 // indirect
+	github.com/iotaledger/iota.go/v4 v4.0.0-20231204084048-9c12053adaf6 // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
@@ -192,16 +192,16 @@ require (
 	go.uber.org/fx v1.20.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.15.0 // indirect
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
-	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/crypto v0.16.0 // indirect
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
+	golang.org/x/tools v0.15.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

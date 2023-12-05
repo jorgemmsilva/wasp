@@ -2,7 +2,11 @@ package isc
 
 import (
 	"io"
+	"math/big"
+	"time"
 
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -24,6 +28,28 @@ type Request interface {
 	Write(w io.Writer) error
 }
 
+type EVMCallData struct {
+	Value *big.Int
+	To    *common.Address
+	Gas   uint64
+}
+
+func EVMCallDataFromTx(tx *types.Transaction) *EVMCallData {
+	return &EVMCallData{
+		To:    tx.To(),
+		Value: tx.Value(),
+		Gas:   tx.Gas(),
+	}
+}
+
+func EVMCallDataFromCallMsg(msg ethereum.CallMsg) *EVMCallData {
+	return &EVMCallData{
+		To:    msg.To,
+		Value: msg.Value,
+		Gas:   msg.Gas,
+	}
+}
+
 type Calldata interface {
 	Allowance() *Assets // transfer of assets to the smart contract. Debited from sender anchor
 	Assets() *Assets    // attached assets for the UTXO request, nil for off-ledger. All goes to sender
@@ -34,6 +60,8 @@ type Calldata interface {
 	Params() dict.Dict
 	SenderAccount() AgentID
 	TargetAddress() iotago.Address
+	TxValue() *big.Int
+	EVMCallData() *EVMCallData
 }
 
 type Features interface {

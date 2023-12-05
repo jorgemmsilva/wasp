@@ -1,6 +1,15 @@
 GIT_REF_TAG := $(shell git describe --tags)
 BUILD_TAGS = rocksdb
+ifdef OS
+# windows
+BUILD_LD_FLAGS = "-X=github.com/iotaledger/wasp/components/app.Version=$(GIT_REF_TAG)"
+else
+ifeq ($(shell uname -m), arm64)
+BUILD_LD_FLAGS = "-X=github.com/iotaledger/wasp/components/app.Version=$(GIT_REF_TAG) -extldflags \"-Wa,--noexecstack\""
+else
 BUILD_LD_FLAGS = "-X=github.com/iotaledger/wasp/components/app.Version=$(GIT_REF_TAG) -extldflags \"-z noexecstack\""
+endif
+endif
 DOCKER_BUILD_ARGS = # E.g. make docker-build "DOCKER_BUILD_ARGS=--tag wasp:devel"
 
 #
@@ -98,5 +107,10 @@ docker-push:
 	docker push $(DOCKER_USERNAME)/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
 docker-build-push: docker-check-push-deps docker-build docker-push
+
+deps-versions:
+	@grep -n "====" packages/testutil/privtangle/privtangle.go | \
+		awk -F ":" '{ print $$1 }' | \
+		{ read from ; read to; awk -v s="$$from" -v e="$$to" 'NR>1*s&&NR<1*e' packages/testutil/privtangle/privtangle.go; }
 
 .PHONY: all wasm compile-solidity build-cli build-full build build-lint test-full test test-short install-cli install-full install lint gofumpt-list docker-build deps-versions

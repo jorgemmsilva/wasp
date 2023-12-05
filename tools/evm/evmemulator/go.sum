@@ -350,10 +350,6 @@ github.com/iotaledger/inx-app v1.0.0-rc.3.0.20230417131029-0bfe891d7c4a h1:mVYBX
 github.com/iotaledger/inx-app v1.0.0-rc.3.0.20230417131029-0bfe891d7c4a/go.mod h1:9AA+oDJv4WGM0YdDm7Lh24XK5O9Jd9SPw3ApMJSSv7k=
 github.com/iotaledger/inx/go v1.0.0-rc.2 h1:SjHGHQ1pEe7/B0bnVIHCa1zQBvcC0QRwcYPzUGarrJU=
 github.com/iotaledger/inx/go v1.0.0-rc.2/go.mod h1:PYijAQs5lgAzLENkpvdSoLM8Iq4KAg+CdU5Smxj01lI=
-github.com/iotaledger/iota.go v1.0.0 h1:tqm1FxJ/zOdzbrAaQ5BQpVF8dUy2eeGlSeWlNG8GoXY=
-github.com/iotaledger/iota.go v1.0.0/go.mod h1:RiKYwDyY7aCD1L0YRzHSjOsJ5mUR9yvQpvhZncNcGQI=
-github.com/iotaledger/iota.go/v3 v3.0.0-rc.3 h1:/2gH+AlsWX2T7f4uHvD7oAHmPRsW+SkjR29txzqpi5M=
-github.com/iotaledger/iota.go/v3 v3.0.0-rc.3/go.mod h1:R3m6d5AFI0I++HOaYQR7QU8hY//vUSwbOyqQ7Bco2O4=
 github.com/iotaledger/wasp/tools/wasp-cli v0.0.0-20230923193348-da186f5602e0 h1:sr0a2tX0OXIHR9G+6kVo4+7A63/LURsb0J+6b5LiC7s=
 github.com/iotaledger/wasp/tools/wasp-cli v0.0.0-20230923193348-da186f5602e0/go.mod h1:AwWT534Yq1kea11WBQFkaU7YndbJfOs81MRt+QrEoE0=
 github.com/ipfs/go-cid v0.4.1 h1:A/T3qGvxi4kpKWWcPC/PgbvDA2bjVLO7n4UeVwnbs/s=

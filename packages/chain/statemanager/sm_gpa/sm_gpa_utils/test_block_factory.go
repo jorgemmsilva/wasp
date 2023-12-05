@@ -5,9 +5,9 @@ package sm_gpa_utils
 
 import (
 	"crypto/rand"
-	mathrand "math/rand"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
@@ -47,35 +47,23 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 	anchorOutput0 := &iotago.AnchorOutput{
 		Amount:   tpkg.TestTokenSupply,
 		AnchorID: chainID.AsAnchorID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
-		ImmutableFeatures: []iotago.Feature{
-			iotago.StateMetadataFeature{
+		UnlockConditions: iotago.AnchorOutputUnlockConditions{
+			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
+			&iotago.GovernorAddressUnlockCondition{Address: stateAddress},
+		},
+		Features: iotago.AnchorOutputFeatures{
+			&iotago.StateMetadataFeature{
 				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
 					"": testutil.DummyStateMetadata(originCommitment).Bytes(),
 				},
 			},
-		},
-		UnlockConditions: []iotago.AnchorOutputUnlockCondition{
-			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
-			&iotago.GovernorAddressUnlockCondition{Address: stateAddress},
-		},
-		Features: []iotago.Feature{
-			&iotago.SenderFeature{Address: stateAddress},
+			&iotago.SenderFeature{
+				Address: stateAddress,
+			},
 		},
 	}
-
-	accountOutput := iotago.AccountOutput{
-		Amount:            iotago.BaseToken(mathrand.Uint64()),
-		UnlockConditions:  make(iotago.AccountOutputUnlockConditions, 0),
-		Features:          make(iotago.AccountOutputFeatures, 0),
-		ImmutableFeatures: make(iotago.AccountOutputImmFeatures, 0),
-	}
-	rand.Read(accountOutput.AccountID[:])
-	accountOutputID := iotago.OutputID{}
-	rand.Read(accountOutputID[:])
-
 	anchorOutputs := make(map[state.BlockHash]*isc.ChainOutputs)
-	// TODO: <lmoe> Added some fake account output/id
-	originOutput := isc.NewChainOutputs(anchorOutput0, anchorOutput0ID, &accountOutput, accountOutputID)
+	originOutput := isc.NewChainOutputs(anchorOutput0, anchorOutput0ID, nil, iotago.OutputID{})
 	anchorOutputs[originCommitment.BlockHash()] = originOutput
 	chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
 	origin.InitChain(chainStore, chainInitParams, 0)
@@ -98,7 +86,7 @@ func (bfT *BlockFactory) GetChainInitParameters() dict.Dict {
 }
 
 func (bfT *BlockFactory) GetOriginOutput() *isc.ChainOutputs {
-	return bfT.GetAnchorOutput(origin.L1Commitment(bfT.chainInitParams, 0))
+	return bfT.GetChainOutputs(origin.L1Commitment(bfT.chainInitParams, 0))
 }
 
 func (bfT *BlockFactory) GetOriginBlock() state.Block {
@@ -163,33 +151,31 @@ func (bfT *BlockFactory) GetNextBlock(
 	// require.EqualValues(t, stateDraft.BlockIndex(), block.BlockIndex())
 	newCommitment := block.L1Commitment()
 
-	consumedAnchorOutput := bfT.GetAnchorOutput(commitment).AnchorOutput
+	consumedAnchorOutput := bfT.GetChainOutputs(commitment).AnchorOutput
+
+	newFeatures := lo.Map(consumedAnchorOutput.Features, func(f iotago.Feature, i int) iotago.Feature {
+		_, ok := f.(*iotago.StateMetadataFeature)
+		if ok {
+			return &iotago.StateMetadataFeature{
+				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
+					"": testutil.DummyStateMetadata(newCommitment).Bytes(),
+				},
+			}
+		}
+		return f
+	})
 
 	anchorOutput := &iotago.AnchorOutput{
 		Amount:            consumedAnchorOutput.Amount,
+		Mana:              consumedAnchorOutput.Mana,
 		AnchorID:          consumedAnchorOutput.AnchorID,
 		StateIndex:        consumedAnchorOutput.StateIndex + 1,
-		ImmutableFeatures: consumedAnchorOutput.ImmutableFeatures,
 		UnlockConditions:  consumedAnchorOutput.UnlockConditions,
-		Features:          consumedAnchorOutput.Features,
+		Features:          newFeatures,
+		ImmutableFeatures: consumedAnchorOutput.ImmutableFeatures,
 	}
-
-	anchorOutput.ImmutableFeatureSet().StateMetadata().Entries[""] = testutil.DummyStateMetadata(newCommitment).Bytes()
-
 	anchorOutputID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(bfT.t), 0)
-
-	accountOutput := iotago.AccountOutput{
-		Amount:            iotago.BaseToken(mathrand.Uint64()),
-		UnlockConditions:  make(iotago.AccountOutputUnlockConditions, 0),
-		Features:          make(iotago.AccountOutputFeatures, 0),
-		ImmutableFeatures: make(iotago.AccountOutputImmFeatures, 0),
-	}
-	rand.Read(accountOutput.AccountID[:])
-	accountOutputID := iotago.OutputID{}
-	rand.Read(accountOutputID[:])
-
-	// TODO: <lmoe> Added some fake account output/id
-	anchorOutputWithID := isc.NewChainOutputs(anchorOutput, anchorOutputID, &accountOutput, accountOutputID)
+	anchorOutputWithID := isc.NewChainOutputs(anchorOutput, anchorOutputID, nil, iotago.OutputID{})
 	bfT.anchorOutputs[newCommitment.BlockHash()] = anchorOutputWithID
 
 	return block
@@ -206,7 +192,7 @@ func (bfT *BlockFactory) GetStateDraft(block state.Block) state.StateDraft {
 	return result
 }
 
-func (bfT *BlockFactory) GetAnchorOutput(commitment *state.L1Commitment) *isc.ChainOutputs {
+func (bfT *BlockFactory) GetChainOutputs(commitment *state.L1Commitment) *isc.ChainOutputs {
 	result, ok := bfT.anchorOutputs[commitment.BlockHash()]
 	require.True(bfT.t, ok)
 	return result

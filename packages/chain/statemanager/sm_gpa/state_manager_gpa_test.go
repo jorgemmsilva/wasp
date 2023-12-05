@@ -64,7 +64,7 @@ func TestManyNodes(t *testing.T) {
 	}
 	// Nodes are checked in parallel
 	lastCommitment = blocks[15].L1Commitment()
-	lastOutput := env.bf.GetAnchorOutput(lastCommitment)
+	lastOutput := env.bf.GetChainOutputs(lastCommitment)
 	cspInputs := make(map[gpa.NodeID]gpa.Input)
 	cspRespChans := make(map[gpa.NodeID]<-chan interface{})
 	for i := 1; i < len(nodeIDs); i++ {

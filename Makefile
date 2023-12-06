@@ -99,6 +99,7 @@ SHORT_TESTS = \
 ./packages/vm/core/evm/evmtest \
 ./packages/vm/core/testcore \
 ./packages/vm/gas \
+./packages/vm/vmimpl \
 ./packages/vm/vmtxbuilder \
 ./tools/evm/iscutils \
 
@@ -146,7 +147,6 @@ SHORT_TESTS_WIP = \
 ./packages/tcrypto/bls \
 ./packages/util/l1starter \
 ./packages/vm/core/testcore/sbtests \
-./packages/vm/vmimpl \
 ./packages/wasmvm/wasmclient/go/test \
 ./packages/webapi \
 ./packages/webapi/controllers/node \

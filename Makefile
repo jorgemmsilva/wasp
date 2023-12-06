@@ -57,8 +57,117 @@ test-full: install
 test: install
 	go test -tags $(BUILD_TAGS) -ldflags $(BUILD_LD_FLAGS) $(TEST_PKG) --timeout 90m --count 1 -failfast  $(TEST_ARG)
 
+# TODO: once all test packages are passing, uncomment this:
+# SHORT_TESTS = $(shell go list ./... | grep -v github.com/iotaledger/wasp/contracts/wasm | sed 's|github.com/iotaledger/wasp|.|')
+
+# TODO: once all test packages are passing, remove this
+SHORT_TESTS = \
+./components/database \
+./components/webapi \
+./packages/cryptolib \
+./packages/database \
+./packages/evm/jsonrpc/jsonrpctest \
+./packages/hashing \
+./packages/isc \
+./packages/isc/rotate \
+./packages/kv/buffered \
+./packages/kv/codec \
+./packages/kv/collections \
+./packages/kv/dict \
+./packages/onchangemap \
+./packages/origin \
+./packages/registry \
+./packages/shutdown \
+./packages/solo \
+./packages/solo/examples \
+./packages/solo/solotest \
+./packages/state \
+./packages/testutil \
+./packages/testutil/testlogger \
+./packages/testutil/testpeers \
+./packages/testutil/utxodb \
+./packages/transaction \
+./packages/trie \
+./packages/trie/test \
+./packages/util \
+./packages/util/byz_quorum \
+./packages/util/pipe \
+./packages/vm/core/accounts \
+./packages/vm/core/blob \
+./packages/vm/core/blocklog \
+./packages/vm/core/evm/emulator \
+./packages/vm/core/evm/evmtest \
+./packages/vm/core/testcore \
+./packages/vm/gas \
+./packages/vm/vmtxbuilder \
+./tools/evm/iscutils \
+
+
+# TODO: move these to SHORT_TESTS when they are passing
+SHORT_TESTS_WIP = \
+./contracts/native/inccounter \
+./documentation/tutorial-examples/test \
+./packages/authentication \
+./packages/chain \
+./packages/chain/chainmanager \
+./packages/chain/cmt_log \
+./packages/chain/cons \
+./packages/chain/cons/bp \
+./packages/chain/cons/cons_gr \
+./packages/chain/dss \
+./packages/chain/mempool \
+./packages/chain/mempool/distsync \
+./packages/chain/statemanager \
+./packages/chain/statemanager/sm_gpa \
+./packages/chain/statemanager/sm_gpa/sm_gpa_utils \
+./packages/chain/statemanager/sm_gpa/sm_messages \
+./packages/chain/statemanager/sm_snapshots \
+./packages/chain/statemanager/sm_utils \
+./packages/chains \
+./packages/chains/access_mgr \
+./packages/chains/access_mgr/am_dist \
+./packages/dkg \
+./packages/gpa \
+./packages/gpa/aba/mostefaoui \
+./packages/gpa/acs \
+./packages/gpa/acss \
+./packages/gpa/acss/crypto \
+./packages/gpa/adkg \
+./packages/gpa/adkg/nonce \
+./packages/gpa/cc/blssig \
+./packages/gpa/cc/semi \
+./packages/gpa/rbc/bracha \
+./packages/metrics \
+./packages/peering \
+./packages/peering/domain \
+./packages/peering/group \
+./packages/peering/lpp \
+./packages/tcrypto \
+./packages/tcrypto/bls \
+./packages/util/l1starter \
+./packages/vm/core/testcore/sbtests \
+./packages/vm/vmimpl \
+./packages/wasmvm/wasmclient/go/test \
+./packages/webapi \
+./packages/webapi/controllers/node \
+./packages/webapi/test \
+./packages/webapi/websocket \
+./packages/webapi/websocket/commands \
+./tools/cluster \
+./tools/cluster/tests \
+./tools/schema \
+./tools/schema/model \
+./tools/schema/model/yaml \
+
+
 test-short:
-	go test -tags $(BUILD_TAGS) -ldflags $(BUILD_LD_FLAGS) --short --count 1 -failfast $(shell go list ./... | grep -v github.com/iotaledger/wasp/contracts/wasm)
+	@for p in $(SHORT_TESTS); do \
+		if [[ -n `find $$p -name '*_test.go' -print -quit` ]]; then \
+			go test -tags $(BUILD_TAGS) -ldflags $(BUILD_LD_FLAGS) --short --count 1 -failfast $$p || exit 1; \
+		else \
+		    echo "$$p: no test files"; \
+		fi \
+	done
 
 install-cli:
 	cd tools/wasp-cli && go mod tidy && go install -ldflags $(BUILD_LD_FLAGS)

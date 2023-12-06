@@ -106,11 +106,6 @@ func (s *SandboxBase) Timestamp() time.Time {
 	return s.Ctx.Timestamp()
 }
 
-func (s *SandboxBase) SlotIndex() iotago.SlotIndex {
-	panic("not implemented") // TODO does it really make sense for this function to exist?
-	// return parameters.L1API().TimeProvider().SlotFromTime(s.Ctx.Timestamp())
-}
-
 func (s *SandboxBase) Log() isc.LogInterface {
 	// TODO should Log be disabled for wasm contracts? not much of a point in exposing internal logging
 	return s.Ctx

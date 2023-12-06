@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math"
 	"math/big"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/builder"
+	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/iota.go/v4/vm/nova"
 )
@@ -263,7 +265,7 @@ var novaVM = nova.NewVirtualMachine()
 func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 	// serialize for syntactic check
 	if _, err := u.api.Encode(tx, serix.WithValidation()); err != nil {
-		return err
+		return fmt.Errorf("validateTransaction: encode: %w", err)
 	}
 
 	inputs, err := u.getTransactionInputs(tx)
@@ -276,16 +278,27 @@ func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 		}
 	}
 
-	resolvedInputs := vm.ResolvedInputs{InputSet: vm.InputSet(inputs)}
+	slot := u.slotIndex()
+	resolvedInputs := vm.ResolvedInputs{
+		InputSet: vm.InputSet(inputs),
+		CommitmentInput: iotago.NewCommitment(
+			u.api.Version(),
+			slot,
+			iotago.NewCommitmentID(slot-1, tpkg.Rand32ByteArray()),
+			tpkg.Rand32ByteArray(),
+			tpkg.RandUint64(math.MaxUint64),
+			tpkg.RandMana(iotago.MaxMana),
+		),
+	}
 
 	unlockedIdentities, err := novaVM.ValidateUnlocks(tx, resolvedInputs)
 	if err != nil {
-		return err
+		return fmt.Errorf("validateTransaction: ValidateUnlocks: %w", err)
 	}
 
 	_, err = novaVM.Execute(tx.Transaction, resolvedInputs, unlockedIdentities)
 	if err != nil {
-		return err
+		return fmt.Errorf("validateTransaction: Execute: %w", err)
 	}
 
 	return nil

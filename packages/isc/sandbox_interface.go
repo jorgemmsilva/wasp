@@ -39,8 +39,6 @@ type SandboxBase interface {
 	Caller() AgentID
 	// Timestamp returns the Unix timestamp of the current state in seconds
 	Timestamp() time.Time
-	// SlotIndex returns the L1 creation slot for the next anchor output
-	SlotIndex() iotago.SlotIndex
 	// Log returns a logger that outputs on the local machine. It includes Panicf method
 	Log() LogInterface
 	// Utils provides access to common necessary functionality

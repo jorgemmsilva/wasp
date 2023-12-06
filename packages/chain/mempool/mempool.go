@@ -602,7 +602,7 @@ func (mpi *mempoolImpl) refsToPropose(consensusID consGR.ConsensusID) []*isc.Req
 	}
 
 	mpi.offLedgerPool.Iterate(func(account string, entries []*OrderedPoolEntry[isc.OffLedgerRequest]) {
-		agentID, err := isc.AgentIDFromString(account)
+		agentID, err := isc.AgentIDFromString(mpi.l1API.ProtocolParameters().Bech32HRP(), account)
 		if err != nil {
 			panic(fmt.Errorf("invalid agentID string: %s", err.Error()))
 		}
@@ -752,7 +752,7 @@ func (mpi *mempoolImpl) handleReceiveOnLedgerRequest(request isc.OnLedgerRequest
 
 		if mpi.tangleTime.IsZero() || timeLock.Slot > mpi.currentSlotIndex {
 			// TODO: <lmoe> Commented it out to get rid off the missing unixTime logic
-			//mpi.timePool.AddRequest(time.Unix(int64(timeLock.UnixTime), 0), request)
+			// mpi.timePool.AddRequest(time.Unix(int64(timeLock.UnixTime), 0), request)
 			return
 		}
 	}

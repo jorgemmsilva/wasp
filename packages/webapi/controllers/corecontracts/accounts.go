@@ -61,7 +61,7 @@ func (c *Controller) getAccountBalance(e echo.Context) error {
 		return c.handleViewCallError(err, ch.ID())
 	}
 
-	agentID, err := params.DecodeAgentID(e)
+	agentID, err := params.DecodeAgentID(c.l1Api.ProtocolParameters().Bech32HRP(), e)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func (c *Controller) getAccountNFTs(e echo.Context) error {
 		return c.handleViewCallError(err, ch.ID())
 	}
 
-	agentID, err := params.DecodeAgentID(e)
+	agentID, err := params.DecodeAgentID(c.l1Api.ProtocolParameters().Bech32HRP(), e)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func (c *Controller) getAccountFoundries(e echo.Context) error {
 		return c.handleViewCallError(err, ch.ID())
 	}
 
-	agentID, err := params.DecodeAgentID(e)
+	agentID, err := params.DecodeAgentID(c.l1Api.ProtocolParameters().Bech32HRP(), e)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (c *Controller) getAccountNonce(e echo.Context) error {
 		return c.handleViewCallError(err, ch.ID())
 	}
 
-	agentID, err := params.DecodeAgentID(e)
+	agentID, err := params.DecodeAgentID(c.l1Api.ProtocolParameters().Bech32HRP(), e)
 	if err != nil {
 		return err
 	}

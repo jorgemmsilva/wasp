@@ -47,8 +47,8 @@ func DecodeHNameFromHNameHexString(e echo.Context, key string) (isc.Hname, error
 	return hname, nil
 }
 
-func DecodeAgentID(e echo.Context) (isc.AgentID, error) {
-	agentID, err := isc.AgentIDFromString(e.Param(ParamAgentID))
+func DecodeAgentID(prefix iotago.NetworkPrefix, e echo.Context) (isc.AgentID, error) {
+	agentID, err := isc.AgentIDFromString(prefix, e.Param(ParamAgentID))
 	if err != nil {
 		return nil, apierrors.InvalidPropertyError(ParamAgentID, err)
 	}

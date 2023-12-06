@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/serializer/v2/serix"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
@@ -109,6 +110,9 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 			panic(fmt.Sprintf("MakeRotateStateControllerTransaction: %s", err.Error()))
 		}
 		vmctx.task.Log.Debugf("runTask OUT: rotate to address %s", rotationAddr.String())
+	}
+	if _, err := task.L1API.Encode(taskResult.Transaction, serix.WithValidation()); err != nil {
+		panic(fmt.Errorf("runTask: cannot serialize the tx: %w", err))
 	}
 	return taskResult
 }

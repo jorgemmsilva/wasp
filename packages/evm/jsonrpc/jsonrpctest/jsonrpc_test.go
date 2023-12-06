@@ -90,7 +90,7 @@ func TestRPCGetBalance(t *testing.T) {
 	_, emptyAddress := solo.NewEthereumAccount()
 	require.Zero(t, env.Balance(emptyAddress).Uint64())
 	_, nonEmptyAddress := env.soloChain.NewEthereumAccountWithL2Funds()
-	require.Equal(
+	require.EqualValues(
 		t,
 		env.soloChain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.soloChain.ChainID, nonEmptyAddress))*1e12,
 		env.Balance(nonEmptyAddress).Uint64(),

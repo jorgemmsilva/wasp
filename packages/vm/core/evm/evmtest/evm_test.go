@@ -1581,7 +1581,7 @@ func TestEVMWithdrawAll(t *testing.T) {
 
 	// retry the request above, but now leave some tokens to pay for the gas fees
 	tokensToWithdraw -= 2*iscReceipt.GasFeeCharged + 1 // +1 is needed because of the way gas budget calc works
-	metadata.GasBudget = iscReceipt.GasBudget
+	metadata.GasBudget = uint64(iscReceipt.GasBudget)
 	_, err = env.ISCMagicSandbox(ethKey).CallFn(
 		[]ethCallOptions{{sender: ethKey}},
 		"send",

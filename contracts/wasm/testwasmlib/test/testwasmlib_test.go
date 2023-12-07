@@ -211,7 +211,7 @@ func TestTakeAllowance(t *testing.T) {
 	bal := ctx.Balances()
 
 	f := testwasmlib.ScFuncs.TakeAllowance(ctx)
-	const tokensToSend = 1 * isc.Million
+	const tokensToSend = 1 * wasmsolo.Million
 	f.Func.TransferBaseTokens(tokensToSend).Post()
 	require.NoError(t, ctx.Err)
 
@@ -245,7 +245,7 @@ func TestTakeNoAllowance(t *testing.T) {
 	// FuncParamTypes without params does nothing to SC balance
 	// because it does not take the allowance
 	f := testwasmlib.ScFuncs.ParamTypes(ctx)
-	const tokensToSend = 1 * isc.Million
+	const tokensToSend = 1 * wasmsolo.Million
 	f.Func.TransferBaseTokens(tokensToSend).Post()
 	require.NoError(t, ctx.Err)
 	ctx.Balances()

@@ -9,7 +9,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/testutil/testlogger"
+	"github.com/iotaledger/wasp/packages/vm/processors"
+	"github.com/iotaledger/wasp/packages/vm/vmtypes"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zapcore"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -27,7 +32,7 @@ import (
 )
 
 const (
-	SoloDebug        = false
+	SoloDebug        = true
 	SoloHostTracing  = false
 	SoloStackTracing = false
 )
@@ -207,7 +212,7 @@ func soloContext(t testing.TB, chain *solo.Chain, scName string, creator *SoloAg
 	if chain == nil {
 		chain = StartChain(t, "chain1")
 	}
-	err := iscclient.SetSandboxWrappers(chain.ChainID.String())
+	err := iscclient.SetSandboxWrappers(chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	if err != nil {
 		panic(err)
 	}
@@ -232,10 +237,22 @@ func StartChain(t testing.TB, chainName string, env ...*solo.Solo) *solo.Chain {
 		soloEnv = env[0]
 	}
 	if soloEnv == nil {
+		log := testlogger.NewNamedLogger(t.Name(), "04:05.000000000")
+		if !SoloDebug {
+			log = testlogger.WithLevel(log, zapcore.InfoLevel, SoloStackTracing)
+		}
 		soloEnv = solo.New(t, &solo.InitOptions{
 			Debug:                    SoloDebug,
 			PrintStackTrace:          SoloStackTracing,
 			AutoAdjustStorageDeposit: true,
+			Log:                      log,
+			ExtraVMTypes: map[string]processors.VMConstructor{
+				vmtypes.WasmTime: func(binary []byte) (isc.VMProcessor, error) {
+					// TODO (via config?) pass non-default timeout for WasmTime processor like this:
+					// WasmTimeout = 3 * time.Second
+					return wasmhost.GetProcessor(binary, log)
+				},
+			},
 		})
 	}
 	chain, _ := soloEnv.NewChainExt(nil, 0, 0, chainName)

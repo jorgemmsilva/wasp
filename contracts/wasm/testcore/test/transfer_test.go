@@ -3,10 +3,10 @@ package test
 import (
 	"testing"
 
+	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/contracts/wasm/testcore/go/testcore"
-	"github.com/iotaledger/wasp/packages/isc"
 )
 
 func TestDoNothing(t *testing.T) {
@@ -15,11 +15,11 @@ func TestDoNothing(t *testing.T) {
 		bal := ctx.Balances()
 
 		nop := testcore.ScFuncs.DoNothing(ctx)
-		nop.Func.TransferBaseTokens(1 * isc.Million).Post()
+		nop.Func.TransferBaseTokens(1 * wasmsolo.Million).Post()
 		require.NoError(t, ctx.Err)
 
 		bal.UpdateFeeBalances(ctx.GasFee)
-		bal.Originator += 1*isc.Million - ctx.GasFee
+		bal.Originator += 1*wasmsolo.Million - ctx.GasFee
 		bal.VerifyBalances(t)
 	})
 }
@@ -32,10 +32,10 @@ func TestDoNothingUser(t *testing.T) {
 		bal := ctx.Balances(user)
 
 		nop := testcore.ScFuncs.DoNothing(ctx.Sign(user))
-		nop.Func.TransferBaseTokens(1 * isc.Million).Post()
+		nop.Func.TransferBaseTokens(1 * wasmsolo.Million).Post()
 		require.NoError(t, ctx.Err)
 
-		bal.Add(user, 1*isc.Million-ctx.GasFee)
+		bal.Add(user, 1*wasmsolo.Million-ctx.GasFee)
 		bal.UpdateFeeBalances(ctx.GasFee)
 		bal.VerifyBalances(t)
 	})
@@ -84,11 +84,11 @@ func TestDoPanicUser(t *testing.T) {
 		userL1 := user.Balance()
 
 		f := testcore.ScFuncs.TestPanicFullEP(ctx.Sign(user))
-		f.Func.TransferBaseTokens(1 * isc.Million).Post()
+		f.Func.TransferBaseTokens(1 * wasmsolo.Million).Post()
 		require.Error(t, ctx.Err)
-		require.EqualValues(t, userL1-1*isc.Million, user.Balance())
+		require.EqualValues(t, userL1-1*wasmsolo.Million, user.Balance())
 
-		bal.Add(user, 1*isc.Million-ctx.GasFee)
+		bal.Add(user, 1*wasmsolo.Million-ctx.GasFee)
 		bal.UpdateFeeBalances(ctx.GasFee)
 		bal.VerifyBalances(t)
 	})

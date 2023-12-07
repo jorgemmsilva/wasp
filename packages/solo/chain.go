@@ -164,7 +164,7 @@ func (ch *Chain) UploadBlob(user *cryptolib.KeyPair, params ...interface{}) (ret
 		// blob exists, return hash of existing
 		return expectedHash, nil
 	}
-	req := NewCallParams(blob.Contract.Name, blob.FuncStoreBlob.Name, params...)
+	req := CallParamsFromDict(blob.Contract.Name, blob.FuncStoreBlob.Name, blobAsADict)
 	g, _, err := ch.EstimateGasOffLedger(req, nil, true)
 	if err != nil {
 		return [32]byte{}, err

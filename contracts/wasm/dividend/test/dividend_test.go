@@ -10,7 +10,6 @@ import (
 
 	"github.com/iotaledger/wasp/contracts/wasm/dividend/go/dividend"
 	"github.com/iotaledger/wasp/contracts/wasm/dividend/go/dividendimpl"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
 )
 
@@ -80,7 +79,7 @@ func TestDivide1Member(t *testing.T) {
 	bal.Originator += ctx.StorageDeposit
 	bal.VerifyBalances(t)
 
-	const dividendToDivide = 1*isc.Million + 1
+	const dividendToDivide = 1*wasmsolo.Million + 1
 	dividendDivide(ctx, dividendToDivide)
 	require.NoError(t, ctx.Err)
 
@@ -109,7 +108,7 @@ func TestDivide2Members(t *testing.T) {
 	bal.Originator += ctx.StorageDeposit
 	bal.VerifyBalances(t)
 
-	const dividendToDivide = 2*isc.Million - 1
+	const dividendToDivide = 2*wasmsolo.Million - 1
 	dividendDivide(ctx, dividendToDivide)
 	require.NoError(t, ctx.Err)
 
@@ -150,7 +149,7 @@ func TestDivide3Members(t *testing.T) {
 	bal.Originator += ctx.StorageDeposit
 	bal.VerifyBalances(t)
 
-	const dividendToDivide = 2*isc.Million - 1
+	const dividendToDivide = 2*wasmsolo.Million - 1
 	dividendDivide(ctx, dividendToDivide)
 	require.NoError(t, ctx.Err)
 
@@ -161,7 +160,7 @@ func TestDivide3Members(t *testing.T) {
 	bal.Add(member3, dividendToDivide*750/1500)
 	bal.VerifyBalances(t)
 
-	const dividendToDivide2 = 2*isc.Million + 234
+	const dividendToDivide2 = 2*wasmsolo.Million + 234
 	dividendDivide(ctx, dividendToDivide2)
 	require.NoError(t, ctx.Err)
 

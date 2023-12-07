@@ -17,7 +17,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreaccounts"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
@@ -25,7 +24,7 @@ import (
 )
 
 const (
-	sdAllowance = uint64(1 * isc.Million)
+	sdAllowance = 1 * wasmsolo.Million
 	nftMetadata = "NFT metadata"
 )
 
@@ -39,9 +38,9 @@ func setupAccounts(t *testing.T) *wasmsolo.SoloContext {
 func TestDeposit(t *testing.T) {
 	ctx := setupAccounts(t)
 
-	const depositAmount = uint64(1 * isc.Million)
+	const depositAmount = 1 * wasmsolo.Million
 	user := ctx.NewSoloAgent("user")
-	balanceOld := uint64(user.Balance())
+	balanceOld := user.Balance()
 
 	bal := ctx.Balances(user)
 
@@ -139,7 +138,7 @@ func TestFoundryCreateNew(t *testing.T) {
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
-	}, testutil.L1API))
+	}))
 	// we need storage deposit allowance to keep foundry transaction not being trimmed by snapshot
 	f.Func.TransferBaseTokens(sdAllowance).Post()
 	require.NoError(t, ctx.Err)
@@ -151,7 +150,7 @@ func TestFoundryCreateNew(t *testing.T) {
 		MintedTokens:  big.NewInt(2001),
 		MeltedTokens:  big.NewInt(2002),
 		MaximumSupply: big.NewInt(2003),
-	}, testutil.L1API))
+	}))
 	f.Func.TransferBaseTokens(sdAllowance).Post()
 	require.NoError(t, ctx.Err)
 	require.Equal(t, uint32(2), f.Results.FoundrySN().Value())
@@ -166,7 +165,7 @@ func TestFoundryDestroy(t *testing.T) {
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
-	}, testutil.L1API))
+	}))
 	// we need storage deposit allowance to keep foundry transaction not being trimmed by snapshot
 	fnew.Func.TransferBaseTokens(sdAllowance).Post()
 	require.NoError(t, ctx.Err)
@@ -188,7 +187,7 @@ func TestFoundryNew(t *testing.T) {
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
-	}, testutil.L1API))
+	}))
 	// we need storage deposit allowance to keep foundry transaction not being trimmed by snapshot
 	fnew.Func.TransferBaseTokens(sdAllowance).Post()
 	require.NoError(t, ctx.Err)
@@ -678,7 +677,7 @@ func TestFoundryOutput(t *testing.T) {
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
-	}, testutil.L1API))
+	}))
 	// we need storage deposit allowance to keep foundry transaction not being trimmed by snapshot
 	fnew.Func.TransferBaseTokens(sdAllowance).Post()
 	require.NoError(t, ctx.Err)

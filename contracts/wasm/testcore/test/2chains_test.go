@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/contracts/wasm/testcore/go/testcore"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreaccounts"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
@@ -59,7 +58,7 @@ func Test2Chains(t *testing.T) {
 		// as the source account for the allowance that will be transferred to the
 		// chain2.testcore account. In addition, it has to cover any gas fees that the
 		// accounts.TransferAllowanceTo() request will use up.
-		const withdrawalAmount = 7 * isc.Million
+		const withdrawalAmount = 7 * wasmsolo.Million
 		const transferAmount = withdrawalAmount + wasmlib.MinGasFee
 		xfer := coreaccounts.ScFuncs.TransferAllowanceTo(ctxAcc1.Sign(user))
 		xfer.Params.AgentID().SetValue(testcore2.ScAgentID())
@@ -166,13 +165,15 @@ func Test2Chains(t *testing.T) {
 		require.Equal(t, userL1, user.Balance())
 
 		// The gas fees will be credited to chain1.Originator
-		bal2.UpdateFeeBalances(withdrawalReceipt.GasFeeCharged)
-		bal2.UpdateFeeBalances(transferReceipt.GasFeeCharged)
+		withdrawalGasFee := uint64(withdrawalReceipt.GasFeeCharged)
+		bal2.UpdateFeeBalances(withdrawalGasFee)
+		transferGasFee := uint64(transferReceipt.GasFeeCharged)
+		bal2.UpdateFeeBalances(transferGasFee)
 		// deduct coretest.WithdrawFromChain() gas fee from user's cool million
-		bal2.Add(user, gasWithdrawFromChain-withdrawalReceipt.GasFeeCharged)
+		bal2.Add(user, gasWithdrawFromChain-withdrawalGasFee)
 		// chain2.accounts1 will be credited with SD+GAS2+'withdrawalAmount', pay actual GAS2,
 		// and be debited by SD+'withdrawalAmount', leaving zero
-		bal2.Add(accounts1, xferDeposit+gasReserve+withdrawalAmount-transferReceipt.GasFeeCharged-xferDeposit-withdrawalAmount)
+		bal2.Add(accounts1, xferDeposit+gasReserve+withdrawalAmount-transferGasFee-xferDeposit-withdrawalAmount)
 		// chain2.testcore account receives the withdrawn tokens and storage deposit
 		bal2.Account += withdrawalAmount + xferDeposit
 		// verify these changes against the actual chain2 account balances

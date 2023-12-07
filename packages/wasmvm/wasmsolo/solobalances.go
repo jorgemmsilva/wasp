@@ -14,6 +14,8 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
+const Million = uint64(1_000_000)
+
 type SoloBalances struct {
 	Account    uint64
 	accounts   map[string]uint64

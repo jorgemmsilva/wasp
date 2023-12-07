@@ -62,6 +62,7 @@ test: install
 
 # TODO: once all test packages are passing, remove this
 SHORT_TESTS = \
+./contracts/native/inccounter \
 ./components/database \
 ./components/webapi \
 ./packages/cryptolib \
@@ -99,13 +100,13 @@ SHORT_TESTS = \
 ./packages/vm/core/evm/evmtest \
 ./packages/vm/core/testcore \
 ./packages/vm/gas \
+./packages/vm/vmimpl \
 ./packages/vm/vmtxbuilder \
 ./tools/evm/iscutils \
 
 
 # TODO: move these to SHORT_TESTS when they are passing
 SHORT_TESTS_WIP = \
-./contracts/native/inccounter \
 ./documentation/tutorial-examples/test \
 ./packages/authentication \
 ./packages/chain \
@@ -146,7 +147,6 @@ SHORT_TESTS_WIP = \
 ./packages/tcrypto/bls \
 ./packages/util/l1starter \
 ./packages/vm/core/testcore/sbtests \
-./packages/vm/vmimpl \
 ./packages/wasmvm/wasmclient/go/test \
 ./packages/webapi \
 ./packages/webapi/controllers/node \

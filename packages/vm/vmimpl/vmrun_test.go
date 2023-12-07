@@ -21,39 +21,45 @@ import (
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
-	"github.com/iotaledger/wasp/packages/vm/core/migrations"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 )
 
 func TestNFTDepositNoIssuer(t *testing.T) {
-	metadata := isc.RequestMetadata{
-		TargetContract: accounts.Contract.Hname(),
-		EntryPoint:     accounts.FuncDeposit.Hname(),
-	}
-	o := &iotago.NFTOutput{
-		Amount: 100 * isc.Million,
-		NFTID:  iotago.NFTID{0x1},
-		Features: iotago.NFTOutputFeatures{
-			&iotago.MetadataFeature{
-				Entries: iotago.MetadataFeatureEntries{"": metadata.Bytes()},
+	res := simulateRunOutput(t, func(chainID isc.ChainID) (iotago.OutputID, iotago.Output) {
+		metadata := isc.RequestMetadata{
+			TargetContract: accounts.Contract.Hname(),
+			EntryPoint:     accounts.FuncDeposit.Hname(),
+		}
+		o := &iotago.NFTOutput{
+			Amount: 100 * isc.Million,
+			NFTID:  iotago.NFTID{0x1},
+			Features: iotago.NFTOutputFeatures{
+				&iotago.MetadataFeature{
+					Entries: iotago.MetadataFeatureEntries{"": metadata.Bytes()},
+				},
+				&iotago.SenderFeature{
+					Address: tpkg.RandEd25519Address(),
+				},
 			},
-			&iotago.SenderFeature{
-				Address: tpkg.RandEd25519Address(),
+			ImmutableFeatures: iotago.NFTOutputImmFeatures{
+				&iotago.MetadataFeature{
+					Entries: iotago.MetadataFeatureEntries{"": []byte("foobar")},
+				},
 			},
-		},
-		ImmutableFeatures: iotago.NFTOutputImmFeatures{
-			&iotago.MetadataFeature{
-				Entries: iotago.MetadataFeatureEntries{"": []byte("foobar")},
+			UnlockConditions: iotago.NFTOutputUnlockConditions{
+				&iotago.AddressUnlockCondition{
+					Address: chainID.AsAddress(),
+				},
 			},
-		},
-	}
-
-	res := simulateRunOutput(t, o)
+		}
+		outputID := iotago.OutputID{}
+		return outputID, o
+	})
 	require.Len(t, res.RequestResults, 1)
 	require.Nil(t, res.RequestResults[0].Receipt.Error)
 }
 
-func simulateRunOutput(t *testing.T, output iotago.Output) *vm.VMTaskResult {
+func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.OutputID, iotago.Output)) *vm.VMTaskResult {
 	// setup a test DB
 	chainRecordRegistryProvider, err := registry.NewChainRecordRegistryImpl("")
 	require.NoError(t, err)
@@ -62,14 +68,9 @@ func simulateRunOutput(t *testing.T, output iotago.Output) *vm.VMTaskResult {
 	db, mu, err := chainStateDatabaseManager.ChainStateKVStore(isc.EmptyChainID())
 	require.NoError(t, err)
 
-	// parse request from output
-	outputID := iotago.OutputID{}
-	req, err := isc.OnLedgerFromUTXO(output, outputID)
-	require.NoError(t, err)
-
 	// create the AO for a new chain
 	chainCreator := cryptolib.KeyPairFromSeed(cryptolib.SeedFromBytes([]byte("foobar")))
-	_, chainOutputs, _, err := origin.NewChainOriginTransaction(
+	_, chainOutputs, chainID, err := origin.NewChainOriginTransaction(
 		chainCreator,
 		chainCreator.Address(),
 		chainCreator.Address(),
@@ -87,20 +88,20 @@ func simulateRunOutput(t *testing.T, output iotago.Output) *vm.VMTaskResult {
 	)
 	require.NoError(t, err)
 
+	outputID, output := makeOutput(chainID)
+	req, err := isc.OnLedgerFromUTXO(output, outputID)
+	require.NoError(t, err)
+
 	// create task and run it
 	task := &vm.VMTask{
-		Processors:           processors.MustNew(coreprocessors.NewConfigWithCoreContracts()),
-		Inputs:               chainOutputs,
-		Store:                indexedstore.New(state.NewStore(db, mu)),
-		Requests:             []isc.Request{req},
-		Timestamp:            time.Now(),
-		Entropy:              [32]byte{},
-		ValidatorFeeTarget:   nil,
-		EstimateGasMode:      false,
-		EVMTracer:            &isc.EVMTracer{},
-		EnableGasBurnLogging: false,
-		MigrationsOverride:   &migrations.MigrationScheme{},
-		Log:                  testlogger.NewLogger(t),
+		Processors: processors.MustNew(coreprocessors.NewConfigWithCoreContracts()),
+		Inputs:     chainOutputs,
+		Requests:   []isc.Request{req},
+		Timestamp:  time.Now(),
+		Store:      indexedstore.New(state.NewStore(db, mu)),
+		Log:        testlogger.NewLogger(t),
+		L1API:      testutil.L1API,
+		TokenInfo:  *testutil.TokenInfo,
 	}
 
 	origin.InitChainByAnchorOutput(task.Store, chainOutputs, testutil.L1API)

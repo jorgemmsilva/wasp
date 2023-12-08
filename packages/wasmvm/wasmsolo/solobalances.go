@@ -86,10 +86,10 @@ func (bal *SoloBalances) DumpBalances() {
 			txt += fmt.Sprintf("\n\tL2: %10d", l2NativeTokenAmount)
 			tokTxt := ",\t           "
 			if hname.IsNil() {
-				for l1NativeTokenID, _ := range l1.NativeTokens {
+				for l1NativeTokenID := range l1.NativeTokens {
 					if l1NativeTokenID == l2NativeTokenID {
 						// TODO: <lmoe> Revisit this native token dump
-						//l1.NativeTokens = append(l1.NativeTokens, l1.NativeTokens[i+1:]...)
+						// l1.NativeTokens = append(l1.NativeTokens, l1.NativeTokens[i+1:]...)
 						tokTxt = fmt.Sprintf(",\tL1: %10d", l1.BaseTokens)
 						break
 					}
@@ -97,7 +97,7 @@ func (bal *SoloBalances) DumpBalances() {
 			}
 			txt += fmt.Sprintf("%s,\t%s", tokTxt, l2NativeTokenID.String())
 		}
-		for nativeTokenID, _ := range l1.NativeTokens {
+		for nativeTokenID := range l1.NativeTokens {
 			txt += fmt.Sprintf("\n\tL2: %10d,\tL1: %10d,\t%s", 0, l1.BaseTokens, nativeTokenID.String())
 		}
 	}

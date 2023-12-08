@@ -186,12 +186,9 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 		sendReq.Options.Timelock = timeLock
 		*/
 
-		slotIndex := s.ctx.SlotIndex() + iotago.SlotIndex(req.Delay)
-
 		sendReq.UnlockConditions = append(sendReq.UnlockConditions, &iotago.TimelockUnlockCondition{
-			Slot: slotIndex,
+			Slot: iotago.SlotIndex(req.Delay),
 		})
-
 	}
 	return sendReq
 }

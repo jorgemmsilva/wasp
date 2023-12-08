@@ -10,10 +10,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -117,7 +117,7 @@ func TestTransferAllowanceTo(t *testing.T) {
 
 func TestWithdraw(t *testing.T) {
 	ctx := setupAccounts(t)
-	var withdrawAmount uint64 = 10_000
+	var withdrawAmount uint64 = 20_000
 
 	user := ctx.NewSoloAgent("user")
 	balanceOldUser := user.Balance()
@@ -308,8 +308,9 @@ func TestAccountNFTAmountInCollection(t *testing.T) {
 		"https://my-awesome-nft-project.com",
 		"a string that is longer than 32 bytes",
 	)
-
-	collection, collectionInfo, err := ctx.Chain.Env.MintNFTL1(collectionOwner, collectionOwnerAddr, collectionMetadata.Bytes())
+	collection, collectionInfo, err := ctx.Chain.Env.MintNFTL1(collectionOwner, collectionOwnerAddr, iotago.MetadataFeatureEntries{
+		"metadata": collectionMetadata.Bytes(),
+	})
 	require.NoError(t, err)
 
 	nftMetadatas := []*isc.IRC27NFTMetadata{
@@ -326,8 +327,10 @@ func TestAccountNFTAmountInCollection(t *testing.T) {
 	}
 	nftNum := len(nftMetadatas)
 	allNFTs, _, err := ctx.Chain.Env.MintNFTsL1(collectionOwner, collectionOwnerAddr, &collectionInfo.OutputID,
-		lo.Map(nftMetadatas, func(item *isc.IRC27NFTMetadata, index int) []byte {
-			return item.Bytes()
+		lo.Map(nftMetadatas, func(item *isc.IRC27NFTMetadata, index int) iotago.MetadataFeatureEntries {
+			return iotago.MetadataFeatureEntries{
+				"metadata": item.Bytes(),
+			}
 		}),
 	)
 	require.NoError(t, err)
@@ -379,7 +382,9 @@ func TestAccountNFTsInCollection(t *testing.T) {
 		"a string that is longer than 32 bytes",
 	)
 
-	collection, collectionInfo, err := ctx.Chain.Env.MintNFTL1(collectionOwner, collectionOwnerAddr, collectionMetadata.Bytes())
+	collection, collectionInfo, err := ctx.Chain.Env.MintNFTL1(collectionOwner, collectionOwnerAddr, iotago.MetadataFeatureEntries{
+		"metadata": collectionMetadata.Bytes(),
+	})
 	require.NoError(t, err)
 
 	nftMetadatas := []*isc.IRC27NFTMetadata{
@@ -396,8 +401,10 @@ func TestAccountNFTsInCollection(t *testing.T) {
 	}
 	nftNum := len(nftMetadatas)
 	allNFTs, _, err := ctx.Chain.Env.MintNFTsL1(collectionOwner, collectionOwnerAddr, &collectionInfo.OutputID,
-		lo.Map(nftMetadatas, func(item *isc.IRC27NFTMetadata, index int) []byte {
-			return item.Bytes()
+		lo.Map(nftMetadatas, func(item *isc.IRC27NFTMetadata, index int) iotago.MetadataFeatureEntries {
+			return iotago.MetadataFeatureEntries{
+				"metadata": item.Bytes(),
+			}
 		}),
 	)
 	require.NoError(t, err)
@@ -690,8 +697,7 @@ func TestFoundryOutput(t *testing.T) {
 	f.Func.Call()
 	require.NoError(t, ctx.Err)
 	b := f.Results.FoundryOutputBin().Value()
-	outFoundry := &iotago.FoundryOutput{}
-	_, err := outFoundry.Deserialize(b, serializer.DeSeriModeNoValidation, nil)
+	outFoundry, err := codec.DecodeOutput(b, testutil.L1API)
 	require.NoError(t, err)
 	soloFoundry, err := ctx.Chain.GetFoundryOutput(serialNum)
 	require.NoError(t, err)

@@ -55,7 +55,8 @@ func GetAccountNFTs(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockI
 		accounts.Contract.Hname(),
 		accounts.ViewAccountNFTs.Hname(),
 		codec.MakeDict(map[string]interface{}{
-			accounts.ParamAgentID: agentID},
+			accounts.ParamAgentID: agentID,
+		},
 		),
 		blockIndexOrTrieRoot,
 	)

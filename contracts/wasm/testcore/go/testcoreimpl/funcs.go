@@ -10,7 +10,6 @@ import (
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreaccounts"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coregovernance"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
-	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
 )
 
 const (
@@ -168,7 +167,7 @@ func funcSpawn(ctx wasmlib.ScFuncContext, f *SpawnContext) {
 func funcSplitFunds(ctx wasmlib.ScFuncContext, _ *SplitFundsContext) {
 	tokens := ctx.Allowance().BaseTokens()
 	address := ctx.Caller().Address()
-	tokensToTransfer := 1 * wasmsolo.Million
+	tokensToTransfer := uint64(1_000_000)
 	transfer := wasmlib.ScTransferFromBaseTokens(tokensToTransfer)
 	for ; tokens >= tokensToTransfer; tokens -= tokensToTransfer {
 		ctx.TransferAllowed(ctx.AccountID(), transfer)

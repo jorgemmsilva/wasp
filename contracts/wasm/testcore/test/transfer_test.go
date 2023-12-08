@@ -3,10 +3,10 @@ package test
 import (
 	"testing"
 
-	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/contracts/wasm/testcore/go/testcore"
+	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
 )
 
 func TestDoNothing(t *testing.T) {

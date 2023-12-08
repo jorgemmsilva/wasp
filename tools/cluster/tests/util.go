@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -75,17 +76,16 @@ func (e *ChainEnv) getBalanceOnChain(agentID isc.AgentID, assetID []byte, nodeIn
 	require.NoError(e.t, err)
 
 	if bytes.Equal(assetID, isc.BaseTokenID) {
-		return assets.BaseTokens
+		return uint64(assets.BaseTokens)
 	}
 
 	nativeTokenID, err := isc.NativeTokenIDFromBytes(assetID)
 	require.NoError(e.t, err)
 
-	for _, nativeToken := range assets.NativeTokens {
-		if nativeToken.ID.Matches(nativeTokenID) {
-			// TODO: Validate bigint to uint64 behavior
-			return nativeToken.Amount.Uint64()
-		}
+	nativeToken, ok := assets.NativeTokens[nativeTokenID]
+	if ok {
+		// TODO: Validate bigint to uint64 behavior
+		return nativeToken.Uint64()
 	}
 	// TODO: Throw error when native token id wasn't found?
 	return 0
@@ -105,7 +105,7 @@ func (e *ChainEnv) getAccountsOnChain() []isc.AgentID {
 
 	ret := make([]isc.AgentID, 0)
 	for _, address := range accounts.Accounts {
-		aid, err2 := isc.AgentIDFromString(address)
+		aid, err2 := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), address)
 		require.NoError(e.t, err2)
 
 		ret = append(ret, aid)
@@ -166,7 +166,7 @@ func (e *ChainEnv) printAccounts(title string) {
 	allBalances := e.getBalancesOnChain()
 	s := fmt.Sprintf("------------------------------------- %s\n", title)
 	for k, bals := range allBalances {
-		aid, err := isc.AgentIDFromString(k)
+		aid, err := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), k)
 		require.NoError(e.t, err)
 		s += fmt.Sprintf("     %s\n", aid.String())
 		s += fmt.Sprintf("%s\n", bals.String())
@@ -192,7 +192,7 @@ func (e *ChainEnv) getChainInfo() (isc.ChainID, isc.AgentID) {
 	chainID, err := isc.ChainIDFromString(chainInfo.ChainID)
 	require.NoError(e.t, err)
 
-	ownerID, err := isc.AgentIDFromString(chainInfo.ChainOwnerId)
+	ownerID, err := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), chainInfo.ChainOwnerId)
 	require.NoError(e.t, err)
 
 	return chainID, ownerID
@@ -321,7 +321,7 @@ func setupNativeInccounterTest(t *testing.T, clusterSize int, committee []int, d
 	addr, err := clu.RunDKG(committee, quorum)
 	require.NoError(t, err)
 
-	t.Logf("generated state address: %s", addr.Bech32(parameters.NetworkPrefix()))
+	t.Logf("generated state address: %s", addr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
 	chain, err := clu.DeployChain(clu.Config.AllNodes(), committee, quorum, addr)
 	require.NoError(t, err)

@@ -6,7 +6,8 @@ package wasmtypes
 // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\
 
 const (
-	ScRequestIDLength = 34
+	// transactionID + slotIndex + outputIndex
+	ScRequestIDLength = 32 + 4 + 2
 )
 
 type ScRequestID struct {

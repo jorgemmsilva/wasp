@@ -13,17 +13,17 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/stretchr/testify/require"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlib"
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlibimpl"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreblocklog"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -472,7 +472,9 @@ func getNftID(ctx *wasmsolo.SoloContext) (iotago.NFTID, error) {
 	if !ok {
 		return iotago.NFTID{}, errors.New("can't get address from AgentID")
 	}
-	_, nftInfo, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr, []byte("test data"))
+	_, nftInfo, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr, iotago.MetadataFeatureEntries{
+		"data": []byte("test data"),
+	})
 	if err != nil {
 		return iotago.NFTID{}, err
 	}
@@ -515,7 +517,7 @@ func checkAgentID(t *testing.T, ctx *wasmsolo.SoloContext, scAgentID wasmtypes.S
 
 func checkAddress(t *testing.T, ctx *wasmsolo.SoloContext, scAddress wasmtypes.ScAddress, address iotago.Address) {
 	addressBytes := isc.AddressToBytes(address)
-	addressString := address.Bech32(parameters.NetworkPrefix())
+	addressString := address.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())
 
 	require.EqualValues(t, scAddress.Bytes(), addressBytes)
 	require.EqualValues(t, scAddress.String(), addressString)

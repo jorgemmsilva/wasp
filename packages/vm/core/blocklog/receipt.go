@@ -1,6 +1,7 @@
 package blocklog
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -110,7 +111,7 @@ func (rec *RequestReceipt) String() string {
 	ret += fmt.Sprintf("Block/Request index: %d / %d\n", rec.BlockIndex, rec.RequestIndex)
 	ret += fmt.Sprintf("Gas budget / burned / fee charged: %d / %d /%d\n", rec.GasBudget, rec.GasBurned, rec.GasFeeCharged)
 	ret += fmt.Sprintf("Storage deposit charged: %d\n", rec.SDCharged)
-	ret += fmt.Sprintf("Call data: %s\n", rec.Request)
+	ret += fmt.Sprintf("Call data: %s\n", hex.EncodeToString(rec.Request.Bytes()))
 	ret += fmt.Sprintf("burn log: %s\n", rec.GasBurnLog)
 	return ret
 }

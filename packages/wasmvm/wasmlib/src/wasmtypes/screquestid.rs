@@ -5,7 +5,8 @@ use crate::*;
 
 // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\
 
-pub const SC_REQUEST_ID_LENGTH: usize = 34;
+// transactionID + slotIndex + outputIndex
+pub const SC_REQUEST_ID_LENGTH: usize = 32 + 4 + 2;
 
 #[derive(PartialEq, Clone)]
 pub struct ScRequestID {

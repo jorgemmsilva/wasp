@@ -27,7 +27,7 @@ func EVMEstimateGas(
 	call ethereum.CallMsg,
 	l1API iotago.API,
 	tokenInfo api.InfoResBaseToken,
-) (uint64, error) { 
+) (uint64, error) {
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
 		lo     uint64 = params.TxGas - 1

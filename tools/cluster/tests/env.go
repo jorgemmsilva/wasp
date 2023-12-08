@@ -17,6 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/clients/chainclient"
@@ -113,7 +114,7 @@ func (e *ChainEnv) NewChainClient() *chainclient.Client {
 func (e *ChainEnv) DepositFunds(amount uint64, keyPair *cryptolib.KeyPair) {
 	accountsClient := e.Chain.SCClient(accounts.Contract.Hname(), keyPair)
 	tx, err := accountsClient.PostRequest(accounts.FuncDeposit.Name, chainclient.PostRequestParams{
-		Transfer: isc.NewAssetsBaseTokens(amount),
+		Transfer: isc.NewAssetsBaseTokens(iotago.BaseToken(amount)),
 	})
 	require.NoError(e.t, err)
 	txID, err := tx.ID()

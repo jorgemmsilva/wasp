@@ -9,7 +9,7 @@ use crate::wasmrequests::*;
 
 // @formatter:off
 pub const MIN_GAS_FEE     : u64 = 10_000;
-pub const STORAGE_DEPOSIT : u64 = 20_000;
+pub const STORAGE_DEPOSIT : u64 = 30_000;
 
 pub const FN_ACCOUNT_ID               : i32 = -1;
 pub const FN_ALLOWANCE                : i32 = -2;

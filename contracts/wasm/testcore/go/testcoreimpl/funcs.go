@@ -176,8 +176,9 @@ func funcSplitFunds(ctx wasmlib.ScFuncContext, _ *SplitFundsContext) {
 }
 
 func funcSplitFundsNativeTokens(ctx wasmlib.ScFuncContext, _ *SplitFundsNativeTokensContext) {
+	tokens := ctx.Allowance().BaseTokens()
 	address := ctx.Caller().Address()
-	transfer := wasmlib.ScTransferFromBaseTokens(ctx.Allowance().BaseTokens())
+	transfer := wasmlib.ScTransferFromBaseTokens(tokens)
 	ctx.TransferAllowed(ctx.AccountID(), transfer)
 	for _, token := range ctx.Allowance().TokenIDs() {
 		one := wasmtypes.NewScBigInt(1)

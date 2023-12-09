@@ -13,7 +13,7 @@ import (
 
 func Test2Chains(t *testing.T) {
 	run2(t, func(t *testing.T, w bool) {
-		//TODO IOTA 2.0
+		// TODO IOTA 2.0
 		t.SkipNow()
 		// set up chain1 and chain2, deploy testcore contract on both,
 		// and set up contract contexts for the testcore contract and

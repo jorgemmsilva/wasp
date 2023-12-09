@@ -15,7 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
@@ -261,7 +261,7 @@ func AgentIDFromString(s string, chainID isc.ChainID) isc.AgentID {
 	if strings.HasPrefix(s, "0x") && !strings.Contains(s, isc.AgentIDStringSeparator) {
 		s = s + isc.AgentIDStringSeparator + chainID.String()
 	}
-	agentID, err := isc.AgentIDFromString(s)
+	agentID, err := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), s)
 	log.Check(err, "cannot parse AgentID")
 	return agentID
 }

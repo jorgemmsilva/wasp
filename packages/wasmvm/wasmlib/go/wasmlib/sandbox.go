@@ -11,7 +11,7 @@ import (
 const (
 	// should be aligned to gas.LimitsDefault.MinGasPerRequest
 	MinGasFee      = uint64(10_000)
-	StorageDeposit = uint64(20_000)
+	StorageDeposit = uint64(30_000)
 
 	FnAccountID              = int32(-1)
 	FnAllowance              = int32(-2)

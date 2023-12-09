@@ -3,7 +3,7 @@
 
 // @formatter:off
 export const MinGasFee      : u64 = 10_000n;
-export const StorageDeposit : u64 = 20_000n;
+export const StorageDeposit : u64 = 30_000n;
 
 export const FnAccountID              : i32 = -1;
 export const FnAllowance              : i32 = -2;

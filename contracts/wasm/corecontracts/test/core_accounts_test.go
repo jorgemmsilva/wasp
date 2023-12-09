@@ -500,25 +500,34 @@ func TestBalanceBaseToken(t *testing.T) {
 	ctx := setupAccounts(t)
 	user0 := ctx.NewSoloAgent("user0")
 	user1 := ctx.NewSoloAgent("user1")
+	balances := ctx.Balances(user0, user1)
 
 	fbal := coreaccounts.ScFuncs.BalanceBaseToken(ctx)
 	fbal.Params.AgentID().SetValue(user0.ScAgentID())
 	fbal.Func.Call()
 	require.NoError(t, ctx.Err)
 	user0Balance0 := fbal.Results.Balance().Value()
+	require.EqualValues(t, ctx.Balance(user0), user0Balance0)
 
 	fbal.Params.AgentID().SetValue(user1.ScAgentID())
 	fbal.Func.Call()
 	require.NoError(t, ctx.Err)
 	user1Balance0 := fbal.Results.Balance().Value()
+	require.EqualValues(t, ctx.Balance(user1), user1Balance0)
 
 	transferAmt := uint64(9)
 	ftrans := coreaccounts.ScFuncs.TransferAllowanceTo(ctx.Sign(user0))
 	ftrans.Params.AgentID().SetValue(user1.ScAgentID())
 	transfer := wasmlib.ScTransferFromBaseTokens(transferAmt)
+	balances.VerifyBalances(t)
 	ftrans.Func.Allowance(transfer).Post()
 	require.NoError(t, ctx.Err)
 	gasFee := ctx.GasFee
+
+	balances.Add(user0, -transferAmt-ctx.GasFee+ctx.StorageDeposit)
+	balances.Add(user1, transferAmt)
+	balances.Originator += ctx.GasFee
+	balances.VerifyBalances(t)
 
 	fbal.Params.AgentID().SetValue(user0.ScAgentID())
 	fbal.Func.Call()

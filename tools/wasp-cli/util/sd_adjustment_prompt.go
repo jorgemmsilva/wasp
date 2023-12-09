@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )

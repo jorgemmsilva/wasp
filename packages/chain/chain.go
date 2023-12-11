@@ -15,6 +15,6 @@ type NodeConnection interface {
 	Run(ctx context.Context) error
 	WaitUntilInitiallySynced(context.Context) error
 	Bech32HRP() iotago.NetworkPrefix
-	L1API() iotago.API
-	BaseTokenInfo() api.InfoResBaseToken
+	L1APIProvider() iotago.APIProvider
+	BaseTokenInfo() *api.InfoResBaseToken
 }

@@ -53,5 +53,5 @@ type WaspCallContext interface {
 	GetAccountNFTs(agentID isc.AgentID) []iotago.NFTID
 	GetNFTData(nftID iotago.NFTID) *isc.NFT
 	L1API() iotago.API
-	TokenInfo() api.InfoResBaseToken
+	TokenInfo() *api.InfoResBaseToken
 }

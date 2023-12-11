@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -697,4 +698,12 @@ func (ch *Chain) LatestBlockIndex() uint32 {
 
 func (ch *Chain) GetMempoolContents() io.Reader {
 	panic("unimplemented")
+}
+
+func (ch *Chain) L1APIProvider() iotago.APIProvider {
+	return ch.Env.L1APIProvider()
+}
+
+func (ch *Chain) TokenInfo() *api.InfoResBaseToken {
+	return ch.Env.TokenInfo()
 }

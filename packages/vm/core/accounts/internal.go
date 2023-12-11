@@ -180,9 +180,9 @@ func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chai
 	DebitFromAccount(ctx.State(), CommonAccount(), &storageDepositAssets.FungibleTokens, chainID)
 }
 
-func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32, l1API iotago.API) {
+func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32) {
 	updateNativeTokenOutputIDs(state, anchorTxID)
-	updateFoundryOutputIDs(state, anchorTxID, l1API)
+	updateFoundryOutputIDs(state, anchorTxID)
 	updateNFTOutputIDs(state, anchorTxID)
 	updateNewlyMintedNFTOutputIDs(state, anchorTxID, blockIndex)
 }

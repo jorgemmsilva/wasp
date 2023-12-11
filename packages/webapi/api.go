@@ -98,7 +98,7 @@ func Init(
 	pub *publisher.Publisher,
 	jsonrpcParams *jsonrpc.Parameters,
 	l1API iotago.API,
-	baseTokenInfo api.InfoResBaseToken,
+	baseTokenInfo *api.InfoResBaseToken,
 ) {
 	// load mock files to generate correct echo swagger documentation
 	mocker := NewMocker()

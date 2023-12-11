@@ -226,7 +226,7 @@ func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*
 		req.nft,
 		ch.Env.SlotIndex(),
 		ch.Env.disableAutoAdjustStorageDeposit,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	if err != nil {
 		return nil, err
@@ -455,7 +455,7 @@ func (ch *Chain) callViewByHnameAtState(chainState state.State, hContract, hFunc
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
 
-	vmctx, err := viewcontext.New(ch, chainState, false, testutil.L1API, *testutil.TokenInfo)
+	vmctx, err := viewcontext.New(ch, chainState, false)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +471,7 @@ func (ch *Chain) GetMerkleProofRaw(key []byte) *trie.MerkleProof {
 
 	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	require.NoError(ch.Env.T, err)
-	vmctx, err := viewcontext.New(ch, latestState, false, testutil.L1API, *testutil.TokenInfo)
+	vmctx, err := viewcontext.New(ch, latestState, false)
 	require.NoError(ch.Env.T, err)
 	ret, err := vmctx.GetMerkleProof(key)
 	require.NoError(ch.Env.T, err)
@@ -487,7 +487,7 @@ func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie.Me
 
 	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	require.NoError(ch.Env.T, err)
-	vmctx, err := viewcontext.New(ch, latestState, false, testutil.L1API, *testutil.TokenInfo)
+	vmctx, err := viewcontext.New(ch, latestState, false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -527,7 +527,7 @@ func (ch *Chain) GetRootCommitment() trie.Hash {
 func (ch *Chain) GetContractStateCommitment(hn isc.Hname) ([]byte, error) {
 	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
 	require.NoError(ch.Env.T, err)
-	vmctx, err := viewcontext.New(ch, latestState, false, testutil.L1API, *testutil.TokenInfo)
+	vmctx, err := viewcontext.New(ch, latestState, false)
 	if err != nil {
 		return nil, err
 	}

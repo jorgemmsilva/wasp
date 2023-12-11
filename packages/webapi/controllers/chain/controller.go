@@ -20,7 +20,7 @@ import (
 type Controller struct {
 	log              *loggerpkg.Logger
 	l1API            iotago.API
-	baseTokenInfo    api.InfoResBaseToken
+	baseTokenInfo    *api.InfoResBaseToken
 	chainService     interfaces.ChainService
 	evmService       interfaces.EVMService
 	nodeService      interfaces.NodeService
@@ -31,7 +31,7 @@ type Controller struct {
 
 func NewChainController(log *loggerpkg.Logger,
 	l1API iotago.API,
-	baseTokenInfo api.InfoResBaseToken,
+	baseTokenInfo *api.InfoResBaseToken,
 	chainService interfaces.ChainService,
 	committeeService interfaces.CommitteeService,
 	evmService interfaces.EVMService,

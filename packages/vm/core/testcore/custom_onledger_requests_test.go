@@ -83,7 +83,7 @@ func TestNoSenderFeature(t *testing.T) {
 		nft,
 		env.SlotIndex(),
 		false,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(t, err)
 
@@ -174,7 +174,7 @@ func TestSendBack(t *testing.T) {
 		nil,
 		env.SlotIndex(),
 		false,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(t, err)
 
@@ -243,7 +243,7 @@ func TestBadMetadata(t *testing.T) {
 		nil,
 		env.SlotIndex(),
 		false,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(t, err)
 

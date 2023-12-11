@@ -22,7 +22,6 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"golang.org/x/crypto/sha3"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmerrors"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
@@ -35,11 +34,10 @@ import (
 // example, `eth_getTransactionCount` corresponds to
 // [EthService.GetTransactionCount].
 type EthService struct {
-	evmChain    *EVMChain
-	accounts    *AccountManager
-	metrics     *metrics.ChainWebAPIMetrics
-	params      *Parameters
-	latestL1API func() iotago.API
+	evmChain *EVMChain
+	accounts *AccountManager
+	metrics  *metrics.ChainWebAPIMetrics
+	params   *Parameters
 }
 
 func NewEthService(
@@ -47,14 +45,12 @@ func NewEthService(
 	accounts *AccountManager,
 	metrics *metrics.ChainWebAPIMetrics,
 	params *Parameters,
-	latestL1API func() iotago.API,
 ) *EthService {
 	return &EthService{
-		evmChain:    evmChain,
-		accounts:    accounts,
-		metrics:     metrics,
-		params:      params,
-		latestL1API: latestL1API,
+		evmChain: evmChain,
+		accounts: accounts,
+		metrics:  metrics,
+		params:   params,
 	}
 }
 
@@ -62,7 +58,7 @@ func (e *EthService) ProtocolVersion() hexutil.Uint {
 	return hexutil.Uint(eth.ETH66)
 }
 
-func (e *EthService) resolveError(err error, l1API iotago.API) error {
+func (e *EthService) resolveError(err error) error {
 	if err == nil {
 		return nil
 	}
@@ -77,7 +73,7 @@ func (e *EthService) resolveError(err error, l1API iotago.API) error {
 			return err
 		}
 		var resolveErr error
-		resolvedErr, resolveErr = vmerrors.Resolve(vmError, e.evmChain.ViewCaller(e.evmChain.backend.ISCLatestState(), l1API))
+		resolvedErr, resolveErr = vmerrors.Resolve(vmError, e.evmChain.ViewCaller(e.evmChain.backend.ISCLatestState()))
 		if resolveErr != nil {
 			return fmt.Errorf("could not resolve VMError: %w: %v", err, resolveErr)
 		}
@@ -97,7 +93,7 @@ func (e *EthService) GetTransactionCount(address common.Address, blockNumberOrHa
 	return withMetrics(e.metrics, "eth_getTransactionCount", func() (hexutil.Uint64, error) {
 		n, err := e.evmChain.TransactionCount(address, blockNumberOrHash)
 		if err != nil {
-			return 0, e.resolveError(err, e.latestL1API())
+			return 0, e.resolveError(err)
 		}
 		return hexutil.Uint64(n), nil
 	})
@@ -114,7 +110,7 @@ func (e *EthService) GetBlockByNumber(blockNumber rpc.BlockNumber, full bool) (m
 	return withMetrics(e.metrics, "eth_getBlockByNumber", func() (map[string]interface{}, error) {
 		block, err := e.evmChain.BlockByNumber(parseBlockNumber(blockNumber))
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		if block == nil {
 			return nil, nil
@@ -137,7 +133,7 @@ func (e *EthService) GetTransactionByHash(hash common.Hash) (*RPCTransaction, er
 	return withMetrics(e.metrics, "eth_getTransactionByHash", func() (*RPCTransaction, error) {
 		tx, blockHash, blockNumber, index, err := e.evmChain.TransactionByHash(hash)
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		if tx == nil {
 			return nil, nil
@@ -150,7 +146,7 @@ func (e *EthService) GetTransactionByBlockHashAndIndex(blockHash common.Hash, in
 	return withMetrics(e.metrics, "eth_getTransactionByBlockHashAndIndex", func() (*RPCTransaction, error) {
 		tx, blockNumber, err := e.evmChain.TransactionByBlockHashAndIndex(blockHash, uint64(index))
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		if tx == nil {
 			return nil, nil
@@ -163,7 +159,7 @@ func (e *EthService) GetTransactionByBlockNumberAndIndex(blockNumberOrTag rpc.Bl
 	return withMetrics(e.metrics, "eth_getTransactionByBlockNumberAndIndex", func() (*RPCTransaction, error) {
 		tx, blockHash, blockNumber, err := e.evmChain.TransactionByBlockNumberAndIndex(parseBlockNumber(blockNumberOrTag), uint64(index))
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		if tx == nil {
 			return nil, nil
@@ -176,7 +172,7 @@ func (e *EthService) GetBalance(address common.Address, blockNumberOrHash *rpc.B
 	return withMetrics(e.metrics, "eth_getBalance", func() (*hexutil.Big, error) {
 		bal, err := e.evmChain.Balance(address, blockNumberOrHash)
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		return (*hexutil.Big)(bal), nil
 	})
@@ -186,7 +182,7 @@ func (e *EthService) GetCode(address common.Address, blockNumberOrHash *rpc.Bloc
 	return withMetrics(e.metrics, "eth_getCode", func() (hexutil.Bytes, error) {
 		code, err := e.evmChain.Code(address, blockNumberOrHash)
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		return code, nil
 	})
@@ -200,7 +196,7 @@ func (e *EthService) GetTransactionReceipt(txHash common.Hash) (map[string]inter
 		}
 		tx, _, _, _, err := e.evmChain.TransactionByHash(txHash)
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		return RPCMarshalReceipt(r, tx), nil
 	})
@@ -213,7 +209,7 @@ func (e *EthService) SendRawTransaction(txBytes hexutil.Bytes) (common.Hash, err
 			return common.Hash{}, err
 		}
 		if err := e.evmChain.SendTransaction(tx); err != nil {
-			return common.Hash{}, e.resolveError(err, e.latestL1API())
+			return common.Hash{}, e.resolveError(err)
 		}
 		return tx.Hash(), nil
 	})
@@ -221,22 +217,22 @@ func (e *EthService) SendRawTransaction(txBytes hexutil.Bytes) (common.Hash, err
 
 func (e *EthService) Call(args *RPCCallArgs, blockNumberOrHash *rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	return withMetrics(e.metrics, "eth_call", func() (hexutil.Bytes, error) {
-		ret, err := e.evmChain.CallContract(args.parse(), blockNumberOrHash, e.latestL1API())
-		return ret, e.resolveError(err, e.latestL1API())
+		ret, err := e.evmChain.CallContract(args.parse(), blockNumberOrHash)
+		return ret, e.resolveError(err)
 	})
 }
 
 func (e *EthService) EstimateGas(args *RPCCallArgs, blockNumberOrHash *rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
 	return withMetrics(e.metrics, "eth_estimateGas", func() (hexutil.Uint64, error) {
-		gas, err := e.evmChain.EstimateGas(args.parse(), blockNumberOrHash, e.latestL1API())
-		return hexutil.Uint64(gas), e.resolveError(err, e.latestL1API())
+		gas, err := e.evmChain.EstimateGas(args.parse(), blockNumberOrHash)
+		return hexutil.Uint64(gas), e.resolveError(err)
 	})
 }
 
 func (e *EthService) GetStorageAt(address common.Address, key string, blockNumberOrHash *rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	return withMetrics(e.metrics, "eth_getStorageAt", func() (hexutil.Bytes, error) {
 		ret, err := e.evmChain.StorageAt(address, common.HexToHash(key), blockNumberOrHash)
-		return ret[:], e.resolveError(err, e.latestL1API())
+		return ret[:], e.resolveError(err)
 	})
 }
 
@@ -250,7 +246,7 @@ func (e *EthService) GetBlockTransactionCountByHash(blockHash common.Hash) (hexu
 func (e *EthService) GetBlockTransactionCountByNumber(blockNumber rpc.BlockNumber) (hexutil.Uint, error) {
 	return withMetrics(e.metrics, "eth_getBlockTransactionCountByNumber", func() (hexutil.Uint, error) {
 		ret, err := e.evmChain.BlockTransactionCountByNumber(parseBlockNumber(blockNumber))
-		return hexutil.Uint(ret), e.resolveError(err, e.latestL1API())
+		return hexutil.Uint(ret), e.resolveError(err)
 	})
 }
 
@@ -345,7 +341,7 @@ func (e *EthService) SendTransaction(args *SendTxArgs) (common.Hash, error) {
 			return common.Hash{}, err
 		}
 		if err := e.evmChain.SendTransaction(tx); err != nil {
-			return common.Hash{}, e.resolveError(err, e.latestL1API())
+			return common.Hash{}, e.resolveError(err)
 		}
 		return tx.Hash(), nil
 	})
@@ -373,7 +369,7 @@ func (e *EthService) GetLogs(q *RPCFilterQuery) ([]*types.Log, error) {
 			&e.params.Logs,
 		)
 		if err != nil {
-			return nil, e.resolveError(err, e.latestL1API())
+			return nil, e.resolveError(err)
 		}
 		return logs, nil
 	})
@@ -533,9 +529,9 @@ func NewDebugService(evmChain *EVMChain, metrics *metrics.ChainWebAPIMetrics) *D
 	}
 }
 
-func (d *DebugService) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig, l1API iotago.API) (interface{}, error) {
+func (d *DebugService) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig) (interface{}, error) {
 	return withMetrics(d.metrics, "debug_traceTransaction", func() (interface{}, error) {
-		return d.evmChain.TraceTransaction(txHash, config, l1API)
+		return d.evmChain.TraceTransaction(txHash, config)
 	})
 }
 

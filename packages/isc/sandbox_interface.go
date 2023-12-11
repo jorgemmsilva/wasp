@@ -54,7 +54,7 @@ type SandboxBase interface {
 	// L1 API returns the L1 api
 	L1API() iotago.API
 	// TokenInfo returns information about the base token
-	TokenInfo() api.InfoResBaseToken
+	TokenInfo() *api.InfoResBaseToken
 }
 
 type Params struct {

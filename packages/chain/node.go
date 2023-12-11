@@ -27,6 +27,7 @@ import (
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chainmanager"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
@@ -387,7 +388,7 @@ func New(
 	}
 	mempool := mempool.New(
 		ctx,
-		nodeConn.L1API(),
+		nodeConn.L1APIProvider(),
 		chainID,
 		nodeIdentity,
 		net,
@@ -674,7 +675,7 @@ func (cni *chainNodeImpl) handleTxPublished(ctx context.Context, txPubResult *tx
 func (cni *chainNodeImpl) handleAnchorOutput(ctx context.Context, anchorOutput *isc.ChainOutputs) {
 	cni.log.Debugf("handleAnchorOutput: %v", anchorOutput)
 	if anchorOutput.GetStateIndex() == 0 {
-		initBlock, err := origin.InitChainByAnchorOutput(cni.chainStore, anchorOutput, cni.nodeConn.L1API())
+		initBlock, err := origin.InitChainByAnchorOutput(cni.chainStore, anchorOutput, cni.nodeConn.L1APIProvider())
 		if err != nil {
 			cni.log.Errorf("Ignoring InitialAO for the chain: %v", err)
 			return
@@ -842,7 +843,7 @@ func (cni *chainNodeImpl) ensureConsensusInst(ctx context.Context, needConsensus
 			consGrCtx, consGrCancel := context.WithCancel(ctx)
 			logIndexCopy := addLogIndex
 			cgr := consGR.New(
-				consGrCtx, cni.chainID, cni.chainStore, dkShare, &logIndexCopy, cni.nodeConn.L1API(), cni.nodeIdentity,
+				consGrCtx, cni.chainID, cni.chainStore, dkShare, &logIndexCopy, cni.nodeConn.L1APIProvider(), cni.nodeIdentity,
 				cni.procCache, cni.mempool, cni.stateMgr, cni.net,
 				cni.validatorAgentID,
 				cni.recoveryTimeout, RedeliveryPeriod, PrintStatusPeriod,
@@ -1193,6 +1194,14 @@ func (cni *chainNodeImpl) GetChainNodes() []peering.PeerStatusProvider {
 		}
 	}
 	return allNodes
+}
+
+func (cni *chainNodeImpl) TokenInfo() *api.InfoResBaseToken {
+	return cni.nodeConn.BaseTokenInfo()
+}
+
+func (cni *chainNodeImpl) L1APIProvider() iotago.APIProvider {
+	return cni.nodeConn.L1APIProvider()
 }
 
 func (cni *chainNodeImpl) GetCandidateNodes() []*governance.AccessNodeInfo {

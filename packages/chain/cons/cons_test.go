@@ -96,7 +96,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		outputs,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(t, err)
 	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
@@ -120,7 +120,7 @@ func testConsBasic(t *testing.T, n, f int) {
 			EntryPoint:     accounts.FuncDeposit.Hname(),
 			GasBudget:      10_000,
 		},
-	}, nil, testutil.L1API.TimeProvider().SlotFromTime(time.Now()), true, testutil.L1API)
+	}, nil, testutil.L1API.TimeProvider().SlotFromTime(time.Now()), true, testutil.L1APIProvider)
 	require.NoError(t, err)
 
 	err = utxoDB.AddToLedger(depositTx)
@@ -164,9 +164,10 @@ func testConsBasic(t *testing.T, n, f int) {
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareProviders[i].LoadDKShare(committeeAddress)
 		chainStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err = origin.InitChainByAnchorOutput(chainStates[nid], ao0, testutil.L1API)
+		_, err = origin.InitChainByAnchorOutput(chainStates[nid], ao0, testutil.L1APIProvider)
 		require.NoError(t, err)
-		nodes[nid] = cons.New(testutil.L1API,
+		nodes[nid] = cons.New(
+			testutil.L1APIProvider,
 			chainID,
 			chainStates[nid],
 			nid,
@@ -372,7 +373,7 @@ func testChained(t *testing.T, n, f, b int) {
 	testNodeStates := map[gpa.NodeID]state.Store{}
 	for _, nid := range nodeIDs {
 		testNodeStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO, testutil.L1API)
+		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO, testutil.L1APIProvider)
 	}
 	testChainInsts := make([]testConsInst, b)
 	for i := range testChainInsts {
@@ -486,7 +487,7 @@ func newTestConsInst(
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareRegistryProviders[i].LoadDKShare(committeeAddress)
 		require.NoError(t, err)
-		nodes[nid] = cons.New(testutil.L1API, chainID, nodeStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, accounts.CommonAccount(), nodeLog).AsGPA()
+		nodes[nid] = cons.New(testutil.L1APIProvider, chainID, nodeStates[nid], nid, nodeSK, nodeDKShare, procCache, consInstID, gpa.NodeIDFromPublicKey, accounts.CommonAccount(), nodeLog).AsGPA()
 	}
 	tci := &testConsInst{
 		t:                                t,

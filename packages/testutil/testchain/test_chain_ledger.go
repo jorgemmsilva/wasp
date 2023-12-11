@@ -62,7 +62,7 @@ func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (
 		outs,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(tcl.t, err)
 	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
@@ -94,7 +94,7 @@ func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []
 		nil,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		false,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(tcl.t, err)
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))
@@ -126,7 +126,7 @@ func (tcl *TestChainLedger) MakeTxDeployIncCounterContract() []isc.Request {
 		nil,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		false,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(tcl.t, err)
 	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))

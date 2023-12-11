@@ -360,23 +360,23 @@ func (tnc *testNodeConn) WaitUntilInitiallySynced(ctx context.Context) error {
 }
 
 func (tnc *testNodeConn) GetBech32HRP() iotago.NetworkPrefix {
-	return tnc.L1API().ProtocolParameters().Bech32HRP()
+	return tnc.L1APIProvider().LatestAPI().ProtocolParameters().Bech32HRP()
 }
 
 func (tnc *testNodeConn) GetL1ProtocolParams() iotago.ProtocolParameters {
-	return tnc.L1API().ProtocolParameters()
+	return tnc.L1APIProvider().LatestAPI().ProtocolParameters()
 }
 
 func (tnc *testNodeConn) Bech32HRP() iotago.NetworkPrefix {
-	return tnc.L1API().ProtocolParameters().Bech32HRP()
+	return tnc.L1APIProvider().LatestAPI().ProtocolParameters().Bech32HRP()
 }
 
-func (tnc *testNodeConn) BaseTokenInfo() api.InfoResBaseToken {
-	return *testutil.TokenInfo
+func (tnc *testNodeConn) BaseTokenInfo() *api.InfoResBaseToken {
+	return testutil.TokenInfo
 }
 
-func (tnc *testNodeConn) L1API() iotago.API {
-	return testutil.L1API
+func (tnc *testNodeConn) L1APIProvider() iotago.APIProvider {
+	return testutil.L1APIProvider
 }
 
 ////////////////////////////////////////////////////////////////////////////////

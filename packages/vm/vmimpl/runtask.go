@@ -104,14 +104,14 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 			taskResult.RotationAddress,
 			vmctx.task.Inputs,
 			vmctx.CreationSlot(),
-			task.L1API,
+			task.L1API(),
 		)
 		if err != nil {
 			panic(fmt.Sprintf("MakeRotateStateControllerTransaction: %s", err.Error()))
 		}
 		vmctx.task.Log.Debugf("runTask OUT: rotate to address %s", rotationAddr.String())
 	}
-	if _, err := task.L1API.Encode(taskResult.Transaction, serix.WithValidation()); err != nil {
+	if _, err := task.L1API().Encode(taskResult.Transaction, serix.WithValidation()); err != nil {
 		panic(fmt.Errorf("runTask: cannot serialize the tx: %w", err))
 	}
 	return taskResult
@@ -150,7 +150,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	// save the OutputID of the newly created tokens, foundries and NFTs in the previous block
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex, vmctx.task.L1API)
+			accounts.UpdateLatestOutputID(s, vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex)
 		})
 	})
 
@@ -162,7 +162,8 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 			NFTOutput:           vmctx.loadNFT,
 			TotalFungibleTokens: vmctx.loadTotalFungibleTokens,
 		},
-		vmctx.task.L1API,
+		vmctx.CreationSlot(),
+		vmctx.task.L1APIProvider,
 	)
 }
 

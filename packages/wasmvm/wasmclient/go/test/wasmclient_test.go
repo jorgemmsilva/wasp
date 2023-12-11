@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlib"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient/iscclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
@@ -85,11 +86,11 @@ func subSeed(seed string, index uint32) *iscclient.Keypair {
 func TestSubSeeds(t *testing.T) {
 	fmt.Println("seed     : " + mySeed)
 	seed := wasmtypes.BytesFromString(mySeed)
-	subSeed0 := cryptolib.SubSeed(seed, 0)
+	subSeed0 := cryptolib.SubSeed(seed, 0, testutil.L1API.ProtocolParameters().Bech32HRP())
 	string0 := wasmtypes.BytesToString(subSeed0[:])
 	fmt.Println("subseed 0: " + string0)
 	require.Equal(t, "0x65c0583f4d507edf6373e4bad8a649f2793bdf619a7a8e69efbebc8f6986fcbf", string0)
-	subSeed1 := cryptolib.SubSeed(seed, 1)
+	subSeed1 := cryptolib.SubSeed(seed, 1, testutil.L1API.ProtocolParameters().Bech32HRP())
 	string1 := wasmtypes.BytesToString(subSeed1[:])
 	fmt.Println("subseed 1: " + string1)
 	require.Equal(t, "0x8e80478dda48a3141e349ceac409ab9a4c742452c4e7e708d36fcb12b72b59d5", string1)

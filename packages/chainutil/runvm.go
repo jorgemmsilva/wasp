@@ -6,8 +6,6 @@ import (
 
 	"go.uber.org/zap"
 
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -23,8 +21,6 @@ func runISCTask(
 	reqs []isc.Request,
 	estimateGasMode bool,
 	evmTracer *isc.EVMTracer,
-	l1API iotago.API,
-	tokenInfo api.InfoResBaseToken,
 ) ([]*vm.RequestResult, error) {
 	task := &vm.VMTask{
 		Processors:           ch.Processors(),
@@ -38,8 +34,8 @@ func runISCTask(
 		EstimateGasMode:      estimateGasMode,
 		EVMTracer:            evmTracer,
 		Log:                  ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
-		L1API:                l1API,
-		TokenInfo:            tokenInfo,
+		L1APIProvider:        ch.L1APIProvider(),
+		TokenInfo:            ch.TokenInfo(),
 	}
 	res, err := vmimpl.Run(task)
 	if err != nil {
@@ -54,8 +50,6 @@ func runISCRequest(
 	timestamp time.Time,
 	req isc.Request,
 	estimateGasMode bool,
-	l1API iotago.API,
-	tokenInfo api.InfoResBaseToken,
 ) (*vm.RequestResult, error) {
 	results, err := runISCTask(
 		ch,
@@ -64,8 +58,6 @@ func runISCRequest(
 		[]isc.Request{req},
 		estimateGasMode,
 		nil,
-		l1API,
-		tokenInfo,
 	)
 	if err != nil {
 		return nil, err

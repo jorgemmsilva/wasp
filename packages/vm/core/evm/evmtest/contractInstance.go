@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/testutil"
 )
 
 type EVMContractInstance struct {
@@ -76,15 +75,15 @@ func (e *EVMContractInstance) parseEthCallOptions(opts []ethCallOptions, callDat
 	if opt.gasLimit == 0 {
 		var err error
 		senderAddress := crypto.PubkeyToAddress(opt.sender.PublicKey)
-		opt.gasLimit, err = e.chain.evmChain.EstimateGas(ethereum.CallMsg{
-			From:     senderAddress,
-			To:       &e.address,
-			GasPrice: opt.gasPrice,
-			Value:    opt.value,
-			Data:     callData,
-		},
+		opt.gasLimit, err = e.chain.evmChain.EstimateGas(
+			ethereum.CallMsg{
+				From:     senderAddress,
+				To:       &e.address,
+				GasPrice: opt.gasPrice,
+				Value:    opt.value,
+				Data:     callData,
+			},
 			nil,
-			testutil.L1API,
 		)
 		if err != nil {
 			return opt, fmt.Errorf("error estimating gas limit: %w", e.chain.resolveError(err))
@@ -159,7 +158,7 @@ func (e *EVMContractInstance) callView(fnName string, args []interface{}, v inte
 	if len(blockNumberOrHash) > 0 {
 		bn = &blockNumberOrHash[0]
 	}
-	ret, err := e.chain.evmChain.CallContract(callMsg, bn, testutil.L1API)
+	ret, err := e.chain.evmChain.CallContract(callMsg, bn)
 	if err != nil {
 		return err
 	}

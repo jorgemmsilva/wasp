@@ -35,7 +35,7 @@ type EVMService struct {
 	websocketContextMutex sync.Mutex
 	websocketContexts     map[isc.ChainID]*websocketContext
 
-	baseTokenInfo   api.InfoResBaseToken
+	baseTokenInfo   *api.InfoResBaseToken
 	chainsProvider  chains.Provider
 	chainService    interfaces.ChainService
 	networkProvider peering.NetworkProvider
@@ -48,7 +48,7 @@ type EVMService struct {
 }
 
 func NewEVMService(
-	baseTokenInfo api.InfoResBaseToken,
+	baseTokenInfo *api.InfoResBaseToken,
 	chainsProvider chains.Provider,
 	chainService interfaces.ChainService,
 	l1API iotago.API,
@@ -91,7 +91,7 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 	}
 
 	nodePubKey := e.networkProvider.Self().PubKey()
-	backend := jsonrpc.NewWaspEVMBackend(chain, nodePubKey, e.baseTokenInfo)
+	backend := jsonrpc.NewWaspEVMBackend(chain, nodePubKey)
 
 	db, err := database.DatabaseWithDefaultSettings(e.indexDbPath, true, hivedb.EngineRocksDB, false)
 	if err != nil {
@@ -104,9 +104,6 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 		jsonrpc.NewAccountManager(nil),
 		e.metrics.GetChainMetrics(chainID).WebAPI,
 		e.jsonrpcParams,
-		func() iotago.API {
-			return e.l1API
-		},
 	)
 	if err != nil {
 		return nil, err

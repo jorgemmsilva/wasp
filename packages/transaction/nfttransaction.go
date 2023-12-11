@@ -13,7 +13,7 @@ func NewMintNFTsTransaction(
 	immutableMetadata []iotago.MetadataFeatureEntries,
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 ) (*iotago.SignedTransaction, error) {
 	senderAddress := issuerKeyPair.Address()
 
@@ -22,6 +22,8 @@ func NewMintNFTsTransaction(
 
 	var issuerAddress iotago.Address = senderAddress
 	nftsOut := make(map[iotago.NFTID]bool)
+
+	l1API := l1APIProvider.APIForSlot(creationSlot)
 
 	addOutput := func(out *iotago.NFTOutput) {
 		d, err := l1API.StorageScoreStructure().MinDeposit(out)
@@ -66,7 +68,7 @@ func NewMintNFTsTransaction(
 		unspentOutputs,
 		outputAssets,
 		creationSlot,
-		l1API,
+		l1APIProvider,
 	)
 	if err != nil {
 		return nil, err

@@ -58,7 +58,7 @@ func ComputeInputsAndRemainder(
 	unspentOutputs iotago.OutputSet,
 	target *AssetsWithMana,
 	slotIndex iotago.SlotIndex,
-	l1API iotago.API,
+	l1 iotago.APIProvider,
 ) (
 	inputIDs iotago.OutputIDs,
 	remainder iotago.TxEssenceOutputs,
@@ -92,7 +92,7 @@ func ComputeInputsAndRemainder(
 			continue
 		}
 		inputIDs = append(inputIDs, outputID)
-		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex, l1API)
+		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex, l1)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -101,7 +101,7 @@ func ComputeInputsAndRemainder(
 			break
 		}
 	}
-	remainder, err = computeRemainderOutputs(senderAddress, sum, target, l1API)
+	remainder, err = computeRemainderOutputs(senderAddress, sum, target, l1.APIForSlot(slotIndex))
 	if err != nil {
 		return nil, nil, err
 	}

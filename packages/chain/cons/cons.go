@@ -143,7 +143,7 @@ type consImpl struct {
 	edSuite          suites.Suite // For signatures.
 	blsSuite         suites.Suite // For randomness only.
 	dkShare          tcrypto.DKShare
-	l1API            iotago.API
+	l1APIProvider    iotago.APIProvider
 	processorCache   *processors.Cache
 	nodeIDs          []gpa.NodeID
 	me               gpa.NodeID
@@ -176,7 +176,7 @@ var (
 )
 
 func New(
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 	chainID isc.ChainID,
 	chainStore state.Store,
 	me gpa.NodeID,
@@ -225,7 +225,7 @@ func New(
 		dkShare:          dkShare,
 		processorCache:   processorCache,
 		nodeIDs:          nodeIDs,
-		l1API:            l1API,
+		l1APIProvider:    l1APIProvider,
 		me:               me,
 		f:                f,
 		dss:              dss.New(edSuite, nodeIDs, nodePKs, f, me, myKyberKeys.Private, longTermDKS, log.Named("DSS")),
@@ -585,11 +585,12 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 
 	if vmResult.RotationAddress != nil {
 		// Rotation by the Self-Governed Committee.
+		l1API := c.l1APIProvider.APIForTime(vmResult.Task.Timestamp)
 		tx, _, err := rotate.MakeRotationTransactionForSelfManagedChain(
 			vmResult.RotationAddress,
 			vmResult.Task.Inputs,
-			c.l1API.TimeProvider().SlotFromTime(vmResult.Task.Timestamp),
-			c.l1API,
+			l1API.TimeProvider().SlotFromTime(vmResult.Task.Timestamp),
+			l1API,
 		)
 		if err != nil {
 			c.log.Warnf("Cannot create rotation TX, failed to make TX essence: %w", err)

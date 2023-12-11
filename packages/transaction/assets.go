@@ -69,8 +69,9 @@ func AssetsAndAvailableManaFromOutput(
 	oID iotago.OutputID,
 	o iotago.Output,
 	slotIndex iotago.SlotIndex,
-	l1API iotago.API,
+	l1 iotago.APIProvider,
 ) (*AssetsWithMana, error) {
+	l1API := l1.APIForSlot(slotIndex)
 	assets := isc.AssetsFromOutput(o, oID)
 	mana, err := vm.TotalManaIn(
 		l1API.ManaDecayProvider(),

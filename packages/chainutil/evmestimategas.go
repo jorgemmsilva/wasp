@@ -8,8 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/params"
 
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -25,8 +23,6 @@ func EVMEstimateGas(
 	ch chaintypes.ChainCore,
 	chainOutputs *isc.ChainOutputs,
 	call ethereum.CallMsg,
-	l1API iotago.API,
-	tokenInfo api.InfoResBaseToken,
 ) (uint64, error) {
 	// Determine the lowest and highest possible gas limits to binary search in between
 	var (
@@ -44,6 +40,8 @@ func EVMEstimateGas(
 		hi = maximumPossibleGas
 	}
 
+	tokenInfo := ch.TokenInfo()
+
 	if call.GasPrice == nil {
 		call.GasPrice = info.GasFeePolicy.GasPriceWei(tokenInfo.Decimals)
 	}
@@ -55,7 +53,7 @@ func EVMEstimateGas(
 		call.Gas = gas
 		iscReq := isc.NewEVMOffLedgerCallRequest(ch.ID(), call)
 		timestamp := time.Now()
-		res, err := runISCRequest(ch, chainOutputs, timestamp, iscReq, true, l1API, tokenInfo)
+		res, err := runISCRequest(ch, chainOutputs, timestamp, iscReq, true)
 		if err != nil {
 			return true, nil, err
 		}

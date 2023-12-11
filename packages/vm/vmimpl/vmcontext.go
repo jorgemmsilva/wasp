@@ -208,7 +208,7 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 		// update foundry UTXOs
 		for _, foundryID := range foundryIDsToBeUpdated {
 			vmctx.task.Log.Debugf("saving foundry %d, outputIndex: %d", foundryID, outputIndex)
-			accounts.SaveFoundryOutput(s, foundryOutputsMap[foundryID], outputIndex, vmctx.task.L1API)
+			accounts.SaveFoundryOutput(s, foundryOutputsMap[foundryID], outputIndex)
 			outputIndex++
 		}
 		for _, sn := range foundriesToBeRemoved {

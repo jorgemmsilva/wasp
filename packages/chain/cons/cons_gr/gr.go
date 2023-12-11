@@ -98,7 +98,7 @@ type input struct {
 
 type ConsGr struct {
 	me                          gpa.NodeID
-	l1API                       iotago.API
+	l1APIProvider               iotago.APIProvider
 	consInst                    gpa.AckHandler
 	inputCh                     chan *input
 	inputReceived               *atomic.Bool
@@ -141,7 +141,7 @@ func New(
 	chainStore state.Store,
 	dkShare tcrypto.DKShare,
 	logIndex *cmt_log.LogIndex,
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 	myNodeIdentity *cryptolib.KeyPair,
 	procCache *processors.Cache,
 	mempool Mempool,
@@ -164,7 +164,7 @@ func New(
 	me := gpa.NodeIDFromPublicKey(myNodeIdentity.GetPublicKey())
 	cgr := &ConsGr{
 		me:                me,
-		l1API:             l1API,
+		l1APIProvider:     l1APIProvider,
 		consInst:          nil, // Set bellow.
 		inputCh:           make(chan *input, 1),
 		inputReceived:     atomic.NewBool(false),
@@ -188,7 +188,7 @@ func New(
 
 	pipeMetrics.TrackPipeLenMax("cons-gr-netRecvPipe", netPeeringID.String(), cgr.netRecvPipe.Len)
 
-	consInstRaw := cons.New(l1API, chainID,
+	consInstRaw := cons.New(l1APIProvider, chainID,
 		chainStore,
 		me,
 		myNodeIdentity.GetPrivateKey(),

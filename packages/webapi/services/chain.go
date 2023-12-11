@@ -26,7 +26,7 @@ import (
 type ChainService struct {
 	log                         *logger.Logger
 	l1API                       iotago.API
-	baseTokenInfo               api.InfoResBaseToken
+	baseTokenInfo               *api.InfoResBaseToken
 	chainsProvider              chains.Provider
 	chainMetricsProvider        *metrics.ChainMetricsProvider
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider
@@ -35,7 +35,7 @@ type ChainService struct {
 func NewChainService(
 	logger *logger.Logger,
 	l1API iotago.API,
-	baseTokenInfo api.InfoResBaseToken,
+	baseTokenInfo *api.InfoResBaseToken,
 	chainsProvider chains.Provider,
 	chainMetricsProvider *metrics.ChainMetricsProvider,
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
@@ -133,7 +133,7 @@ func (c *ChainService) GetEVMChainID(chainID isc.ChainID, blockIndexOrTrieRoot s
 	if err != nil {
 		return 0, err
 	}
-	ret, err := common.CallView(ch, c.l1API, c.baseTokenInfo, evm.Contract.Hname(), evm.FuncGetChainID.Hname(), nil, blockIndexOrTrieRoot)
+	ret, err := common.CallView(ch, evm.Contract.Hname(), evm.FuncGetChainID.Hname(), nil, blockIndexOrTrieRoot)
 	if err != nil {
 		return 0, err
 	}
@@ -167,7 +167,7 @@ func (c *ChainService) GetChainInfoByChainID(chainID isc.ChainID, blockIndexOrTr
 		return nil, err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1API, c.baseTokenInfo)
+	invoker := corecontracts.MakeCallViewInvoker(ch)
 	governanceChainInfo, err := corecontracts.GetChainInfo(invoker, blockIndexOrTrieRoot)
 	if err != nil {
 		if chainRecord != nil && errors.Is(err, interfaces.ErrChainNotFound) {
@@ -188,7 +188,7 @@ func (c *ChainService) GetContracts(chainID isc.ChainID, blockIndexOrTrieRoot st
 		return nil, err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1API, c.baseTokenInfo)
+	invoker := corecontracts.MakeCallViewInvoker(ch)
 	contracts, err := corecontracts.GetContractRecords(invoker, blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err

@@ -1,7 +1,6 @@
 package origin
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -78,8 +77,7 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 	return block
 }
 
-// TODO make sure wherever this is called, the API is `().APIForSlot(chainOutputs.AnchorOutputID.CreationSlot())`
-func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutputs, l1API iotago.API) (state.Block, error) {
+func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutputs, l1 iotago.APIProvider) (state.Block, error) {
 	var initParams dict.Dict
 	if originMetadata := chainOutputs.AnchorOutput.FeatureSet().Metadata(); originMetadata != nil {
 		var err error
@@ -88,7 +86,7 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 			return nil, fmt.Errorf("invalid parameters on origin AO, %w", err)
 		}
 	}
-	anchorSD := lo.Must(l1API.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
+	anchorSD := lo.Must(chainOutputs.L1API(l1).StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
 	commonAccountAmount := chainOutputs.AnchorOutput.Amount - anchorSD
 	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
 
@@ -100,15 +98,10 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 		return nil, fmt.Errorf("unsupported StateMetadata Version: %v, expect %v", originAOStateMetadata.Version, transaction.StateMetadataSupportedVersion)
 	}
 	if !originBlock.L1Commitment().Equals(originAOStateMetadata.L1Commitment) {
-		l1paramsJSON, err := json.Marshal(l1API)
-		if err != nil {
-			l1paramsJSON = []byte(fmt.Sprintf("unable to marshalJson l1params: %s", err.Error()))
-		}
 		return nil, fmt.Errorf(
-			"l1Commitment mismatch between originAO / originBlock: %s / %s, L1params: %s",
+			"l1Commitment mismatch between originAO / originBlock: %s / %s",
 			originAOStateMetadata.L1Commitment,
 			originBlock.L1Commitment(),
-			string(l1paramsJSON),
 		)
 	}
 	return originBlock, nil
@@ -150,7 +143,7 @@ func NewChainOriginTransaction(
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
 	schemaVersion uint32,
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 ) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID, error) {
 	walletAddr := keyPair.GetPublicKey().AsEd25519Address()
 
@@ -176,6 +169,8 @@ func NewChainOriginTransaction(
 		},
 		Mana: depositMana,
 	}
+
+	l1API := l1APIProvider.APIForSlot(creationSlot)
 	anchorSD := lo.Must(l1API.StorageScoreStructure().MinDeposit(anchorOutput))
 
 	accountSD := accountOutputSD(l1API)
@@ -196,7 +191,7 @@ func NewChainOriginTransaction(
 		unspentOutputs,
 		transaction.NewAssetsWithMana(isc.FungibleTokensFromOutput(anchorOutput).ToAssets(), anchorOutput.StoredMana()),
 		creationSlot,
-		l1API,
+		l1APIProvider,
 	)
 	if err != nil {
 		return nil, nil, isc.ChainID{}, err

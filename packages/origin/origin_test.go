@@ -68,7 +68,7 @@ func TestCreateOrigin(t *testing.T) {
 			allOutputs,
 			u.SlotIndex(),
 			allmigrations.DefaultScheme.LatestSchemaVersion(),
-			testutil.L1API,
+			testutil.L1APIProvider,
 		)
 		require.NoError(t, err)
 
@@ -213,6 +213,6 @@ func TestMismatchOriginCommitment(t *testing.T) {
 		iotago.OutputID{},
 	)
 
-	_, err = origin.InitChainByAnchorOutput(store, ao, testutil.L1API)
+	_, err = origin.InitChainByAnchorOutput(store, ao, testutil.L1APIProvider)
 	testmisc.RequireErrorToBe(t, err, "l1Commitment mismatch between originAO / originBlock")
 }

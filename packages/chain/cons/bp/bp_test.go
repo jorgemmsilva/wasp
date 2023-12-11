@@ -46,7 +46,7 @@ func TestOffLedgerOrdering(t *testing.T) {
 		outputs,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(t, err)
 	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)

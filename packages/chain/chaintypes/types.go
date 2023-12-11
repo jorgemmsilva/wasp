@@ -8,6 +8,7 @@ import (
 
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 
 	"github.com/iotaledger/wasp/packages/chain/mempool/mempooltypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -72,6 +73,8 @@ type ChainCore interface {
 	Processors() *processors.Cache
 	GetChainNodes() []peering.PeerStatusProvider     // CommitteeNodes + AccessNodes
 	GetCandidateNodes() []*governance.AccessNodeInfo // All the current candidates.
+	L1APIProvider() iotago.APIProvider
+	TokenInfo() *api.InfoResBaseToken
 	Log() *logger.Logger
 }
 

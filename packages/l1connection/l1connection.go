@@ -44,8 +44,8 @@ type Client interface {
 	GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error)
 	// used to query the health endpoint of the node
 	Health(timeout ...time.Duration) (bool, error)
-	// API returns the latest L1 API
-	API() iotago.API
+	// APIProvider returns the L1 APIProvider
+	APIProvider() iotago.APIProvider
 	// Bech32HRP returns the bech32 humanly readable prefix for the current network
 	Bech32HRP() iotago.NetworkPrefix
 }
@@ -92,7 +92,7 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	defer cancelContext()
 
 	// TODO how to get the current epoch
-	bech32Addr := myAddress.Bech32(c.API().ProtocolParameters().Bech32HRP())
+	bech32Addr := myAddress.Bech32(c.Bech32HRP())
 	queries := []nodeclient.IndexerQuery{
 		&api.BasicOutputsQuery{AddressBech32: bech32Addr},
 		&api.FoundriesQuery{AccountAddressBech32: bech32Addr},
@@ -141,7 +141,7 @@ func (c *l1client) postBlock(ctx context.Context, block *iotago.Block) (iotago.B
 // PostTx sends a tx (including tipselection and local PoW if necessary).
 func (c *l1client) postTx(ctx context.Context, tx *iotago.SignedTransaction) (iotago.BlockID, error) {
 	// Build a Block and post it.
-	block, err := builder.NewBasicBlockBuilder(c.API()).Payload(tx).Build()
+	block, err := builder.NewBasicBlockBuilder(c.nodeAPIClient.LatestAPI()).Payload(tx).Build()
 	if err != nil {
 		return iotago.EmptyBlockID, fmt.Errorf("failed to build block: %w", err)
 	}
@@ -239,7 +239,7 @@ func (c *l1client) RequestFunds(addr iotago.Address, timeout ...time.Duration) e
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
 
-	faucetReq := fmt.Sprintf("{\"address\":%q}", addr.Bech32(c.API().ProtocolParameters().Bech32HRP()))
+	faucetReq := fmt.Sprintf("{\"address\":%q}", addr.Bech32(c.Bech32HRP()))
 	faucetURL := fmt.Sprintf("%s/api/enqueue", c.config.FaucetAddress)
 	httpReq, err := http.NewRequestWithContext(ctxWithTimeout, http.MethodPost, faucetURL, bytes.NewReader([]byte(faucetReq)))
 	if err != nil {
@@ -291,12 +291,12 @@ func (c *l1client) PostSimpleValueTX(
 	return err
 }
 
-func (c *l1client) API() iotago.API {
-	return c.nodeAPIClient.LatestAPI()
+func (c *l1client) APIProvider() iotago.APIProvider {
+	return c.nodeAPIClient
 }
 
 func (c *l1client) Bech32HRP() iotago.NetworkPrefix {
-	return c.API().ProtocolParameters().Bech32HRP()
+	return c.nodeAPIClient.LatestAPI().ProtocolParameters().Bech32HRP()
 }
 
 func MakeSimpleValueTX(
@@ -310,7 +310,7 @@ func MakeSimpleValueTX(
 	if err != nil {
 		return nil, fmt.Errorf("failed to get address outputs: %w", err)
 	}
-	txBuilder := builder.NewTransactionBuilder(client.API())
+	txBuilder := builder.NewTransactionBuilder(client.APIProvider().LatestAPI())
 	inputSum := iotago.BaseToken(0)
 	for i, o := range senderOuts {
 		if inputSum >= amount {

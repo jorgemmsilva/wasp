@@ -26,10 +26,10 @@ type TypedPoolByNonce[V isc.OffLedgerRequest] struct {
 	sizeMetric          func(int)
 	timeMetric          func(time.Duration)
 	log                 *logger.Logger
-	l1API               iotago.API
+	l1APIProvider       iotago.APIProvider
 }
 
-func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger, l1API iotago.API) *TypedPoolByNonce[V] {
+func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger, l1APIProvider iotago.APIProvider) *TypedPoolByNonce[V] {
 	return &TypedPoolByNonce[V]{
 		waitReq:             waitReq,
 		reqsByAcountOrdered: shrinkingmap.New[string, []*OrderedPoolEntry[V]](),
@@ -37,7 +37,7 @@ func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric fun
 		sizeMetric:          sizeMetric,
 		timeMetric:          timeMetric,
 		log:                 log,
-		l1API:               l1API,
+		l1APIProvider:       l1APIProvider,
 	}
 }
 
@@ -175,7 +175,7 @@ func (p *TypedPoolByNonce[V]) StatusString() string {
 func (p *TypedPoolByNonce[V]) WriteContent(w io.Writer) {
 	p.reqsByAcountOrdered.ForEach(func(_ string, list []*OrderedPoolEntry[V]) bool {
 		for _, entry := range list {
-			jsonData, err := isc.RequestToJSON(entry.req, p.l1API)
+			jsonData, err := isc.RequestToJSON(entry.req, p.l1APIProvider.LatestAPI())
 			if err != nil {
 				return false // stop iteration
 			}

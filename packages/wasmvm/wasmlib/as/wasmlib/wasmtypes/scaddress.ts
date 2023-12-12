@@ -1,12 +1,14 @@
 // Copyright 2020 IOTA Stiftung
 // SPDX-License-Identifier: Apache-2.0
 
-export const ScAddressAlias: u8 = 8;
+export const ScAddressAccount: u8 = 8;
+export const ScAddressAnchor: u8 = 24;
 export const ScAddressEd25519: u8 = 0;
 export const ScAddressNFT: u8 = 16;
 export const ScAddressEth: u8 = 32;
 
-export const ScLengthAlias = 33;
+export const ScLengthAccount = 33;
+export const ScLengthAnchor = 33;
 export const ScLengthEd25519 = 33;
 export const ScLengthNFT = 33;
 export const ScLengthEth = 20;
@@ -73,9 +75,14 @@ export function addressFromBytes(buf: Uint8Array | null): ScAddress {
     }
 
     switch (buf[0]) {
-        case ScAddressAlias:
-            if (buf.length != ScLengthAlias) {
-                panic('invalid Address length: Alias');
+        case ScAddressAccount:
+            if (buf.length != ScLengthAccount) {
+                panic('invalid Address length: Account');
+            }
+            break;
+        case ScAddressAnchor:
+            if (buf.length != ScLengthAnchor) {
+                panic('invalid Address length: Anchor');
             }
             break;
         case ScAddressEd25519:
@@ -99,8 +106,10 @@ export function addressFromBytes(buf: Uint8Array | null): ScAddress {
 
 export function addressToBytes(value: ScAddress): Uint8Array {
     switch (value.id[0]) {
-        case ScAddressAlias:
-            return value.id.slice(0, ScLengthAlias);
+        case ScAddressAccount:
+            return value.id.slice(0, ScLengthAccount);
+        case ScAddressAnchor:
+            return value.id.slice(0, ScLengthAnchor);
         case ScAddressEd25519:
             return value.id.slice(0, ScLengthEd25519);
         case ScAddressNFT:

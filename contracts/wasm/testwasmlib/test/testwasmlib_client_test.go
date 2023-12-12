@@ -18,6 +18,7 @@ import (
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlib"
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlibimpl"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient/iscclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreaccounts"
@@ -142,7 +143,7 @@ func setupClientDisposable(t testing.TB) *wasmclient.WasmClientContext {
 
 func setupClientSolo(t testing.TB) *wasmclient.WasmClientContext {
 	ctx := wasmsolo.NewSoloContext(t, testwasmlib.ScName, testwasmlibimpl.OnDispatch)
-	chainID := ctx.Chain.ChainID.String()
+	chainID := ctx.Chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())
 	keyPair := iscclient.KeyPairFromSeed(ctx.Chain.OriginatorPrivateKey.GetPrivateKey().AsBytes()[:32])
 
 	// use Solo as fake Wasp cluster

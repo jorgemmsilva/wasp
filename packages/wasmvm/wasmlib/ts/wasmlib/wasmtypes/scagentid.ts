@@ -13,9 +13,9 @@ import {
     addressToBytes,
     addressToString,
     ScAddress,
-    ScAddressAlias,
+    ScAddressAnchor,
     ScAddressEth,
-    ScLengthAlias,
+    ScLengthAccount,
     ScLengthEd25519,
     ScLengthEth,
 } from './scaddress';
@@ -42,7 +42,7 @@ export class ScAgentID {
     }
 
     public static forEthereum(chainAddress: ScAddress, ethAddress: ScAddress): ScAgentID {
-        if (chainAddress.id[0] != ScAddressAlias) {
+        if (chainAddress.id[0] != ScAddressAnchor) {
             panic("invalid eth AgentID: chain address");
         }
         if (ethAddress.id[0] != ScAddressEth) {
@@ -57,7 +57,7 @@ export class ScAgentID {
     public static fromAddress(address: ScAddress): ScAgentID {
         const agentID = new ScAgentID(address, new ScHname(0));
         switch (address.id[0]) {
-            case ScAddressAlias: {
+            case ScAddressAnchor: {
                 break;
             }
             case ScAddressEth: {
@@ -127,7 +127,7 @@ export function agentIDFromBytes(buf: Uint8Array | null): ScAgentID {
     switch (buf[0]) {
         case ScAgentIDAddress: {
             buf = buf.subarray(1);
-            if (buf.length != ScLengthAlias && buf.length != ScLengthEd25519) {
+            if (buf.length != ScLengthAccount && buf.length != ScLengthEd25519) {
                 panic('invalid AgentID length: address agentID');
             }
             return ScAgentID.fromAddress(addressFromBytes(buf));

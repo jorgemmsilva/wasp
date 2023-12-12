@@ -53,6 +53,7 @@ func PublicKeyFromReader(r io.Reader) (publicKey PublicKey, err error) {
 		err = ierrors.Wrapf(ErrParseBytesFailed, "failed to read PublicKey bytes: %w", err)
 		return
 	}
+	publicKey.Point = blsSuite.G2().Point()
 	if err = publicKey.Point.UnmarshalBinary(b[:]); err != nil {
 		err = ierrors.Wrapf(ErrParseBytesFailed, "failed to unmarshal PublicKey: %w", err)
 		return

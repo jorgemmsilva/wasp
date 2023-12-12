@@ -8,12 +8,14 @@ import "strings"
 // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\
 
 const (
-	ScAddressAlias   byte = 8
+	ScAddressAccount byte = 8
+	ScAddressAnchor  byte = 24
 	ScAddressEd25519 byte = 0
 	ScAddressNFT     byte = 16
 	ScAddressEth     byte = 32
 
-	ScLengthAlias   = 33
+	ScLengthAccount = 33
+	ScLengthAnchor  = 33
 	ScLengthEd25519 = 33
 	ScLengthNFT     = 33
 	ScLengthEth     = 20
@@ -63,9 +65,13 @@ func AddressFromBytes(buf []byte) ScAddress {
 	}
 
 	switch buf[0] {
-	case ScAddressAlias:
-		if len(buf) != ScLengthAlias {
-			panic("invalid Address length: Alias")
+	case ScAddressAccount:
+		if len(buf) != ScLengthAccount {
+			panic("invalid Address length: Account")
+		}
+	case ScAddressAnchor:
+		if len(buf) != ScLengthAnchor {
+			panic("invalid Address length: Anchor")
 		}
 	case ScAddressEd25519:
 		if len(buf) != ScLengthEd25519 {
@@ -84,8 +90,10 @@ func AddressFromBytes(buf []byte) ScAddress {
 
 func AddressToBytes(value ScAddress) []byte {
 	switch value.id[0] {
-	case ScAddressAlias:
-		return value.id[:ScLengthAlias]
+	case ScAddressAccount:
+		return value.id[:ScLengthAccount]
+	case ScAddressAnchor:
+		return value.id[:ScLengthAnchor]
 	case ScAddressEd25519:
 		return value.id[:ScLengthEd25519]
 	case ScAddressNFT:

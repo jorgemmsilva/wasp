@@ -30,7 +30,7 @@ func NewScAgentID(address ScAddress, hname ScHname) ScAgentID {
 }
 
 func ScAgentIDForEthereum(chainAddress ScAddress, ethAddress ScAddress) ScAgentID {
-	if chainAddress.id[0] != ScAddressAlias {
+	if chainAddress.id[0] != ScAddressAnchor {
 		panic("invalid eth AgentID: chain address")
 	}
 	if ethAddress.id[0] != ScAddressEth {
@@ -41,7 +41,7 @@ func ScAgentIDForEthereum(chainAddress ScAddress, ethAddress ScAddress) ScAgentI
 
 func ScAgentIDFromAddress(address ScAddress) ScAgentID {
 	switch address.id[0] {
-	case ScAddressAlias:
+	case ScAddressAnchor:
 		return ScAgentID{kind: ScAgentIDContract, address: address, hname: 0}
 	case ScAddressEth:
 		panic("invalid eth AgentID: need chain address")
@@ -96,7 +96,7 @@ func AgentIDFromBytes(buf []byte) (a ScAgentID) {
 	buf = buf[1:]
 	switch a.kind {
 	case ScAgentIDAddress:
-		if len(buf) != ScLengthAlias && len(buf) != ScLengthEd25519 {
+		if len(buf) != ScLengthAccount && len(buf) != ScLengthEd25519 {
 			panic("invalid AgentID length: address agentID")
 		}
 		a.address = AddressFromBytes(buf)

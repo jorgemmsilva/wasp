@@ -5,12 +5,14 @@ use crate::*;
 
 // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\
 
-pub const SC_ADDRESS_ALIAS: u8 = 8;
+pub const SC_ADDRESS_ACCOUNT: u8 = 8;
+pub const SC_ADDRESS_ANCHOR: u8 = 24;
 pub const SC_ADDRESS_ED25519: u8 = 0;
 pub const SC_ADDRESS_NFT: u8 = 16;
 pub const SC_ADDRESS_ETH: u8 = 32;
 
-pub const SC_LENGTH_ALIAS: usize = 33;
+pub const SC_LENGTH_ACCOUNT: usize = 33;
+pub const SC_LENGTH_ANCHOR: usize = 33;
 pub const SC_LENGTH_ED25519: usize = 33;
 pub const SC_LENGTH_NFT: usize = 33;
 pub const SC_LENGTH_ETH: usize = 20;
@@ -66,11 +68,17 @@ pub fn address_from_bytes(buf: &[u8]) -> ScAddress {
     }
 
     match buf[0] {
-        SC_ADDRESS_ALIAS => {
-            if len != SC_LENGTH_ALIAS {
-                panic("invalid Address length: Alias");
+        SC_ADDRESS_ACCOUNT => {
+            if len != SC_LENGTH_ACCOUNT {
+                panic("invalid Address length: Account");
             }
-            addr.id[..SC_LENGTH_ALIAS].copy_from_slice(&buf[..SC_LENGTH_ALIAS]);
+            addr.id[..SC_LENGTH_ANCHOR].copy_from_slice(&buf[..SC_LENGTH_ACCOUNT]);
+        }
+        SC_ADDRESS_ANCHOR => {
+            if len != SC_LENGTH_ANCHOR {
+                panic("invalid Address length: Anchor");
+            }
+            addr.id[..SC_LENGTH_ANCHOR].copy_from_slice(&buf[..SC_LENGTH_ANCHOR]);
         }
         SC_ADDRESS_ED25519 => {
             if len != SC_LENGTH_ED25519 {
@@ -91,8 +99,11 @@ pub fn address_from_bytes(buf: &[u8]) -> ScAddress {
 
 pub fn address_to_bytes(value: &ScAddress) -> Vec<u8> {
     match value.id[0] {
-        SC_ADDRESS_ALIAS => {
-            return value.id[..SC_LENGTH_ALIAS].to_vec();
+        SC_ADDRESS_ACCOUNT => {
+            return value.id[..SC_LENGTH_ACCOUNT].to_vec();
+        }
+        SC_ADDRESS_ANCHOR => {
+            return value.id[..SC_LENGTH_ANCHOR].to_vec();
         }
         SC_ADDRESS_ED25519 => {
             return value.id[..SC_LENGTH_ED25519].to_vec();

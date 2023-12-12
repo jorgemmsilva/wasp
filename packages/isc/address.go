@@ -63,3 +63,14 @@ func AddressToBytes(address iotago.Address) []byte {
 	AddressToWriter(ww, address)
 	return ww.Bytes()
 }
+
+func AddressFromString(prefix iotago.NetworkPrefix, s string) (iotago.Address, error) {
+	p, addr, err := iotago.ParseBech32(s)
+	if err != nil {
+		return nil, err
+	}
+	if p != prefix {
+		return nil, fmt.Errorf("expected network prefix %q, got %q", prefix, p)
+	}
+	return addr, nil
+}

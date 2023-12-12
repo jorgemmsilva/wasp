@@ -1,7 +1,6 @@
 package isc
 
 import (
-	"fmt"
 	"io"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -21,12 +20,9 @@ func NewAddressAgentID(addr iotago.Address) *AddressAgentID {
 }
 
 func addressAgentIDFromString(prefix iotago.NetworkPrefix, s string) (*AddressAgentID, error) {
-	p, addr, err := iotago.ParseBech32(s)
+	addr, err := AddressFromString(prefix, s)
 	if err != nil {
 		return nil, err
-	}
-	if p != prefix {
-		return nil, fmt.Errorf("expected network prefix %q, got %q", prefix, p)
 	}
 	return &AddressAgentID{a: addr}, nil
 }

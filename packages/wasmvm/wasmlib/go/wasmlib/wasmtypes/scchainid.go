@@ -13,7 +13,7 @@ type ScChainID struct {
 
 // Address returns the account address that the chain ID actually represents
 func (o ScChainID) Address() ScAddress {
-	buf := []byte{ScAddressAlias}
+	buf := []byte{ScAddressAnchor}
 	return AddressFromBytes(append(buf, o.id[:]...))
 }
 
@@ -55,7 +55,7 @@ func ChainIDToBytes(value ScChainID) []byte {
 
 func ChainIDFromString(value string) ScChainID {
 	addr := AddressFromString(value)
-	if addr.id[0] != ScAddressAlias {
+	if addr.id[0] != ScAddressAnchor {
 		panic("invalid ChainID address type")
 	}
 	return ChainIDFromBytes(addr.id[1:])

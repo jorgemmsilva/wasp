@@ -6,7 +6,7 @@ export const ScChainIDLength = 32;
 import {panic} from '../sandbox';
 import {WasmDecoder, WasmEncoder, zeroes} from './codec';
 import {Proxy} from './proxy';
-import {addressFromBytes, addressFromString, addressToString, ScAddress, ScAddressAlias} from './scaddress';
+import {addressFromBytes, addressFromString, addressToString, ScAddress, ScAddressAnchor} from './scaddress';
 import {bytesCompare} from './scbytes';
 
 // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\ // \\
@@ -16,7 +16,7 @@ export class ScChainID {
 
     public address(): ScAddress {
         const buf = new Uint8Array(this.id.length + 1);
-        buf[0] = ScAddressAlias as u8;
+        buf[0] = ScAddressAnchor as u8;
         buf.set(this.id, 1);
         return addressFromBytes(buf);
     }
@@ -62,7 +62,7 @@ export function chainIDToBytes(value: ScChainID): Uint8Array {
 
 export function chainIDFromString(value: string): ScChainID {
     const addr = addressFromString(value);
-    if (addr.id[0] != ScAddressAlias) {
+    if (addr.id[0] != ScAddressAnchor) {
         panic('invalid ChainID address type');
     }
     return chainIDFromBytes(addr.id.slice(1));

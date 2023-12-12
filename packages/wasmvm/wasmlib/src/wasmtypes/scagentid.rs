@@ -32,7 +32,7 @@ impl ScAgentID {
     }
 
     pub fn for_ethereum(chain: &ScAddress, eth_address: &ScAddress) -> ScAgentID {
-        if chain.id[0] != SC_ADDRESS_ALIAS {
+        if chain.id[0] != SC_ADDRESS_ANCHOR {
             panic("invalid eth AgentID: chain address");
         }
         if eth_address.id[0] != SC_ADDRESS_ETH {
@@ -49,7 +49,7 @@ impl ScAgentID {
     pub fn from_address(address: &ScAddress) -> ScAgentID {
         let kind;
         match address.id[0] {
-            SC_ADDRESS_ALIAS => {
+            SC_ADDRESS_ANCHOR => {
                 kind = SC_AGENT_ID_CONTRACT;
             }
             SC_ADDRESS_ETH => {
@@ -126,7 +126,7 @@ pub fn agent_id_from_bytes(buf: &[u8]) -> ScAgentID {
     match buf[0] {
         SC_AGENT_ID_ADDRESS => {
             let buf: &[u8] = &buf[1..];
-            if len != SC_LENGTH_ALIAS && len != SC_LENGTH_ED25519 {
+            if len != SC_LENGTH_ACCOUNT && len != SC_LENGTH_ED25519 {
                 panic("invalid AgentID length: address agentID");
             }
             return ScAgentID::from_address(&address_from_bytes(&buf));

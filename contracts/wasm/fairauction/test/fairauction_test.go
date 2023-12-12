@@ -26,7 +26,7 @@ const (
 func startAuction(t *testing.T) (*wasmsolo.SoloContext, *wasmsolo.SoloAgent, wasmtypes.ScNftID) {
 	ctx := wasmsolo.NewSoloContext(t, fairauction.ScName, fairauctionimpl.OnDispatch)
 	auctioneer := ctx.NewSoloAgent("auctioneer")
-	nftID := ctx.MintNFT(auctioneer, []byte("NFT metadata"))
+	nftID := ctx.MintNFT(auctioneer, map[string][]byte{"data": []byte("NFT metadata")})
 	require.NoError(t, ctx.Err)
 
 	ctx.WaitForPendingRequestsMark()

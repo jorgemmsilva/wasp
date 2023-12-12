@@ -14,7 +14,7 @@ pub struct ScChainID {
 
 impl ScChainID {
     pub fn address(&self) -> ScAddress {
-        let buf = [SC_ADDRESS_ALIAS];
+        let buf = [SC_ADDRESS_ANCHOR];
         address_from_bytes(&[&buf[..], &self.id[..]].concat())
     }
 
@@ -58,7 +58,7 @@ pub fn chain_id_to_bytes(value: &ScChainID) -> Vec<u8> {
 
 pub fn chain_id_from_string(value: &str) -> ScChainID {
     let addr = address_from_string(value);
-    if addr.id[0] != SC_ADDRESS_ALIAS {
+    if addr.id[0] != SC_ADDRESS_ANCHOR {
         panic("invalid ChainID address type");
     }
     chain_id_from_bytes(&addr.id[1..])

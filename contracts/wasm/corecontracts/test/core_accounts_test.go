@@ -271,7 +271,7 @@ func TestAccountNFTAmount(t *testing.T) {
 		randNftMetadata := make([]byte, 4)
 		rand.Read(randNftMetadata)
 		nftMetadataSlice[i] = randNftMetadata
-		nftIDs[i] = ctx.MintNFT(user, randNftMetadata)
+		nftIDs[i] = ctx.MintNFT(user, map[string][]byte{"data": randNftMetadata})
 		require.NoError(t, ctx.Err)
 		require.True(t, ctx.Chain.Env.HasL1NFT(userAddr, ctx.Cvt.IscNFTID(&nftIDs[i])))
 	}
@@ -716,7 +716,7 @@ func TestFoundryOutput(t *testing.T) {
 func TestAccountNFTs(t *testing.T) {
 	ctx := setupAccounts(t)
 	user := ctx.NewSoloAgent("user")
-	nftID := ctx.MintNFT(user, []byte(nftMetadata))
+	nftID := ctx.MintNFT(user, map[string][]byte{"data": []byte(nftMetadata)})
 	require.NoError(t, ctx.Err)
 	userAddr, _ := isc.AddressFromAgentID(user.AgentID())
 
@@ -740,7 +740,7 @@ func TestAccountNFTs(t *testing.T) {
 func TestNFTData(t *testing.T) {
 	ctx := setupAccounts(t)
 	user := ctx.NewSoloAgent("user")
-	nftID := ctx.MintNFT(user, []byte(nftMetadata))
+	nftID := ctx.MintNFT(user, map[string][]byte{"data": []byte(nftMetadata)})
 	require.NoError(t, ctx.Err)
 	userAddr, _ := isc.AddressFromAgentID(user.AgentID())
 
@@ -762,5 +762,5 @@ func TestNFTData(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, *iscNFTID, nftData.ID)
 	require.EqualValues(t, userAddr, nftData.Issuer)
-	require.EqualValues(t, []byte(nftMetadata), nftData.Metadata)
+	require.EqualValues(t, []byte(nftMetadata), nftData.Metadata["data"])
 }

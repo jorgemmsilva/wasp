@@ -400,17 +400,17 @@ func (ctx *SoloContext) init(onLoad wasmhost.ScOnloadFunc) *SoloContext {
 // MintNFT tells SoloContext to mint a new NFT issued/owned by the specified agent
 // note that SoloContext will cache the NFT data to be able to use it
 // in Post()s that go through the *SAME* SoloContext
-func (ctx *SoloContext) MintNFT(agent *SoloAgent, metadata []byte) wasmtypes.ScNftID {
+func (ctx *SoloContext) MintNFT(agent *SoloAgent, metadata map[string][]byte) wasmtypes.ScNftID {
 	addr, ok := isc.AddressFromAgentID(agent.AgentID())
 	if !ok {
 		ctx.Err = errors.New("agent should be an address")
 		return wasmtypes.NftIDFromBytes(nil)
 	}
-	nft, _, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr,
-		map[iotago.MetadataFeatureEntriesKey]iotago.MetadataFeatureEntriesValue{
-			"": metadata,
-		},
-	)
+	nftMetadata := make(iotago.MetadataFeatureEntries)
+	for k, v := range metadata {
+		nftMetadata[iotago.MetadataFeatureEntriesKey(k)] = v
+	}
+	nft, _, err := ctx.Chain.Env.MintNFTL1(agent.Pair, addr, nftMetadata)
 	if err != nil {
 		ctx.Err = err
 		return wasmtypes.NftIDFromBytes(nil)

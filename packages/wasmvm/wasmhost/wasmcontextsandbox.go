@@ -4,6 +4,8 @@
 package wasmhost
 
 import (
+	"time"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -181,7 +183,9 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 		},
 	}
 	if req.Delay != 0 {
-		slotIndex := s.ctx.L1API().TimeProvider().SlotFromTime(s.ctx.Timestamp()) + iotago.SlotIndex(req.Delay)
+		timeLock := s.ctx.Timestamp()
+		timeLock = timeLock.Add(time.Duration(req.Delay) * time.Second)
+		slotIndex := s.ctx.L1API().TimeProvider().SlotFromTime(timeLock)
 		sendReq.UnlockConditions = append(sendReq.UnlockConditions, &iotago.TimelockUnlockCondition{
 			Slot: slotIndex,
 		})

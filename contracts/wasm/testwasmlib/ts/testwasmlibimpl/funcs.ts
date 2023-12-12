@@ -51,7 +51,7 @@ export function funcParamTypes(ctx: wasmlib.ScFuncContext, f: sc.ParamTypesConte
         ctx.require(f.params.nftID().value().equals(color), 'mismatch: NftID');
     }
     if ((f.params.requestID().exists())) {
-        const requestId = wasmtypes.requestIDFromBytes(wasmtypes.stringToBytes('abcdefghijklmnopqrstuvwxyz123456\x00\x00'));
+        const requestId = wasmtypes.requestIDFromBytes(wasmtypes.stringToBytes('abcdefghijklmnopqrstuvwxyz123456\x01\x00\x00\x00\x00\x00'));
         ctx.require(f.params.requestID().value().equals(requestId), 'mismatch: RequestID');
     }
     if ((f.params.string().exists())) {

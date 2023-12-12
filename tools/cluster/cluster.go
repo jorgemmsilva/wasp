@@ -284,7 +284,7 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 		stateAddr,
 		0,
 		0,
-		clu.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+		clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("DeployChain: %w", err)
@@ -882,6 +882,7 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}
+	apiProvider := clu.l1.APIProvider()
 	tx, err := transaction.NewMintNFTsTransaction(
 		issuerKeypair,
 		nil,
@@ -890,8 +891,8 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 			{"": immutableMetadata}, // TODO does this need some specific key?
 		},
 		outputsSet,
-		clu.l1.API().TimeProvider().SlotFromTime(time.Now()),
-		clu.l1.API(),
+		apiProvider.LatestAPI().TimeProvider().SlotFromTime(time.Now()),
+		apiProvider,
 	)
 	if err != nil {
 		return iotago.OutputID{}, nil, err

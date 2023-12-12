@@ -74,7 +74,7 @@ type nodeConnection struct {
 	nodeBridge      nodebridge.NodeBridge
 	nodeClient      *nodeclient.Client
 
-	baseTokenInfo api.InfoResBaseToken
+	baseTokenInfo *api.InfoResBaseToken
 
 	// TODO remove
 	// pendingTransactionsMap is a map of sent transactions that are pending.
@@ -221,11 +221,11 @@ func waitForL1ToBeSynced(ctx context.Context, log *logger.Logger, nodeClient *no
 	}
 }
 
-func (nc *nodeConnection) L1API() iotago.API {
-	return nc.nodeClient.LatestAPI()
+func (nc *nodeConnection) L1APIProvider() iotago.APIProvider {
+	return nc.nodeClient
 }
 
-func (nc *nodeConnection) BaseTokenInfo() api.InfoResBaseToken {
+func (nc *nodeConnection) BaseTokenInfo() *api.InfoResBaseToken {
 	return nc.baseTokenInfo
 }
 
@@ -235,7 +235,7 @@ func (nc *nodeConnection) pullNodeInfo() error {
 		return fmt.Errorf("getting latest node info parameters failed, error: %w", err)
 	}
 
-	nc.baseTokenInfo = *nodeInfo.BaseToken
+	nc.baseTokenInfo = nodeInfo.BaseToken
 	return nil
 }
 
@@ -370,7 +370,7 @@ func (nc *nodeConnection) outputForOutputID(ctx context.Context, outputID iotago
 	switch resp.GetPayload().(type) {
 	//nolint:nosnakecase // grpc uses underscores
 	case *inx.OutputResponse_Output:
-		iotaOutput, err := resp.GetOutput().UnwrapOutput(nc.L1API())
+		iotaOutput, err := resp.GetOutput().UnwrapOutput(nc.L1APIProvider().LatestAPI())
 		if err != nil {
 			return nil, err
 		}
@@ -378,7 +378,7 @@ func (nc *nodeConnection) outputForOutputID(ctx context.Context, outputID iotago
 
 	//nolint:nosnakecase // grpc uses underscores
 	case *inx.OutputResponse_Spent:
-		iotaOutput, err := resp.GetSpent().GetOutput().UnwrapOutput(nc.L1API())
+		iotaOutput, err := resp.GetSpent().GetOutput().UnwrapOutput(nc.L1APIProvider().LatestAPI())
 		if err != nil {
 			return nil, err
 		}
@@ -448,7 +448,7 @@ func (nc *nodeConnection) triggerChainCallbacks(ledgerUpdate *ledgerUpdate) erro
 	// fire milestone events for every chain
 	nc.chainsMap.ForEach(func(_ isc.ChainID, chain *ncChain) bool {
 		// the callbacks have to be fired synchronously, we can't guarantee the order of execution of go routines
-		chain.HandleMilestone(ledgerUpdate.slot, nc.L1API().TimeProvider().SlotEndTime(ledgerUpdate.slot))
+		chain.HandleMilestone(ledgerUpdate.slot, nc.L1APIProvider().LatestAPI().TimeProvider().SlotEndTime(ledgerUpdate.slot))
 		return true
 	})
 
@@ -666,7 +666,7 @@ func (nc *nodeConnection) doPostTx(ctx context.Context, tx *iotago.SignedTransac
 	}
 
 	// Build a Block and post it.
-	block, err := builder.NewBasicBlockBuilder(nc.L1API()).
+	block, err := builder.NewBasicBlockBuilder(nc.L1APIProvider().LatestAPI()).
 		StrongParents(strongParents).
 		WeakParents(weakParents).
 		Payload(tx).

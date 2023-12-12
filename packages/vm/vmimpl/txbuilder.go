@@ -32,7 +32,7 @@ func (vmctx *vmContext) stateMetadata(stateCommitment *state.L1Commitment) []byt
 }
 
 func (vmctx *vmContext) CreationSlot() iotago.SlotIndex {
-	return vmctx.task.L1API.TimeProvider().SlotFromTime(vmctx.task.Timestamp)
+	return vmctx.task.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
 }
 
 func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) (*iotago.Transaction, iotago.Unlocks) {
@@ -61,7 +61,7 @@ func (vmctx *vmContext) loadNativeTokenOutput(nativeTokenID iotago.NativeTokenID
 
 func (vmctx *vmContext) loadFoundry(serNum uint32) (out *iotago.FoundryOutput, id iotago.OutputID) {
 	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.MustChainAccountID(), vmctx.task.L1API)
+		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.MustChainAccountID())
 	})
 	return
 }

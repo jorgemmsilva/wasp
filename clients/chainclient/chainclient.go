@@ -142,9 +142,9 @@ func (c *Client) post1RequestWithOutputs(
 			},
 		},
 		par.NFT,
-		c.Layer1Client.API().TimeProvider().SlotFromTime(time.Now()),
+		c.Layer1Client.APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 		false,
-		c.Layer1Client.API(),
+		c.Layer1Client.APIProvider(),
 	)
 	if err != nil {
 		return nil, err

@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/rpc"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/metrics"
 )
 
@@ -58,7 +57,6 @@ func NewServer(
 	accountManager *AccountManager,
 	metrics *metrics.ChainWebAPIMetrics,
 	params *Parameters,
-	latestL1API func() iotago.API,
 ) (*rpc.Server, error) {
 	chainID := evmChain.ChainID()
 	rpcsrv := rpc.NewServer()
@@ -69,7 +67,7 @@ func NewServer(
 	}{
 		{"web3", NewWeb3Service()},
 		{"net", NewNetService(int(chainID))},
-		{"eth", NewEthService(evmChain, accountManager, metrics, params, latestL1API)},
+		{"eth", NewEthService(evmChain, accountManager, metrics, params)},
 		{"debug", NewDebugService(evmChain, metrics)},
 		{"txpool", NewTxPoolService()},
 		{"evm", NewEVMService(evmChain)},

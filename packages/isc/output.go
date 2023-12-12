@@ -74,73 +74,77 @@ func ChainOutputsFromBytes(data []byte) (*ChainOutputs, error) {
 	return rwutil.ReadFromBytes(data, new(ChainOutputs))
 }
 
-func (a *ChainOutputs) Bytes() []byte {
-	return rwutil.WriteToBytes(a)
+func (c *ChainOutputs) Bytes() []byte {
+	return rwutil.WriteToBytes(c)
 }
 
-func (a *ChainOutputs) GetStateIndex() uint32 {
-	return a.AnchorOutput.StateIndex
+func (c *ChainOutputs) GetStateIndex() uint32 {
+	return c.AnchorOutput.StateIndex
 }
 
-func (a *ChainOutputs) GetAnchorID() iotago.AnchorID {
-	return util.AnchorIDFromAnchorOutput(a.AnchorOutput, a.AnchorOutputID)
+func (c *ChainOutputs) GetAnchorID() iotago.AnchorID {
+	return util.AnchorIDFromAnchorOutput(c.AnchorOutput, c.AnchorOutputID)
 }
 
-func (a *ChainOutputs) HasAccountOutput() bool {
-	return a.accountOutput != nil
+func (c *ChainOutputs) HasAccountOutput() bool {
+	return c.accountOutput != nil
 }
 
-func (a *ChainOutputs) AccountOutput() (iotago.OutputID, *iotago.AccountOutput, bool) {
-	return a.accountOutputID, a.accountOutput, a.accountOutput != nil
+func (c *ChainOutputs) AccountOutput() (iotago.OutputID, *iotago.AccountOutput, bool) {
+	return c.accountOutputID, c.accountOutput, c.accountOutput != nil
 }
 
-func (a *ChainOutputs) MustAccountOutput() *iotago.AccountOutput {
-	if a.accountOutput == nil {
+func (c *ChainOutputs) MustAccountOutput() *iotago.AccountOutput {
+	if c.accountOutput == nil {
 		panic("expected account output != nil")
 	}
-	return a.accountOutput
+	return c.accountOutput
 }
 
-func (a *ChainOutputs) MustAccountOutputID() iotago.OutputID {
-	if a.accountOutput == nil {
+func (c *ChainOutputs) MustAccountOutputID() iotago.OutputID {
+	if c.accountOutput == nil {
 		panic("expected account output != nil")
 	}
-	return a.accountOutputID
+	return c.accountOutputID
 }
 
-func (a *ChainOutputs) Equals(other *ChainOutputs) bool {
+func (c *ChainOutputs) Equals(other *ChainOutputs) bool {
 	if other == nil {
 		return false
 	}
-	if !a.AnchorOutput.Equal(other.AnchorOutput) {
+	if !c.AnchorOutput.Equal(other.AnchorOutput) {
 		return false
 	}
-	if a.AnchorOutputID != other.AnchorOutputID {
+	if c.AnchorOutputID != other.AnchorOutputID {
 		return false
 	}
-	if a.accountOutput == nil {
+	if c.accountOutput == nil {
 		if other.accountOutput != nil {
 			return false
 		}
 	} else {
-		if !a.accountOutput.Equal(other.accountOutput) {
+		if !c.accountOutput.Equal(other.accountOutput) {
 			return false
 		}
-		if a.accountOutputID != other.accountOutputID {
+		if c.accountOutputID != other.accountOutputID {
 			return false
 		}
 	}
 	return true
 }
 
-func (a *ChainOutputs) Hash() hashing.HashValue {
-	return hashing.HashDataBlake2b(a.Bytes())
+func (c *ChainOutputs) Hash() hashing.HashValue {
+	return hashing.HashDataBlake2b(c.Bytes())
 }
 
-func (a *ChainOutputs) StorageDeposit(api iotago.API) iotago.BaseToken {
-	sd := lo.Must(api.StorageScoreStructure().MinDeposit(a.AnchorOutput))
-	if a.HasAccountOutput() {
-		sd += a.accountOutput.Amount
+func (c *ChainOutputs) L1API(l1 iotago.APIProvider) iotago.API {
+	return l1.APIForSlot(c.AnchorOutputID.CreationSlot())
+}
+
+func (c *ChainOutputs) StorageDeposit(l1 iotago.APIProvider) iotago.BaseToken {
+	sd := lo.Must(c.L1API(l1).StorageScoreStructure().MinDeposit(c.AnchorOutput))
+	if c.HasAccountOutput() {
+		sd += c.accountOutput.Amount
 	}
 	return sd
 }

@@ -194,9 +194,13 @@ func (reqctx *requestContext) registerError(messageFormat string) *isc.VMErrorTe
 }
 
 func (reqctx *requestContext) L1API() iotago.API {
-	return reqctx.vm.task.L1API
+	return reqctx.vm.task.L1API()
 }
 
-func (reqctx *requestContext) TokenInfo() api.InfoResBaseToken {
+func (reqctx *requestContext) L1APIProvider() iotago.APIProvider {
+	return reqctx.vm.task.L1APIProvider
+}
+
+func (reqctx *requestContext) TokenInfo() *api.InfoResBaseToken {
 	return reqctx.vm.task.TokenInfo
 }

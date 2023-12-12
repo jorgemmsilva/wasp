@@ -20,6 +20,7 @@ import (
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/evm/evmlogger"
@@ -321,7 +322,7 @@ func (env *Solo) deployChain(
 		outs,
 		env.SlotIndex(),
 		0,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(env.T, err)
 
@@ -340,7 +341,7 @@ func (env *Solo) deployChain(
 	chainDB := env.getDB(dbKindChainState, chainID)
 	require.NoError(env.T, err)
 	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(chainDB))
-	_, err = origin.InitChainByAnchorOutput(store, chainOutputs, testutil.L1API)
+	_, err = origin.InitChainByAnchorOutput(store, chainOutputs, env.L1APIProvider())
 	require.NoError(env.T, err)
 
 	{
@@ -627,7 +628,7 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 		immutableMetadata,
 		allOuts,
 		env.SlotIndex(),
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	if err != nil {
 		return nil, nil, err
@@ -677,9 +678,17 @@ func (env *Solo) SendL1(targetAddress iotago.Address, assets *isc.Assets, wallet
 		nil,
 		env.SlotIndex(),
 		env.disableAutoAdjustStorageDeposit,
-		testutil.L1API,
+		env.L1APIProvider(),
 	)
 	require.NoError(env.T, err)
 	err = env.AddToLedger(tx)
 	require.NoError(env.T, err)
+}
+
+func (env *Solo) L1APIProvider() iotago.APIProvider {
+	return iotago.SingleVersionProvider(testutil.L1API)
+}
+
+func (env *Solo) TokenInfo() *api.InfoResBaseToken {
+	return testutil.TokenInfo
 }

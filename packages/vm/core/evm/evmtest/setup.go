@@ -23,7 +23,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
-	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
@@ -283,13 +282,13 @@ func (e *SoloChainEnv) DeployContract(creator *ecdsa.PrivateKey, abiJSON string,
 
 	value := big.NewInt(0)
 
-	gasLimit, err := e.evmChain.EstimateGas(ethereum.CallMsg{
-		From:  creatorAddress,
-		Value: value,
-		Data:  data,
-	},
+	gasLimit, err := e.evmChain.EstimateGas(
+		ethereum.CallMsg{
+			From:  creatorAddress,
+			Value: value,
+			Data:  data,
+		},
 		nil,
-		testutil.L1API,
 	)
 	require.NoError(e.t, err)
 

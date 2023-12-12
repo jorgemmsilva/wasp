@@ -6,7 +6,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
@@ -19,7 +18,7 @@ func SimulateRequest(
 	if err != nil {
 		return nil, fmt.Errorf("could not get latest AnchorOutput: %w", err)
 	}
-	res, err := runISCRequest(ch, chainOutputs, time.Now(), req, estimateGas, testutil.L1API, *testutil.TokenInfo)
+	res, err := runISCRequest(ch, chainOutputs, time.Now(), req, estimateGas)
 	if err != nil {
 		return nil, err
 	}

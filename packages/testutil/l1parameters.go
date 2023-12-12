@@ -45,5 +45,6 @@ var (
 		iotago.WithCongestionControlOptions(500, 500, 500, 8*schedulerRate, 5*schedulerRate, schedulerRate, 1000, 100),
 	)
 
-	L1API = iotago.V3API(testProtoParams)
+	L1API         = iotago.V3API(testProtoParams)
+	L1APIProvider = iotago.SingleVersionProvider(L1API)
 )

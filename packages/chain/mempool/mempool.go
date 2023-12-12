@@ -123,9 +123,9 @@ type RequestPool[V isc.Request] interface {
 // In general we can track several branches, but then we have to remember, which
 // requests are available in which branches. Can be implemented later, if needed.
 type mempoolImpl struct {
-	chainID    isc.ChainID
-	tangleTime time.Time
-	l1API      iotago.API
+	chainID       isc.ChainID
+	tangleTime    time.Time
+	l1APIProvider iotago.APIProvider
 
 	// TODO: <lmoe> this was added artificially to support the timeLock logic below. It's not set anywhere, just read atm.
 	currentSlotIndex iotago.SlotIndex
@@ -212,7 +212,7 @@ type reqTrackNewChainHead struct {
 
 func New(
 	ctx context.Context,
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 	chainID isc.ChainID,
 	nodeIdentity *cryptolib.KeyPair,
 	net peering.NetworkProvider,
@@ -228,10 +228,10 @@ func New(
 	mpi := &mempoolImpl{
 		chainID:                        chainID,
 		tangleTime:                     time.Time{},
-		l1API:                          l1API,
+		l1APIProvider:                  l1APIProvider,
 		timePool:                       NewTimePool(metrics.SetTimePoolSize, log.Named("TIM")),
-		onLedgerPool:                   NewTypedPool[isc.OnLedgerRequest](waitReq, l1API, metrics.SetOnLedgerPoolSize, metrics.SetOnLedgerReqTime, log.Named("ONL")),
-		offLedgerPool:                  NewTypedPoolByNonce[isc.OffLedgerRequest](waitReq, metrics.SetOffLedgerPoolSize, metrics.SetOffLedgerReqTime, log.Named("OFF"), l1API),
+		onLedgerPool:                   NewTypedPool[isc.OnLedgerRequest](waitReq, l1APIProvider, metrics.SetOnLedgerPoolSize, metrics.SetOnLedgerReqTime, log.Named("ONL")),
+		offLedgerPool:                  NewTypedPoolByNonce[isc.OffLedgerRequest](waitReq, metrics.SetOffLedgerPoolSize, metrics.SetOffLedgerReqTime, log.Named("OFF"), l1APIProvider),
 		chainHeadAO:                    nil,
 		serverNodesUpdatedPipe:         pipe.NewInfinitePipe[*reqServerNodesUpdated](),
 		serverNodes:                    []*cryptolib.PublicKey{},
@@ -602,7 +602,7 @@ func (mpi *mempoolImpl) refsToPropose(consensusID consGR.ConsensusID) []*isc.Req
 	}
 
 	mpi.offLedgerPool.Iterate(func(account string, entries []*OrderedPoolEntry[isc.OffLedgerRequest]) {
-		agentID, err := isc.AgentIDFromString(mpi.l1API.ProtocolParameters().Bech32HRP(), account)
+		agentID, err := isc.AgentIDFromString(mpi.l1APIProvider.LatestAPI().ProtocolParameters().Bech32HRP(), account)
 		if err != nil {
 			panic(fmt.Errorf("invalid agentID string: %s", err.Error()))
 		}

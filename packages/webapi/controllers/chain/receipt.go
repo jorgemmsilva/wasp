@@ -9,5 +9,5 @@ import (
 
 func (c *Controller) getReceipt(e echo.Context) error {
 	controllerutils.SetOperation(e, "get_receipt")
-	return corecontracts.GetRequestReceipt(e, c.chainService, c.l1API, c.baseTokenInfo)
+	return corecontracts.GetRequestReceipt(e, c.chainService, c.l1API)
 }

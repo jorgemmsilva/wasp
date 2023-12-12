@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
@@ -104,7 +103,7 @@ func (c *Controller) getRequestIDsForBlock(e echo.Context) error {
 	return e.JSON(http.StatusOK, requestIDsResponse)
 }
 
-func GetRequestReceipt(e echo.Context, c interfaces.ChainService, l1API iotago.API, baseTokenInfo api.InfoResBaseToken) error {
+func GetRequestReceipt(e echo.Context, c interfaces.ChainService, l1API iotago.API) error {
 	ch, _, err := controllerutils.ChainFromParams(e, c)
 	if err != nil {
 		return err
@@ -114,7 +113,7 @@ func GetRequestReceipt(e echo.Context, c interfaces.ChainService, l1API iotago.A
 		return err
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, l1API, baseTokenInfo)
+	invoker := corecontracts.MakeCallViewInvoker(ch)
 	receipt, err := corecontracts.GetRequestReceipt(invoker, requestID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		panic(err)
@@ -132,7 +131,7 @@ func GetRequestReceipt(e echo.Context, c interfaces.ChainService, l1API iotago.A
 }
 
 func (c *Controller) getRequestReceipt(e echo.Context) error {
-	return GetRequestReceipt(e, c.chainService, c.l1Api, c.baseTokenInfo)
+	return GetRequestReceipt(e, c.chainService, c.l1Api)
 }
 
 func (c *Controller) getRequestReceiptsForBlock(e echo.Context) error {

@@ -589,7 +589,7 @@ func (ncc *ncChain) queryChainState(ctx context.Context) (iotago.SlotIndex, time
 	// }
 
 	// we need to get the timestamp of the milestone from the node
-	slotTimestamp := ncc.nodeConn.L1API().TimeProvider().SlotEndTime(slotIndex)
+	slotTimestamp := ncc.nodeConn.L1APIProvider().LatestAPI().TimeProvider().SlotEndTime(slotIndex)
 
 	return slotIndex, slotTimestamp, anchorOutput, nil
 }

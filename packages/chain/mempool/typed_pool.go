@@ -16,12 +16,12 @@ import (
 )
 
 type typedPool[V isc.Request] struct {
-	waitReq    WaitReq
-	requests   *shrinkingmap.ShrinkingMap[isc.RequestRefKey, *typedPoolEntry[V]]
-	sizeMetric func(int)
-	timeMetric func(time.Duration)
-	log        *logger.Logger
-	l1API      iotago.API
+	waitReq       WaitReq
+	requests      *shrinkingmap.ShrinkingMap[isc.RequestRefKey, *typedPoolEntry[V]]
+	sizeMetric    func(int)
+	timeMetric    func(time.Duration)
+	log           *logger.Logger
+	l1APIProvider iotago.APIProvider
 }
 
 type typedPoolEntry[V isc.Request] struct {
@@ -31,14 +31,14 @@ type typedPoolEntry[V isc.Request] struct {
 
 var _ RequestPool[isc.OffLedgerRequest] = &typedPool[isc.OffLedgerRequest]{}
 
-func NewTypedPool[V isc.Request](waitReq WaitReq, l1API iotago.API, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger) RequestPool[V] {
+func NewTypedPool[V isc.Request](waitReq WaitReq, l1APIProvider iotago.APIProvider, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger) RequestPool[V] {
 	return &typedPool[V]{
-		waitReq:    waitReq,
-		l1API:      l1API,
-		requests:   shrinkingmap.New[isc.RequestRefKey, *typedPoolEntry[V]](),
-		sizeMetric: sizeMetric,
-		timeMetric: timeMetric,
-		log:        log,
+		waitReq:       waitReq,
+		l1APIProvider: l1APIProvider,
+		requests:      shrinkingmap.New[isc.RequestRefKey, *typedPoolEntry[V]](),
+		sizeMetric:    sizeMetric,
+		timeMetric:    timeMetric,
+		log:           log,
 	}
 }
 
@@ -101,7 +101,7 @@ func (olp *typedPool[V]) StatusString() string {
 
 func (olp *typedPool[V]) WriteContent(w io.Writer) {
 	olp.requests.ForEach(func(_ isc.RequestRefKey, entry *typedPoolEntry[V]) bool {
-		jsonData, err := isc.RequestToJSON(entry.req, olp.l1API)
+		jsonData, err := isc.RequestToJSON(entry.req, olp.l1APIProvider.LatestAPI())
 		if err != nil {
 			return false // stop iteration
 		}

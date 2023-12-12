@@ -114,13 +114,13 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)
 		require.NoError(t, err)
 		chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err = origin.InitChainByAnchorOutput(chainStore, originAO, testutil.L1API)
+		_, err = origin.InitChainByAnchorOutput(chainStore, originAO, testutil.L1APIProvider)
 		require.NoError(t, err)
 		mempools[i] = newTestMempool(t)
 		stateMgrs[i] = newTestStateMgr(t, chainStore)
 		chainMetrics := chainMetricsProvider.GetChainMetrics(isc.EmptyChainID())
 		nodes[i] = consGR.New(
-			ctx, chainID, chainStore, dkShare, &logIndex, testutil.L1API, peerIdentities[i],
+			ctx, chainID, chainStore, dkShare, &logIndex, testutil.L1APIProvider, peerIdentities[i],
 			procCache, mempools[i], stateMgrs[i],
 			networkProviders[i],
 			accounts.CommonAccount(),

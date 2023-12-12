@@ -134,10 +134,10 @@ func (e *EVMChain) ChainID() uint16 {
 	return e.chainID
 }
 
-func (e *EVMChain) ViewCaller(chainState state.State, l1API iotago.API) vmerrors.ViewCaller {
+func (e *EVMChain) ViewCaller(chainState state.State) vmerrors.ViewCaller {
 	e.log.Debugf("ViewCaller(chainState=%v)", chainState)
 	return func(contractName string, funcName string, params dict.Dict) (dict.Dict, error) {
-		return e.backend.ISCCallView(chainState, contractName, funcName, params, l1API)
+		return e.backend.ISCCallView(chainState, contractName, funcName, params)
 	}
 }
 
@@ -432,22 +432,22 @@ func (e *EVMChain) TransactionCount(address common.Address, blockNumberOrHash *r
 	return emulator.GetNonce(stateDBSubrealmR(chainState), address), nil
 }
 
-func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash, l1API iotago.API) ([]byte, error) {
+func (e *EVMChain) CallContract(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {
 	e.log.Debugf("CallContract(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
 	chainOutputs, err := e.iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return nil, err
 	}
-	return e.backend.EVMCall(chainOutputs, callMsg, l1API)
+	return e.backend.EVMCall(chainOutputs, callMsg)
 }
 
-func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash, l1API iotago.API) (uint64, error) {
+func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.BlockNumberOrHash) (uint64, error) {
 	e.log.Debugf("EstimateGas(callMsg=..., blockNumberOrHash=%v)", blockNumberOrHash)
 	chainOutputs, err := e.iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return 0, err
 	}
-	return e.backend.EVMEstimateGas(chainOutputs, callMsg, l1API)
+	return e.backend.EVMEstimateGas(chainOutputs, callMsg)
 }
 
 func (e *EVMChain) GasPrice() *big.Int {
@@ -612,7 +612,7 @@ func (e *EVMChain) iscRequestsInBlock(evmBlockNumber uint64) (*blocklog.BlockInf
 	return blocklog.GetRequestsInBlock(blocklogStatePartition, iscBlockIndex)
 }
 
-func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig, l1API iotago.API) (any, error) {
+func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig) (any, error) {
 	e.log.Debugf("TraceTransaction(txHash=%v, config=?)", txHash)
 	tracerType := "callTracer"
 	if config.Tracer != nil {
@@ -642,7 +642,6 @@ func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceCon
 		iscRequestsInBlock,
 		txIndex,
 		tracer,
-		l1API,
 	)
 	if err != nil {
 		return nil, err

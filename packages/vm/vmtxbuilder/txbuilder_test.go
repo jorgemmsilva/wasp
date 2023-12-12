@@ -126,7 +126,8 @@ func TestTxBuilderBasic(t *testing.T) {
 				accountOutputID,
 			),
 			mockedAccounts.Read(),
-			testutil.L1API,
+			0,
+			testutil.L1APIProvider,
 		)
 		essence := buildTxEssence(txb, mockedAccounts)
 		require.EqualValues(t, 2, txb.numInputs())
@@ -224,7 +225,8 @@ func TestTxBuilderConsistency(t *testing.T) {
 				accountOutputID,
 			),
 			mockedAccounts.Read(),
-			testutil.L1API,
+			0,
+			testutil.L1APIProvider,
 		)
 
 		nativeTokenIDs := make([]iotago.NativeTokenID, 0)
@@ -450,7 +452,8 @@ func TestFoundries(t *testing.T) {
 				accountOutputID,
 			),
 			mockedAccounts.Read(),
-			testutil.L1API,
+			0,
+			testutil.L1APIProvider,
 		)
 
 		nativeTokenIDs = make([]iotago.NativeTokenID, 0)

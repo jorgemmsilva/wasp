@@ -399,7 +399,6 @@ func testExpiration(t *testing.T, n, f int, reliable bool) {
 	defer te.close()
 	start := time.Now()
 	requests := getRequestsOnLedger(t, te.chainID.AsAddress(), 4, func(i int, p *isc.RequestParameters) {
-
 		// TODO: <lmoe> As we don't handle time as before, I recreated RequestConsideredExpiredWindow just to enable this test.
 		var expiration time.Time
 
@@ -690,7 +689,7 @@ func TestTTL(t *testing.T) {
 	chainMetrics := metrics.NewChainMetricsProvider().GetChainMetrics(isc.EmptyChainID())
 	te.mempools[0] = mempool.New(
 		te.ctx,
-		testutil.L1API,
+		testutil.L1APIProvider,
 		te.chainID,
 		te.peerIdentities[0],
 		te.networkProviders[0],
@@ -812,12 +811,12 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.stores = make([]state.Store, len(te.peerIdentities))
 	for i := range te.peerIdentities {
 		te.stores[i] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAnchorOutput(te.stores[i], te.originAO, testutil.L1API)
+		_, err := origin.InitChainByAnchorOutput(te.stores[i], te.originAO, testutil.L1APIProvider)
 		require.NoError(t, err)
 		chainMetrics := metrics.NewChainMetricsProvider().GetChainMetrics(isc.EmptyChainID())
 		te.mempools[i] = mempool.New(
 			te.ctx,
-			testutil.L1API,
+			testutil.L1APIProvider,
 			te.chainID,
 			te.peerIdentities[i],
 			te.networkProviders[i],

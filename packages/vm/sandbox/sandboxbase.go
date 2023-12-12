@@ -165,6 +165,6 @@ func (s *SandboxBase) L1API() iotago.API {
 	return s.Ctx.L1API()
 }
 
-func (s *SandboxBase) TokenInfo() api.InfoResBaseToken {
+func (s *SandboxBase) TokenInfo() *api.InfoResBaseToken {
 	return s.Ctx.TokenInfo()
 }

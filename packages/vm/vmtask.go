@@ -35,9 +35,8 @@ type VMTask struct {
 
 	MigrationsOverride *migrations.MigrationScheme // for testing and Solo only
 
-	// TODO these 2 below are not assigned anywhere (!!!)
-	L1API     iotago.API
-	TokenInfo api.InfoResBaseToken
+	L1APIProvider iotago.APIProvider
+	TokenInfo     *api.InfoResBaseToken
 
 	Log *logger.Logger
 }
@@ -73,4 +72,8 @@ func (task *VMTask) WillProduceBlock() bool {
 
 func (task *VMTask) FinalStateTimestamp() time.Time {
 	return task.Timestamp.Add(time.Duration(len(task.Requests)+1) * time.Nanosecond)
+}
+
+func (task *VMTask) L1API() iotago.API {
+	return task.L1APIProvider.APIForTime(task.Timestamp)
 }

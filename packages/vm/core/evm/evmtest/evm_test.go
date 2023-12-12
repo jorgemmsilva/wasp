@@ -320,13 +320,13 @@ func TestEstimateGasWithoutFunds(t *testing.T) {
 
 	callData, err := iscTest.abi.Pack("loopWithGasLeft")
 	require.NoError(t, err)
-	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
-		From: common.Address{},
-		To:   &iscTest.address,
-		Data: callData,
-	},
+	estimatedGas, err := env.evmChain.EstimateGas(
+		ethereum.CallMsg{
+			From: common.Address{},
+			To:   &iscTest.address,
+			Data: callData,
+		},
 		nil,
-		testutil.L1API,
 	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
@@ -340,14 +340,13 @@ func TestLoopWithGasLeftEstimateGas(t *testing.T) {
 
 	callData, err := iscTest.abi.Pack("loopWithGasLeft")
 	require.NoError(t, err)
-	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
-		From: ethAddr,
-		To:   &iscTest.address,
-		Data: callData,
-	},
+	estimatedGas, err := env.evmChain.EstimateGas(
+		ethereum.CallMsg{
+			From: ethAddr,
+			To:   &iscTest.address,
+			Data: callData,
+		},
 		nil,
-
-		testutil.L1API,
 	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
@@ -381,12 +380,12 @@ func TestEstimateContractGas(t *testing.T) {
 		1*isc.Million,
 		env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, contract.address)),
 	)
-	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
-		From: contract.address,
-		To:   &ethAddr,
-	},
+	estimatedGas, err := env.evmChain.EstimateGas(
+		ethereum.CallMsg{
+			From: contract.address,
+			To:   &ethAddr,
+		},
 		nil,
-		testutil.L1API,
 	)
 	require.NoError(t, err)
 	require.NotZero(t, estimatedGas)
@@ -405,7 +404,7 @@ func TestCallViewGasLimit(t *testing.T) {
 		Gas:  math.MaxUint64,
 		Data: callArguments,
 	})
-	_, err = loop.chain.evmChain.CallContract(callMsg, nil, testutil.L1API)
+	_, err = loop.chain.evmChain.CallContract(callMsg, nil)
 	require.Contains(t, err.Error(), "out of gas")
 }
 
@@ -1743,14 +1742,14 @@ func TestSendEntireBalance(t *testing.T) {
 		testutil.TokenInfo.Decimals,
 	)
 
-	estimatedGas, err := env.evmChain.EstimateGas(ethereum.CallMsg{
-		From:  ethAddr,
-		To:    &someEthereumAddr,
-		Value: currentBalanceInEthDecimals,
-		Data:  []byte{},
-	},
+	estimatedGas, err := env.evmChain.EstimateGas(
+		ethereum.CallMsg{
+			From:  ethAddr,
+			To:    &someEthereumAddr,
+			Value: currentBalanceInEthDecimals,
+			Data:  []byte{},
+		},
 		nil,
-		testutil.L1API,
 	)
 	require.NoError(t, err)
 
@@ -1780,14 +1779,14 @@ func TestSolidityRevertMessage(t *testing.T) {
 	// test the revert reason is shown when invoking eth_call
 	callData, err := iscTest.abi.Pack("testRevertReason")
 	require.NoError(t, err)
-	_, err = env.evmChain.CallContract(ethereum.CallMsg{
-		From: ethAddr,
-		To:   &iscTest.address,
-		Gas:  100_000,
-		Data: callData,
-	},
+	_, err = env.evmChain.CallContract(
+		ethereum.CallMsg{
+			From: ethAddr,
+			To:   &iscTest.address,
+			Gas:  100_000,
+			Data: callData,
+		},
 		nil,
-		testutil.L1API,
 	)
 	require.ErrorContains(t, err, "execution reverted")
 
@@ -2014,7 +2013,7 @@ func TestTraceTransaction(t *testing.T) {
 	traceLatestTx := func() *jsonrpc.CallFrame {
 		latestBlock, err := env.evmChain.BlockByNumber(nil)
 		require.NoError(t, err)
-		trace, err := env.evmChain.TraceTransaction(latestBlock.Transactions()[0].Hash(), &tracers.TraceConfig{}, testutil.L1API)
+		trace, err := env.evmChain.TraceTransaction(latestBlock.Transactions()[0].Hash(), &tracers.TraceConfig{})
 		require.NoError(t, err)
 		var ret jsonrpc.CallFrame
 		err = json.Unmarshal(trace.(json.RawMessage), &ret)

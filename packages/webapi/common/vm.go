@@ -5,8 +5,6 @@ import (
 	"strconv"
 	"strings"
 
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
@@ -28,7 +26,7 @@ func ParseReceipt(chain chaintypes.Chain, receipt *blocklog.RequestReceipt) (*is
 	return iscReceipt, nil
 }
 
-func CallView(ch chaintypes.Chain, l1API iotago.API, baseTokenInfo api.InfoResBaseToken, contractName, functionName isc.Hname, params dict.Dict, blockIndexOrHash string) (dict.Dict, error) {
+func CallView(ch chaintypes.Chain, contractName, functionName isc.Hname, params dict.Dict, blockIndexOrHash string) (dict.Dict, error) {
 	var chainState state.State
 	var err error
 	switch {
@@ -61,7 +59,7 @@ func CallView(ch chaintypes.Chain, l1API iotago.API, baseTokenInfo api.InfoResBa
 		}
 	}
 
-	return chainutil.CallView(chainState, ch, contractName, functionName, params, l1API, baseTokenInfo)
+	return chainutil.CallView(chainState, ch, contractName, functionName, params)
 }
 
 func EstimateGas(ch chaintypes.Chain, req isc.Request) (*isc.Receipt, error) {

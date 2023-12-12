@@ -84,7 +84,7 @@ func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.Output
 		},
 		0,
 		0,
-		testutil.L1API,
+		testutil.L1APIProvider,
 	)
 	require.NoError(t, err)
 
@@ -94,17 +94,17 @@ func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.Output
 
 	// create task and run it
 	task := &vm.VMTask{
-		Processors: processors.MustNew(coreprocessors.NewConfigWithCoreContracts()),
-		Inputs:     chainOutputs,
-		Requests:   []isc.Request{req},
-		Timestamp:  time.Now(),
-		Store:      indexedstore.New(state.NewStore(db, mu)),
-		Log:        testlogger.NewLogger(t),
-		L1API:      testutil.L1API,
-		TokenInfo:  *testutil.TokenInfo,
+		Processors:    processors.MustNew(coreprocessors.NewConfigWithCoreContracts()),
+		Inputs:        chainOutputs,
+		Requests:      []isc.Request{req},
+		Timestamp:     time.Now(),
+		Store:         indexedstore.New(state.NewStore(db, mu)),
+		Log:           testlogger.NewLogger(t),
+		L1APIProvider: testutil.L1APIProvider,
+		TokenInfo:     testutil.TokenInfo,
 	}
 
-	origin.InitChainByAnchorOutput(task.Store, chainOutputs, testutil.L1API)
+	origin.InitChainByAnchorOutput(task.Store, chainOutputs, testutil.L1APIProvider)
 
 	return runTask(task)
 }

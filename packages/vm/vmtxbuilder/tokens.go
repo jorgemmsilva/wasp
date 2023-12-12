@@ -189,7 +189,7 @@ func (txb *AnchorTransactionBuilder) addNativeTokenBalanceDelta(nativeTokenID io
 
 	// update the SD in case the storage deposit has changed from the last time this output was used
 	oldSD := nt.accountingOutput.Amount
-	nt.updateMinSD(txb.l1API)
+	nt.updateMinSD(txb.L1API())
 	updatedSD := nt.accountingOutput.Amount
 
 	return int64(oldSD) - int64(updatedSD)

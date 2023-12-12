@@ -23,10 +23,10 @@ import (
 type Controller struct {
 	chainService  interfaces.ChainService
 	l1Api         iotago.API
-	baseTokenInfo api.InfoResBaseToken
+	baseTokenInfo *api.InfoResBaseToken
 }
 
-func NewCoreContractsController(chainService interfaces.ChainService, l1Api iotago.API, baseTokenInfo api.InfoResBaseToken) interfaces.APIController {
+func NewCoreContractsController(chainService interfaces.ChainService, l1Api iotago.API, baseTokenInfo *api.InfoResBaseToken) interfaces.APIController {
 	return &Controller{chainService, l1Api, baseTokenInfo}
 }
 
@@ -47,7 +47,7 @@ func (c *Controller) createCallViewInvoker(e echo.Context) (corecontracts.CallVi
 		return nil, nil, c.handleViewCallError(err, chainID)
 	}
 
-	invoker := corecontracts.MakeCallViewInvoker(ch, c.l1Api, c.baseTokenInfo)
+	invoker := corecontracts.MakeCallViewInvoker(ch)
 	return invoker, ch, nil
 }
 

@@ -21,8 +21,9 @@ func NewTransferTransaction(
 	unlockConditions []iotago.UnlockCondition,
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 ) (*iotago.SignedTransaction, error) {
+	l1API := l1APIProvider.APIForSlot(creationSlot)
 	output := MakeBasicOutput(
 		targetAddress,
 		senderAddress,
@@ -49,7 +50,7 @@ func NewTransferTransaction(
 		unspentOutputs,
 		NewAssetsWithMana(ftokens.ToAssets(), mana),
 		creationSlot,
-		l1API,
+		l1APIProvider,
 	)
 	if err != nil {
 		return nil, err
@@ -78,9 +79,11 @@ func NewRequestTransaction(
 	nft *isc.NFT,
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 ) (*iotago.SignedTransaction, error) {
 	outputs := iotago.TxEssenceOutputs{}
+
+	l1API := l1APIProvider.APIForSlot(creationSlot)
 
 	out := MakeRequestTransactionOutput(senderAddress, request, nft)
 	if !disableAutoAdjustStorageDeposit {
@@ -105,7 +108,7 @@ func NewRequestTransaction(
 		outputs,
 		outputAssets,
 		creationSlot,
-		l1API,
+		l1APIProvider,
 	)
 
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
@@ -113,7 +116,7 @@ func NewRequestTransaction(
 		unspentOutputs,
 		outputAssets,
 		creationSlot,
-		l1API,
+		l1APIProvider,
 	)
 	if err != nil {
 		return nil, err
@@ -194,7 +197,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 	outputs iotago.TxEssenceOutputs,
 	outputAssets *AssetsWithMana,
 	creationSlot iotago.SlotIndex,
-	l1API iotago.API,
+	l1APIProvider iotago.APIProvider,
 ) (
 	iotago.TxEssenceOutputs,
 	*AssetsWithMana,
@@ -217,7 +220,7 @@ func updateOutputsWhenSendingOnBehalfOf(
 		}
 		// found the needed output
 		outputs = append(outputs, updateID(out, outID))
-		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot, l1API)
+		assets, err := AssetsAndAvailableManaFromOutput(outID, out, creationSlot, l1APIProvider)
 		if err != nil {
 			panic(err)
 		}

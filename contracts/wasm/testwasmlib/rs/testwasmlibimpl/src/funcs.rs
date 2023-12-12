@@ -69,7 +69,7 @@ pub fn func_param_types(ctx: &ScFuncContext, f: &ParamTypesContext) {
     }
     if f.params.request_id().exists() {
         let request_id =
-            request_id_from_bytes("abcdefghijklmnopqrstuvwxyz123456\x00\x00".as_bytes());
+            request_id_from_bytes("abcdefghijklmnopqrstuvwxyz123456\x01\x00\x00\x00\x00\x00".as_bytes());
         ctx.require(
             f.params.request_id().value() == request_id,
             "mismatch: RequestID",

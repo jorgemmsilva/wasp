@@ -129,7 +129,7 @@ func testValidParams(t *testing.T) *wasmsolo.SoloContext {
 	pt.Params.Int32().SetValue(-1234567890)
 	pt.Params.Int64().SetValue(-1234567890123456789)
 	pt.Params.NftID().SetValue(wasmtypes.NftIDFromBytes([]byte("abcdefghijklmnopqrstuvwxyz123456")))
-	pt.Params.RequestID().SetValue(wasmtypes.RequestIDFromBytes([]byte("abcdefghijklmnopqrstuvwxyz123456\x00\x00")))
+	pt.Params.RequestID().SetValue(wasmtypes.RequestIDFromBytes([]byte("abcdefghijklmnopqrstuvwxyz123456\x01\x00\x00\x00\x00\x00")))
 	pt.Params.String().SetValue("this is a string")
 	pt.Params.TokenID().SetValue(wasmtypes.TokenIDFromBytes([]byte("abcdefghijklmnopqrstuvwxyz1234567890AB")))
 	pt.Params.Uint8().SetValue(123)
@@ -319,7 +319,7 @@ func TestWasmTypes(t *testing.T) {
 	require.True(t, scChainID == wasmtypes.ChainIDFromBytes(wasmtypes.ChainIDToBytes(scChainID)))
 	require.True(t, scChainID == wasmtypes.ChainIDFromString(wasmtypes.ChainIDToString(scChainID)))
 	require.EqualValues(t, scChainID.Bytes(), chainID.Bytes())
-	require.EqualValues(t, scChainID.String(), chainID.String())
+	require.EqualValues(t, scChainID.String(), chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
 	// check account address
 	scAccountAddress := scChainID.Address()
@@ -374,7 +374,7 @@ func TestWasmTypes(t *testing.T) {
 	checkerEth.Params.EthAddress().SetValue(wasmtypes.AddressFromBytes(ethAddress.Bytes()))
 	checkerEth.Params.EthAddressString().SetValue(ethAddress.String())
 	checkerEth.Params.EthAgentID().SetValue(wasmtypes.AgentIDFromBytes(ethAgentID.Bytes()))
-	checkerEth.Params.EthAgentIDString().SetValue(ethAgentID.String())
+	checkerEth.Params.EthAgentIDString().SetValue(ethAgentID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	checkerEth.Func.Call()
 	require.NoError(t, ctx.Err)
 
@@ -385,7 +385,7 @@ func TestWasmTypes(t *testing.T) {
 	checkerEthEmpty := testwasmlib.ScFuncs.CheckEthEmptyAddressAndAgentID(ctx)
 	checkerEthEmpty.Params.EthAddress().SetValue(wasmtypes.AddressFromBytes(ethAddressBytes))
 	checkerEthEmpty.Params.EthAgentID().SetValue(wasmtypes.AgentIDFromBytes(ethAgentID.Bytes()))
-	checkerEthEmpty.Params.EthAgentIDString().SetValue(ethAgentID.String())
+	checkerEthEmpty.Params.EthAgentIDString().SetValue(ethAgentID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	checkerEthEmpty.Func.Call()
 	require.NoError(t, ctx.Err)
 
@@ -498,10 +498,10 @@ func checkBigInt(t *testing.T, ctx *wasmsolo.SoloContext, scBigInt wasmtypes.ScB
 	require.NoError(t, ctx.Err, fmt.Sprintf("scBigInt: %s, bigInt: %s", scBigInt.String(), bigInt.String()))
 }
 
-//nolint:dupl
+
 func checkAgentID(t *testing.T, ctx *wasmsolo.SoloContext, scAgentID wasmtypes.ScAgentID, agentID isc.AgentID) {
 	agentBytes := agentID.Bytes()
-	agentString := agentID.String()
+	agentString := agentID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())
 
 	require.EqualValues(t, scAgentID.Bytes(), agentBytes)
 	require.EqualValues(t, scAgentID.String(), agentString)
@@ -533,7 +533,7 @@ func checkAddress(t *testing.T, ctx *wasmsolo.SoloContext, scAddress wasmtypes.S
 	require.NoError(t, ctx.Err)
 }
 
-//nolint:dupl
+
 func checkHash(t *testing.T, ctx *wasmsolo.SoloContext, scHash wasmtypes.ScHash, hash hashing.HashValue) {
 	hashBytes := hash.Bytes()
 	hashString := hash.String()

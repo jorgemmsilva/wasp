@@ -77,6 +77,9 @@ func (p *FeePolicy) IsEnoughForMinimumFee(availableTokens iotago.BaseToken) bool
 // if GasPerToken is '0:0' then set the GasBudget to MaxGasPerRequest
 func (p *FeePolicy) GasBudgetFromTokens(availableTokens iotago.BaseToken, limits ...*Limits) GasUnits {
 	if p.GasPerToken.IsZero() {
+		if len(limits) == 0 {
+			panic("GasBudgetFromTokens without giving limits when GasPerToken")
+		}
 		return limits[0].MaxGasPerRequest
 	}
 	return GasUnits(p.GasPerToken.XFloor64(uint64(availableTokens)))

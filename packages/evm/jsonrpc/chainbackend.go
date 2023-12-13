@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // ChainBackend provides access to the underlying ISC chain.
@@ -28,6 +29,7 @@ type ChainBackend interface {
 		txIndex uint64,
 		tracer tracers.Tracer,
 	) error
+	FeePolicy(blockIndex uint32) (*gas.FeePolicy, error)
 	ISCChainID() *isc.ChainID
 	ISCCallView(chainState state.State, scName string, funName string, args dict.Dict) (dict.Dict, error)
 	ISCLatestChainOutputs() (*isc.ChainOutputs, error)

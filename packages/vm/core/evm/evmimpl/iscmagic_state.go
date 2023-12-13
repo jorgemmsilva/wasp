@@ -96,7 +96,7 @@ func withAllowance(ctx isc.Sandbox, from, to common.Address, f func(*isc.Assets)
 
 var errFundsNotAllowed = coreerrors.Register("remaining allowance insufficient").Create()
 
-func subtractFromAllowance(ctx isc.Sandbox, from, to common.Address, taken *isc.Assets) *isc.Assets {
+func subtractFromAllowance(ctx isc.Sandbox, from, to common.Address, taken *isc.Assets) {
 	state := evm.ISCMagicSubrealm(ctx.State())
 	key := keyAllowance(from, to)
 
@@ -105,8 +105,7 @@ func subtractFromAllowance(ctx isc.Sandbox, from, to common.Address, taken *isc.
 		taken = remaining.Clone()
 	}
 
-	ok := remaining.Spend(taken)
-	if !ok {
+	if ok := remaining.Spend(taken); !ok {
 		panic(errFundsNotAllowed)
 	}
 	if remaining.IsEmpty() {
@@ -114,8 +113,6 @@ func subtractFromAllowance(ctx isc.Sandbox, from, to common.Address, taken *isc.
 	} else {
 		state.Set(key, remaining.Bytes())
 	}
-
-	return taken
 }
 
 // directory of ERC20 contract addresses by native token ID

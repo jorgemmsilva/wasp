@@ -104,7 +104,7 @@ func initDeployCmd() *cobra.Command {
 				govController,
 				iotago.BaseToken(10*isc.Million), // TODO make this a parameter?
 				0,                                // TODO should this be a different value?  should this be a parameter?
-				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
+				cliclients.API().TimeProvider().SlotFromTime(time.Now()),
 			)
 			log.Check(err)
 

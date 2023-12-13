@@ -3,6 +3,7 @@ package cliclients
 import (
 	"context"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/components/app"
@@ -60,4 +61,8 @@ func L1Client() l1connection.Client {
 		)
 	}
 	return l1client
+}
+
+func API() iotago.API {
+	return L1Client().APIProvider().LatestAPI()
 }

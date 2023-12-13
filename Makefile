@@ -62,9 +62,10 @@ test: install
 
 # TODO: once all test packages are passing, remove this
 SHORT_TESTS = \
-./contracts/native/inccounter \
 ./components/database \
 ./components/webapi \
+./contracts/native/inccounter \
+./packages/authentication \
 ./packages/cryptolib \
 ./packages/database \
 ./packages/evm/jsonrpc/jsonrpctest \
@@ -75,6 +76,7 @@ SHORT_TESTS = \
 ./packages/kv/codec \
 ./packages/kv/collections \
 ./packages/kv/dict \
+./packages/metrics \
 ./packages/onchangemap \
 ./packages/origin \
 ./packages/registry \
@@ -83,6 +85,7 @@ SHORT_TESTS = \
 ./packages/solo/examples \
 ./packages/solo/solotest \
 ./packages/state \
+./packages/tcrypto/bls \
 ./packages/testutil \
 ./packages/testutil/testlogger \
 ./packages/testutil/testpeers \
@@ -102,13 +105,16 @@ SHORT_TESTS = \
 ./packages/vm/gas \
 ./packages/vm/vmimpl \
 ./packages/vm/vmtxbuilder \
+./packages/webapi/test \
+./packages/webapi/websocket/commands \
 ./tools/evm/iscutils \
+./tools/schema/model/yaml \
+
 
 
 # TODO: move these to SHORT_TESTS when they are passing
 SHORT_TESTS_WIP = \
 ./documentation/tutorial-examples/test \
-./packages/authentication \
 ./packages/chain \
 ./packages/chain/chainmanager \
 ./packages/chain/cmt_log \
@@ -138,26 +144,17 @@ SHORT_TESTS_WIP = \
 ./packages/gpa/cc/blssig \
 ./packages/gpa/cc/semi \
 ./packages/gpa/rbc/bracha \
-./packages/metrics \
 ./packages/peering \
 ./packages/peering/domain \
 ./packages/peering/group \
 ./packages/peering/lpp \
-./packages/tcrypto \
-./packages/tcrypto/bls \
 ./packages/util/l1starter \
 ./packages/vm/core/testcore/sbtests \
 ./packages/wasmvm/wasmclient/go/test \
-./packages/webapi \
 ./packages/webapi/controllers/node \
-./packages/webapi/test \
 ./packages/webapi/websocket \
-./packages/webapi/websocket/commands \
 ./tools/cluster \
 ./tools/cluster/tests \
-./tools/schema \
-./tools/schema/model \
-./tools/schema/model/yaml \
 
 
 test-short:

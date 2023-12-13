@@ -11,7 +11,7 @@ import (
 )
 
 func SDAdjustmentPrompt(output iotago.Output) {
-	minStorageDeposit, err := cliclients.L1Client().API().StorageScoreStructure().MinDeposit(output)
+	minStorageDeposit, err := cliclients.API().StorageScoreStructure().MinDeposit(output)
 	log.Check(err)
 	if output.BaseTokenAmount() < minStorageDeposit {
 		// don't prompt if running in a script // https://stackoverflow.com/a/43947435/6749639

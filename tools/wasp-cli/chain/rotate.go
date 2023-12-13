@@ -98,8 +98,8 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 		newStateControllerAddr,
 		chainOutputID,
 		chainOutput,
-		cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
-		cliclients.L1Client().API(),
+		cliclients.API().TimeProvider().SlotFromTime(time.Now()),
+		cliclients.API(),
 		myWallet.KeyPair,
 	)
 	log.Check(err)
@@ -109,14 +109,14 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 		s, err2 := json.Marshal(chainOutput)
 		log.Check(err2)
 
-		minSD, err2 := cliclients.L1Client().API().StorageScoreStructure().MinDeposit(chainOutput)
+		minSD, err2 := cliclients.API().StorageScoreStructure().MinDeposit(chainOutput)
 		log.Check(err2)
 		log.Printf("original chain output: %s, minSD: %d\n", s, minSD)
 
 		rotOut := tx.Transaction.Outputs[0]
 		s, err2 = json.Marshal(rotOut)
 		log.Check(err2)
-		minSD, err2 = cliclients.L1Client().API().StorageScoreStructure().MinDeposit(rotOut)
+		minSD, err2 = cliclients.API().StorageScoreStructure().MinDeposit(rotOut)
 		log.Check(err2)
 		log.Printf("new chain output: %s, minSD: %d\n", s, minSD)
 
@@ -176,8 +176,8 @@ func initChangeGovControllerCmd() *cobra.Command {
 				chain.AsAnchorID(),
 				newGovController,
 				outputSet,
-				cliclients.L1Client().API().TimeProvider().SlotFromTime(time.Now()),
-				cliclients.L1Client().API(),
+				cliclients.API().TimeProvider().SlotFromTime(time.Now()),
+				cliclients.API(),
 				myWallet.KeyPair,
 			)
 			log.Check(err)

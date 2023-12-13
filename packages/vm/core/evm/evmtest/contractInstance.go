@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
 
+	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -106,7 +107,7 @@ func (e *EVMContractInstance) buildEthTx(opts []ethCallOptions, fnName string, a
 
 	unsignedTx := types.NewTransaction(nonce, e.address, opt.value, opt.gasLimit, opt.gasPrice, callData)
 
-	return types.SignTx(unsignedTx, e.chain.signer(), opt.sender)
+	return types.SignTx(unsignedTx, evmutil.Signer(big.NewInt(int64(e.chain.evmChain.ChainID()))), opt.sender)
 }
 
 func (e *EVMContractInstance) estimateGas(opts []ethCallOptions, fnName string, args ...interface{}) (uint64, error) {

@@ -8,7 +8,7 @@ replace (
 )
 
 require (
-	github.com/VictoriaMetrics/fastcache v1.12.1
+	github.com/VictoriaMetrics/fastcache v1.12.2
 	github.com/Yiling-J/theine-go v0.3.1
 	github.com/bygui86/multi-profile/v2 v2.1.0
 	github.com/bytecodealliance/wasmtime-go/v9 v9.0.0
@@ -16,7 +16,7 @@ require (
 	github.com/dgryski/go-clockpro v0.0.0-20140817124034-edc6d3eeb96e
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ethereum/go-ethereum v1.13.5
-	github.com/golang-jwt/jwt/v5 v5.1.0
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/iancoleman/orderedmap v0.3.0
@@ -58,9 +58,9 @@ require (
 	go.uber.org/dig v1.17.1
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.16.0
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
+	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb
 	golang.org/x/net v0.19.0
-	golang.org/x/time v0.4.0
+	golang.org/x/time v0.5.0
 	gopkg.in/yaml.v3 v3.0.1
 	nhooyr.io/websocket v1.8.10
 	pgregory.net/rapid v1.0.0
@@ -210,7 +210,7 @@ require (
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/tools v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/grpc v1.59.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect

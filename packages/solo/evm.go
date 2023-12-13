@@ -23,6 +23,8 @@ import (
 
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 // jsonRPCSoloBackend is the implementation of [jsonrpc.ChainBackend] for Solo
@@ -34,6 +36,18 @@ type jsonRPCSoloBackend struct {
 
 func newJSONRPCSoloBackend(chain *Chain) jsonrpc.ChainBackend {
 	return &jsonRPCSoloBackend{Chain: chain}
+}
+
+func (b *jsonRPCSoloBackend) FeePolicy(blockIndex uint32) (*gas.FeePolicy, error) {
+	state, err := b.ISCStateByBlockIndex(blockIndex)
+	if err != nil {
+		return nil, err
+	}
+	ret, err := b.ISCCallView(state, governance.Contract.Name, governance.ViewGetFeePolicy.Name, nil)
+	if err != nil {
+		return nil, err
+	}
+	return gas.FeePolicyFromBytes(ret.Get(governance.ParamFeePolicyBytes))
 }
 
 func (b *jsonRPCSoloBackend) EVMSendTransaction(tx *types.Transaction) error {

@@ -498,7 +498,6 @@ func checkBigInt(t *testing.T, ctx *wasmsolo.SoloContext, scBigInt wasmtypes.ScB
 	require.NoError(t, ctx.Err, fmt.Sprintf("scBigInt: %s, bigInt: %s", scBigInt.String(), bigInt.String()))
 }
 
-
 func checkAgentID(t *testing.T, ctx *wasmsolo.SoloContext, scAgentID wasmtypes.ScAgentID, agentID isc.AgentID) {
 	agentBytes := agentID.Bytes()
 	agentString := agentID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())
@@ -532,7 +531,6 @@ func checkAddress(t *testing.T, ctx *wasmsolo.SoloContext, scAddress wasmtypes.S
 	checker.Func.Call()
 	require.NoError(t, ctx.Err)
 }
-
 
 func checkHash(t *testing.T, ctx *wasmsolo.SoloContext, scHash wasmtypes.ScHash, hash hashing.HashValue) {
 	hashBytes := hash.Bytes()

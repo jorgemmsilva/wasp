@@ -38,7 +38,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 	numAccounts := numRequests / 10
 	numRequestsPerAccount := numRequests / numAccounts
 	errCh := make(chan error, numRequests)
-	txCh := make(chan iotago.Transaction, numRequests)
+	txCh := make(chan *iotago.SignedTransaction, numRequests)
 	for i := 0; i < numAccounts; i++ {
 		createWalletRetries := 0
 
@@ -80,7 +80,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 						return
 					}
 					errCh <- err
-					txCh <- *tx
+					txCh <- tx
 					break
 				}
 				time.Sleep(200 * time.Millisecond) // give time for the indexer to get the new UTXOs (so we don't issue conflicting txs)
@@ -98,7 +98,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 
 	for i := 0; i < numRequests; i++ {
 		tx := <-txCh
-		_, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, &tx, false, 30*time.Second)
+		_, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 30*time.Second)
 		require.NoError(t, err)
 	}
 

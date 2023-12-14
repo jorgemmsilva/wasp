@@ -19,8 +19,8 @@ import (
 	"github.com/iotaledger/wasp/tools/cluster"
 )
 
-func mustLogRequestsInTransaction(tx *iotago.Transaction, log func(msg string, args ...interface{}), prefix string) {
-	txReqs, err := isc.RequestsInTransaction(tx)
+func mustLogRequestsInTransaction(tx *iotago.SignedTransaction, log func(msg string, args ...interface{}), prefix string) {
+	txReqs, err := isc.RequestsInTransaction(tx.Transaction)
 	if err != nil {
 		panic(fmt.Errorf("cannot extract requests from TX: %w", err))
 	}
@@ -334,7 +334,7 @@ func (e *ChainEnv) waitStateController(nodeIndex int, addr iotago.Address, timeo
 
 func (e *ChainEnv) callGetStateController(nodeIndex int) (iotago.Address, error) {
 	controlAddresses, _, err := e.Chain.Cluster.WaspClient(nodeIndex).CorecontractsApi.
-		BlocklogGetControlAddresses(context.Background(), e.Chain.ChainID.String(testutil.L1API.ProtocolParameters().Bech32HRP())).
+		BlocklogGetControlAddresses(context.Background(), e.Chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())).
 		Execute()
 	if err != nil {
 		return nil, err
@@ -357,7 +357,7 @@ func (e *ChainEnv) checkAllowedStateControllerAddressInAllNodes(addr iotago.Addr
 
 func isAllowedStateControllerAddress(t *testing.T, chain *cluster.Chain, nodeIndex int, addr iotago.Address) bool {
 	addresses, _, err := chain.Cluster.WaspClient(nodeIndex).CorecontractsApi.
-		GovernanceGetAllowedStateControllerAddresses(context.Background(), chain.ChainID.String(testutil.L1API.ProtocolParameters().Bech32HRP())).
+		GovernanceGetAllowedStateControllerAddresses(context.Background(), chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())).
 		Execute()
 	require.NoError(t, err)
 

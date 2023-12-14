@@ -361,9 +361,7 @@ func TestRebootDuringTasks(t *testing.T) {
 			Args: map[kv.Key][]byte{
 				accounts.ParamAgentID: targetAgentID.Bytes(),
 			},
-			Allowance: &isc.Assets{
-				BaseTokens: 5000,
-			},
+			Allowance: isc.NewAssets(5000, nil),
 		})
 		require.NoError(t, err)
 		_, err = env.Clu.MultiClient().WaitUntilRequestProcessed(env.Chain.ChainID, req.ID(), true, 10*time.Second)

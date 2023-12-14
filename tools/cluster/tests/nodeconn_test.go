@@ -35,22 +35,17 @@ func createChain(t *testing.T) isc.ChainID {
 	utxoMap, err := layer1Client.OutputMap(originator.Address())
 	require.NoError(t, err)
 
-	var utxoIDs iotago.OutputIDs
-	for id := range utxoMap {
-		utxoIDs = append(utxoIDs, id)
-	}
-
 	originTx, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
 		originator.Address(),
 		originator.Address(),
 		0,
 		iotago.Mana(0),
+		nil,
 		utxoMap,
-		utxoIDs,
-		layer1Client.API().TimeProvider().SlotFromTime(time.Now()),
+		layer1Client.APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
-		layer1Client.API(),
+		layer1Client.APIProvider(),
 	)
 	require.NoError(t, err)
 	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)

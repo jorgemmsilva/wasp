@@ -54,14 +54,17 @@ func TestPrivtangleStartup(t *testing.T) {
 
 	//
 	// Check if the TX post works.
-	tx, err := l1connection.MakeSimpleValueTX(client, l1.Config.FaucetKey, myAddress, 500_000)
+	kp2 := cryptolib.NewKeyPair()
+	addr2 := kp2.GetPublicKey().AsEd25519Address()
+	initialOutputCount = mustOutputCount(client, addr2)
+	tx, err := l1connection.MakeSimpleValueTX(client, myKeyPair, addr2, 500_000)
 	require.NoError(t, err)
 	_, err = client.PostTxAndWaitUntilConfirmation(tx)
 	require.NoError(t, err)
 	for i := 0; ; i++ {
 		t.Log("Waiting for a TX...")
 		time.Sleep(100 * time.Millisecond)
-		if initialOutputCount != mustOutputCount(client, myAddress) {
+		if initialOutputCount != mustOutputCount(client, addr2) {
 			break
 		}
 	}

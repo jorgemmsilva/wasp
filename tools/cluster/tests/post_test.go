@@ -138,7 +138,7 @@ func testPost5Requests(t *testing.T, e *ChainEnv) {
 	myClient := e.Chain.SCClient(contractID.Hname(), myWallet)
 
 	e.checkBalanceOnChain(myAgentID, isc.BaseTokenID, 0)
-	onChainBalance := uint64(0)
+	onChainBalance := iotago.BaseToken(0)
 	for i := 0; i < 5; i++ {
 		baseTokesSent := 1 * isc.Million
 		tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Name, chainclient.PostRequestParams{
@@ -149,8 +149,7 @@ func testPost5Requests(t *testing.T, e *ChainEnv) {
 		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
 		require.NoError(t, err)
 
-		gasFeeCharged, err := iotago.DecodeUint64(receipts[0].GasFeeCharged)
-		require.NoError(t, err)
+		gasFeeCharged := parseBaseToken(receipts[0].GasFeeCharged)
 
 		onChainBalance += baseTokesSent - gasFeeCharged
 	}
@@ -172,8 +171,8 @@ func testPost5AsyncRequests(t *testing.T, e *ChainEnv) {
 
 	myClient := e.Chain.SCClient(contractID.Hname(), myWallet)
 
-	tx := [5]*iotago.Transaction{}
-	onChainBalance := uint64(0)
+	tx := [5]*iotago.SignedTransaction{}
+	onChainBalance := iotago.BaseToken(0)
 	baseTokesSent := 1 * isc.Million
 	for i := 0; i < 5; i++ {
 		tx[i], err = myClient.PostRequest(inccounter.FuncIncCounter.Name, chainclient.PostRequestParams{
@@ -186,8 +185,7 @@ func testPost5AsyncRequests(t *testing.T, e *ChainEnv) {
 		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx[i], false, 30*time.Second)
 		require.NoError(t, err)
 
-		gasFeeCharged, err := iotago.DecodeUint64(receipts[0].GasFeeCharged)
-		require.NoError(t, err)
+		gasFeeCharged := parseBaseToken(receipts[0].GasFeeCharged)
 
 		onChainBalance += baseTokesSent - gasFeeCharged
 	}

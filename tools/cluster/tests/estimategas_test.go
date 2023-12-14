@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/hive.go/serializer/v2"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/iota.go/v4/tpkg"
@@ -18,9 +18,19 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
+	"github.com/iotaledger/wasp/packages/vm/gas"
 )
+
+func parseBaseToken(s string) iotago.BaseToken {
+	return iotago.BaseToken(lo.Must(strconv.ParseUint(s, 10, 64)))
+}
+
+func parseGasUnits(s string) gas.GasUnits {
+	return gas.GasUnits(lo.Must(strconv.ParseUint(s, 10, 64)))
+}
 
 func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 	// estimate on-ledger request, then send the same request, assert the gas used/fees match
@@ -37,18 +47,16 @@ func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 					accounts.ParamAgentID: isc.NewAgentID(&iotago.Ed25519Address{}).Bytes(),
 				},
 				Allowance: isc.NewAssetsBaseTokens(5000),
-				GasBudget: 1 * isc.Million,
+				GasBudget: 1e6,
 			},
 		},
+		testutil.L1API,
 	)
-
-	outputBytes, err := output.Serialize(serializer.DeSeriModePerformLexicalOrdering, nil)
-	require.NoError(t, err)
 
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOnledger(context.Background(),
 		env.Chain.ChainID.String(),
 	).Request(apiclient.EstimateGasRequestOnledger{
-		OutputBytes: hexutil.EncodeHex(outputBytes),
+		OutputBytes: hexutil.EncodeHex(lo.Must(testutil.L1API.Encode(output))),
 	}).Execute()
 	require.NoError(t, err)
 	require.Empty(t, estimatedReceipt.ErrorMessage)
@@ -56,8 +64,7 @@ func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 	keyPair, _, err := env.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
 
-	feeCharged, err := strconv.ParseUint(estimatedReceipt.GasFeeCharged, 10, 64)
-	require.NoError(t, err)
+	feeCharged := parseBaseToken(estimatedReceipt.GasFeeCharged)
 
 	accountsClient := env.Chain.SCClient(accounts.Contract.Hname(), keyPair)
 	par := chainclient.PostRequestParams{
@@ -67,8 +74,7 @@ func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 		},
 		Allowance: isc.NewAssetsBaseTokens(5000),
 	}
-	gasBudget, err := strconv.ParseUint(estimatedReceipt.GasBurned, 10, 64)
-	require.NoError(t, err)
+	gasBudget := parseGasUnits(estimatedReceipt.GasBurned)
 	par.WithGasBudget(gasBudget)
 
 	tx, err := accountsClient.PostRequest(accounts.FuncTransferAllowanceTo.Name,
@@ -94,7 +100,7 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 	nft := &isc.NFT{
 		ID:       iotago.NFTIDFromOutputID(nftID),
 		Issuer:   addr,
-		Metadata: metadata,
+		Metadata: iotago.MetadataFeatureEntries{"": metadata},
 	}
 
 	targetAgentID := isc.NewEthereumAddressAgentID(env.Chain.ChainID, common.Address{})
@@ -113,25 +119,23 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 					accounts.ParamAgentID: targetAgentID.Bytes(),
 				},
 				Allowance: isc.NewEmptyAssets().AddNFTs(nft.ID),
-				GasBudget: 1 * isc.Million,
+				GasBudget: 1e6,
 			},
-			Options: isc.SendOptions{
-				Expiration: &isc.Expiration{
-					Time:          time.Now().Add(100 * time.Hour),
+			UnlockConditions: []iotago.UnlockCondition{
+				&iotago.ExpirationUnlockCondition{
 					ReturnAddress: addr,
+					Slot:          testutil.L1API.TimeProvider().SlotFromTime(time.Now().Add(100 * time.Hour)),
 				},
 			},
 		},
 		nft,
+		testutil.L1API,
 	)
-
-	outputBytes, err := output.Serialize(serializer.DeSeriModePerformLexicalOrdering, nil)
-	require.NoError(t, err)
 
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOnledger(context.Background(),
 		env.Chain.ChainID.String(),
 	).Request(apiclient.EstimateGasRequestOnledger{
-		OutputBytes: hexutil.EncodeHex(outputBytes),
+		OutputBytes: hexutil.EncodeHex(lo.Must(testutil.L1API.Encode(output))),
 	}).Execute()
 	require.NoError(t, err)
 	require.Empty(t, estimatedReceipt.ErrorMessage)
@@ -146,8 +150,7 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 		NFT:                      nft,
 		AutoAdjustStorageDeposit: false,
 	}
-	gasBudget, err := strconv.ParseUint(estimatedReceipt.GasBurned, 10, 64)
-	require.NoError(t, err)
+	gasBudget := parseGasUnits(estimatedReceipt.GasBurned)
 	par.WithGasBudget(gasBudget)
 
 	tx, err := accountsClient.PostRequest(accounts.FuncTransferAllowanceTo.Name, par)
@@ -172,7 +175,7 @@ func testEstimateGasOffLedger(t *testing.T, env *ChainEnv) {
 			accounts.ParamAgentID: isc.NewAgentID(&iotago.Ed25519Address{}).Bytes(),
 		},
 		0,
-		1*isc.Million,
+		1e6,
 	).WithAllowance(isc.NewAssetsBaseTokens(5000)).
 		WithSender(keyPair.GetPublicKey())
 
@@ -191,7 +194,7 @@ func testEstimateGasOffLedger(t *testing.T, env *ChainEnv) {
 		},
 		Allowance: isc.NewAssetsBaseTokens(5000),
 	}
-	par.WithGasBudget(1 * isc.Million)
+	par.WithGasBudget(1e6)
 
 	req, err := accountsClient.PostOffLedgerRequest(accounts.FuncTransferAllowanceTo.Name,
 		par,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/clients/chainclient"
@@ -57,7 +58,7 @@ func setupContract(env *ChainEnv) *contractWithMessageCounterEnv {
 }
 
 func (e *contractWithMessageCounterEnv) postRequest(contract, entryPoint isc.Hname, tokens int, params map[string]interface{}) {
-	transfer := isc.NewAssets(uint64(tokens), nil)
+	transfer := isc.NewAssets(iotago.BaseToken(tokens), nil)
 	b := isc.NewEmptyAssets()
 	if transfer != nil {
 		b = transfer

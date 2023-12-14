@@ -96,8 +96,7 @@ func testAccounts(e *ChainEnv) {
 	receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 10*time.Second)
 	require.NoError(e.t, err)
 
-	fees, err := strconv.ParseUint(receipts[0].GasFeeCharged, 10, 64)
-	require.NoError(e.t, err)
+	fees := iotago.BaseToken(lo.Must(strconv.ParseUint(receipts[0].GasFeeCharged, 10, 64)))
 
 	e.checkBalanceOnChain(isc.NewAgentID(myAddress), isc.BaseTokenID, transferBaseTokens-fees)
 

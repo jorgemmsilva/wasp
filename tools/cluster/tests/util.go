@@ -90,7 +90,7 @@ func (e *ChainEnv) getBalanceOnChain(agentID isc.AgentID, assetID []byte, nodeIn
 	return 0
 }
 
-func (e *ChainEnv) checkBalanceOnChain(agentID isc.AgentID, assetID []byte, expected uint64) {
+func (e *ChainEnv) checkBalanceOnChain(agentID isc.AgentID, assetID []byte, expected iotago.BaseToken) {
 	actual := e.getBalanceOnChain(agentID, assetID)
 	require.EqualValues(e.t, expected, actual)
 }

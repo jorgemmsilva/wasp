@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc/jsonrpctest"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -76,12 +77,12 @@ func newClusterTestEnv(t *testing.T, env *ChainEnv, nodeIndex int) *clusterTestE
 
 const transferAllowanceToGasBudgetBaseTokens = 1 * isc.Million
 
-func (e *clusterTestEnv) newEthereumAccountWithL2Funds(baseTokens ...uint64) (*ecdsa.PrivateKey, common.Address) {
+func (e *clusterTestEnv) newEthereumAccountWithL2Funds(baseTokens ...iotago.BaseToken) (*ecdsa.PrivateKey, common.Address) {
 	ethKey, ethAddr := newEthereumAccount()
 	walletKey, walletAddr, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(e.T, err)
 
-	var amount uint64
+	var amount iotago.BaseToken
 	if len(baseTokens) > 0 {
 		amount = baseTokens[0]
 	} else {

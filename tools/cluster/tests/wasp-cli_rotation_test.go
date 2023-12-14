@@ -64,7 +64,7 @@ func testWaspCLIExternalRotation(t *testing.T, addAccessNode func(*WaspCLITest, 
 		"--chain=chain1",
 		committee,
 		quorum,
-		fmt.Sprintf("--gov-controller=%s", w.WaspCliAddress.Bech32(parameters.NetworkPrefix())),
+		fmt.Sprintf("--gov-controller=%s", w.WaspCliAddress.Bech32(w.Cluster.L1Client().Bech32HRP())),
 		"--node=0",
 	)
 	matches := regexp.MustCompile(`.*ChainID:\s*([a-zA-Z0-9_]*)\s+.*`).FindStringSubmatch(strings.Join(out, " "))

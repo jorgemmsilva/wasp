@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
@@ -227,8 +226,7 @@ func newWalletWithFunds(e *ChainEnv, waspnode int, waitOnNodes ...int) *chaincli
 	receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 30*time.Second)
 	require.NoError(e.t, err)
 
-	gasFeeCharged, err := iotago.DecodeUint64(receipts[0].GasFeeCharged)
-	require.NoError(e.t, err)
+	gasFeeCharged := parseBaseToken(receipts[0].GasFeeCharged)
 
 	expectedBaseTokens := baseTokes - gasFeeCharged
 	e.checkBalanceOnChain(userAgentID, isc.BaseTokenID, expectedBaseTokens)

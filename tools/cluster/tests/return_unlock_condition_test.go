@@ -11,37 +11,32 @@ import (
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
 )
 
 // builds a normal tx to post a request to inccounter, optionally adds SDRC
-func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptolib.KeyPair, addSDRC bool) *iotago.Transaction {
+func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptolib.KeyPair, addSDRC bool) *iotago.SignedTransaction {
 	outputs, err := env.Clu.L1Client().OutputMap(addr)
 	require.NoError(t, err)
 
-	outputIDs := make(iotago.OutputIDs, len(outputs))
-	i := 0
-	for id := range outputs {
-		outputIDs[i] = id
-		i++
-	}
-
-	tx, err := transaction.NewRequestTransaction(transaction.NewRequestTransactionParams{
-		SenderKeyPair:    keyPair,
-		SenderAddress:    addr,
-		UnspentOutputs:   outputs,
-		UnspentOutputIDs: outputIDs,
-		Request: &isc.RequestParameters{
+	tx, err := transaction.NewRequestTransaction(
+		keyPair,
+		addr,
+		outputs,
+		&isc.RequestParameters{
 			TargetAddress: env.Chain.ChainAddress(),
-			Assets:        &isc.Assets{BaseTokens: 2 * isc.Million},
+			Assets:        isc.NewAssets(2*isc.Million, nil),
 			Metadata: &isc.SendMetadata{
 				TargetContract: nativeIncCounterSCHname,
 				EntryPoint:     inccounter.FuncIncCounter.Hname(),
 				GasBudget:      math.MaxUint64,
 			},
 		},
-	})
+		nil,
+		env.Clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
+		false,
+		env.Clu.L1Client().APIProvider(),
+	)
 	require.NoError(t, err)
 
 	if !addSDRC {
@@ -50,7 +45,7 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 
 	// tweak the tx , so the request output has a StorageDepositReturn unlock condition
 	for i, out := range tx.Transaction.Outputs {
-		if out.FeatureSet().MetadataFeature() == nil {
+		if out.FeatureSet().Metadata() == nil {
 			// skip if not the request output
 			continue
 		}
@@ -59,12 +54,18 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 			ReturnAddress: addr,
 			Amount:        1 * isc.Million,
 		}
-		customOut.Conditions = append(customOut.Conditions, sendBackCondition)
+		customOut.UnlockConditions = append(customOut.UnlockConditions, sendBackCondition)
 		tx.Transaction.Outputs[i] = customOut
 	}
 
 	// parameters.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
-	tx, err = transaction.CreateAndSignTx(keyPair, outputIDs.UTXOInputs(), tx.Transaction.Outputs, testutil.L1API.TimeProvider().SlotFromTime(time.Now()))
+	tx, err = transaction.CreateAndSignTx(
+		keyPair,
+		tx.Transaction.TransactionEssence.Inputs,
+		tx.Transaction.Outputs,
+		env.Clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
+		env.Clu.L1Client().APIProvider().LatestAPI(),
+	)
 	require.NoError(t, err)
 	return tx
 }

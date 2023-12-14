@@ -28,7 +28,7 @@ type BlockInfoResponse struct {
 func MapBlockInfoResponse(info *blocklog.BlockInfo) *BlockInfoResponse {
 	blockindex := uint32(0)
 	prevAOStr := ""
-	if info.PreviousChainOutputs.AnchorOutput != nil {
+	if info.PreviousChainOutputs != nil && info.PreviousChainOutputs.AnchorOutput != nil {
 		blockindex = info.PreviousChainOutputs.AnchorOutput.StateIndex + 1
 		// TODO: <lmoe> Validate this change from previousAnchorOutput.Bytes to PreviousChainOutpts.Bytes
 		prevAOStr = hexutil.EncodeHex(info.PreviousChainOutputs.Bytes())

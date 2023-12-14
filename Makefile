@@ -105,7 +105,9 @@ SHORT_TESTS = \
 ./packages/vm/gas \
 ./packages/vm/vmimpl \
 ./packages/vm/vmtxbuilder \
+./packages/webapi/controllers/node \
 ./packages/webapi/test \
+./packages/webapi/websocket \
 ./packages/webapi/websocket/commands \
 ./tools/evm/iscutils \
 ./tools/schema/model/yaml \
@@ -151,8 +153,6 @@ SHORT_TESTS_WIP = \
 ./packages/util/l1starter \
 ./packages/vm/core/testcore/sbtests \
 ./packages/wasmvm/wasmclient/go/test \
-./packages/webapi/controllers/node \
-./packages/webapi/websocket \
 ./tools/cluster \
 ./tools/cluster/tests \
 

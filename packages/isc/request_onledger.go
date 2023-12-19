@@ -126,7 +126,7 @@ func (req *onLedgerRequestData) Expiry() (iotago.SlotIndex, iotago.Address, bool
 	if expiration == nil {
 		return 0, nil, false
 	}
-	return expiration.Slot, expiration.ReturnAddress, false
+	return expiration.Slot, expiration.ReturnAddress, true
 }
 
 func (req *onLedgerRequestData) Features() Features {

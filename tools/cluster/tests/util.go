@@ -104,7 +104,7 @@ func (e *ChainEnv) getAccountsOnChain() []isc.AgentID {
 
 	ret := make([]isc.AgentID, 0)
 	for _, address := range accounts.Accounts {
-		aid, err2 := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), address)
+		aid, err2 := isc.AgentIDFromString(address)
 		require.NoError(e.t, err2)
 
 		ret = append(ret, aid)
@@ -165,7 +165,7 @@ func (e *ChainEnv) printAccounts(title string) {
 	allBalances := e.getBalancesOnChain()
 	s := fmt.Sprintf("------------------------------------- %s\n", title)
 	for k, bals := range allBalances {
-		aid, err := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), k)
+		aid, err := isc.AgentIDFromString(k)
 		require.NoError(e.t, err)
 		s += fmt.Sprintf("     %s\n", aid.String())
 		s += fmt.Sprintf("%s\n", bals.String())
@@ -191,7 +191,7 @@ func (e *ChainEnv) getChainInfo() (isc.ChainID, isc.AgentID) {
 	chainID, err := isc.ChainIDFromString(chainInfo.ChainID)
 	require.NoError(e.t, err)
 
-	ownerID, err := isc.AgentIDFromString(testutil.L1API.ProtocolParameters().Bech32HRP(), chainInfo.ChainOwnerId)
+	ownerID, err := isc.AgentIDFromString(chainInfo.ChainOwnerId)
 	require.NoError(e.t, err)
 
 	return chainID, ownerID

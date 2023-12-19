@@ -5,6 +5,7 @@ import (
 	"math"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -64,13 +65,10 @@ func AddressToBytes(address iotago.Address) []byte {
 	return ww.Bytes()
 }
 
-func AddressFromString(prefix iotago.NetworkPrefix, s string) (iotago.Address, error) {
-	p, addr, err := iotago.ParseBech32(s)
+func AddressFromString(s string) (iotago.Address, error) {
+	b, err := hexutil.DecodeHex(s)
 	if err != nil {
 		return nil, err
 	}
-	if p != prefix {
-		return nil, fmt.Errorf("expected network prefix %q, got %q", prefix, p)
-	}
-	return addr, nil
+	return AddressFromBytes(b)
 }

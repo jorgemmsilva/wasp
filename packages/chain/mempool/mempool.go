@@ -600,7 +600,7 @@ func (mpi *mempoolImpl) refsToPropose(consensusID consGR.ConsensusID) []*isc.Req
 	}
 
 	mpi.offLedgerPool.Iterate(func(account string, entries []*OrderedPoolEntry[isc.OffLedgerRequest]) {
-		agentID, err := isc.AgentIDFromString(mpi.l1APIProvider.LatestAPI().ProtocolParameters().Bech32HRP(), account)
+		agentID, err := isc.AgentIDFromString(account)
 		if err != nil {
 			panic(fmt.Errorf("invalid agentID string: %s", err.Error()))
 		}

@@ -99,12 +99,7 @@ var errFundsNotAllowed = coreerrors.Register("remaining allowance insufficient")
 func subtractFromAllowance(ctx isc.Sandbox, from, to common.Address, taken *isc.Assets) {
 	state := evm.ISCMagicSubrealm(ctx.State())
 	key := keyAllowance(from, to)
-
 	remaining := lo.Must(isc.AssetsFromBytes(state.Get(key)))
-	if taken.IsEmpty() {
-		taken = remaining.Clone()
-	}
-
 	if ok := remaining.Spend(taken); !ok {
 		panic(errFundsNotAllowed)
 	}

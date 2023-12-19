@@ -16,14 +16,14 @@ jobs:
         run: tar --exclude='temp.tar' -cf temp.tar ./
 
       - name: Upload temporary artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wasp
           path: temp.tar
           retention-days: 1
 
       - name: Set up Node
-        uses: actions/setup-node@v4.0.0
+        uses: actions/setup-node@v4.0.1
         with:
           node-version: "14"
 
@@ -41,7 +41,7 @@ jobs:
         run: mkdir /dist && cd /dist/
 
       - name: Download temporary artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: wasp
 
@@ -61,7 +61,7 @@ jobs:
       version: ${{ steps.tagger.outputs.tag }}
     steps:
       - name: Download temporary artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: wasp
 

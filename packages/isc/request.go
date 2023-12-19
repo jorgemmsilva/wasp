@@ -1,6 +1,7 @@
 package isc
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -78,6 +79,9 @@ func RequestsInTransaction(tx *iotago.Transaction) (map[ChainID][]Request, error
 	txid, err := tx.ID()
 	if err != nil {
 		return nil, err
+	}
+	if tx.TransactionEssence == nil {
+		return nil, fmt.Errorf("malformed transaction")
 	}
 
 	ret := make(map[ChainID][]Request)

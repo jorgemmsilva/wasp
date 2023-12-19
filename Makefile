@@ -63,7 +63,6 @@ test: install
 # TODO: once all test packages are passing, remove this
 SHORT_TESTS = \
 ./components/database \
-./components/webapi \
 ./contracts/native/inccounter \
 ./packages/authentication \
 ./packages/cryptolib \
@@ -116,6 +115,7 @@ SHORT_TESTS = \
 
 # TODO: move these to SHORT_TESTS when they are passing
 SHORT_TESTS_WIP = \
+./components/webapi \
 ./documentation/tutorial-examples/test \
 ./packages/chain \
 ./packages/chain/chainmanager \

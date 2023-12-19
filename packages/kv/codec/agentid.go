@@ -2,6 +2,7 @@ package codec
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -9,6 +10,7 @@ import (
 var ErrNilAgentID = errors.New("cannot decode nil AgentID")
 
 func DecodeAgentID(b []byte, def ...isc.AgentID) (isc.AgentID, error) {
+	fmt.Printf("%x\n", b)
 	if b == nil {
 		if len(def) == 0 {
 			return nil, ErrNilAgentID

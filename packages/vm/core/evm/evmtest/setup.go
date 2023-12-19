@@ -259,7 +259,7 @@ func (e *SoloChainEnv) maxGasLimit() uint64 {
 }
 
 func (e *SoloChainEnv) DeployContract(creator *ecdsa.PrivateKey, abiJSON string, bytecode []byte, args ...interface{}) *EVMContractInstance {
-	contractAddr, contractABI := e.Chain.DeployEVMContract(creator, abiJSON, bytecode, args...)
+	contractAddr, contractABI := e.Chain.DeployEVMContract(creator, abiJSON, bytecode, big.NewInt(0), args...)
 
 	return &EVMContractInstance{
 		chain:         e,

@@ -32,15 +32,20 @@ func newAddress(addressType iotago.AddressType) (address iotago.Address, err err
 
 const addressIsNil rwutil.Kind = 0x80
 
-func AddressFromReader(rr *rwutil.Reader) (address iotago.Address) {
+func AddressFromReader(rr *rwutil.Reader) iotago.Address {
 	kind := rr.ReadKind()
 	if kind == addressIsNil {
 		return nil
 	}
-	rr.PushBack().WriteKind(kind)
-	if rr.Err == nil {
-		address, rr.Err = newAddress(iotago.AddressType(kind))
+	if rr.Err != nil {
+		return nil
 	}
+	var address iotago.Address
+	address, rr.Err = newAddress(iotago.AddressType(kind))
+	if rr.Err != nil {
+		return nil
+	}
+	rr.PushBack().WriteKind(kind)
 	rr.ReadSerialized(&address, math.MaxUint16, address.Size())
 	return address
 }

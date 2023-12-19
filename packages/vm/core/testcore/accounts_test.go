@@ -1122,7 +1122,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 			blocklog.ParamRequestID, unprocessableReqID,
 		)
 		require.NoError(t, err2)
-		return codec.MustDecodeBool(res.Get(blocklog.ParamUnprocessableRequestExists))
+		return lo.Must(codec.DecodeBool(res.Get(blocklog.ParamUnprocessableRequestExists)))
 	}
 
 	require.True(t, isInUnprocessableList())

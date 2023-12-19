@@ -1,6 +1,8 @@
 package governanceimpl
 
 import (
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -35,7 +37,7 @@ func setMetadata(ctx isc.Sandbox) dict.Dict {
 
 func getMetadata(ctx isc.SandboxView) dict.Dict {
 	publicURL, _ := governance.GetPublicURL(ctx.StateR())
-	metadata := governance.MustGetMetadata(ctx.StateR())
+	metadata := lo.Must(governance.GetMetadata(ctx.StateR()))
 
 	return dict.Dict{
 		governance.ParamPublicURL: []byte(publicURL),

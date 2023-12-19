@@ -20,14 +20,6 @@ func DecodeBool(b []byte, def ...bool) (bool, error) {
 	return b[0] != 0, nil
 }
 
-func MustDecodeBool(b []byte, def ...bool) bool {
-	ret, err := DecodeBool(b, def...)
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}
-
 func EncodeBool(value bool) []byte {
 	if value {
 		return []byte{1}

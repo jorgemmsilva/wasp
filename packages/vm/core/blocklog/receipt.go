@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -164,11 +166,11 @@ func NewRequestLookupKey(blockIndex uint32, requestIndex uint16) RequestLookupKe
 }
 
 func (k RequestLookupKey) BlockIndex() uint32 {
-	return codec.MustDecodeUint32(k[:4])
+	return lo.Must(codec.DecodeUint32(k[:4]))
 }
 
 func (k RequestLookupKey) RequestIndex() uint16 {
-	return codec.MustDecodeUint16(k[4:6])
+	return lo.Must(codec.DecodeUint16(k[4:6]))
 }
 
 func (k RequestLookupKey) Bytes() []byte {

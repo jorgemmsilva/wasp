@@ -24,6 +24,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -599,7 +601,7 @@ func (cni *chainNodeImpl) handleStateTrackerActCB(st state.State, from, till *is
 
 	// Set the state to match the ActiveOrConfirmed state.
 	if latestConfirmedAO == nil || till.GetStateIndex() > latestConfirmedAO.GetStateIndex() {
-		l1Commitment := transaction.MustL1CommitmentFromAnchorOutput(till.AnchorOutput)
+		l1Commitment := lo.Must(transaction.L1CommitmentFromAnchorOutput(till.AnchorOutput))
 		if err := cni.chainStore.SetLatest(l1Commitment.TrieRoot()); err != nil {
 			panic(fmt.Errorf("cannot set L1Commitment=%v as latest: %w", l1Commitment, err))
 		}
@@ -638,7 +640,7 @@ func (cni *chainNodeImpl) handleStateTrackerCnfCB(st state.State, from, till *is
 
 	// Set the state to match the ActiveOrConfirmed state.
 	if latestActiveStateAO == nil || latestActiveStateAO.GetStateIndex() <= till.GetStateIndex() {
-		l1Commitment := transaction.MustL1CommitmentFromAnchorOutput(till.AnchorOutput)
+		l1Commitment := lo.Must(transaction.L1CommitmentFromAnchorOutput(till.AnchorOutput))
 		if err := cni.chainStore.SetLatest(l1Commitment.TrieRoot()); err != nil {
 			panic(fmt.Errorf("cannot set L1Commitment=%v as latest: %w", l1Commitment, err))
 		}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -56,11 +57,7 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 		return
 	}
 	blockIndexToCache := state.BlockIndex() - uint32(blockKeepAmount-1)
-	cacheUntil := uint32(0)
-	lastBlockIndexed := c.lastBlockIndexed()
-	if lastBlockIndexed != nil {
-		cacheUntil = *lastBlockIndexed
-	}
+	cacheUntil, _ := c.lastBlockIndexed()
 
 	// we need to look at the next block to get the trie commitment of the block we want to cache
 	nextBlockInfo, found := blocklog.NewStateAccess(state).BlockInfo(blockIndexToCache + 1)
@@ -69,10 +66,8 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 	}
 
 	// start in the active state of the block to cache
-	activeStateToCache, err := c.stateByTrieRoot(transaction.MustL1CommitmentFromAnchorOutput(nextBlockInfo.PreviousChainOutputs.AnchorOutput).TrieRoot())
-	if err != nil {
-		panic(err)
-	}
+	l1c := lo.Must(transaction.L1CommitmentFromAnchorOutput(nextBlockInfo.PreviousChainOutputs.AnchorOutput))
+	activeStateToCache := lo.Must(c.stateByTrieRoot(l1c.TrieRoot()))
 
 	for i := blockIndexToCache; i >= cacheUntil; i-- {
 		// walk back and save all blocks between [lastBlockIndexCached...blockIndexToCache]
@@ -98,7 +93,8 @@ func (c *Index) IndexBlock(trieRoot trie.Hash) {
 			// nothing more to cache, don't try to walk back further
 			break
 		}
-		activeStateToCache, err = c.stateByTrieRoot(transaction.MustL1CommitmentFromAnchorOutput(blockinfo.PreviousChainOutputs.AnchorOutput).TrieRoot())
+		l1c := lo.Must(transaction.L1CommitmentFromAnchorOutput(blockinfo.PreviousChainOutputs.AnchorOutput))
+		activeStateToCache = lo.Must(c.stateByTrieRoot(l1c.TrieRoot()))
 	}
 	c.setLastBlockIndexed(blockIndexToCache)
 	c.store.Flush()
@@ -116,11 +112,11 @@ func (c *Index) BlockByNumber(n *big.Int) *types.Block {
 }
 
 func (c *Index) BlockByHash(hash common.Hash) *types.Block {
-	blockIndex := c.blockIndexByHash(hash)
-	if blockIndex == nil {
+	blockIndex, ok := c.blockIndexByHash(hash)
+	if !ok {
 		return nil
 	}
-	return c.evmDBFromBlockIndex(*blockIndex).GetBlockByHash(hash)
+	return c.evmDBFromBlockIndex(blockIndex).GetBlockByHash(hash)
 }
 
 func (c *Index) BlockTrieRootByIndex(n uint32) *trie.Hash {
@@ -128,11 +124,11 @@ func (c *Index) BlockTrieRootByIndex(n uint32) *trie.Hash {
 }
 
 func (c *Index) TxByHash(hash common.Hash) (tx *types.Transaction, blockHash common.Hash, blockNumber, txIndex uint64) {
-	blockIndex := c.blockIndexByTxHash(hash)
-	if blockIndex == nil {
+	blockIndex, ok := c.blockIndexByTxHash(hash)
+	if !ok {
 		return nil, common.Hash{}, 0, 0
 	}
-	tx, blockHash, blockNumber, txIndex, err := c.evmDBFromBlockIndex(*blockIndex).GetTransactionByHash(hash)
+	tx, blockHash, blockNumber, txIndex, err := c.evmDBFromBlockIndex(blockIndex).GetTransactionByHash(hash)
 	if err != nil {
 		panic(err)
 	}
@@ -140,19 +136,19 @@ func (c *Index) TxByHash(hash common.Hash) (tx *types.Transaction, blockHash com
 }
 
 func (c *Index) GetReceiptByTxHash(hash common.Hash) *types.Receipt {
-	blockIndex := c.blockIndexByTxHash(hash)
-	if blockIndex == nil {
+	blockIndex, ok := c.blockIndexByTxHash(hash)
+	if !ok {
 		return nil
 	}
-	return c.evmDBFromBlockIndex(*blockIndex).GetReceiptByTxHash(hash)
+	return c.evmDBFromBlockIndex(blockIndex).GetReceiptByTxHash(hash)
 }
 
 func (c *Index) TxByBlockHashAndIndex(blockHash common.Hash, txIndex uint64) (tx *types.Transaction, blockNumber uint64) {
-	blockIndex := c.blockIndexByHash(blockHash)
-	if blockIndex == nil {
+	blockIndex, ok := c.blockIndexByHash(blockHash)
+	if !ok {
 		return nil, 0
 	}
-	block := c.evmDBFromBlockIndex(*blockIndex).GetBlockByHash(blockHash)
+	block := c.evmDBFromBlockIndex(blockIndex).GetBlockByHash(blockHash)
 	if block == nil {
 		return nil, 0
 	}
@@ -235,13 +231,12 @@ func (c *Index) setLastBlockIndexed(n uint32) {
 	c.set(keyLastBlockIndexed(), codec.EncodeUint32(n))
 }
 
-func (c *Index) lastBlockIndexed() *uint32 {
+func (c *Index) lastBlockIndexed() (uint32, bool) {
 	bytes := c.get(keyLastBlockIndexed())
 	if bytes == nil {
-		return nil
+		return 0, false
 	}
-	ret := codec.MustDecodeUint32(bytes)
-	return &ret
+	return lo.Must(codec.DecodeUint32(bytes)), true
 }
 
 func (c *Index) setBlockTrieRootByIndex(i uint32, hash trie.Hash) {
@@ -264,26 +259,24 @@ func (c *Index) setBlockIndexByTxHash(txHash common.Hash, blockIndex uint32) {
 	c.set(keyBlockIndexByTxHash(txHash), codec.EncodeUint32(blockIndex))
 }
 
-func (c *Index) blockIndexByTxHash(txHash common.Hash) *uint32 {
+func (c *Index) blockIndexByTxHash(txHash common.Hash) (uint32, bool) {
 	bytes := c.get(keyBlockIndexByTxHash(txHash))
 	if bytes == nil {
-		return nil
+		return 0, false
 	}
-	ret := codec.MustDecodeUint32(bytes)
-	return &ret
+	return lo.Must(codec.DecodeUint32(bytes)), true
 }
 
 func (c *Index) setBlockIndexByHash(hash common.Hash, blockIndex uint32) {
 	c.set(keyBlockIndexByHash(hash), codec.EncodeUint32(blockIndex))
 }
 
-func (c *Index) blockIndexByHash(hash common.Hash) *uint32 {
+func (c *Index) blockIndexByHash(hash common.Hash) (uint32, bool) {
 	bytes := c.get(keyBlockIndexByHash(hash))
 	if bytes == nil {
-		return nil
+		return 0, false
 	}
-	ret := codec.MustDecodeUint32(bytes)
-	return &ret
+	return lo.Must(codec.DecodeUint32(bytes)), true
 }
 
 func (c *Index) evmDBFromBlockIndex(n uint32) *emulator.BlockchainDB {

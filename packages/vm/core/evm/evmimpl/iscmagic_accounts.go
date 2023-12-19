@@ -6,6 +6,8 @@ package evmimpl
 import (
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
@@ -19,7 +21,7 @@ func (h *magicContractHandler) GetL2BalanceBaseTokens(agentID iscmagic.ISCAgentI
 	r := h.callView(accounts.Contract.Hname(), accounts.ViewBalanceBaseToken.Hname(), dict.Dict{
 		accounts.ParamAgentID: codec.EncodeAgentID(agentID.MustUnwrap()),
 	})
-	return codec.MustDecodeUint64(r.Get(accounts.ParamBalance))
+	return lo.Must(codec.DecodeUint64(r.Get(accounts.ParamBalance)))
 }
 
 // handler for ISCAccounts::getL2BalanceNativeTokens
@@ -28,7 +30,7 @@ func (h *magicContractHandler) GetL2BalanceNativeTokens(nativeTokenID iscmagic.N
 		accounts.ParamNativeTokenID: codec.EncodeNativeTokenID(nativeTokenID.Unwrap()),
 		accounts.ParamAgentID:       codec.EncodeAgentID(agentID.MustUnwrap()),
 	})
-	return codec.MustDecodeBigIntAbs(r.Get(accounts.ParamBalance))
+	return lo.Must(codec.DecodeBigIntAbs(r.Get(accounts.ParamBalance)))
 }
 
 // handler for ISCAccounts::getL2NFTs
@@ -53,7 +55,7 @@ func (h *magicContractHandler) GetL2NFTAmount(agentID iscmagic.ISCAgentID) *big.
 		accounts.ViewAccountNFTAmount.Hname(),
 		dict.Dict{accounts.ParamAgentID: codec.EncodeAgentID(agentID.MustUnwrap())},
 	)
-	n := codec.MustDecodeUint32(r[accounts.ParamNFTAmount])
+	n := lo.Must(codec.DecodeUint32(r[accounts.ParamNFTAmount]))
 	return big.NewInt(int64(n))
 }
 
@@ -85,7 +87,7 @@ func (h *magicContractHandler) GetL2NFTAmountInCollection(agentID iscmagic.ISCAg
 			accounts.ParamCollectionID: codec.EncodeNFTID(collectionID.Unwrap()),
 		},
 	)
-	n := codec.MustDecodeUint32(r[accounts.ParamNFTAmount])
+	n := lo.Must(codec.DecodeUint32(r[accounts.ParamNFTAmount]))
 	return big.NewInt(int64(n))
 }
 
@@ -99,7 +101,7 @@ func (h *magicContractHandler) FoundryCreateNew(tokenScheme iotago.SimpleTokenSc
 		},
 		allowance.Unwrap(),
 	)
-	return codec.MustDecodeUint32(ret.Get(accounts.ParamFoundrySN))
+	return lo.Must(codec.DecodeUint32(ret.Get(accounts.ParamFoundrySN)))
 }
 
 // handler for ISCAccounts::mintBaseTokens

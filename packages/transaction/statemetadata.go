@@ -112,11 +112,3 @@ func L1CommitmentFromAnchorOutput(ao *iotago.AnchorOutput) (*state.L1Commitment,
 	}
 	return s.L1Commitment, nil
 }
-
-func MustL1CommitmentFromAnchorOutput(ao *iotago.AnchorOutput) *state.L1Commitment {
-	l1c, err := L1CommitmentFromAnchorOutput(ao)
-	if err != nil {
-		panic(err)
-	}
-	return l1c
-}

@@ -16,14 +16,6 @@ func DecodeVMErrorCode(b []byte, def ...isc.VMErrorCode) (ret isc.VMErrorCode, e
 	return isc.VMErrorCodeFromBytes(b)
 }
 
-func MustDecodeVMErrorCode(b []byte, def ...isc.VMErrorCode) isc.VMErrorCode {
-	code, err := DecodeVMErrorCode(b, def...)
-	if err != nil {
-		panic(err)
-	}
-	return code
-}
-
 func EncodeVMErrorCode(code isc.VMErrorCode) []byte {
 	return code.Bytes()
 }

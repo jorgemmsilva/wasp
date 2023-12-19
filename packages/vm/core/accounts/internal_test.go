@@ -4,6 +4,7 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -146,7 +147,7 @@ func TestCreditDebit4(t *testing.T) {
 	require.NotEqualValues(t, agentID1, agentID2)
 
 	transfer = isc.NewFungibleTokens(20, nil)
-	MustMoveBetweenAccounts(state, agentID1, agentID2, transfer.ToAssets(), isc.ChainID{})
+	lo.Must0(MoveBetweenAccounts(state, agentID1, agentID2, transfer.ToAssets(), isc.ChainID{}))
 	total = checkLedgerT(t, state, "cp2")
 
 	keys = allAccountsAsDict(state).Keys()
@@ -217,7 +218,7 @@ func TestCreditDebit6(t *testing.T) {
 	agentID2 := isc.NewRandomAgentID()
 	require.NotEqualValues(t, agentID1, agentID2)
 
-	MustMoveBetweenAccounts(state, agentID1, agentID2, transfer.ToAssets(), isc.ChainID{})
+	lo.Must0(MoveBetweenAccounts(state, agentID1, agentID2, transfer.ToAssets(), isc.ChainID{}))
 	total = checkLedgerT(t, state, "cp2")
 
 	keys := allAccountsAsDict(state).Keys()
@@ -264,7 +265,7 @@ func TestMoveAll(t *testing.T) {
 	_, ok := accs[kv.Key(agentID1.Bytes())]
 	require.True(t, ok)
 
-	MustMoveBetweenAccounts(state, agentID1, agentID2, transfer.ToAssets(), isc.ChainID{})
+	lo.Must0(MoveBetweenAccounts(state, agentID1, agentID2, transfer.ToAssets(), isc.ChainID{}))
 	require.EqualValues(t, 2, allAccountsMapR(state).Len())
 	accs = allAccountsAsDict(state)
 	require.EqualValues(t, 2, len(accs))
@@ -343,7 +344,7 @@ func TestTransferNFTs(t *testing.T) {
 	require.Error(t, MoveBetweenAccounts(state, agentID1, agentID2, isc.NewEmptyAssets().AddNFTs(iotago.NFTID{111}), isc.ChainID{}))
 
 	// moves successfully when the NFT is owned
-	MustMoveBetweenAccounts(state, agentID1, agentID2, isc.NewEmptyAssets().AddNFTs(NFT1.ID), isc.ChainID{})
+	lo.Must0(MoveBetweenAccounts(state, agentID1, agentID2, isc.NewEmptyAssets().AddNFTs(NFT1.ID), isc.ChainID{}))
 
 	user1NFTs = getAccountNFTs(state, agentID1)
 	require.Len(t, user1NFTs, 0)

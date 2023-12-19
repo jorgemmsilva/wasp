@@ -22,7 +22,7 @@ func sizesMapName(blobHash hashing.HashValue) string {
 	return "s" + string(blobHash[:])
 }
 
-func mustGetBlobHash(fields dict.Dict) (hashing.HashValue, []kv.Key, [][]byte) {
+func getBlobHash(fields dict.Dict) (hashing.HashValue, []kv.Key, [][]byte) {
 	sorted := fields.KeysSorted() // mind determinism
 	values := make([][]byte, 0, len(sorted))
 	all := make([][]byte, 0, 2*len(sorted))
@@ -39,9 +39,9 @@ func mustGetBlobHash(fields dict.Dict) (hashing.HashValue, []kv.Key, [][]byte) {
 	return hashing.HashData(all...), sorted, values
 }
 
-// MustGetBlobHash deterministically hashes map of binary values
-func MustGetBlobHash(fields dict.Dict) hashing.HashValue {
-	ret, _, _ := mustGetBlobHash(fields)
+// GetBlobHash deterministically hashes map of binary values
+func GetBlobHash(fields dict.Dict) hashing.HashValue {
+	ret, _, _ := getBlobHash(fields)
 	return ret
 }
 

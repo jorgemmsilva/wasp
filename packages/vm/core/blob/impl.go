@@ -29,7 +29,7 @@ func storeBlob(ctx isc.Sandbox) dict.Dict {
 	state := ctx.State()
 	params := ctx.Params()
 	// calculate a deterministic hash of all blob fields
-	blobHash, kSorted, values := mustGetBlobHash(params.Dict)
+	blobHash, kSorted, values := getBlobHash(params.Dict)
 
 	directory := GetDirectory(state)
 	if directory.HasAt(blobHash[:]) {

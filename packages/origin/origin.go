@@ -57,9 +57,9 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 		return subrealm.New(d, kv.Key(contract.Hname().Bytes()))
 	}
 
-	evmChainID := codec.MustDecodeUint16(initParams.Get(ParamEVMChainID), evm.DefaultChainID)
-	blockKeepAmount := codec.MustDecodeInt32(initParams.Get(ParamBlockKeepAmount), governance.DefaultBlockKeepAmount)
-	chainOwner := codec.MustDecodeAgentID(initParams.Get(ParamChainOwner), &isc.NilAgentID{})
+	evmChainID := lo.Must(codec.DecodeUint16(initParams.Get(ParamEVMChainID), evm.DefaultChainID))
+	blockKeepAmount := lo.Must(codec.DecodeInt32(initParams.Get(ParamBlockKeepAmount), governance.DefaultBlockKeepAmount))
+	chainOwner := lo.Must(codec.DecodeAgentID(initParams.Get(ParamChainOwner), &isc.NilAgentID{}))
 
 	// init the state of each core contract
 	rootimpl.SetInitialState(contractState(root.Contract))

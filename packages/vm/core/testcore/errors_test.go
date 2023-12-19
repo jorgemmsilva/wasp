@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/packages/isc"
@@ -126,7 +127,7 @@ func TestRetrievalOfErrorMessage(t *testing.T) {
 	_, d, err := chain.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
 
-	errorCode := codec.MustDecodeVMErrorCode(d.Get(errors.ParamErrorCode))
+	errorCode := lo.Must(codec.DecodeVMErrorCode(d.Get(errors.ParamErrorCode)))
 
 	req = solo.NewCallParams(errors.Contract.Name, errors.ViewGetErrorMessageFormat.Name,
 		errors.ParamErrorCode, errorCode,

@@ -6,6 +6,8 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -81,7 +83,7 @@ func (vmctx *vmContext) runRequest(req isc.Request, requestIndex uint16, mainten
 func (vmctx *vmContext) payoutAgentID() isc.AgentID {
 	var payoutAgentID isc.AgentID
 	withContractState(vmctx.stateDraft, governance.Contract, func(s kv.KVStore) {
-		payoutAgentID = governance.MustGetPayoutAgentID(s)
+		payoutAgentID = governance.GetPayoutAgentID(s)
 	})
 	return payoutAgentID
 }
@@ -143,7 +145,7 @@ func (reqctx *requestContext) shouldChargeGasFee() bool {
 	// NOT FOR PUBLIC NETWORK
 	var freeGasPerToken bool
 	reqctx.callCore(governance.Contract, func(s kv.KVStore) {
-		gasPerToken := governance.MustGetGasFeePolicy(s).GasPerToken
+		gasPerToken := lo.Must(governance.GetGasFeePolicy(s)).GasPerToken
 		freeGasPerToken = gasPerToken.A == 0 && gasPerToken.B == 0
 	})
 	if freeGasPerToken {
@@ -304,7 +306,7 @@ func (reqctx *requestContext) getGasBudget() gas.GasUnits {
 
 	var gasRatio util.Ratio32
 	reqctx.callCore(governance.Contract, func(s kv.KVStore) {
-		gasRatio = governance.MustGetGasFeePolicy(s).EVMGasRatio
+		gasRatio = lo.Must(governance.GetGasFeePolicy(s)).EVMGasRatio
 	})
 	return gas.EVMGasToISC(gasBudget, &gasRatio)
 }
@@ -411,7 +413,7 @@ func (reqctx *requestContext) chargeGasFee() {
 	// if the payout AgentID is not set in governance contract, then chain owner will be used
 	var minBalanceInCommonAccount iotago.BaseToken
 	withContractState(reqctx.uncommittedState, governance.Contract, func(s kv.KVStore) {
-		minBalanceInCommonAccount = governance.MustGetMinCommonAccountBalance(s)
+		minBalanceInCommonAccount = governance.GetMinCommonAccountBalance(s)
 	})
 	commonAccountBal := reqctx.GetBaseTokensBalance(accounts.CommonAccount())
 	if commonAccountBal < minBalanceInCommonAccount {

@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"sort"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -135,7 +136,7 @@ func (ch *Chain) GetOnChainTokenIDs() []iotago.NativeTokenID {
 	require.NoError(ch.Env.T, err)
 	ret := make([]iotago.NativeTokenID, 0, len(res))
 	for k := range res {
-		ret = append(ret, isc.MustNativeTokenIDFromBytes([]byte(k)))
+		ret = append(ret, lo.Must(isc.NativeTokenIDFromBytes([]byte(k))))
 	}
 	return ret
 }

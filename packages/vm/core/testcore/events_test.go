@@ -4,6 +4,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -26,14 +27,14 @@ var (
 
 	manyEventsContractProcessor = manyEventsContract.Processor(nil,
 		funcManyEvents.WithHandler(func(ctx isc.Sandbox) dict.Dict {
-			n := codec.MustDecodeUint32(ctx.Params().Get("n"))
+			n := lo.Must(codec.DecodeUint32(ctx.Params().Get("n")))
 			for i := uint32(0); i < n; i++ {
 				ctx.Event("event.test", codec.EncodeUint32(n))
 			}
 			return nil
 		}),
 		funcBigEvent.WithHandler(func(ctx isc.Sandbox) dict.Dict {
-			n := codec.MustDecodeUint32(ctx.Params().Get("n"))
+			n := lo.Must(codec.DecodeUint32(ctx.Params().Get("n")))
 			ctx.Event("event.big", make([]byte, n))
 			return nil
 		}),

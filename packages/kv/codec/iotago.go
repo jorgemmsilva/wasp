@@ -17,14 +17,6 @@ func DecodeOutput(b []byte, l1API iotago.API) (out iotago.TxEssenceOutput, err e
 	return
 }
 
-func MustDecodeOutput(b []byte, l1API iotago.API) iotago.TxEssenceOutput {
-	o, err := DecodeOutput(b, l1API)
-	if err != nil {
-		panic(err)
-	}
-	return o
-}
-
 func EncodeOutput(out iotago.TxEssenceOutput, l1API iotago.API) []byte {
 	b, err := l1API.Encode(out)
 	if err != nil {

@@ -19,11 +19,3 @@ func DecodeRatio32(b []byte, def ...util.Ratio32) (ret util.Ratio32, err error) 
 	}
 	return util.Ratio32FromBytes(b)
 }
-
-func MustDecodeRatio32(bytes []byte, def ...util.Ratio32) util.Ratio32 {
-	ret, err := DecodeRatio32(bytes, def...)
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}

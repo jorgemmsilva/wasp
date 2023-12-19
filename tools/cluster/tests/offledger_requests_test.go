@@ -107,7 +107,7 @@ func testOffledgerRequest900KB(t *testing.T, e *ChainEnv) {
 	require.NoError(t, err)
 
 	paramsDict := dict.Dict{"data": randomData}
-	expectedHash := blob.MustGetBlobHash(paramsDict)
+	expectedHash := blob.GetBlobHash(paramsDict)
 
 	// raise gas limits, gas cost for 900KB has exceeded the limits
 	{

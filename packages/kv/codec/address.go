@@ -20,14 +20,6 @@ func DecodeAddress(b []byte, def ...iotago.Address) (iotago.Address, error) {
 	return isc.AddressFromBytes(b)
 }
 
-func MustDecodeAddress(b []byte, def ...iotago.Address) iotago.Address {
-	a, err := DecodeAddress(b, def...)
-	if err != nil {
-		panic(err)
-	}
-	return a
-}
-
 func EncodeAddress(addr iotago.Address) []byte {
 	return isc.AddressToBytes(addr)
 }

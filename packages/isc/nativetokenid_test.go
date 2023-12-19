@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -26,6 +27,6 @@ func TestNativeTokenIDSerialization(t *testing.T) {
 	data3, err := hexutil.DecodeHex(hex1)
 	require.NoError(t, err)
 	require.Equal(t, data1, data3)
-	obj3 := isc.MustNativeTokenIDFromBytes(data3)
+	obj3 := lo.Must(isc.NativeTokenIDFromBytes(data3))
 	require.Equal(t, obj1, obj3)
 }

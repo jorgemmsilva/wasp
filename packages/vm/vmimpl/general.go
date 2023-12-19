@@ -3,6 +3,8 @@ package vmimpl
 import (
 	"time"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -186,7 +188,7 @@ func (reqctx *requestContext) registerError(messageFormat string) *isc.VMErrorTe
 	params.Set(errors.ParamErrorMessageFormat, codec.EncodeString(messageFormat))
 
 	result := reqctx.Call(errors.Contract.Hname(), errors.FuncRegisterError.Hname(), params, nil)
-	errorCode := codec.MustDecodeVMErrorCode(result.Get(errors.ParamErrorCode))
+	errorCode := lo.Must(codec.DecodeVMErrorCode(result.Get(errors.ParamErrorCode)))
 
 	reqctx.Debugf("vmcontext.RegisterError: errorCode: '%s'", errorCode)
 

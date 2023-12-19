@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/labstack/gommon/log"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/logger"
@@ -147,22 +148,15 @@ func (e *EVMChain) BlockNumber() *big.Int {
 	return big.NewInt(0).SetUint64(db.GetNumber())
 }
 
-func (e *EVMChain) GasRatio() util.Ratio32 {
-	e.log.Debugf("GasRatio()")
-	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasFeePolicy := governance.MustGetGasFeePolicy(govPartition)
-	return gasFeePolicy.EVMGasRatio
-}
-
 func (e *EVMChain) GasFeePolicy() *gas.FeePolicy {
 	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasFeePolicy := governance.MustGetGasFeePolicy(govPartition)
+	gasFeePolicy := lo.Must(governance.GetGasFeePolicy(govPartition))
 	return gasFeePolicy
 }
 
 func (e *EVMChain) gasLimits() *gas.Limits {
 	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasLimits := governance.MustGetGasLimits(govPartition)
+	gasLimits := lo.Must(governance.GetGasLimits(govPartition))
 	return gasLimits
 }
 
@@ -667,8 +661,8 @@ func evmBlockNumberByISCBlockIndex(n uint32) uint64 {
 
 func blockchainDB(chainState state.State) *emulator.BlockchainDB {
 	govPartition := subrealm.NewReadOnly(chainState, kv.Key(governance.Contract.Hname().Bytes()))
-	gasLimits := governance.MustGetGasLimits(govPartition)
-	gasFeePolicy := governance.MustGetGasFeePolicy(govPartition)
+	gasLimits := lo.Must(governance.GetGasLimits(govPartition))
+	gasFeePolicy := lo.Must(governance.GetGasFeePolicy(govPartition))
 	blockKeepAmount := governance.GetBlockKeepAmount(govPartition)
 	return emulator.NewBlockchainDB(
 		buffered.NewBufferedKVStore(evm.EmulatorStateSubrealmR(evm.ContractPartitionR(chainState))),

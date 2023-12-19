@@ -1,6 +1,8 @@
 package accounts
 
 import (
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -19,7 +21,7 @@ func AccountNonce(state kv.KVStoreReader, callerAgentID isc.AgentID, chainID isc
 	if data == nil {
 		return 0
 	}
-	return codec.MustDecodeUint64(data) + 1
+	return lo.Must(codec.DecodeUint64(data)) + 1
 }
 
 func IncrementNonce(state kv.KVStore, callerAgentID isc.AgentID, chainID isc.ChainID) {

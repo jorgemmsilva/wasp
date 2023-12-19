@@ -162,13 +162,6 @@ func MoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, a
 	return nil
 }
 
-func MustMoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID) {
-	err := MoveBetweenAccounts(state, fromAgentID, toAgentID, assets, chainID)
-	if err != nil {
-		panic(err)
-	}
-}
-
 // debitBaseTokensFromAllowance is used for adjustment of L2 when part of base tokens are taken for storage deposit
 // It takes base tokens from allowance to the common account and then removes them from the L2 ledger
 func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chainID isc.ChainID) {

@@ -51,7 +51,7 @@ func testBlobStoreSmallBlob(t *testing.T, e *ChainEnv) {
 	fv := codec.MakeDict(map[string]interface{}{
 		blob.VarFieldProgramDescription: []byte(description),
 	})
-	expectedHash := blob.MustGetBlobHash(fv)
+	expectedHash := blob.GetBlobHash(fv)
 	t.Logf("expected hash: %s", expectedHash.String())
 
 	myWallet, _, err := e.Clu.NewKeyPairWithFunds()

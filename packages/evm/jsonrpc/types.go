@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 )
@@ -169,7 +170,7 @@ func RPCMarshalReceipt(r *types.Receipt, tx *types.Transaction, effectiveGasPric
 		"transactionIndex":  hexutil.Uint64(r.TransactionIndex),
 		"blockHash":         r.BlockHash,
 		"blockNumber":       (*hexutil.Big)(r.BlockNumber),
-		"from":              evmutil.MustGetSenderIfTxSigned(tx),
+		"from":              lo.Must(evmutil.GetSenderIfTxSigned(tx)),
 		"to":                tx.To(),
 		"cumulativeGasUsed": hexutil.Uint64(r.CumulativeGasUsed),
 		"gasUsed":           hexutil.Uint64(r.GasUsed),

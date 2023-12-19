@@ -6,6 +6,8 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/logger"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
@@ -225,10 +227,10 @@ func (ctx *ViewContext) callView(targetContract, entryPoint isc.Hname, params di
 }
 
 func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret dict.Dict) {
-	ctx.chainInfo = governance.MustGetChainInfo(
+	ctx.chainInfo = lo.Must(governance.GetChainInfo(
 		ctx.contractStateReaderWithGasBurn(governance.Contract.Hname()),
 		ctx.chainID,
-	)
+	))
 
 	ctx.gasBudget = ctx.chainInfo.GasLimits.MaxGasExternalViewCall
 	if ctx.gasBurnLoggingEnabled {

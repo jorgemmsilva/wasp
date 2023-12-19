@@ -1,6 +1,8 @@
 package sbtestsc
 
 import (
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -16,7 +18,7 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 // testEventLogGenericData is called several times in log_test.go
 func testEventLogGenericData(ctx isc.Sandbox) dict.Dict {
 	params := ctx.Params()
-	inc := codec.MustDecodeUint64(params.Get(VarCounter), 1)
+	inc := lo.Must(codec.DecodeUint64(params.Get(VarCounter), 1))
 	eventCounter(ctx, inc)
 	return nil
 }

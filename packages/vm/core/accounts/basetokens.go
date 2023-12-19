@@ -1,6 +1,8 @@
 package accounts
 
 import (
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -12,7 +14,7 @@ func baseTokensKey(accountKey kv.Key) kv.Key {
 }
 
 func getBaseTokens(state kv.KVStoreReader, accountKey kv.Key) iotago.BaseToken {
-	return iotago.BaseToken(codec.MustDecodeUint64(state.Get(baseTokensKey(accountKey)), 0))
+	return iotago.BaseToken(lo.Must(codec.DecodeUint64(state.Get(baseTokensKey(accountKey)), 0)))
 }
 
 func setBaseTokens(state kv.KVStore, accountKey kv.Key, n iotago.BaseToken) {

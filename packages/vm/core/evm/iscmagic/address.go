@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -75,7 +76,7 @@ func ERC20NativeTokensFoundrySN(addr common.Address) (uint32, error) {
 	if !allZero(payload[4:]) {
 		return 0, errors.New("ERC20NativeTokensFoundrySN: invalid address format")
 	}
-	return codec.MustDecodeUint32(payload[0:4]), nil
+	return lo.Must(codec.DecodeUint32(payload[0:4])), nil
 }
 
 func ERC721NFTCollectionAddress(collectionID iotago.NFTID) common.Address {

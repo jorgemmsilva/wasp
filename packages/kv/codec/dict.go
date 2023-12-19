@@ -5,7 +5,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 )
 
-func MakeDict(vars map[string]interface{}) dict.Dict {
+func MakeDict(vars map[string]any) dict.Dict {
 	ret := dict.New()
 	for k, v := range vars {
 		ret.Set(kv.Key(k), Encode(v))

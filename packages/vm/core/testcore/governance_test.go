@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
@@ -300,7 +301,7 @@ func TestMaintenanceMode(t *testing.T) {
 		// TODO: Add maintenance status to wrapped core contracts
 		ret, err2 := ch.CallView(governance.Contract.Name, governance.ViewGetMaintenanceStatus.Name)
 		require.NoError(t, err2)
-		maintenanceStatus := codec.MustDecodeBool(ret.Get(governance.VarMaintenanceStatus))
+		maintenanceStatus := lo.Must(codec.DecodeBool(ret.Get(governance.VarMaintenanceStatus)))
 		require.False(t, maintenanceStatus)
 	}
 
@@ -326,7 +327,7 @@ func TestMaintenanceMode(t *testing.T) {
 	{
 		ret, err2 := ch.CallView(governance.Contract.Name, governance.ViewGetMaintenanceStatus.Name)
 		require.NoError(t, err2)
-		maintenanceStatus := codec.MustDecodeBool(ret.Get(governance.VarMaintenanceStatus))
+		maintenanceStatus := lo.Must(codec.DecodeBool(ret.Get(governance.VarMaintenanceStatus)))
 		require.True(t, maintenanceStatus)
 	}
 

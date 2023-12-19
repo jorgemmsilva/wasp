@@ -20,6 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -169,7 +170,7 @@ func (ch *Chain) UploadBlob(user *cryptolib.KeyPair, params ...interface{}) (ret
 	}
 
 	blobAsADict := parseParams(params)
-	expectedHash := blob.MustGetBlobHash(blobAsADict)
+	expectedHash := blob.GetBlobHash(blobAsADict)
 	if _, ok := ch.GetBlobInfo(expectedHash); ok {
 		// blob exists, return hash of existing
 		return expectedHash, nil
@@ -722,7 +723,7 @@ func (ch *Chain) Nonce(agentID isc.AgentID) uint64 {
 	}
 	res, err := ch.CallView(accounts.Contract.Name, accounts.ViewGetAccountNonce.Name, accounts.ParamAgentID, agentID)
 	require.NoError(ch.Env.T, err)
-	return codec.MustDecodeUint64(res.Get(accounts.ParamAccountNonce))
+	return lo.Must(codec.DecodeUint64(res.Get(accounts.ParamAccountNonce)))
 }
 
 // ReceiveOffLedgerRequest implements chain.Chain

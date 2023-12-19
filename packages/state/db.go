@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/wasp/packages/chaindb"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
@@ -76,8 +78,7 @@ func (db *storeDB) largestPrunedBlockIndex() (uint32, error) {
 		return 0, ErrNoBlocksPruned
 	}
 	b := db.mustGet(keyLargestPrunedBlockIndex())
-	ret := codec.MustDecodeUint32(b)
-	return ret, nil
+	return lo.Must(codec.DecodeUint32(b)), nil
 }
 
 func (db *storeDB) hasLargestPrunedBlockIndex() bool {

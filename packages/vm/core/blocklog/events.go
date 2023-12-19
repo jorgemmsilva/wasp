@@ -3,6 +3,8 @@ package blocklog
 import (
 	"io"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
@@ -21,15 +23,15 @@ func NewEventLookupKey(blockIndex uint32, requestIndex, eventIndex uint16) (ret 
 }
 
 func (k EventLookupKey) BlockIndex() uint32 {
-	return codec.MustDecodeUint32(k[:4])
+	return lo.Must(codec.DecodeUint32(k[:4]))
 }
 
 func (k EventLookupKey) RequestIndex() uint16 {
-	return codec.MustDecodeUint16(k[4:6])
+	return lo.Must(codec.DecodeUint16(k[4:6]))
 }
 
 func (k EventLookupKey) RequestEventIndex() uint16 {
-	return codec.MustDecodeUint16(k[6:8])
+	return lo.Must(codec.DecodeUint16(k[6:8]))
 }
 
 func (k EventLookupKey) Bytes() []byte {

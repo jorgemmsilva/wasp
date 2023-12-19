@@ -24,14 +24,6 @@ func DecodeTokenScheme(b []byte, def ...iotago.TokenScheme) (ts iotago.TokenSche
 	return
 }
 
-func MustDecodeTokenScheme(b []byte, def ...iotago.TokenScheme) iotago.TokenScheme {
-	t, err := DecodeTokenScheme(b, def...)
-	if err != nil {
-		panic(err)
-	}
-	return t
-}
-
 func EncodeTokenScheme(value iotago.TokenScheme) []byte {
 	l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
 	b, err := l1API.Encode(value)

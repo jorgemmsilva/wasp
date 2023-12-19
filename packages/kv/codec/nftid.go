@@ -20,14 +20,6 @@ func DecodeNFTID(b []byte, def ...iotago.NFTID) (ret iotago.NFTID, err error) {
 	return ret, nil
 }
 
-func MustDecodeNFTID(b []byte) iotago.NFTID {
-	r, err := DecodeNFTID(b)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
-
 func EncodeNFTID(nftID iotago.NFTID) []byte {
 	return nftID[:]
 }

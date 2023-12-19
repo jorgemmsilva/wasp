@@ -82,14 +82,6 @@ func IsRequestProcessed(stateReader kv.KVStoreReader, requestID isc.RequestID) (
 	return requestReceipt != nil, nil
 }
 
-func MustIsRequestProcessed(stateReader kv.KVStoreReader, reqid isc.RequestID) bool {
-	ret, err := IsRequestProcessed(stateReader, reqid)
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}
-
 type GetRequestReceiptResult struct {
 	ReceiptBin   []byte
 	BlockIndex   uint32

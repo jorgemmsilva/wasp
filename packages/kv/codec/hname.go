@@ -16,14 +16,6 @@ func DecodeHname(b []byte, def ...isc.Hname) (isc.Hname, error) {
 	return isc.HnameFromBytes(b)
 }
 
-func MustDecodeHname(b []byte, def ...isc.Hname) isc.Hname {
-	r, err := DecodeHname(b, def...)
-	if err != nil {
-		panic(err)
-	}
-	return r
-}
-
 func EncodeHname(value isc.Hname) []byte {
 	return value.Bytes()
 }

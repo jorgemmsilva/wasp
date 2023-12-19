@@ -12,7 +12,7 @@ import (
 
 // UploadBlob sends an off-ledger request to call 'store' in the blob contract.
 func (c *Client) UploadBlob(ctx context.Context, fields dict.Dict) (hashing.HashValue, isc.OffLedgerRequest, *apiclient.ReceiptResponse, error) {
-	blobHash := blob.MustGetBlobHash(fields)
+	blobHash := blob.GetBlobHash(fields)
 
 	req, err := c.PostOffLedgerRequest(ctx,
 		blob.Contract.Hname(),

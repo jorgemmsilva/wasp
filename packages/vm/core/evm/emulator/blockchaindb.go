@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
@@ -72,7 +73,7 @@ func (bc *BlockchainDB) SetChainID(chainID uint16) {
 }
 
 func GetChainIDFromBlockChainDBState(kv kv.KVStoreReader) uint16 {
-	return codec.MustDecodeUint16(kv.Get(keyChainID))
+	return lo.Must(codec.DecodeUint16(kv.Get(keyChainID)))
 }
 
 func (bc *BlockchainDB) GetChainID() uint16 {
@@ -84,7 +85,7 @@ func (bc *BlockchainDB) setNumber(n uint64) {
 }
 
 func (bc *BlockchainDB) GetNumber() uint64 {
-	return codec.MustDecodeUint64(bc.kv.Get(keyNumber))
+	return lo.Must(codec.DecodeUint64(bc.kv.Get(keyNumber)))
 }
 
 func makeTransactionsByBlockNumberKey(blockNumber uint64) kv.Key {
@@ -353,7 +354,7 @@ func (bc *BlockchainDB) getBlockNumberBy(key kv.Key) (uint64, bool) {
 	if b == nil {
 		return 0, false
 	}
-	return codec.MustDecodeUint64(b), true
+	return lo.Must(codec.DecodeUint64(b)), true
 }
 
 func (bc *BlockchainDB) GetBlockNumberByTxHash(txHash common.Hash) (uint64, bool) {
@@ -361,7 +362,7 @@ func (bc *BlockchainDB) GetBlockNumberByTxHash(txHash common.Hash) (uint64, bool
 }
 
 func (bc *BlockchainDB) GetTxIndexInBlockByTxHash(txHash common.Hash) uint32 {
-	return codec.MustDecodeUint32(bc.kv.Get(makeTxIndexInBlockByTxHashKey(txHash)), 0)
+	return lo.Must(codec.DecodeUint32(bc.kv.Get(makeTxIndexInBlockByTxHashKey(txHash)), 0))
 }
 
 func (bc *BlockchainDB) GetReceiptByTxHash(txHash common.Hash) *types.Receipt {

@@ -16,7 +16,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreaccounts"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
@@ -706,7 +705,7 @@ func TestFoundryOutput(t *testing.T) {
 	f.Func.Call()
 	require.NoError(t, ctx.Err)
 	b := f.Results.FoundryOutputBin().Value()
-	outFoundry, err := codec.Output.Decode(b, testutil.L1API)
+	outFoundry, err := codec.Output.Decode(b)
 	require.NoError(t, err)
 	soloFoundry, err := ctx.Chain.GetFoundryOutput(serialNum)
 	require.NoError(t, err)

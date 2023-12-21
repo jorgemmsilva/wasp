@@ -134,7 +134,7 @@ func TestFoundryCreateNew(t *testing.T) {
 	user := ctx.NewSoloAgent("user")
 
 	f := coreaccounts.ScFuncs.FoundryCreateNew(ctx.Sign(user))
-	f.Params.TokenScheme().SetValue(codec.EncodeTokenScheme(&iotago.SimpleTokenScheme{
+	f.Params.TokenScheme().SetValue(codec.TokenScheme.Encode(&iotago.SimpleTokenScheme{
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
@@ -146,7 +146,7 @@ func TestFoundryCreateNew(t *testing.T) {
 	require.Equal(t, uint32(1), f.Results.FoundrySN().Value())
 
 	f = coreaccounts.ScFuncs.FoundryCreateNew(ctx.Sign(user))
-	f.Params.TokenScheme().SetValue(codec.EncodeTokenScheme(&iotago.SimpleTokenScheme{
+	f.Params.TokenScheme().SetValue(codec.TokenScheme.Encode(&iotago.SimpleTokenScheme{
 		MintedTokens:  big.NewInt(2001),
 		MeltedTokens:  big.NewInt(2002),
 		MaximumSupply: big.NewInt(2003),
@@ -161,7 +161,7 @@ func TestFoundryDestroy(t *testing.T) {
 	user := ctx.NewSoloAgent("user")
 
 	fnew := coreaccounts.ScFuncs.FoundryCreateNew(ctx.Sign(user))
-	fnew.Params.TokenScheme().SetValue(codec.EncodeTokenScheme(&iotago.SimpleTokenScheme{
+	fnew.Params.TokenScheme().SetValue(codec.TokenScheme.Encode(&iotago.SimpleTokenScheme{
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
@@ -183,7 +183,7 @@ func TestFoundryNew(t *testing.T) {
 	user := ctx.NewSoloAgent("user")
 
 	fnew := coreaccounts.ScFuncs.FoundryCreateNew(ctx.Sign(user))
-	fnew.Params.TokenScheme().SetValue(codec.EncodeTokenScheme(&iotago.SimpleTokenScheme{
+	fnew.Params.TokenScheme().SetValue(codec.TokenScheme.Encode(&iotago.SimpleTokenScheme{
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
@@ -689,7 +689,7 @@ func TestFoundryOutput(t *testing.T) {
 	user := ctx.NewSoloAgent("user")
 
 	fnew := coreaccounts.ScFuncs.FoundryCreateNew(ctx.Sign(user))
-	fnew.Params.TokenScheme().SetValue(codec.EncodeTokenScheme(&iotago.SimpleTokenScheme{
+	fnew.Params.TokenScheme().SetValue(codec.TokenScheme.Encode(&iotago.SimpleTokenScheme{
 		MintedTokens:  big.NewInt(1001),
 		MeltedTokens:  big.NewInt(1002),
 		MaximumSupply: big.NewInt(1003),
@@ -706,7 +706,7 @@ func TestFoundryOutput(t *testing.T) {
 	f.Func.Call()
 	require.NoError(t, ctx.Err)
 	b := f.Results.FoundryOutputBin().Value()
-	outFoundry, err := codec.DecodeOutput(b, testutil.L1API)
+	outFoundry, err := codec.Output.Decode(b, testutil.L1API)
 	require.NoError(t, err)
 	soloFoundry, err := ctx.Chain.GetFoundryOutput(serialNum)
 	require.NoError(t, err)

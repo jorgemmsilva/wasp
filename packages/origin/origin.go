@@ -51,15 +51,15 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 	}
 	d := store.NewOriginStateDraft()
 	d.Set(kv.Key(coreutil.StatePrefixBlockIndex), codec.Encode(uint32(0)))
-	d.Set(kv.Key(coreutil.StatePrefixTimestamp), codec.EncodeTime(time.Unix(0, 0)))
+	d.Set(kv.Key(coreutil.StatePrefixTimestamp), codec.Time.Encode(time.Unix(0, 0)))
 
 	contractState := func(contract *coreutil.ContractInfo) kv.KVStore {
 		return subrealm.New(d, kv.Key(contract.Hname().Bytes()))
 	}
 
-	evmChainID := lo.Must(codec.DecodeUint16(initParams.Get(ParamEVMChainID), evm.DefaultChainID))
-	blockKeepAmount := lo.Must(codec.DecodeInt32(initParams.Get(ParamBlockKeepAmount), governance.DefaultBlockKeepAmount))
-	chainOwner := lo.Must(codec.DecodeAgentID(initParams.Get(ParamChainOwner), &isc.NilAgentID{}))
+	evmChainID := lo.Must(codec.Uint16.Decode(initParams.Get(ParamEVMChainID), evm.DefaultChainID))
+	blockKeepAmount := lo.Must(codec.Int32.Decode(initParams.Get(ParamBlockKeepAmount), governance.DefaultBlockKeepAmount))
+	chainOwner := lo.Must(codec.AgentID.Decode(initParams.Get(ParamChainOwner), &isc.NilAgentID{}))
 
 	// init the state of each core contract
 	rootimpl.SetInitialState(contractState(root.Contract))

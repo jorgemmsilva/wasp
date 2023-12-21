@@ -40,7 +40,7 @@ var (
 // ERC20NativeTokensAddress returns the Ethereum address of the ERC20 contract for
 // native tokens with an on-chain foundry.
 func ERC20NativeTokensAddress(foundrySN uint32) common.Address {
-	return packMagicAddress(addressKindERC20NativeTokens, codec.EncodeUint32(foundrySN))
+	return packMagicAddress(addressKindERC20NativeTokens, codec.Uint32.Encode(foundrySN))
 }
 
 // ERC20ExternalNativeTokensAddress creates an Ethereum address for an ERC20 contract for
@@ -76,7 +76,7 @@ func ERC20NativeTokensFoundrySN(addr common.Address) (uint32, error) {
 	if !allZero(payload[4:]) {
 		return 0, errors.New("ERC20NativeTokensFoundrySN: invalid address format")
 	}
-	return lo.Must(codec.DecodeUint32(payload[0:4])), nil
+	return lo.Must(codec.Uint32.Decode(payload[0:4])), nil
 }
 
 func ERC721NFTCollectionAddress(collectionID iotago.NFTID) common.Address {

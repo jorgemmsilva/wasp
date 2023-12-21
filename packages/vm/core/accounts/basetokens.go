@@ -14,11 +14,11 @@ func baseTokensKey(accountKey kv.Key) kv.Key {
 }
 
 func getBaseTokens(state kv.KVStoreReader, accountKey kv.Key) iotago.BaseToken {
-	return iotago.BaseToken(lo.Must(codec.DecodeUint64(state.Get(baseTokensKey(accountKey)), 0)))
+	return iotago.BaseToken(lo.Must(codec.Uint64.Decode(state.Get(baseTokensKey(accountKey)), 0)))
 }
 
 func setBaseTokens(state kv.KVStore, accountKey kv.Key, n iotago.BaseToken) {
-	state.Set(baseTokensKey(accountKey), codec.EncodeUint64(uint64(n)))
+	state.Set(baseTokensKey(accountKey), codec.Uint64.Encode(uint64(n)))
 }
 
 func AdjustAccountBaseTokens(state kv.KVStore, account isc.AgentID, adjustment int64, chainID isc.ChainID) {

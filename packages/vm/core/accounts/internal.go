@@ -104,7 +104,7 @@ func allAccountsAsDict(state kv.KVStoreReader) dict.Dict {
 
 // touchAccount ensures the account is in the list of all accounts
 func touchAccount(state kv.KVStore, agentID isc.AgentID, chainID isc.ChainID) {
-	allAccountsMap(state).SetAt([]byte(accountKey(agentID, chainID)), codec.EncodeBool(true))
+	allAccountsMap(state).SetAt([]byte(accountKey(agentID, chainID)), codec.Bool.Encode(true))
 }
 
 // HasEnoughForAllowance checks whether an account has enough balance to cover for the allowance

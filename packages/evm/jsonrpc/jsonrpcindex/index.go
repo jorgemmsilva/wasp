@@ -193,7 +193,7 @@ func keyLastBlockIndexed() kvstore.Key {
 
 func keyBlockTrieRootByIndex(i uint32) kvstore.Key {
 	key := []byte{prefixBlockTrieRootByIndex}
-	key = append(key, codec.EncodeUint32(i)...)
+	key = append(key, codec.Uint32.Encode(i)...)
 	return key
 }
 
@@ -228,7 +228,7 @@ func (c *Index) set(key kvstore.Key, value []byte) {
 }
 
 func (c *Index) setLastBlockIndexed(n uint32) {
-	c.set(keyLastBlockIndexed(), codec.EncodeUint32(n))
+	c.set(keyLastBlockIndexed(), codec.Uint32.Encode(n))
 }
 
 func (c *Index) lastBlockIndexed() (uint32, bool) {
@@ -236,7 +236,7 @@ func (c *Index) lastBlockIndexed() (uint32, bool) {
 	if bytes == nil {
 		return 0, false
 	}
-	return lo.Must(codec.DecodeUint32(bytes)), true
+	return lo.Must(codec.Uint32.Decode(bytes)), true
 }
 
 func (c *Index) setBlockTrieRootByIndex(i uint32, hash trie.Hash) {
@@ -256,7 +256,7 @@ func (c *Index) blockTrieRootByIndex(i uint32) *trie.Hash {
 }
 
 func (c *Index) setBlockIndexByTxHash(txHash common.Hash, blockIndex uint32) {
-	c.set(keyBlockIndexByTxHash(txHash), codec.EncodeUint32(blockIndex))
+	c.set(keyBlockIndexByTxHash(txHash), codec.Uint32.Encode(blockIndex))
 }
 
 func (c *Index) blockIndexByTxHash(txHash common.Hash) (uint32, bool) {
@@ -264,11 +264,11 @@ func (c *Index) blockIndexByTxHash(txHash common.Hash) (uint32, bool) {
 	if bytes == nil {
 		return 0, false
 	}
-	return lo.Must(codec.DecodeUint32(bytes)), true
+	return lo.Must(codec.Uint32.Decode(bytes)), true
 }
 
 func (c *Index) setBlockIndexByHash(hash common.Hash, blockIndex uint32) {
-	c.set(keyBlockIndexByHash(hash), codec.EncodeUint32(blockIndex))
+	c.set(keyBlockIndexByHash(hash), codec.Uint32.Encode(blockIndex))
 }
 
 func (c *Index) blockIndexByHash(hash common.Hash) (uint32, bool) {
@@ -276,7 +276,7 @@ func (c *Index) blockIndexByHash(hash common.Hash) (uint32, bool) {
 	if bytes == nil {
 		return 0, false
 	}
-	return lo.Must(codec.DecodeUint32(bytes)), true
+	return lo.Must(codec.Uint32.Decode(bytes)), true
 }
 
 func (c *Index) evmDBFromBlockIndex(n uint32) *emulator.BlockchainDB {

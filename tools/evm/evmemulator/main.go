@@ -102,9 +102,9 @@ func start(cmd *cobra.Command, args []string) {
 	chainOwner, chainOwnerAddr := env.NewKeyPairWithFunds()
 	chain, _ := env.NewChainExt(chainOwner, 1*isc.Million, "evmemulator", dict.Dict{
 		origin.ParamChainOwner:      isc.NewAgentID(chainOwnerAddr).Bytes(),
-		origin.ParamEVMChainID:      codec.EncodeUint16(1074),
-		origin.ParamBlockKeepAmount: codec.EncodeInt32(emulator.BlockKeepAll),
-		origin.ParamWaspVersion:     codec.EncodeString(app.Version),
+		origin.ParamEVMChainID:      codec.Uint16.Encode(1074),
+		origin.ParamBlockKeepAmount: codec.Int32.Encode(emulator.BlockKeepAll),
+		origin.ParamWaspVersion:     codec.String.Encode(app.Version),
 	})
 
 	var accounts []*ecdsa.PrivateKey

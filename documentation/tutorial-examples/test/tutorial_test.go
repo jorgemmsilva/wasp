@@ -62,7 +62,7 @@ func TestTutorialInvokeSC(t *testing.T) {
 	// invoke the `getString` view
 	res, err := chain.CallView("solotutorial", "getString")
 	require.NoError(t, err)
-	require.Equal(t, "Hello, world!", lo.Must(codec.DecodeString(res.Get("str"))))
+	require.Equal(t, "Hello, world!", lo.Must(codec.String.Decode(res.Get("str"))))
 }
 
 func TestTutorialInvokeSCOffLedger(t *testing.T) {
@@ -81,7 +81,7 @@ func TestTutorialInvokeSCOffLedger(t *testing.T) {
 	// invoke the `getString` view
 	res, err := chain.CallView("solotutorial", "getString")
 	require.NoError(t, err)
-	require.Equal(t, "Hello, world!", lo.Must(codec.DecodeString(res.Get("str"))))
+	require.Equal(t, "Hello, world!", lo.Must(codec.String.Decode(res.Get("str"))))
 }
 
 func TestTutorialInvokeSCError(t *testing.T) {

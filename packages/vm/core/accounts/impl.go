@@ -254,7 +254,7 @@ func foundryCreateNew(ctx isc.Sandbox) dict.Dict {
 	addFoundryToAccount(ctx.State(), ctx.Caller(), sn)
 
 	ret := dict.New()
-	ret.Set(ParamFoundrySN, codec.EncodeUint32(sn))
+	ret.Set(ParamFoundrySN, codec.Uint32.Encode(sn))
 	eventFoundryCreated(ctx, sn)
 	return ret
 }

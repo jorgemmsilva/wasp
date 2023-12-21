@@ -37,7 +37,7 @@ func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
 			TargetContract: accounts.Contract.Hname(),
 			EntryPoint:     accounts.FuncTransferAccountToChain.Hname(),
 			Params: dict.Dict{
-				accounts.ParamGasReserve: codec.EncodeUint64(uint64(gasReserve)),
+				accounts.ParamGasReserve: codec.Uint64.Encode(uint64(gasReserve)),
 			},
 			GasBudget: gas.GasUnits(gasReserve),
 			Allowance: isc.NewAssetsBaseTokens(withdrawal + storageDeposit + iotago.BaseToken(gasReserve)),

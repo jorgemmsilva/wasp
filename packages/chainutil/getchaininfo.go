@@ -17,7 +17,7 @@ func GetAccountBalance(
 	tokenInfo api.InfoResBaseToken,
 ) (*isc.FungibleTokens, error) {
 	params := codec.MakeDict(map[string]interface{}{
-		accounts.ParamAgentID: codec.EncodeAgentID(agentID),
+		accounts.ParamAgentID: codec.AgentID.Encode(agentID),
 	})
 	ret, err := CallView(mustLatestState(ch), ch, accounts.Contract.Hname(), accounts.ViewBalance.Hname(), params)
 	if err != nil {

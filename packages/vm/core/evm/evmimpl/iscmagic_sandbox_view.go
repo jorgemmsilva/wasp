@@ -108,7 +108,7 @@ func (h *magicContractHandler) Erc20NativeTokensFoundrySerialNumber(addr common.
 // handler for ISCSandbox::getNativeTokenID
 func (h *magicContractHandler) GetNativeTokenID(foundrySN uint32) iscmagic.NativeTokenID {
 	r := h.callView(accounts.Contract.Hname(), accounts.ViewFoundryOutput.Hname(), dict.Dict{
-		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
+		accounts.ParamFoundrySN: codec.Uint32.Encode(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
 	_, err := h.ctx.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
@@ -122,7 +122,7 @@ var errUnsupportedTokenScheme = coreerrors.Register("unsupported TokenScheme kin
 // handler for ISCSandbox::getNativeTokenScheme
 func (h *magicContractHandler) GetNativeTokenScheme(foundrySN uint32) iotago.SimpleTokenScheme {
 	r := h.callView(accounts.Contract.Hname(), accounts.ViewFoundryOutput.Hname(), dict.Dict{
-		accounts.ParamFoundrySN: codec.EncodeUint32(foundrySN),
+		accounts.ParamFoundrySN: codec.Uint32.Encode(foundrySN),
 	})
 	out := &iotago.FoundryOutput{}
 	_, err := h.ctx.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)

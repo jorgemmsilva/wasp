@@ -8,9 +8,9 @@ import (
 )
 
 func SetSchemaVersion(state kv.KVStore, v uint32) {
-	state.Set(VarSchemaVersion, codec.EncodeUint32(v))
+	state.Set(VarSchemaVersion, codec.Uint32.Encode(v))
 }
 
 func GetSchemaVersion(state kv.KVStoreReader) uint32 {
-	return lo.Must(codec.DecodeUint32(state.Get(VarSchemaVersion), 0))
+	return lo.Must(codec.Uint32.Decode(state.Get(VarSchemaVersion), 0))
 }

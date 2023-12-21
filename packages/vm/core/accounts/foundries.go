@@ -37,8 +37,8 @@ func SaveFoundryOutput(state kv.KVStore, f *iotago.FoundryOutput, outputIndex ui
 		TokenScheme: f.TokenScheme,
 		Metadata:    []byte{},
 	}
-	AllFoundriesMap(state).SetAt(codec.EncodeUint32(f.SerialNumber), foundryRec.Bytes())
-	newFoundriesArray(state).Push(codec.EncodeUint32(f.SerialNumber))
+	AllFoundriesMap(state).SetAt(codec.Uint32.Encode(f.SerialNumber), foundryRec.Bytes())
+	newFoundriesArray(state).Push(codec.Uint32.Encode(f.SerialNumber))
 }
 
 func updateFoundryOutputIDs(state kv.KVStore, anchorTxID iotago.TransactionID) {
@@ -56,12 +56,12 @@ func updateFoundryOutputIDs(state kv.KVStore, anchorTxID iotago.TransactionID) {
 
 // DeleteFoundryOutput deletes foundry output from the map of all foundries
 func DeleteFoundryOutput(state kv.KVStore, sn uint32) {
-	AllFoundriesMap(state).DelAt(codec.EncodeUint32(sn))
+	AllFoundriesMap(state).DelAt(codec.Uint32.Encode(sn))
 }
 
 // GetFoundryOutput returns foundry output, its block number and output index
 func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainAccountID iotago.AccountID) (*iotago.FoundryOutput, iotago.OutputID) {
-	data := allFoundriesMapR(state).GetAt(codec.EncodeUint32(sn))
+	data := allFoundriesMapR(state).GetAt(codec.Uint32.Encode(sn))
 	if data == nil {
 		return nil, iotago.OutputID{}
 	}
@@ -81,21 +81,21 @@ func GetFoundryOutput(state kv.KVStoreReader, sn uint32, chainAccountID iotago.A
 
 // hasFoundry checks if specific account owns the foundry
 func hasFoundry(state kv.KVStoreReader, agentID isc.AgentID, sn uint32) bool {
-	return accountFoundriesMapR(state, agentID).HasAt(codec.EncodeUint32(sn))
+	return accountFoundriesMapR(state, agentID).HasAt(codec.Uint32.Encode(sn))
 }
 
 // addFoundryToAccount ads new foundry to the foundries controlled by the account
 func addFoundryToAccount(state kv.KVStore, agentID isc.AgentID, sn uint32) {
-	key := codec.EncodeUint32(sn)
+	key := codec.Uint32.Encode(sn)
 	foundries := accountFoundriesMap(state, agentID)
 	if foundries.HasAt(key) {
 		panic(ErrRepeatingFoundrySerialNumber)
 	}
-	foundries.SetAt(key, codec.EncodeBool(true))
+	foundries.SetAt(key, codec.Bool.Encode(true))
 }
 
 func deleteFoundryFromAccount(state kv.KVStore, agentID isc.AgentID, sn uint32) {
-	key := codec.EncodeUint32(sn)
+	key := codec.Uint32.Encode(sn)
 	foundries := accountFoundriesMap(state, agentID)
 	if !foundries.HasAt(key) {
 		panic(ErrFoundryNotFound)

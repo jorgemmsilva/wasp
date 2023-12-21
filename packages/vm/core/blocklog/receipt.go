@@ -160,17 +160,17 @@ type RequestLookupKey [6]byte
 
 func NewRequestLookupKey(blockIndex uint32, requestIndex uint16) RequestLookupKey {
 	ret := RequestLookupKey{}
-	copy(ret[:4], codec.EncodeUint32(blockIndex))
-	copy(ret[4:6], codec.EncodeUint16(requestIndex))
+	copy(ret[:4], codec.Uint32.Encode(blockIndex))
+	copy(ret[4:6], codec.Uint16.Encode(requestIndex))
 	return ret
 }
 
 func (k RequestLookupKey) BlockIndex() uint32 {
-	return lo.Must(codec.DecodeUint32(k[:4]))
+	return lo.Must(codec.Uint32.Decode(k[:4]))
 }
 
 func (k RequestLookupKey) RequestIndex() uint16 {
-	return lo.Must(codec.DecodeUint16(k[4:6]))
+	return lo.Must(codec.Uint16.Decode(k[4:6]))
 }
 
 func (k RequestLookupKey) Bytes() []byte {

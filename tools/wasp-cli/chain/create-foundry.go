@@ -31,7 +31,7 @@ func initCreateFoundryCmd() *cobra.Command {
 				MeltedTokens:  big.NewInt(meltedTokens),
 			}
 
-			tokenSchemeBytes := codec.EncodeTokenScheme(tokenScheme)
+			tokenSchemeBytes := codec.TokenScheme.Encode(tokenScheme)
 
 			return []string{"string", "t", "bytes", "0x" + hex.EncodeToString(tokenSchemeBytes)}
 		},

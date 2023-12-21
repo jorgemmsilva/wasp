@@ -78,7 +78,7 @@ func (db *storeDB) largestPrunedBlockIndex() (uint32, error) {
 		return 0, ErrNoBlocksPruned
 	}
 	b := db.mustGet(keyLargestPrunedBlockIndex())
-	return lo.Must(codec.DecodeUint32(b)), nil
+	return lo.Must(codec.Uint32.Decode(b)), nil
 }
 
 func (db *storeDB) hasLargestPrunedBlockIndex() bool {
@@ -86,7 +86,7 @@ func (db *storeDB) hasLargestPrunedBlockIndex() bool {
 }
 
 func (db *storeDB) setLargestPrunedBlockIndex(blockIndex uint32) {
-	db.mustSet(keyLargestPrunedBlockIndex(), codec.EncodeUint32(blockIndex))
+	db.mustSet(keyLargestPrunedBlockIndex(), codec.Uint32.Encode(blockIndex))
 }
 
 func (db *storeDB) isEmpty() bool {

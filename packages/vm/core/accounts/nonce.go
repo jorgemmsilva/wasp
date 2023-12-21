@@ -21,7 +21,7 @@ func AccountNonce(state kv.KVStoreReader, callerAgentID isc.AgentID, chainID isc
 	if data == nil {
 		return 0
 	}
-	return lo.Must(codec.DecodeUint64(data)) + 1
+	return lo.Must(codec.Uint64.Decode(data)) + 1
 }
 
 func IncrementNonce(state kv.KVStore, callerAgentID isc.AgentID, chainID isc.ChainID) {
@@ -30,5 +30,5 @@ func IncrementNonce(state kv.KVStore, callerAgentID isc.AgentID, chainID isc.Cha
 		return
 	}
 	next := AccountNonce(state, callerAgentID, chainID)
-	state.Set(nonceKey(callerAgentID, chainID), codec.EncodeUint64(next))
+	state.Set(nonceKey(callerAgentID, chainID), codec.Uint64.Encode(next))
 }

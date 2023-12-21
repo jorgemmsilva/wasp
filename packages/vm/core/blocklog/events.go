@@ -16,22 +16,22 @@ const EventLookupKeyLength = 8
 type EventLookupKey [EventLookupKeyLength]byte
 
 func NewEventLookupKey(blockIndex uint32, requestIndex, eventIndex uint16) (ret EventLookupKey) {
-	copy(ret[:4], codec.EncodeUint32(blockIndex))
-	copy(ret[4:6], codec.EncodeUint16(requestIndex))
-	copy(ret[6:8], codec.EncodeUint16(eventIndex))
+	copy(ret[:4], codec.Uint32.Encode(blockIndex))
+	copy(ret[4:6], codec.Uint16.Encode(requestIndex))
+	copy(ret[6:8], codec.Uint16.Encode(eventIndex))
 	return ret
 }
 
 func (k EventLookupKey) BlockIndex() uint32 {
-	return lo.Must(codec.DecodeUint32(k[:4]))
+	return lo.Must(codec.Uint32.Decode(k[:4]))
 }
 
 func (k EventLookupKey) RequestIndex() uint16 {
-	return lo.Must(codec.DecodeUint16(k[4:6]))
+	return lo.Must(codec.Uint16.Decode(k[4:6]))
 }
 
 func (k EventLookupKey) RequestEventIndex() uint16 {
-	return lo.Must(codec.DecodeUint16(k[6:8]))
+	return lo.Must(codec.Uint16.Decode(k[6:8]))
 }
 
 func (k EventLookupKey) Bytes() []byte {

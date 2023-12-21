@@ -105,7 +105,7 @@ func (e *SoloChainEnv) getCode(addr common.Address) []byte {
 func (e *SoloChainEnv) getEVMGasRatio() util.Ratio32 {
 	ret, err := e.Chain.CallView(governance.Contract.Name, governance.ViewGetEVMGasRatio.Name)
 	require.NoError(e.t, err)
-	ratio, err := codec.DecodeRatio32(ret.Get(governance.ParamEVMGasRatio))
+	ratio, err := codec.Ratio32.Decode(ret.Get(governance.ParamEVMGasRatio))
 	require.NoError(e.t, err)
 	return ratio
 }
@@ -276,10 +276,10 @@ func (e *SoloChainEnv) registerERC20NativeToken(
 	tokenDecimals uint8,
 ) error {
 	_, err := e.Chain.PostRequestOffLedger(solo.NewCallParams(evm.Contract.Name, evm.FuncRegisterERC20NativeToken.Name, dict.Dict{
-		evm.FieldFoundrySN:         codec.EncodeUint32(foundrySN),
-		evm.FieldTokenName:         codec.EncodeString(tokenName),
-		evm.FieldTokenTickerSymbol: codec.EncodeString(tokenTickerSymbol),
-		evm.FieldTokenDecimals:     codec.EncodeUint8(tokenDecimals),
+		evm.FieldFoundrySN:         codec.Uint32.Encode(foundrySN),
+		evm.FieldTokenName:         codec.String.Encode(tokenName),
+		evm.FieldTokenTickerSymbol: codec.String.Encode(tokenTickerSymbol),
+		evm.FieldTokenDecimals:     codec.Uint8.Encode(tokenDecimals),
 	}).WithMaxAffordableGasBudget(), foundryOwner)
 	return err
 }
@@ -291,11 +291,11 @@ func (e *SoloChainEnv) registerERC20ExternalNativeToken(
 	tokenDecimals uint8,
 ) (ret common.Address, err error) {
 	_, err = fromChain.PostRequestOffLedger(solo.NewCallParams(evm.Contract.Name, evm.FuncRegisterERC20NativeTokenOnRemoteChain.Name, dict.Dict{
-		evm.FieldFoundrySN:         codec.EncodeUint32(foundrySN),
-		evm.FieldTokenName:         codec.EncodeString(tokenName),
-		evm.FieldTokenTickerSymbol: codec.EncodeString(tokenTickerSymbol),
-		evm.FieldTokenDecimals:     codec.EncodeUint8(tokenDecimals),
-		evm.FieldTargetAddress:     codec.EncodeAddress(e.Chain.ChainID.AsAddress()),
+		evm.FieldFoundrySN:         codec.Uint32.Encode(foundrySN),
+		evm.FieldTokenName:         codec.String.Encode(tokenName),
+		evm.FieldTokenTickerSymbol: codec.String.Encode(tokenTickerSymbol),
+		evm.FieldTokenDecimals:     codec.Uint8.Encode(tokenDecimals),
+		evm.FieldTargetAddress:     codec.Address.Encode(e.Chain.ChainID.AsAddress()),
 	}).
 		// to cover sd and gas fee for the 'FuncRegisterERC20ExternalNativeToken' func call in 'FuncRegisterERC20NativeTokenOnRemoteChain'
 		WithAllowance(isc.NewAssetsBaseTokens(iotago.BaseToken(1000*gas.LimitsDefault.MinGasPerRequest))).
@@ -327,7 +327,7 @@ func (e *SoloChainEnv) registerERC20ExternalNativeToken(
 
 func (e *SoloChainEnv) registerERC721NFTCollection(collectionOwner *cryptolib.KeyPair, collectionID iotago.NFTID) error {
 	_, err := e.Chain.PostRequestOffLedger(solo.NewCallParams(evm.Contract.Name, evm.FuncRegisterERC721NFTCollection.Name, dict.Dict{
-		evm.FieldNFTCollectionID: codec.EncodeNFTID(collectionID),
+		evm.FieldNFTCollectionID: codec.NFTID.Encode(collectionID),
 	}).WithMaxAffordableGasBudget(), collectionOwner)
 	return err
 }

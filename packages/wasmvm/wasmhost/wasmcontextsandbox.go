@@ -218,11 +218,11 @@ func (s *WasmContextSandbox) fnAllowance(_ []byte) []byte {
 
 func (s *WasmContextSandbox) fnBalance(args []byte) []byte {
 	if len(args) == 0 {
-		return codec.EncodeUint64(uint64(s.common.BalanceBaseTokens()))
+		return codec.Uint64.Encode(uint64(s.common.BalanceBaseTokens()))
 	}
 	tokenID := wasmtypes.TokenIDFromBytes(args)
 	token := cvt.IscTokenID(&tokenID)
-	return codec.EncodeUint64(s.common.BalanceNativeToken(token).Uint64())
+	return codec.Uint64.Encode(s.common.BalanceNativeToken(token).Uint64())
 }
 
 func (s *WasmContextSandbox) fnBalances(_ []byte) []byte {
@@ -302,7 +302,7 @@ func (s *WasmContextSandbox) fnEntropy(_ []byte) []byte {
 
 func (s *WasmContextSandbox) fnEstimateStorageDeposit(args []byte) []byte {
 	storageDeposit := s.ctx.EstimateRequiredStorageDeposit(s.makeRequest(args))
-	return codec.EncodeUint64(uint64(storageDeposit))
+	return codec.Uint64.Encode(uint64(storageDeposit))
 }
 
 func (s *WasmContextSandbox) fnEvent(args []byte) []byte {
@@ -391,7 +391,7 @@ func (s *WasmContextSandbox) fnStateAnchor(_ []byte) []byte {
 }
 
 func (s *WasmContextSandbox) fnTimestamp(_ []byte) []byte {
-	return codec.EncodeUint64(uint64(s.common.Timestamp().UnixNano()))
+	return codec.Uint64.Encode(uint64(s.common.Timestamp().UnixNano()))
 }
 
 func (s *WasmContextSandbox) fnTrace(args []byte) []byte {
@@ -461,7 +461,7 @@ func (s WasmContextSandbox) fnUtilsBlsValid(args []byte) []byte {
 	pubKey := dec.Bytes()
 	signature := dec.Bytes()
 	valid := s.common.Utils().BLS().ValidSignature(data, pubKey, signature)
-	return codec.EncodeBool(valid)
+	return codec.Bool.Encode(valid)
 }
 
 func (s WasmContextSandbox) fnUtilsEd25519Address(args []byte) []byte {
@@ -476,7 +476,7 @@ func (s WasmContextSandbox) fnUtilsEd25519Valid(args []byte) []byte {
 	pubKey := dec.Bytes()
 	signature := dec.Bytes()
 	valid := s.common.Utils().ED25519().ValidSignature(data, pubKey, signature)
-	return codec.EncodeBool(valid)
+	return codec.Bool.Encode(valid)
 }
 
 func (s WasmContextSandbox) fnUtilsHashBlake2b(args []byte) []byte {

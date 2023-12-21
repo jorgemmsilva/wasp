@@ -17,7 +17,7 @@ func (env *Solo) NewKeyPairFromIndex(index int) *cryptolib.KeyPair {
 }
 
 func (env *Solo) NewSeedFromIndex(index int) *cryptolib.Seed {
-	seed := cryptolib.SeedFromBytes(hashing.HashData(env.seed[:], codec.EncodeUint32(uint32(index))).Bytes())
+	seed := cryptolib.SeedFromBytes(hashing.HashData(env.seed[:], codec.Uint32.Encode(uint32(index))).Bytes())
 	return &seed
 }
 

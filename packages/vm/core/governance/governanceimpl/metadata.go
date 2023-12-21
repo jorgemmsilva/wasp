@@ -21,7 +21,7 @@ func setMetadata(ctx isc.Sandbox) dict.Dict {
 	metadataBytes = ctx.Params().Get(governance.ParamMetadata)
 
 	if publicURLBytes != nil {
-		publicURL, err := codec.DecodeString(publicURLBytes, "")
+		publicURL, err := codec.String.Decode(publicURLBytes, "")
 		ctx.RequireNoError(err)
 		governance.SetPublicURL(ctx.State(), publicURL)
 	}

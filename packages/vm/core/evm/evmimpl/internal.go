@@ -135,7 +135,7 @@ func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.Bas
 			accounts.ViewBalanceBaseToken.Hname(),
 			dict.Dict{accounts.ParamAgentID: isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr).Bytes()},
 		)
-		ret = iotago.BaseToken(lo.Must(codec.DecodeUint64(res.Get(accounts.ParamBalance), 0)))
+		ret = iotago.BaseToken(lo.Must(codec.Uint64.Decode(res.Get(accounts.ParamBalance), 0)))
 	})
 	return ret
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -104,7 +105,7 @@ func (s *StateDB) GetBalance(addr common.Address) *big.Int {
 }
 
 func GetNonce(s kv.KVStoreReader, addr common.Address) uint64 {
-	return codec.MustDecodeUint64(s.Get(accountNonceKey(addr)), 0)
+	return lo.Must(codec.Uint64.Decode(s.Get(accountNonceKey(addr)), 0))
 }
 
 func (s *StateDB) GetNonce(addr common.Address) uint64 {
@@ -125,7 +126,7 @@ func (s *StateDB) IncNonce(addr common.Address) {
 }
 
 func SetNonce(kv kv.KVStore, addr common.Address, n uint64) {
-	kv.Set(accountNonceKey(addr), codec.EncodeUint64(n))
+	kv.Set(accountNonceKey(addr), codec.Uint64.Encode(n))
 }
 
 func (s *StateDB) SetNonce(addr common.Address, n uint64) {

@@ -4,6 +4,8 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -59,7 +61,7 @@ func debitNFTFromAccount(chainState kv.KVStore, agentID isc.AgentID, nftID iotag
 
 func mustMoveBetweenAccounts(chainState kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		accounts.MustMoveBetweenAccounts(s, fromAgentID, toAgentID, assets, chainID)
+		lo.Must0(accounts.MoveBetweenAccounts(s, fromAgentID, toAgentID, assets, chainID))
 	})
 }
 

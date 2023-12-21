@@ -137,7 +137,7 @@ func (bfT *BlockFactory) GetNextBlock(
 	require.NoError(bfT.t, err)
 	counterKey := kv.Key(coreutil.StateVarBlockIndex + "counter")
 	counterBin := stateDraft.Get(counterKey)
-	counter, err := codec.DecodeUint64(counterBin, 0)
+	counter, err := codec.Uint64.Decode(counterBin, 0)
 	require.NoError(bfT.t, err)
 	var increment uint64
 	if len(incrementOpt) > 0 {
@@ -145,7 +145,7 @@ func (bfT *BlockFactory) GetNextBlock(
 	} else {
 		increment = 1
 	}
-	counterBin = codec.EncodeUint64(counter + increment)
+	counterBin = codec.Uint64.Encode(counter + increment)
 	stateDraft.Mutations().Set(counterKey, counterBin)
 	block := bfT.store.Commit(stateDraft)
 	// require.EqualValues(t, stateDraft.BlockIndex(), block.BlockIndex())

@@ -4,6 +4,8 @@
 package governance
 
 import (
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -25,7 +27,7 @@ func (sa *StateAccess) MaintenanceStatus() bool {
 	if r == nil {
 		return false // chain is being initialized, governance has not been initialized yet
 	}
-	return codec.MustDecodeBool(r)
+	return lo.Must(codec.Bool.Decode(r))
 }
 
 func (sa *StateAccess) AccessNodes() []*cryptolib.PublicKey {
@@ -55,7 +57,7 @@ func (sa *StateAccess) CandidateNodes() []*AccessNodeInfo {
 }
 
 func (sa *StateAccess) ChainInfo(chainID isc.ChainID) *isc.ChainInfo {
-	return MustGetChainInfo(sa.state, chainID)
+	return lo.Must(GetChainInfo(sa.state, chainID))
 }
 
 func (sa *StateAccess) ChainOwnerID() isc.AgentID {

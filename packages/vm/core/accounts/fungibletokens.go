@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -103,7 +105,7 @@ func getFungibleTokens(state kv.KVStoreReader, accountKey kv.Key) *isc.FungibleT
 	ret.AddBaseTokens(getBaseTokens(state, accountKey))
 	nativeTokensMapR(state, accountKey).Iterate(func(idBytes []byte, val []byte) bool {
 		ret.AddNativeTokens(
-			isc.MustNativeTokenIDFromBytes(idBytes),
+			lo.Must(isc.NativeTokenIDFromBytes(idBytes)),
 			new(big.Int).SetBytes(val),
 		)
 		return true

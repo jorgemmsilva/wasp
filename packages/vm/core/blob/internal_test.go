@@ -16,7 +16,7 @@ func TestMustGetBlobHash(t *testing.T) {
 			"key1": []byte("val1"),
 		}
 
-		h, keys, values := mustGetBlobHash(fields)
+		h, keys, values := getBlobHash(fields)
 		for i, k := range keys {
 			require.Equal(t, fields[k], values[i])
 		}
@@ -31,7 +31,7 @@ func TestMustGetBlobHash(t *testing.T) {
 			"123a": []byte("b"),
 		}
 
-		h, keys, values := mustGetBlobHash(fields)
+		h, keys, values := getBlobHash(fields)
 		for i, k := range keys {
 			require.Equal(t, fields[k], values[i])
 		}

@@ -166,7 +166,7 @@ package test
 // 	)
 // 	require.NoError(t, err)
 
-// 	v, ok, err := codec.DecodeInt64(res.Get(eventlog.ParamNumRecords))
+// 	v, ok, err := codec.Int64.Decode(res.Get(eventlog.ParamNumRecords))
 
 // 	require.NoError(t, err)
 // 	require.True(t, ok)

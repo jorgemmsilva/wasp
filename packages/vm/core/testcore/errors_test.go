@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/packages/isc"
@@ -104,7 +105,7 @@ func TestPanicDueMissingErrorMessage(t *testing.T) {
 	typedError := err.(*isc.VMError)
 	require.Equal(t, typedError.AsTemplate(), coreerrors.ErrUntypedError)
 
-	require.Equal(t, err.Error(), "cannot decode key 'm': cannot decode nil string")
+	require.ErrorContains(t, err, "cannot decode")
 }
 
 func TestSuccessfulRegisterError(t *testing.T) {
@@ -126,7 +127,7 @@ func TestRetrievalOfErrorMessage(t *testing.T) {
 	_, d, err := chain.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
 
-	errorCode := codec.MustDecodeVMErrorCode(d.Get(errors.ParamErrorCode))
+	errorCode := lo.Must(codec.VMErrorCode.Decode(d.Get(errors.ParamErrorCode)))
 
 	req = solo.NewCallParams(errors.Contract.Name, errors.ViewGetErrorMessageFormat.Name,
 		errors.ParamErrorCode, errorCode,

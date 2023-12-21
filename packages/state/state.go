@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -42,7 +44,7 @@ func (s *state) BlockIndex() uint32 {
 }
 
 func loadBlockIndexFromState(s kv.KVStoreReader) uint32 {
-	return codec.MustDecodeUint32(s.Get(kv.Key(coreutil.StatePrefixBlockIndex)))
+	return lo.Must(codec.Uint32.Decode(s.Get(kv.Key(coreutil.StatePrefixBlockIndex))))
 }
 
 func (s *state) Timestamp() time.Time {
@@ -53,7 +55,7 @@ func (s *state) Timestamp() time.Time {
 
 func loadBlockTimeFromState(chainState kv.KVStoreReader) (ret time.Time, err error) {
 	tsBin := chainState.Get(kv.Key(coreutil.StatePrefixTimestamp))
-	return codec.DecodeTime(tsBin)
+	return codec.Time.Decode(tsBin)
 }
 
 func (s *state) PreviousL1Commitment() *L1Commitment {

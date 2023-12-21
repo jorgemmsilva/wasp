@@ -55,14 +55,6 @@ func HashValueFromBytes(b []byte) (ret HashValue, err error) {
 	return ret, err
 }
 
-func MustHashValueFromHex(s string) HashValue {
-	ret, err := HashValueFromHex(s)
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}
-
 func HashValueFromHex(s string) (HashValue, error) {
 	b, err := hexutil.DecodeHex(s)
 	if err != nil {

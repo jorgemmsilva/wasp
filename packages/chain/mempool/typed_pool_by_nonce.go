@@ -179,7 +179,7 @@ func (p *TypedPoolByNonce[V]) WriteContent(w io.Writer) {
 			if err != nil {
 				return false // stop iteration
 			}
-			_, err = w.Write(codec.EncodeUint32(uint32(len(jsonData))))
+			_, err = w.Write(codec.Uint32.Encode(uint32(len(jsonData))))
 			if err != nil {
 				return false // stop iteration
 			}

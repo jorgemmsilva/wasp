@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/eth/tracers"
+	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
@@ -56,7 +57,7 @@ func saveExecutedTx(
 	createBlockchainDB(evmPartition, chainInfo).AddTransaction(tx, receipt)
 	// make sure the nonce is incremented if the state was rolled back by the VM
 	if receipt.Status != types.ReceiptStatusSuccessful {
-		emulator.IncNonce(emulator.StateDBSubrealm(evm.EmulatorStateSubrealm(evmPartition)), evmutil.MustGetSender(tx))
+		emulator.IncNonce(emulator.StateDBSubrealm(evm.EmulatorStateSubrealm(evmPartition)), lo.Must(evmutil.GetSender(tx)))
 	}
 }
 
@@ -134,7 +135,7 @@ func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.Bas
 			accounts.ViewBalanceBaseToken.Hname(),
 			dict.Dict{accounts.ParamAgentID: isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr).Bytes()},
 		)
-		ret = iotago.BaseToken(codec.MustDecodeUint64(res.Get(accounts.ParamBalance), 0))
+		ret = iotago.BaseToken(lo.Must(codec.Uint64.Decode(res.Get(accounts.ParamBalance), 0)))
 	})
 	return ret
 }

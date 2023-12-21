@@ -22,7 +22,7 @@ func sizesMapName(blobHash hashing.HashValue) string {
 	return "s" + string(blobHash[:])
 }
 
-func mustGetBlobHash(fields dict.Dict) (hashing.HashValue, []kv.Key, [][]byte) {
+func getBlobHash(fields dict.Dict) (hashing.HashValue, []kv.Key, [][]byte) {
 	sorted := fields.KeysSorted() // mind determinism
 	values := make([][]byte, 0, len(sorted))
 	all := make([][]byte, 0, 2*len(sorted))
@@ -39,9 +39,9 @@ func mustGetBlobHash(fields dict.Dict) (hashing.HashValue, []kv.Key, [][]byte) {
 	return hashing.HashData(all...), sorted, values
 }
 
-// MustGetBlobHash deterministically hashes map of binary values
-func MustGetBlobHash(fields dict.Dict) hashing.HashValue {
-	ret, _, _ := mustGetBlobHash(fields)
+// GetBlobHash deterministically hashes map of binary values
+func GetBlobHash(fields dict.Dict) hashing.HashValue {
+	ret, _, _ := getBlobHash(fields)
 	return ret
 }
 
@@ -90,11 +90,11 @@ func LocateProgram(state kv.KVStoreReader, programHash hashing.HashValue) (strin
 }
 
 func EncodeSize(size uint32) []byte {
-	return codec.EncodeUint32(size)
+	return codec.Uint32.Encode(size)
 }
 
 func DecodeSize(size []byte) (uint32, error) {
-	return codec.DecodeUint32(size)
+	return codec.Uint32.Decode(size)
 }
 
 func DecodeSizesMap(sizes dict.Dict) (map[string]uint32, error) {
@@ -116,7 +116,7 @@ func DecodeDirectory(blobs dict.Dict) (map[hashing.HashValue]uint32, error) {
 		if err != nil {
 			return nil, err
 		}
-		h, err := codec.DecodeHashValue([]byte(hash))
+		h, err := codec.HashValue.Decode([]byte(hash))
 		if err != nil {
 			return nil, err
 		}

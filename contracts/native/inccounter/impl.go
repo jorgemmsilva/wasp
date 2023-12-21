@@ -5,6 +5,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
@@ -40,8 +42,8 @@ const (
 func initialize(ctx isc.Sandbox) dict.Dict {
 	ctx.Log().Debugf("inccounter.init in %s", ctx.Contract().String())
 	params := ctx.Params()
-	val := codec.MustDecodeInt64(params.Get(VarCounter), 0)
-	ctx.State().Set(VarCounter, codec.EncodeInt64(val))
+	val := lo.Must(codec.Int64.Decode(params.Get(VarCounter), 0))
+	ctx.State().Set(VarCounter, codec.Int64.Encode(val))
 	eventCounter(ctx, val)
 	return nil
 }
@@ -60,7 +62,7 @@ func incCounter(ctx isc.Sandbox) dict.Dict {
 		tra = ctx.AllowanceAvailable().String()
 	}
 	ctx.Log().Infof("incCounter: allowance available: %s", tra)
-	ctx.State().Set(VarCounter, codec.EncodeInt64(val+inc))
+	ctx.State().Set(VarCounter, codec.Int64.Encode(val+inc))
 	eventCounter(ctx, val+inc)
 	return nil
 }
@@ -68,10 +70,10 @@ func incCounter(ctx isc.Sandbox) dict.Dict {
 func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
 	ctx.Log().Debugf("inccounter.incCounterAndRepeatOnce")
 	state := ctx.State()
-	val := codec.MustDecodeInt64(state.Get(VarCounter), 0)
+	val := lo.Must(codec.Int64.Decode(state.Get(VarCounter), 0))
 
 	ctx.Log().Debugf(fmt.Sprintf("incCounterAndRepeatOnce: increasing counter value: %d", val))
-	state.Set(VarCounter, codec.EncodeInt64(val+1))
+	state.Set(VarCounter, codec.Int64.Encode(val+1))
 	eventCounter(ctx, val+1)
 	allowance := ctx.AllowanceAvailable()
 	ctx.TransferAllowedFunds(ctx.AccountID())
@@ -100,17 +102,17 @@ func incCounterAndRepeatMany(ctx isc.Sandbox) dict.Dict {
 	state := ctx.State()
 	params := ctx.Params()
 
-	val := codec.MustDecodeInt64(state.Get(VarCounter), 0)
+	val := lo.Must(codec.Int64.Decode(state.Get(VarCounter), 0))
 
-	state.Set(VarCounter, codec.EncodeInt64(val+1))
+	state.Set(VarCounter, codec.Int64.Encode(val+1))
 	eventCounter(ctx, val+1)
 	ctx.Log().Debugf("inccounter.incCounterAndRepeatMany: increasing counter value: %d", val)
 
 	var numRepeats int64
 	if params.Has(VarNumRepeats) {
-		numRepeats = codec.MustDecodeInt64(params.Get(VarNumRepeats), 0)
+		numRepeats = lo.Must(codec.Int64.Decode(params.Get(VarNumRepeats), 0))
 	} else {
-		numRepeats = codec.MustDecodeInt64(state.Get(VarNumRepeats), 0)
+		numRepeats = lo.Must(codec.Int64.Decode(state.Get(VarNumRepeats), 0))
 	}
 	if numRepeats == 0 {
 		ctx.Log().Debugf("inccounter.incCounterAndRepeatMany: finished chain of requests. counter value: %d", val)
@@ -119,7 +121,7 @@ func incCounterAndRepeatMany(ctx isc.Sandbox) dict.Dict {
 
 	ctx.Log().Debugf("chain of %d requests ahead", numRepeats)
 
-	state.Set(VarNumRepeats, codec.EncodeInt64(numRepeats-1))
+	state.Set(VarNumRepeats, codec.Int64.Encode(numRepeats-1))
 	ctx.TransferAllowedFunds(ctx.AccountID())
 	ctx.Send(isc.RequestParameters{
 		TargetAddress:                 ctx.ChainID().AsAddress(),
@@ -152,7 +154,7 @@ func spawn(ctx isc.Sandbox) dict.Dict {
 	name := params.MustGetString(VarName)
 
 	callPar := dict.New()
-	callPar.Set(VarCounter, codec.EncodeInt64(val+1))
+	callPar.Set(VarCounter, codec.Int64.Encode(val+1))
 	eventCounter(ctx, val+1)
 	ctx.DeployContract(Contract.ProgramHash, name, callPar)
 
@@ -165,6 +167,6 @@ func spawn(ctx isc.Sandbox) dict.Dict {
 
 func getCounter(ctx isc.SandboxView) dict.Dict {
 	state := ctx.StateR()
-	val := codec.MustDecodeInt64(state.Get(VarCounter), 0)
-	return dict.Dict{VarCounter: codec.EncodeInt64(val)}
+	val := lo.Must(codec.Int64.Decode(state.Get(VarCounter), 0))
+	return dict.Dict{VarCounter: codec.Int64.Encode(val)}
 }

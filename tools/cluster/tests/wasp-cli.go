@@ -230,7 +230,7 @@ func (w *WaspCLITest) ActivateChainOnAllNodes(chainName string, skipOnNodes ...i
 }
 
 func (w *WaspCLITest) CreateL2Foundry(tokenScheme iotago.TokenScheme) {
-	tokenSchemeBytes := codec.EncodeTokenScheme(tokenScheme)
+	tokenSchemeBytes := codec.TokenScheme.Encode(tokenScheme)
 	out := w.PostRequestGetReceipt(
 		"accounts", accounts.FuncFoundryCreateNew.Name,
 		"string", accounts.ParamTokenScheme, "bytes", "0x"+hex.EncodeToString(tokenSchemeBytes),

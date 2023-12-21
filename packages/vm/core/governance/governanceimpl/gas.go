@@ -4,6 +4,8 @@
 package governanceimpl
 
 import (
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -28,7 +30,7 @@ func setFeePolicy(ctx isc.Sandbox) dict.Dict {
 
 // getFeeInfo returns fee policy in serialized form
 func getFeePolicy(ctx isc.SandboxView) dict.Dict {
-	gp := governance.MustGetGasFeePolicy(ctx.StateR())
+	gp := lo.Must(governance.GetGasFeePolicy(ctx.StateR()))
 
 	ret := dict.New()
 	ret.Set(governance.ParamFeePolicyBytes, gp.Bytes())
@@ -39,18 +41,18 @@ var errInvalidGasRatio = coreerrors.Register("invalid gas ratio").Create()
 
 func setEVMGasRatio(ctx isc.Sandbox) dict.Dict {
 	ctx.RequireCallerIsChainOwner()
-	ratio := codec.MustDecodeRatio32(ctx.Params().Get(governance.ParamEVMGasRatio))
+	ratio := lo.Must(codec.Ratio32.Decode(ctx.Params().Get(governance.ParamEVMGasRatio)))
 	if !ratio.IsValid() {
 		panic(errInvalidGasRatio)
 	}
-	policy := governance.MustGetGasFeePolicy(ctx.StateR())
+	policy := lo.Must(governance.GetGasFeePolicy(ctx.StateR()))
 	policy.EVMGasRatio = ratio
 	ctx.State().Set(governance.VarGasFeePolicyBytes, policy.Bytes())
 	return nil
 }
 
 func getEVMGasRatio(ctx isc.SandboxView) dict.Dict {
-	policy := governance.MustGetGasFeePolicy(ctx.StateR())
+	policy := lo.Must(governance.GetGasFeePolicy(ctx.StateR()))
 	return dict.Dict{
 		governance.ParamEVMGasRatio: policy.EVMGasRatio.Bytes(),
 	}
@@ -69,6 +71,6 @@ func setGasLimits(ctx isc.Sandbox) dict.Dict {
 
 func getGasLimits(ctx isc.SandboxView) dict.Dict {
 	return dict.Dict{
-		governance.ParamGasLimitsBytes: governance.MustGetGasLimits(ctx.StateR()).Bytes(),
+		governance.ParamGasLimitsBytes: lo.Must(governance.GetGasLimits(ctx.StateR())).Bytes(),
 	}
 }

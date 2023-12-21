@@ -82,14 +82,6 @@ func IsRequestProcessed(stateReader kv.KVStoreReader, requestID isc.RequestID) (
 	return requestReceipt != nil, nil
 }
 
-func MustIsRequestProcessed(stateReader kv.KVStoreReader, reqid isc.RequestID) bool {
-	ret, err := IsRequestProcessed(stateReader, reqid)
-	if err != nil {
-		panic(err)
-	}
-	return ret
-}
-
 type GetRequestReceiptResult struct {
 	ReceiptBin   []byte
 	BlockIndex   uint32
@@ -177,7 +169,7 @@ func ReceiptsFromViewCallResult(res dict.Dict) ([]*RequestReceipt, error) {
 	receipts := collections.NewArrayReadOnly(res, ParamRequestRecord)
 	ret := make([]*RequestReceipt, receipts.Len())
 	var err error
-	blockIndex, err := codec.DecodeUint32(res.Get(ParamBlockIndex))
+	blockIndex, err := codec.Uint32.Decode(res.Get(ParamBlockIndex))
 	if err != nil {
 		return nil, err
 	}

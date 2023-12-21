@@ -104,7 +104,7 @@ func allAccountsAsDict(state kv.KVStoreReader) dict.Dict {
 
 // touchAccount ensures the account is in the list of all accounts
 func touchAccount(state kv.KVStore, agentID isc.AgentID, chainID isc.ChainID) {
-	allAccountsMap(state).SetAt([]byte(accountKey(agentID, chainID)), codec.EncodeBool(true))
+	allAccountsMap(state).SetAt([]byte(accountKey(agentID, chainID)), codec.Bool.Encode(true))
 }
 
 // HasEnoughForAllowance checks whether an account has enough balance to cover for the allowance
@@ -160,13 +160,6 @@ func MoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, a
 	touchAccount(state, fromAgentID, chainID)
 	touchAccount(state, toAgentID, chainID)
 	return nil
-}
-
-func MustMoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID) {
-	err := MoveBetweenAccounts(state, fromAgentID, toAgentID, assets, chainID)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // debitBaseTokensFromAllowance is used for adjustment of L2 when part of base tokens are taken for storage deposit

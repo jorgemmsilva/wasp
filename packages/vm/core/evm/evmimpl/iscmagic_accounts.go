@@ -6,6 +6,8 @@ package evmimpl
 import (
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
@@ -17,18 +19,18 @@ import (
 // handler for ISCAccounts::getL2BalanceBaseTokens
 func (h *magicContractHandler) GetL2BalanceBaseTokens(agentID iscmagic.ISCAgentID) uint64 {
 	r := h.callView(accounts.Contract.Hname(), accounts.ViewBalanceBaseToken.Hname(), dict.Dict{
-		accounts.ParamAgentID: codec.EncodeAgentID(agentID.MustUnwrap()),
+		accounts.ParamAgentID: codec.AgentID.Encode(agentID.MustUnwrap()),
 	})
-	return codec.MustDecodeUint64(r.Get(accounts.ParamBalance))
+	return lo.Must(codec.Uint64.Decode(r.Get(accounts.ParamBalance)))
 }
 
 // handler for ISCAccounts::getL2BalanceNativeTokens
 func (h *magicContractHandler) GetL2BalanceNativeTokens(nativeTokenID iscmagic.NativeTokenID, agentID iscmagic.ISCAgentID) *big.Int {
 	r := h.callView(accounts.Contract.Hname(), accounts.ViewBalanceNativeToken.Hname(), dict.Dict{
-		accounts.ParamNativeTokenID: codec.EncodeNativeTokenID(nativeTokenID.Unwrap()),
-		accounts.ParamAgentID:       codec.EncodeAgentID(agentID.MustUnwrap()),
+		accounts.ParamNativeTokenID: codec.NativeTokenID.Encode(nativeTokenID.Unwrap()),
+		accounts.ParamAgentID:       codec.AgentID.Encode(agentID.MustUnwrap()),
 	})
-	return codec.MustDecodeBigIntAbs(r.Get(accounts.ParamBalance))
+	return lo.Must(codec.BigIntAbs.Decode(r.Get(accounts.ParamBalance)))
 }
 
 // handler for ISCAccounts::getL2NFTs
@@ -36,7 +38,7 @@ func (h *magicContractHandler) GetL2NFTs(agentID iscmagic.ISCAgentID) []iscmagic
 	r := h.callView(
 		accounts.Contract.Hname(),
 		accounts.ViewAccountNFTs.Hname(),
-		dict.Dict{accounts.ParamAgentID: codec.EncodeAgentID(agentID.MustUnwrap())},
+		dict.Dict{accounts.ParamAgentID: codec.AgentID.Encode(agentID.MustUnwrap())},
 	)
 	nftIDs := collections.NewArray(r, accounts.ParamNFTIDs)
 	ret := make([]iscmagic.NFTID, nftIDs.Len())
@@ -51,9 +53,9 @@ func (h *magicContractHandler) GetL2NFTAmount(agentID iscmagic.ISCAgentID) *big.
 	r := h.callView(
 		accounts.Contract.Hname(),
 		accounts.ViewAccountNFTAmount.Hname(),
-		dict.Dict{accounts.ParamAgentID: codec.EncodeAgentID(agentID.MustUnwrap())},
+		dict.Dict{accounts.ParamAgentID: codec.AgentID.Encode(agentID.MustUnwrap())},
 	)
-	n := codec.MustDecodeUint32(r[accounts.ParamNFTAmount])
+	n := lo.Must(codec.Uint32.Decode(r[accounts.ParamNFTAmount]))
 	return big.NewInt(int64(n))
 }
 
@@ -63,8 +65,8 @@ func (h *magicContractHandler) GetL2NFTsInCollection(agentID iscmagic.ISCAgentID
 		accounts.Contract.Hname(),
 		accounts.ViewAccountNFTsInCollection.Hname(),
 		dict.Dict{
-			accounts.ParamAgentID:      codec.EncodeAgentID(agentID.MustUnwrap()),
-			accounts.ParamCollectionID: codec.EncodeNFTID(collectionID.Unwrap()),
+			accounts.ParamAgentID:      codec.AgentID.Encode(agentID.MustUnwrap()),
+			accounts.ParamCollectionID: codec.NFTID.Encode(collectionID.Unwrap()),
 		},
 	)
 	nftIDs := collections.NewArray(r, accounts.ParamNFTIDs)
@@ -81,11 +83,11 @@ func (h *magicContractHandler) GetL2NFTAmountInCollection(agentID iscmagic.ISCAg
 		accounts.Contract.Hname(),
 		accounts.ViewAccountNFTAmountInCollection.Hname(),
 		dict.Dict{
-			accounts.ParamAgentID:      codec.EncodeAgentID(agentID.MustUnwrap()),
-			accounts.ParamCollectionID: codec.EncodeNFTID(collectionID.Unwrap()),
+			accounts.ParamAgentID:      codec.AgentID.Encode(agentID.MustUnwrap()),
+			accounts.ParamCollectionID: codec.NFTID.Encode(collectionID.Unwrap()),
 		},
 	)
-	n := codec.MustDecodeUint32(r[accounts.ParamNFTAmount])
+	n := lo.Must(codec.Uint32.Decode(r[accounts.ParamNFTAmount]))
 	return big.NewInt(int64(n))
 }
 
@@ -95,11 +97,11 @@ func (h *magicContractHandler) FoundryCreateNew(tokenScheme iotago.SimpleTokenSc
 		accounts.Contract.Hname(),
 		accounts.FuncFoundryCreateNew.Hname(),
 		dict.Dict{
-			accounts.ParamTokenScheme: codec.EncodeTokenScheme(&tokenScheme),
+			accounts.ParamTokenScheme: codec.TokenScheme.Encode(&tokenScheme),
 		},
 		allowance.Unwrap(),
 	)
-	return codec.MustDecodeUint32(ret.Get(accounts.ParamFoundrySN))
+	return lo.Must(codec.Uint32.Decode(ret.Get(accounts.ParamFoundrySN)))
 }
 
 // handler for ISCAccounts::mintBaseTokens
@@ -108,9 +110,9 @@ func (h *magicContractHandler) MintNativeTokens(foundrySN uint32, amount *big.In
 		accounts.Contract.Hname(),
 		accounts.FuncFoundryModifySupply.Hname(),
 		dict.Dict{
-			accounts.ParamFoundrySN:      codec.EncodeUint32(foundrySN),
-			accounts.ParamSupplyDeltaAbs: codec.EncodeBigIntAbs(amount),
-			accounts.ParamDestroyTokens:  codec.EncodeBool(false),
+			accounts.ParamFoundrySN:      codec.Uint32.Encode(foundrySN),
+			accounts.ParamSupplyDeltaAbs: codec.BigIntAbs.Encode(amount),
+			accounts.ParamDestroyTokens:  codec.Bool.Encode(false),
 		},
 		allowance.Unwrap(),
 	)

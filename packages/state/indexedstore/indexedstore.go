@@ -6,6 +6,8 @@ package indexedstore
 import (
 	"fmt"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/trie"
@@ -86,7 +88,8 @@ func (s *istore) findTrieRootByIndex(index uint32) (trie.Hash, error) {
 		if !ok {
 			return trie.Hash{}, fmt.Errorf("iterating the chain: blocklog missing block index %d on active state %d", earliestAvailableBlockIndex, state.BlockIndex())
 		}
-		state, err = s.StateByTrieRoot(transaction.MustL1CommitmentFromAnchorOutput(bi.PreviousChainOutputs.AnchorOutput).TrieRoot())
+		l1c := lo.Must(transaction.L1CommitmentFromAnchorOutput(bi.PreviousChainOutputs.AnchorOutput))
+		state, err = s.StateByTrieRoot(l1c.TrieRoot())
 		if err != nil {
 			return trie.Hash{}, err
 		}
@@ -95,7 +98,8 @@ func (s *istore) findTrieRootByIndex(index uint32) (trie.Hash, error) {
 	if !ok {
 		return trie.Hash{}, fmt.Errorf("blocklog missing block index %d on active state %d", targetBlockIndex, state.BlockIndex())
 	}
-	return transaction.MustL1CommitmentFromAnchorOutput(nextBlockInfo.PreviousChainOutputs.AnchorOutput).TrieRoot(), nil
+	l1c := lo.Must(transaction.L1CommitmentFromAnchorOutput(nextBlockInfo.PreviousChainOutputs.AnchorOutput))
+	return l1c.TrieRoot(), nil
 }
 
 // TODO this can probably be removed, since we do the search on the "regular" impl

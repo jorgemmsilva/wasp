@@ -77,7 +77,7 @@ func GetAccountFoundries(callViewInvoker CallViewInvoker, agentID isc.AgentID, b
 		accounts.Contract.Hname(),
 		accounts.ViewAccountFoundries.Hname(),
 		dict.Dict{
-			accounts.ParamAgentID: codec.EncodeAgentID(agentID),
+			accounts.ParamAgentID: codec.AgentID.Encode(agentID),
 		},
 		blockIndexOrTrieRoot,
 	)
@@ -86,7 +86,7 @@ func GetAccountFoundries(callViewInvoker CallViewInvoker, agentID isc.AgentID, b
 	}
 	ret := make([]uint32, 0, len(foundrySNs))
 	for foundrySN := range foundrySNs {
-		sn, err := codec.DecodeUint32([]byte(foundrySN))
+		sn, err := codec.Uint32.Decode([]byte(foundrySN))
 		if err != nil {
 			return nil, err
 		}
@@ -110,7 +110,7 @@ func GetAccountNonce(callViewInvoker CallViewInvoker, agentID isc.AgentID, block
 
 	nonce := ret.Get(accounts.ParamAccountNonce)
 
-	return codec.DecodeUint64(nonce)
+	return codec.Uint64.Decode(nonce)
 }
 
 func GetNFTData(callViewInvoker CallViewInvoker, nftID iotago.NFTID, blockIndexOrTrieRoot string) (*isc.NFT, error) {

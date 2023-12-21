@@ -3,6 +3,8 @@ package trie
 import (
 	"fmt"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/kv/codec"
 )
 
@@ -95,13 +97,13 @@ func getRefcount(s KVStore, key []byte) uint32 {
 	if b == nil {
 		return 0
 	}
-	return codec.MustDecodeUint32(b)
+	return lo.Must(codec.Uint32.Decode(b))
 }
 
 func setRefcount(s KVStore, key []byte, n uint32) {
 	if n == 0 {
 		s.Del(key)
 	} else {
-		s.Set(key, codec.EncodeUint32(n))
+		s.Set(key, codec.Uint32.Encode(n))
 	}
 }

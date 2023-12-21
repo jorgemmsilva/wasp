@@ -1,6 +1,8 @@
 package vmimpl
 
 import (
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -25,7 +27,7 @@ func (vmctx *vmContext) stateMetadata(stateCommitment *state.L1Commitment) []byt
 	withContractState(vmctx.stateDraft, governance.Contract, func(s kv.KVStore) {
 		// On error, the publicURL is len(0)
 		stateMetadata.PublicURL, _ = governance.GetPublicURL(s)
-		stateMetadata.GasFeePolicy = governance.MustGetGasFeePolicy(s)
+		stateMetadata.GasFeePolicy = lo.Must(governance.GetGasFeePolicy(s))
 	})
 
 	return stateMetadata.Bytes()

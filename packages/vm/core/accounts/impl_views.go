@@ -32,7 +32,7 @@ func viewBalanceBaseToken(ctx isc.SandboxView) dict.Dict {
 			ctx.ChainID(),
 		),
 	)
-	return dict.Dict{ParamBalance: codec.EncodeUint64(uint64(nTokens))}
+	return dict.Dict{ParamBalance: codec.Uint64.Encode(uint64(nTokens))}
 }
 
 // viewBalanceNativeToken returns the native token balance of the account belonging to the AgentID
@@ -67,7 +67,7 @@ func viewGetAccountNonce(ctx isc.SandboxView) dict.Dict {
 	account := ctx.Params().MustGetAgentID(ParamAgentID, ctx.Caller())
 	nonce := AccountNonce(ctx.StateR(), account, ctx.ChainID())
 	ret := dict.New()
-	ret.Set(ParamAccountNonce, codec.EncodeUint64(nonce))
+	ret.Set(ParamAccountNonce, codec.Uint64.Encode(nonce))
 	return ret
 }
 
@@ -106,7 +106,7 @@ func viewFoundryOutput(ctx isc.SandboxView) dict.Dict {
 		panic(errFoundryNotFound)
 	}
 	return dict.Dict{
-		ParamFoundryOutputBin: codec.EncodeOutput(out, ctx.L1API()),
+		ParamFoundryOutputBin: codec.Output.Encode(out),
 	}
 }
 
@@ -121,7 +121,7 @@ func viewAccountNFTs(ctx isc.SandboxView) dict.Dict {
 func viewAccountNFTAmount(ctx isc.SandboxView) dict.Dict {
 	aid := ctx.Params().MustGetAgentID(ParamAgentID, ctx.Caller())
 	return dict.Dict{
-		ParamNFTAmount: codec.EncodeUint32(accountToNFTsMapR(ctx.StateR(), aid).Len()),
+		ParamNFTAmount: codec.Uint32.Encode(accountToNFTsMapR(ctx.StateR(), aid).Len()),
 	}
 }
 
@@ -152,7 +152,7 @@ func viewAccountNFTAmountInCollection(ctx isc.SandboxView) dict.Dict {
 	aid := params.MustGetAgentID(ParamAgentID, ctx.Caller())
 	collectionID := params.MustGetNFTID(ParamCollectionID)
 	return dict.Dict{
-		ParamNFTAmount: codec.EncodeUint32(nftsByCollectionMapR(ctx.StateR(), aid, kv.Key(collectionID[:])).Len()),
+		ParamNFTAmount: codec.Uint32.Encode(nftsByCollectionMapR(ctx.StateR(), aid, kv.Key(collectionID[:])).Len()),
 	}
 }
 

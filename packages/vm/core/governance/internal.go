@@ -4,6 +4,8 @@
 package governance
 
 import (
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -17,7 +19,7 @@ import (
 // If succeeds, it means this block is fake.
 // If fails, return nil
 func GetRotationAddress(state kv.KVStoreReader) iotago.Address {
-	ret, err := codec.DecodeAddress(state.Get(VarRotateToAddress), nil)
+	ret, err := codec.Address.Decode(state.Get(VarRotateToAddress), nil)
 	if err != nil {
 		return nil
 	}
@@ -58,20 +60,11 @@ func GetChainInfo(state kv.KVStoreReader, chainID isc.ChainID) (*isc.ChainInfo, 
 	return ret, nil
 }
 
-// MustGetChainInfo return global variables of the chain
-func MustGetChainInfo(state kv.KVStoreReader, chainID isc.ChainID) *isc.ChainInfo {
-	info, err := GetChainInfo(state, chainID)
-	if err != nil {
-		panic(err)
-	}
-	return info
-}
-
-func MustGetMinCommonAccountBalance(state kv.KVStoreReader) iotago.BaseToken {
+func GetMinCommonAccountBalance(state kv.KVStoreReader) iotago.BaseToken {
 	return iotago.BaseToken(kvdecoder.New(state).MustGetUint64(VarMinBaseTokensOnCommonAccount))
 }
 
-func MustGetPayoutAgentID(state kv.KVStoreReader) isc.AgentID {
+func GetPayoutAgentID(state kv.KVStoreReader) isc.AgentID {
 	return kvdecoder.New(state).MustGetAgentID(VarPayoutAgentID)
 }
 
@@ -85,18 +78,6 @@ func GetGasFeePolicy(state kv.KVStoreReader) (*gas.FeePolicy, error) {
 	return gas.FeePolicyFromBytes(state.Get(VarGasFeePolicyBytes))
 }
 
-func MustGetGasFeePolicy(state kv.KVStoreReader) *gas.FeePolicy {
-	return gas.MustFeePolicyFromBytes(state.Get(VarGasFeePolicyBytes))
-}
-
-func MustGetGasLimits(state kv.KVStoreReader) *gas.Limits {
-	gl, err := GetGasLimits(state)
-	if err != nil {
-		panic(err)
-	}
-	return gl
-}
-
 func GetGasLimits(state kv.KVStoreReader) (*gas.Limits, error) {
 	data := state.Get(VarGasLimitsBytes)
 	if data == nil {
@@ -106,15 +87,15 @@ func GetGasLimits(state kv.KVStoreReader) (*gas.Limits, error) {
 }
 
 func GetBlockKeepAmount(state kv.KVStoreReader) int32 {
-	return codec.MustDecodeInt32(state.Get(VarBlockKeepAmount), DefaultBlockKeepAmount)
+	return lo.Must(codec.Int32.Decode(state.Get(VarBlockKeepAmount), DefaultBlockKeepAmount))
 }
 
 func SetPublicURL(state kv.KVStore, url string) {
-	state.Set(VarPublicURL, codec.EncodeString(url))
+	state.Set(VarPublicURL, codec.String.Encode(url))
 }
 
 func GetPublicURL(state kv.KVStoreReader) (string, error) {
-	return codec.DecodeString(state.Get(VarPublicURL), "")
+	return codec.String.Decode(state.Get(VarPublicURL), "")
 }
 
 func SetMetadata(state kv.KVStore, metadata *isc.PublicChainMetadata) {
@@ -143,14 +124,6 @@ func GetChainAccountID(state kv.KVStoreReader) (iotago.AccountID, bool) {
 		panic(err)
 	}
 	return ret, true
-}
-
-func MustGetMetadata(state kv.KVStoreReader) *isc.PublicChainMetadata {
-	metadata, err := GetMetadata(state)
-	if err != nil {
-		panic(err)
-	}
-	return metadata
 }
 
 func AccessNodesMap(state kv.KVStore) *collections.Map {

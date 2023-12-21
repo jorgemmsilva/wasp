@@ -5,7 +5,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 )
 
-func MakeDict(vars map[string]interface{}) dict.Dict {
+func MakeDict(vars map[string]any) dict.Dict {
 	ret := dict.New()
 	for k, v := range vars {
 		ret.Set(kv.Key(k), Encode(v))
@@ -13,10 +13,4 @@ func MakeDict(vars map[string]interface{}) dict.Dict {
 	return ret
 }
 
-func EncodeDict(value dict.Dict) []byte {
-	return value.Bytes()
-}
-
-func DecodeDict(b []byte) (dict.Dict, error) {
-	return dict.FromBytes(b)
-}
+var Dict = NewCodecEx(dict.FromBytes)

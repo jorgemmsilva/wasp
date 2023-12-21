@@ -3,6 +3,8 @@ package accounts
 import (
 	"math/big"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -35,7 +37,7 @@ func setNativeTokenAmount(state kv.KVStore, accountKey kv.Key, tokenID iotago.Na
 	if n.Sign() == 0 {
 		nativeTokensMap(state, accountKey).DelAt(tokenID[:])
 	} else {
-		nativeTokensMap(state, accountKey).SetAt(tokenID[:], codec.EncodeBigIntAbs(n))
+		nativeTokensMap(state, accountKey).SetAt(tokenID[:], codec.BigIntAbs.Encode(n))
 	}
 }
 
@@ -50,7 +52,7 @@ func GetNativeTokenBalanceTotal(state kv.KVStoreReader, nativeTokenID iotago.Nat
 func GetNativeTokens(state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID) iotago.NativeTokenSum {
 	ret := iotago.NativeTokenSum{}
 	nativeTokensMapR(state, accountKey(agentID, chainID)).Iterate(func(idBytes []byte, val []byte) bool {
-		id := isc.MustNativeTokenIDFromBytes(idBytes)
+		id := lo.Must(isc.NativeTokenIDFromBytes(idBytes))
 		ret[id] = new(big.Int).SetBytes(val)
 		return true
 	})

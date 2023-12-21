@@ -2,33 +2,73 @@ package codec
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/isc"
 )
 
-func DecodeOutput(b []byte, l1API iotago.API) (out iotago.TxEssenceOutput, err error) {
-	n, err := l1API.Decode(b, &out)
-	if err != nil {
-		return nil, err
+var Address = NewCodec(decodeAddress, isc.AddressToBytes)
+
+func decodeAddress(b []byte) (iotago.Address, error) {
+	if len(b) == 0 {
+		return nil, errors.New("invalid Address size")
 	}
-	if n != len(b) {
-		return nil, errors.New("incomplete read")
-	}
-	return
+	return isc.AddressFromBytes(b)
 }
 
-func MustDecodeOutput(b []byte, l1API iotago.API) iotago.TxEssenceOutput {
-	o, err := DecodeOutput(b, l1API)
-	if err != nil {
-		panic(err)
-	}
-	return o
+var (
+	// using hardcoded L1API, assuming that serializatin format does not change over time
+	l1API = iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
+
+	Output      = newIotagoCodec[iotago.TxEssenceOutput](l1API)
+	TokenScheme = newIotagoCodec[iotago.TokenScheme](l1API)
+)
+
+func newIotagoCodec[T any](l1API iotago.API) *Codec[T] {
+	return NewCodec(
+		func(b []byte) (v T, err error) {
+			n, err := l1API.Decode(b, &v)
+			if err != nil {
+				return
+			}
+			if n != len(b) {
+				err = errors.New("incomplete read")
+			}
+			return
+		},
+		func(v T) []byte {
+			return lo.Must(l1API.Encode(v))
+		},
+	)
 }
 
-func EncodeOutput(out iotago.TxEssenceOutput, l1API iotago.API) []byte {
-	b, err := l1API.Encode(out)
-	if err != nil {
-		panic(err)
+var NativeTokenID = NewCodec(decodeNativeTokenID, encodeNativeTokenID)
+
+func decodeNativeTokenID(b []byte) (ret iotago.NativeTokenID, err error) {
+	if len(b) != len(ret) {
+		return ret, fmt.Errorf("%T: bytes length must be %d", ret, len(ret))
 	}
-	return b
+	copy(ret[:], b)
+	return ret, nil
+}
+
+func encodeNativeTokenID(nftID iotago.NativeTokenID) []byte {
+	return nftID[:]
+}
+
+var NFTID = NewCodec(decodeNFTID, encodeNFTID)
+
+func decodeNFTID(b []byte) (ret iotago.NFTID, err error) {
+	if len(b) != len(ret) {
+		return ret, fmt.Errorf("%T: bytes length must be %d", ret, len(ret))
+	}
+	copy(ret[:], b)
+	return ret, nil
+}
+
+func encodeNFTID(nftID iotago.NFTID) []byte {
+	return nftID[:]
 }

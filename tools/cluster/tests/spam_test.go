@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -109,7 +110,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 
 	eventBytes, err := hexutil.DecodeHex(res.Events[len(res.Events)-1].Payload)
 	require.NoError(t, err)
-	lastEventCounterValue := codec.MustDecodeInt64(eventBytes)
+	lastEventCounterValue := lo.Must(codec.Int64.Decode(eventBytes))
 	require.EqualValues(t, lastEventCounterValue, numRequests)
 }
 
@@ -191,7 +192,7 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 
 	eventBytes, err := hexutil.DecodeHex(res.Events[len(res.Events)-1].Payload)
 	require.NoError(t, err)
-	lastEventCounterValue := codec.MustDecodeInt64(eventBytes)
+	lastEventCounterValue := lo.Must(codec.Int64.Decode(eventBytes))
 	require.EqualValues(t, lastEventCounterValue, numRequests)
 	avgProcessingDuration := processingDurationsSum / numRequests
 	fmt.Printf("avg processing duration: %ds\n max: %ds\n", avgProcessingDuration, maxProcessingDuration)
@@ -224,7 +225,7 @@ func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
 				return
 			}
 
-			v, err := codec.DecodeInt64(r.Get(inccounter.VarCounter))
+			v, err := codec.Int64.Decode(r.Get(inccounter.VarCounter))
 			if err == nil && v != 1 {
 				err = errors.New("v != 1")
 			}

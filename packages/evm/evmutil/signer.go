@@ -20,19 +20,11 @@ func GetSender(tx *types.Transaction) (common.Address, error) {
 	return types.Sender(Signer(tx.ChainId()), tx)
 }
 
-func MustGetSender(tx *types.Transaction) common.Address {
-	sender, err := GetSender(tx)
-	if err != nil {
-		panic(err)
-	}
-	return sender
-}
-
-func MustGetSenderIfTxSigned(tx *types.Transaction) common.Address {
+func GetSenderIfTxSigned(tx *types.Transaction) (common.Address, error) {
 	var sender common.Address
 	v, r, s := tx.RawSignatureValues()
 	if util.IsZeroBigInt(v) && util.IsZeroBigInt(r) && util.IsZeroBigInt(s) {
-		return sender // unsigned tx
+		return sender, nil // unsigned tx
 	}
-	return MustGetSender(tx)
+	return GetSender(tx)
 }

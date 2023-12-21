@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/solo"
 )
@@ -34,7 +36,7 @@ func loadHash(testName string) hashing.HashValue {
 	if err != nil {
 		panic(err)
 	}
-	return hashing.MustHashValueFromHex(strings.TrimSpace(string(b)))
+	return lo.Must(hashing.HashValueFromHex(strings.TrimSpace(string(b))))
 }
 
 func saveHash(testName string, hash hashing.HashValue) {

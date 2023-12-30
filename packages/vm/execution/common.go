@@ -17,7 +17,7 @@ func GetProgramBinary(ctx WaspContext, programHash hashing.HashValue) (vmtype st
 	return ctx.LocateProgram(programHash)
 }
 
-func GetEntryPointByProgHash(ctx WaspContext, targetContract, epCode isc.Hname, progHash hashing.HashValue) isc.VMProcessorEntryPoint {
+func GetEntryPointByProgHash(ctx WaspContext, epCode isc.Hname, progHash hashing.HashValue) isc.VMProcessorEntryPoint {
 	getBinary := func(programHash hashing.HashValue) (vmtype string, binary []byte, err error) {
 		return GetProgramBinary(ctx, programHash)
 	}

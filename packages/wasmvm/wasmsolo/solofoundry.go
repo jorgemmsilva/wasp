@@ -4,6 +4,8 @@
 package wasmsolo
 
 import (
+	"math/big"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/wasmtypes"
 )
@@ -33,7 +35,7 @@ func (sf *SoloFoundry) Destroy() error {
 	return sf.ctx.Chain.DestroyFoundry(sf.sn, sf.agent.Pair)
 }
 
-func (sf *SoloFoundry) DestroyTokens(amount interface{}) error {
+func (sf *SoloFoundry) DestroyTokens(amount *big.Int) error {
 	return sf.ctx.Chain.DestroyTokensOnL2(sf.nativeTokenID, amount, sf.agent.Pair)
 }
 

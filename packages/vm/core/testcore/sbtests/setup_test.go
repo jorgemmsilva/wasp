@@ -54,8 +54,8 @@ func setupDeployer(t *testing.T, ch *solo.Chain) (*cryptolib.KeyPair, isc.AgentI
 	err := ch.DepositBaseTokensToL2(gas.DefaultFeePolicy().FeeFromGas(10*gas.LimitsDefault.MinGasPerRequest), user)
 	require.NoError(t, err)
 
-	req := solo.NewCallParams(root.Contract.Name, root.FuncGrantDeployPermission.Name,
-		root.ParamDeployer, isc.NewAgentID(userAddr)).WithGasBudget(100_000)
+	req := solo.NewCallParams(root.FuncGrantDeployPermission.Message(isc.NewAgentID(userAddr))).
+		WithGasBudget(100_000)
 	_, err = ch.PostRequestSync(req.AddBaseTokens(1), nil)
 	require.NoError(t, err)
 	return user, isc.NewAgentID(userAddr)
@@ -77,7 +77,7 @@ func run2(t *testing.T, test func(*testing.T, bool), skipWasm ...bool) {
 func deployContract(chain *solo.Chain, user *cryptolib.KeyPair, runWasm bool) error {
 	if forceSkipWasm || !runWasm {
 		// run core version of testcore
-		return chain.DeployContract(user, ScName, sbtestsc.Contract.ProgramHash)
+		return chain.DeployContract(user, ScName, sbtestsc.Contract.ProgramHash, nil)
 	}
 
 	// enable this code to be able to debug using Go version of Wasm testcore SC
@@ -90,13 +90,13 @@ func deployContract(chain *solo.Chain, user *cryptolib.KeyPair, runWasm bool) er
 		if err != nil {
 			return err
 		}
-		err = chain.DeployContract(user, ScName, hProg)
+		err = chain.DeployContract(user, ScName, hProg, nil)
 		wasmhost.GoWasmVM = nil
 		return err
 	}
 
 	// run Rust Wasm version of testcore
-	return chain.DeployWasmContract(user, ScName, WasmFileTestcore)
+	return chain.DeployWasmContract(user, ScName, WasmFileTestcore, nil)
 }
 
 // WARNING: setupTestSandboxSC will fail if AutoAdjustStorageDeposit is not enabled
@@ -105,7 +105,7 @@ func setupTestSandboxSC(t *testing.T, chain *solo.Chain, user *cryptolib.KeyPair
 	require.NoError(t, err)
 
 	deployed := isc.NewContractAgentID(chain.ChainID, HScName)
-	req := solo.NewCallParams(ScName, sbtestsc.FuncDoNothing.Name).
+	req := solo.NewCallParamsEx(ScName, sbtestsc.FuncDoNothing.Name).
 		WithGasBudget(100_000)
 	_, err = chain.PostRequestSync(req, user)
 	require.NoError(t, err)

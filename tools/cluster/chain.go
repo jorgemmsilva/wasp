@@ -12,12 +12,12 @@ import (
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/clients/multiclient"
-	"github.com/iotaledger/wasp/clients/scclient"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/vm/vmtypes"
@@ -83,10 +83,6 @@ func (ch *Chain) Client(keyPair *cryptolib.KeyPair, nodeIndex ...int) *chainclie
 	)
 }
 
-func (ch *Chain) SCClient(contractHname isc.Hname, sigScheme *cryptolib.KeyPair, nodeIndex ...int) *scclient.SCClient {
-	return scclient.New(ch.Client(sigScheme, nodeIndex...), contractHname)
-}
-
 func (ch *Chain) CommitteeMultiClient() *multiclient.MultiClient {
 	var resolver multiclient.ClientResolver = func(apiHost string) *apiclient.APIClient {
 		return ch.Cluster.WaspClientFromHostName(apiHost)
@@ -103,25 +99,14 @@ func (ch *Chain) AllNodesMultiClient() *multiclient.MultiClient {
 	return multiclient.New(resolver, ch.AllAPIHosts()) //.WithLogFunc(ch.Cluster.t.Logf)
 }
 
-func (ch *Chain) DeployContract(name, progHashStr string, initParams map[string]interface{}) (*iotago.SignedTransaction, error) {
+func (ch *Chain) DeployContract(name, progHashStr string, initParams dict.Dict) (*iotago.SignedTransaction, error) {
 	programHash, err := hashing.HashValueFromHex(progHashStr)
 	if err != nil {
 		return nil, err
 	}
 
-	params := map[string]interface{}{
-		root.ParamName:        name,
-		root.ParamProgramHash: programHash,
-	}
-	for k, v := range initParams {
-		params[k] = v
-	}
-	tx, err := ch.OriginatorClient().Post1Request(
-		root.Contract.Hname(),
-		root.FuncDeployContract.Hname(),
-		chainclient.PostRequestParams{
-			Args: codec.MakeDict(params),
-		},
+	tx, err := ch.OriginatorClient().PostRequest(
+		root.FuncDeployContract.Message(name, programHash, initParams),
 	)
 	if err != nil {
 		return nil, err
@@ -133,7 +118,7 @@ func (ch *Chain) DeployContract(name, progHashStr string, initParams map[string]
 	return tx, nil
 }
 
-func (ch *Chain) DeployWasmContract(name string, progBinary []byte, initParams map[string]interface{}) (hashing.HashValue, error) {
+func (ch *Chain) DeployWasmContract(name string, progBinary []byte, initParams dict.Dict) (hashing.HashValue, error) {
 	blobFieldValues := codec.MakeDict(map[string]interface{}{
 		blob.VarFieldVMType:        vmtypes.WasmTime,
 		blob.VarFieldProgramBinary: progBinary,
@@ -153,20 +138,8 @@ func (ch *Chain) DeployWasmContract(name string, progBinary []byte, initParams m
 	}
 	fmt.Printf("---- blob installed correctly len = %d\n", len(progBinaryBack))
 
-	params := make(map[string]interface{})
-	for k, v := range initParams {
-		params[k] = v
-	}
-	params[root.ParamName] = name
-	params[root.ParamProgramHash] = programHash
-
-	args := codec.MakeDict(params)
-	tx, err := ch.OriginatorClient().Post1Request(
-		root.Contract.Hname(),
-		root.FuncDeployContract.Hname(),
-		chainclient.PostRequestParams{
-			Args: args,
-		},
+	tx, err := ch.OriginatorClient().PostRequest(
+		root.FuncDeployContract.Message(name, programHash, initParams),
 	)
 	if err != nil {
 		return hashing.NilHash, err
@@ -236,11 +209,11 @@ func (ch *Chain) ContractRegistry(nodeIndex ...int) ([]apiclient.ContractInfoRes
 	return contracts, nil
 }
 
-func (ch *Chain) GetCounterValue(inccounterSCHname isc.Hname, nodeIndex ...int) (int64, error) {
+func (ch *Chain) GetCounterValue(nodeIndex ...int) (int64, error) {
 	result, _, err := ch.Cluster.
 		WaspClient(nodeIndex...).ChainsApi.CallView(context.Background(), ch.ChainID.String()).
 		ContractCallViewRequest(apiclient.ContractCallViewRequest{
-			ContractHName: inccounterSCHname.String(),
+			ContractHName: inccounter.Contract.Hname().String(),
 			FunctionHName: inccounter.ViewGetCounter.Hname().String(),
 		}).Execute() //nolint:bodyclose // false positive
 	if err != nil {
@@ -252,13 +225,12 @@ func (ch *Chain) GetCounterValue(inccounterSCHname isc.Hname, nodeIndex ...int) 
 		return 0, err
 	}
 
-	return codec.Int64.Decode(parsedDict.Get(inccounter.VarCounter), 0)
+	return inccounter.ViewGetCounter.Output.Decode(parsedDict)
 }
 
 func (ch *Chain) GetStateVariable(contractHname isc.Hname, key string, nodeIndex ...int) ([]byte, error) {
-	cl := ch.SCClient(contractHname, nil, nodeIndex...)
-
-	return cl.StateGet(context.Background(), key)
+	cl := ch.Client(nil, nodeIndex...)
+	return cl.ContractStateGet(context.Background(), contractHname, key)
 }
 
 func (ch *Chain) GetRequestReceipt(reqID isc.RequestID, nodeIndex ...int) (*apiclient.ReceiptResponse, error) {

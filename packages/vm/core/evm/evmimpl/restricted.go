@@ -18,7 +18,7 @@ func cannotBeCalledFromContracts(ctx isc.Sandbox) {
 	}
 }
 
-func restricted(handler coreutil.Handler) coreutil.Handler {
+func restricted(handler coreutil.Handler[isc.Sandbox]) coreutil.Handler[isc.Sandbox] {
 	return func(ctx isc.Sandbox) dict.Dict {
 		cannotBeCalledFromContracts(ctx)
 		return handler(ctx)

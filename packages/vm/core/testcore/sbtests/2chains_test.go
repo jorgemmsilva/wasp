@@ -9,6 +9,7 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -67,10 +68,7 @@ func test2Chains(t *testing.T, w bool) {
 	// send base tokens to contractAgentID2 (that is an entity of chain2) on chain1
 	const baseTokensCreditedToScOnChain1 = 10 * isc.Million
 	creditBaseTokensToSend := baseTokensCreditedToScOnChain1 + gas.DefaultFeePolicy().FeeFromGas(gas.LimitsDefault.MinGasPerRequest)
-	_, err = chain1.PostRequestSync(solo.NewCallParams(
-		accounts.Contract.Name, accounts.FuncTransferAllowanceTo.Name,
-		accounts.ParamAgentID, contractAgentID2,
-	).
+	_, err = chain1.PostRequestSync(solo.NewCallParams(accounts.FuncTransferAllowanceTo.Message(contractAgentID2)).
 		AddBaseTokens(creditBaseTokensToSend).
 		AddAllowanceBaseTokens(baseTokensCreditedToScOnChain1).
 		WithMaxAffordableGasBudget(),
@@ -118,21 +116,22 @@ func test2Chains(t *testing.T, w bool) {
 	// also cover gas fee for `FuncWithdrawFromChain` on chain2
 	withdrawBaseTokensToSend := withdrawReqAllowance + gas.DefaultFeePolicy().FeeFromGas(withdrawFeeGas)
 
-	_, err = chain2.PostRequestSync(solo.NewCallParams(
-		ScName, sbtestsc.FuncWithdrawFromChain.Name,
-		sbtestsc.ParamChainID, chain1.ChainID,
-		sbtestsc.ParamBaseTokens, baseTokensToWithdrawFromChain1,
-		sbtestsc.ParamGasReserve, gasReserve,
-		sbtestsc.ParamGasReserveTransferAccountToChain, gasFeeTransferAccountToChain,
-	).
-		AddBaseTokens(withdrawBaseTokensToSend).
-		WithAllowance(isc.NewAssetsBaseTokens(withdrawReqAllowance)).
-		WithMaxAffordableGasBudget(),
-		userWallet)
+	_, err = chain2.PostRequestSync(
+		solo.NewCallParams(isc.NewMessageFromNames(ScName, sbtestsc.FuncWithdrawFromChain.Name, codec.MakeDict(map[string]any{
+			sbtestsc.ParamChainID:                          chain1.ChainID,
+			sbtestsc.ParamBaseTokens:                       baseTokensToWithdrawFromChain1,
+			sbtestsc.ParamGasReserve:                       gasReserve,
+			sbtestsc.ParamGasReserveTransferAccountToChain: gasFeeTransferAccountToChain,
+		}))).
+			AddBaseTokens(withdrawBaseTokensToSend).
+			WithAllowance(isc.NewAssetsBaseTokens(withdrawReqAllowance)).
+			WithMaxAffordableGasBudget(),
+		userWallet,
+	)
 	require.NoError(t, err)
 	chain2WithdrawFromChainReceipt := chain2.LastReceipt()
 	chain2WithdrawFromChainGas := chain2WithdrawFromChainReceipt.GasFeeCharged
-	chain2WithdrawFromChainTarget := chain2WithdrawFromChainReceipt.DeserializedRequest().CallTarget()
+	chain2WithdrawFromChainTarget := chain2WithdrawFromChainReceipt.DeserializedRequest().Message().Target
 	require.Equal(t, sbtestsc.Contract.Hname(), chain2WithdrawFromChainTarget.Contract)
 	require.Equal(t, sbtestsc.FuncWithdrawFromChain.Hname(), chain2WithdrawFromChainTarget.EntryPoint)
 	require.Nil(t, chain2WithdrawFromChainReceipt.Error)
@@ -146,14 +145,14 @@ func test2Chains(t *testing.T, w bool) {
 
 	chain2TransferAllowanceReceipt := chain2.LastReceipt()
 	// chain2TransferAllowanceGas := chain2TransferAllowanceReceipt.GasFeeCharged
-	chain2TransferAllowanceTarget := chain2TransferAllowanceReceipt.DeserializedRequest().CallTarget()
+	chain2TransferAllowanceTarget := chain2TransferAllowanceReceipt.DeserializedRequest().Message().Target
 	require.Equal(t, accounts.Contract.Hname(), chain2TransferAllowanceTarget.Contract)
 	require.Equal(t, accounts.FuncTransferAllowanceTo.Hname(), chain2TransferAllowanceTarget.EntryPoint)
 	require.Nil(t, chain2TransferAllowanceReceipt.Error)
 
 	chain1TransferAccountToChainReceipt := chain1.LastReceipt()
 	chain1TransferAccountToChainGas := chain1TransferAccountToChainReceipt.GasFeeCharged
-	chain1TransferAccountToChainTarget := chain1TransferAccountToChainReceipt.DeserializedRequest().CallTarget()
+	chain1TransferAccountToChainTarget := chain1TransferAccountToChainReceipt.DeserializedRequest().Message().Target
 	require.Equal(t, accounts.Contract.Hname(), chain1TransferAccountToChainTarget.Contract)
 	require.Equal(t, accounts.FuncTransferAccountToChain.Hname(), chain1TransferAccountToChainTarget.EntryPoint)
 	require.Nil(t, chain1TransferAccountToChainReceipt.Error)

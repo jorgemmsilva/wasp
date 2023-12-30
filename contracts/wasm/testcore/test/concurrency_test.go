@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/wasp/contracts/wasm/testcore/go/testcore"
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmsolo"
 )
@@ -179,7 +180,7 @@ func TestViewConcurrency(t *testing.T) {
 		chain := ctx.Chain
 		for i := 0; i < times; i++ {
 			go func() {
-				res, err := chain.CallView(testcore.ScName, testcore.ViewGetCounter)
+				res, err := chain.CallView(isc.NewMessageFromNames(testcore.ScName, testcore.ViewGetCounter))
 				if err != nil {
 					channels <- err
 					return

@@ -81,13 +81,11 @@ func transferAllowanceTo(ctx isc.Sandbox) dict.Dict {
 	}
 	// issue a "custom EVM tx" so the funds appear on the explorer
 	ctx.Call(
-		evm.Contract.Hname(),
-		evm.FuncNewL1Deposit.Hname(),
-		dict.Dict{
-			evm.FieldAddress:                  targetAccount.(*isc.EthereumAddressAgentID).EthAddress().Bytes(),
-			evm.FieldAssets:                   allowance.Bytes(),
-			evm.FieldAgentIDDepositOriginator: ctx.Caller().Bytes(),
-		},
+		evm.FuncNewL1Deposit.Message(
+			ctx.Caller(),
+			targetAccount.(*isc.EthereumAddressAgentID).EthAddress(),
+			allowance,
+		),
 		nil,
 	)
 	ctx.Log().Debugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount, ctx.AllowanceAvailable())
@@ -219,11 +217,9 @@ func transferAccountToChain(ctx isc.Sandbox) dict.Dict {
 		TargetAddress: callerContract.Address(),
 		Assets:        assets,
 		Metadata: &isc.SendMetadata{
-			TargetContract: Contract.Hname(), // core accounts
-			EntryPoint:     FuncTransferAllowanceTo.Hname(),
-			Allowance:      allowance,
-			Params:         dict.Dict{ParamAgentID: callerContract.Bytes()},
-			GasBudget:      gas.GasUnits(gasReserve),
+			Message:   FuncTransferAllowanceTo.Message(callerContract),
+			Allowance: allowance,
+			GasBudget: gas.GasUnits(gasReserve),
 		},
 	})
 	ctx.Log().Debugf("accounts.transferAccountToChain.success. Sent to contract %s: %s",

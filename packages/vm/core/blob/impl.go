@@ -52,13 +52,9 @@ func storeBlob(ctx isc.Sandbox) dict.Dict {
 		totalSizeWithKeys += size + uint32(len(k))
 	}
 
-	ret := dict.New()
-	ret.Set(ParamHash, codec.HashValue.Encode(blobHash))
-
 	directory.SetAt(blobHash[:], EncodeSize(totalSize))
-
 	eventStore(ctx, blobHash)
-	return ret
+	return dict.Dict{ParamHash: codec.HashValue.Encode(blobHash)}
 }
 
 // getBlobInfo return lengths of all fields in the blob

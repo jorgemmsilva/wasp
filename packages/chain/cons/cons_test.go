@@ -22,7 +22,6 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
@@ -116,9 +115,8 @@ func testConsBasic(t *testing.T, n, f int) {
 		Assets:                        isc.NewAssetsBaseTokens(100_000_000),
 		AdjustToMinimumStorageDeposit: false,
 		Metadata: &isc.SendMetadata{
-			TargetContract: accounts.Contract.Hname(),
-			EntryPoint:     accounts.FuncDeposit.Hname(),
-			GasBudget:      10_000,
+			Message:   accounts.FuncDeposit.Message(),
+			GasBudget: 10_000,
 		},
 	}, nil, testutil.L1API.TimeProvider().SlotFromTime(time.Now()), true, testutil.L1APIProvider)
 	require.NoError(t, err)
@@ -351,9 +349,7 @@ func testChained(t *testing.T, n, f, b int) {
 		for ii := 0; ii < reqPerBlock; ii++ {
 			scRequest := isc.NewOffLedgerRequest(
 				chainID,
-				inccounter.Contract.Hname(),
-				inccounter.FuncIncCounter.Hname(),
-				dict.New(),
+				inccounter.FuncIncCounter.MessageOpt(),
 				uint64(i*reqPerBlock+ii),
 				gas.LimitsDefault.MinGasPerRequest,
 			).Sign(scClient)

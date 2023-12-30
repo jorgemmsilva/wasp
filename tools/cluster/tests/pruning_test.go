@@ -13,8 +13,6 @@ import (
 
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
@@ -230,13 +228,11 @@ func TestPruning(t *testing.T) {
 		// archive node
 		res, err := chain.Client(nil, 0).CallView(
 			context.Background(),
-			blocklog.Contract.Hname(),
-			blocklog.ViewGetRequestReceiptsForBlock.Name,
-			dict.Dict{blocklog.ParamBlockIndex: codec.Uint32.Encode(10)},
+			blocklog.ViewGetRequestReceiptsForBlock.Message(10),
 			"10",
 		)
 		require.NoError(t, err)
-		receipts, err := blocklog.ReceiptsFromViewCallResult(res)
+		receipts, err := blocklog.ViewGetRequestReceiptsForBlock.Output.Decode(res)
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 		require.NoError(t, err)
@@ -245,9 +241,7 @@ func TestPruning(t *testing.T) {
 		// light node
 		_, err = chain.Client(nil, 1).CallView(
 			context.Background(),
-			blocklog.Contract.Hname(),
-			blocklog.ViewGetRequestReceiptsForBlock.Name,
-			dict.Dict{blocklog.ParamBlockIndex: codec.Uint32.Encode(9)},
+			blocklog.ViewGetRequestReceiptsForBlock.Message(0),
 			"10",
 		)
 		require.Error(t, err)

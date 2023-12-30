@@ -31,7 +31,7 @@ type ChainBackend interface {
 	) error
 	FeePolicy(blockIndex uint32) (*gas.FeePolicy, error)
 	ISCChainID() *isc.ChainID
-	ISCCallView(chainState state.State, scName string, funName string, args dict.Dict) (dict.Dict, error)
+	ISCCallView(chainState state.State, msg isc.Message) (dict.Dict, error)
 	ISCLatestChainOutputs() (*isc.ChainOutputs, error)
 	ISCLatestState() state.State
 	ISCStateByBlockIndex(blockIndex uint32) (state.State, error)

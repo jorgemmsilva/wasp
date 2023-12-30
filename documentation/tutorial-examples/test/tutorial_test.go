@@ -54,13 +54,15 @@ func TestTutorialInvokeSC(t *testing.T) {
 	require.NoError(t, err)
 
 	// invoke the `storeString` function
-	req := solo.NewCallParams("solotutorial", "storeString", "str", "Hello, world!").
+	req := solo.NewCallParams(isc.NewMessage(isc.Hn("solotutorial"), isc.Hn("storeString"), codec.MakeDict(map[string]any{
+		"str": "Hello, world!",
+	}))).
 		WithMaxAffordableGasBudget()
 	_, err = chain.PostRequestSync(req, nil)
 	require.NoError(t, err)
 
 	// invoke the `getString` view
-	res, err := chain.CallView("solotutorial", "getString")
+	res, err := chain.CallView(isc.NewMessageFromNames("solotutorial", "getString"))
 	require.NoError(t, err)
 	require.Equal(t, "Hello, world!", lo.Must(codec.String.Decode(res.Get("str"))))
 }
@@ -70,7 +72,9 @@ func TestTutorialInvokeSCOffLedger(t *testing.T) {
 	chain := env.NewChain()
 	err := chain.DeployWasmContract(nil, "solotutorial", "solotutorial_bg.wasm")
 	require.NoError(t, err)
-	req := solo.NewCallParams("solotutorial", "storeString", "str", "Hello, world!").
+	req := solo.NewCallParams(isc.NewMessage(isc.Hn("solotutorial"), isc.Hn("storeString"), codec.MakeDict(map[string]any{
+		"str": "Hello, world!",
+	}))).
 		WithMaxAffordableGasBudget()
 
 	user, _ := env.NewKeyPairWithFunds(env.NewSeedFromIndex(1))
@@ -79,7 +83,7 @@ func TestTutorialInvokeSCOffLedger(t *testing.T) {
 	require.NoError(t, err)
 
 	// invoke the `getString` view
-	res, err := chain.CallView("solotutorial", "getString")
+	res, err := chain.CallView(isc.NewMessageFromNames("solotutorial", "getString"))
 	require.NoError(t, err)
 	require.Equal(t, "Hello, world!", lo.Must(codec.String.Decode(res.Get("str"))))
 }
@@ -91,7 +95,7 @@ func TestTutorialInvokeSCError(t *testing.T) {
 	require.NoError(t, err)
 
 	// missing the required parameter "str"
-	req := solo.NewCallParams("solotutorial", "storeString").
+	req := solo.NewCallParams(isc.NewMessage(isc.Hn("solotutorial"), isc.Hn("storeString"), nil)).
 		WithMaxAffordableGasBudget()
 
 	_, err = chain.PostRequestSync(req, nil)
@@ -113,8 +117,7 @@ func TestTutorialAccounts(t *testing.T) {
 	chain.AssertL2BaseTokens(userAgentID, 0)
 
 	// send 1 Mi from the L1 wallet to own account on-chain, controlled by the same wallet
-	req := solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).
-		AddBaseTokens(1 * isc.Million)
+	req := solo.NewCallParams(accounts.FuncDeposit.Message()).AddBaseTokens(1 * isc.Million)
 
 	// estimate the gas fee and storage deposit
 	gas1, gasFee1, err := chain.EstimateGasOnLedger(req, userWallet, true)
@@ -135,7 +138,7 @@ func TestTutorialAccounts(t *testing.T) {
 	// (the gas fee went to the chain's private account)
 
 	// withdraw all base tokens back to L1
-	req = solo.NewCallParams(accounts.Contract.Name, accounts.FuncWithdraw.Name).
+	req = solo.NewCallParams(accounts.FuncWithdraw.Message()).
 		WithAllowance(isc.NewAssetsBaseTokens(1 * isc.Million))
 
 	// estimate the gas fee and storage deposit

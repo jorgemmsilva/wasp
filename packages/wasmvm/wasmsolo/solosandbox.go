@@ -81,7 +81,7 @@ func (s *SoloSandbox) Tracef(format string, args ...interface{}) {
 
 func (s *SoloSandbox) postSync(contract, function string, params dict.Dict, allowance, transfer *isc.Assets) []byte {
 	ctx := s.ctx
-	req := solo.CallParamsFromDict(contract, function, params)
+	req := solo.NewCallParams(isc.NewMessageFromNames(contract, function, params))
 	if allowance.IsEmpty() {
 		allowance = transfer
 	}
@@ -153,7 +153,7 @@ func (s *SoloSandbox) FnCall(req *wasmrequests.CallRequest) []byte {
 		return s.postSync(ctx.scName, funcName, params, allowance, nil)
 	}
 
-	res, err := ctx.Chain.CallView(ctx.scName, funcName, params)
+	res, err := ctx.Chain.CallView(isc.NewMessageFromNames(ctx.scName, funcName, params))
 	ctx.Err = err
 	if ctx.Err != nil {
 		return nil

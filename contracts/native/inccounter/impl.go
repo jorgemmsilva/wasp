@@ -17,6 +17,23 @@ import (
 
 var Contract = coreutil.NewContract("inccounter")
 
+var (
+	FuncIncCounter = coreutil.NewEP1(Contract, "incCounter",
+		VarCounter, codec.Int64,
+	)
+	FuncIncAndRepeatOnceAfter2s = coreutil.NewEP0(Contract, "incAndRepeatOnceAfter5s")
+	FuncIncAndRepeatMany        = coreutil.NewEP2(Contract, "incAndRepeatMany",
+		VarCounter, codec.Int64,
+		VarNumRepeats, codec.Int64,
+	)
+	FuncSpawn = coreutil.NewEP1(Contract, "spawn",
+		VarName, codec.String,
+	)
+	ViewGetCounter = coreutil.NewViewEP01(Contract, "getCounter",
+		VarCounter, codec.Int64,
+	)
+)
+
 var Processor = Contract.Processor(initialize,
 	FuncIncCounter.WithHandler(incCounter),
 	FuncIncAndRepeatOnceAfter2s.WithHandler(incCounterAndRepeatOnce),
@@ -25,13 +42,9 @@ var Processor = Contract.Processor(initialize,
 	ViewGetCounter.WithHandler(getCounter),
 )
 
-var (
-	FuncIncCounter              = coreutil.Func("incCounter")
-	FuncIncAndRepeatOnceAfter2s = coreutil.Func("incAndRepeatOnceAfter5s")
-	FuncIncAndRepeatMany        = coreutil.Func("incAndRepeatMany")
-	FuncSpawn                   = coreutil.Func("spawn")
-	ViewGetCounter              = coreutil.ViewFunc("getCounter")
-)
+func InitParams(initialValue int64) dict.Dict {
+	return dict.Dict{VarCounter: codec.Int64.Encode(initialValue)}
+}
 
 const (
 	VarNumRepeats = "numRepeats"
@@ -82,9 +95,8 @@ func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
 		Assets:                        isc.NewAssets(allowance.BaseTokens, nil),
 		AdjustToMinimumStorageDeposit: true,
 		Metadata: &isc.SendMetadata{
-			TargetContract: ctx.Contract(),
-			EntryPoint:     FuncIncCounter.Hname(),
-			GasBudget:      math.MaxUint64,
+			Message:   isc.NewMessage(ctx.Contract(), FuncIncCounter.Hname()),
+			GasBudget: math.MaxUint64,
 		},
 		UnlockConditions: []iotago.UnlockCondition{
 			&iotago.TimelockUnlockCondition{
@@ -128,10 +140,9 @@ func incCounterAndRepeatMany(ctx isc.Sandbox) dict.Dict {
 		Assets:                        isc.NewAssets(1000, nil),
 		AdjustToMinimumStorageDeposit: true,
 		Metadata: &isc.SendMetadata{
-			TargetContract: ctx.Contract(),
-			EntryPoint:     FuncIncAndRepeatMany.Hname(),
-			GasBudget:      math.MaxUint64,
-			Allowance:      isc.NewAssetsBaseTokens(1000),
+			Message:   isc.NewMessage(ctx.Contract(), FuncIncAndRepeatMany.Hname()),
+			GasBudget: math.MaxUint64,
+			Allowance: isc.NewAssetsBaseTokens(1000),
 		},
 		UnlockConditions: []iotago.UnlockCondition{
 			&iotago.TimelockUnlockCondition{
@@ -159,8 +170,7 @@ func spawn(ctx isc.Sandbox) dict.Dict {
 	ctx.DeployContract(Contract.ProgramHash, name, callPar)
 
 	// increase counter in newly spawned contract
-	hname := isc.Hn(name)
-	ctx.Call(hname, FuncIncCounter.Hname(), nil, nil)
+	ctx.Call(FuncIncCounter.MessageOpt(), nil)
 
 	return nil
 }

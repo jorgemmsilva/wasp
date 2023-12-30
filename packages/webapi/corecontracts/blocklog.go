@@ -3,10 +3,6 @@ package corecontracts
 import (
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/collections"
-	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 )
 
@@ -26,183 +22,97 @@ func GetControlAddresses(ch chaintypes.Chain) (*isc.ControlAddresses, error) {
 	return controlAddresses, nil
 }
 
-func handleBlockInfo(info dict.Dict) (*blocklog.BlockInfo, error) {
-	resultDecoder := kvdecoder.New(info)
-
-	blockInfoBin, err := resultDecoder.GetBytes(blocklog.ParamBlockInfo)
-	if err != nil {
-		return nil, err
-	}
-
-	blockInfo, err := blocklog.BlockInfoFromBytes(blockInfoBin)
-	if err != nil {
-		return nil, err
-	}
-
-	return blockInfo, nil
-}
-
 func GetLatestBlockInfo(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*blocklog.BlockInfo, error) {
-	_, ret, err := callViewInvoker(blocklog.Contract.Hname(), blocklog.ViewGetBlockInfo.Hname(), nil, blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetBlockInfo.MessageOpt(), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	return handleBlockInfo(ret)
+	return blocklog.ViewGetBlockInfo.Output.F2.Decode(ret)
 }
 
 func GetBlockInfo(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) (*blocklog.BlockInfo, error) {
-	_, ret, err := callViewInvoker(blocklog.Contract.Hname(), blocklog.ViewGetBlockInfo.Hname(), codec.MakeDict(map[string]interface{}{
-		blocklog.ParamBlockIndex: blockIndex,
-	}), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetBlockInfo.Message(blockIndex), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	return handleBlockInfo(ret)
-}
-
-func handleRequestIDs(requestIDsDict dict.Dict) (ret []isc.RequestID, err error) {
-	requestIDs := collections.NewArrayReadOnly(requestIDsDict, blocklog.ParamRequestID)
-	ret = make([]isc.RequestID, requestIDs.Len())
-	for i := range ret {
-		ret[i], err = isc.RequestIDFromBytes(requestIDs.GetAt(uint32(i)))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ret, nil
+	return blocklog.ViewGetBlockInfo.Output.F2.Decode(ret)
 }
 
 func GetRequestIDsForLatestBlock(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) ([]isc.RequestID, error) {
-	_, ret, err := callViewInvoker(blocklog.Contract.Hname(), blocklog.ViewGetRequestIDsForBlock.Hname(), nil, blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetRequestIDsForBlock.MessageOpt(), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	return handleRequestIDs(ret)
+	return blocklog.ViewGetRequestIDsForBlock.Output.Decode(ret)
 }
 
 func GetRequestIDsForBlock(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) ([]isc.RequestID, error) {
-	_, ret, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewGetRequestIDsForBlock.Hname(),
-		codec.MakeDict(map[string]interface{}{
-			blocklog.ParamBlockIndex: blockIndex,
-		}),
-		blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetRequestIDsForBlock.Message(blockIndex), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	return handleRequestIDs(ret)
+	return blocklog.ViewGetRequestIDsForBlock.Output.Decode(ret)
 }
 
-func GetRequestReceipt(callViewInvoker CallViewInvoker, requestID isc.RequestID, blockIndexOrTrieRoot string) (*blocklog.RequestReceipt, error) {
-	_, ret, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewGetRequestReceipt.Hname(),
-		codec.MakeDict(map[string]interface{}{
-			blocklog.ParamRequestID: requestID,
-		}),
-		blockIndexOrTrieRoot,
-	)
+func GetRequestReceipt(callViewInvoker CallViewInvoker, requestID isc.RequestID, blockIndexOrTrieRoot string) (*blocklog.RequestReceipt, bool, error) {
+	_, ret, err := callViewInvoker(blocklog.ViewGetRequestReceipt.Message(requestID), blockIndexOrTrieRoot)
 	if err != nil || ret == nil {
-		return nil, err
+		return nil, false, err
 	}
-
-	resultDecoder := kvdecoder.New(ret)
-
-	binRec, err := resultDecoder.GetBytes(blocklog.ParamRequestRecord)
-	if err != nil {
-		return nil, err
-	}
-	blockIndex, err := resultDecoder.GetUint32(blocklog.ParamBlockIndex)
-	if err != nil {
-		return nil, err
-	}
-	requestIndex, err := resultDecoder.GetUint16(blocklog.ParamRequestIndex)
-	if err != nil {
-		return nil, err
-	}
-	return blocklog.RequestReceiptFromBytes(binRec, blockIndex, requestIndex)
+	return blocklog.ViewGetRequestReceipt.Output.Decode(ret)
 }
 
 func GetRequestReceiptsForBlock(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) ([]*blocklog.RequestReceipt, error) {
 	_, res, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewGetRequestReceiptsForBlock.Hname(),
-		codec.MakeDict(map[string]interface{}{blocklog.ParamBlockIndex: blockIndex}),
+		blocklog.ViewGetRequestReceiptsForBlock.Message(blockIndex),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ReceiptsFromViewCallResult(res)
+	return blocklog.ViewGetRequestReceiptsForBlock.Output.Decode(res)
 }
 
 func IsRequestProcessed(callViewInvoker CallViewInvoker, requestID isc.RequestID, blockIndexOrTrieRoot string) (bool, error) {
 	_, ret, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewIsRequestProcessed.Hname(),
-		codec.MakeDict(map[string]interface{}{blocklog.ParamRequestID: requestID}),
+		blocklog.ViewIsRequestProcessed.Message(requestID),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return false, err
 	}
-
-	resultDecoder := kvdecoder.New(ret)
-	isProcessed, err := resultDecoder.GetBool(blocklog.ParamRequestProcessed)
-	if err != nil {
-		return false, err
-	}
-
-	return isProcessed, nil
+	return blocklog.ViewIsRequestProcessed.Output.Decode(ret)
 }
 
 func GetEventsForRequest(callViewInvoker CallViewInvoker, requestID isc.RequestID, blockIndexOrTrieRoot string) ([]*isc.Event, error) {
 	_, ret, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewGetEventsForRequest.Hname(),
-		codec.MakeDict(map[string]interface{}{blocklog.ParamRequestID: requestID}),
+		blocklog.ViewGetEventsForRequest.Message(requestID),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	return blocklog.EventsFromViewResult(ret)
+	return blocklog.ViewGetEventsForRequest.Output.Decode(ret)
 }
 
 func GetEventsForBlock(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) ([]*isc.Event, error) {
 	_, ret, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewGetEventsForBlock.Hname(),
-		codec.MakeDict(map[string]interface{}{
-			blocklog.ParamBlockIndex: blockIndex,
-		}),
+		blocklog.ViewGetEventsForBlock.Message(blockIndex),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	return blocklog.EventsFromViewResult(ret)
+	return blocklog.ViewGetEventsForBlock.Output.Decode(ret)
 }
 
 func GetEventsForContract(callViewInvoker CallViewInvoker, contractHname isc.Hname, blockIndexOrTrieRoot string) ([]*isc.Event, error) {
 	_, ret, err := callViewInvoker(
-		blocklog.Contract.Hname(),
-		blocklog.ViewGetEventsForContract.Hname(),
-		codec.MakeDict(map[string]interface{}{
-			blocklog.ParamContractHname: contractHname,
-		}),
+		blocklog.ViewGetEventsForContract.Message(contractHname),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	return blocklog.EventsFromViewResult(ret)
+	return blocklog.ViewGetEventsForContract.Output.Decode(ret)
 }

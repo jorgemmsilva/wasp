@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -72,3 +73,5 @@ func decodeNFTID(b []byte) (ret iotago.NFTID, err error) {
 func encodeNFTID(nftID iotago.NFTID) []byte {
 	return nftID[:]
 }
+
+var BaseToken = newIntCodec[iotago.BaseToken](8, binary.LittleEndian.Uint64, binary.LittleEndian.PutUint64)

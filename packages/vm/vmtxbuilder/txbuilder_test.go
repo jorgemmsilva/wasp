@@ -11,7 +11,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testiotago"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -488,9 +487,7 @@ func TestSerDe(t *testing.T) {
 	t.Run("serde BasicOutput", func(t *testing.T) {
 		reqMetadata := isc.RequestMetadata{
 			SenderContract: isc.EmptyContractIdentity(),
-			TargetContract: 0,
-			EntryPoint:     0,
-			Params:         dict.New(),
+			Message:        isc.NewMessage(0, 0),
 			Allowance:      isc.NewEmptyAssets(),
 			GasBudget:      0,
 		}

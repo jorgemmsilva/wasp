@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient"
@@ -54,7 +55,7 @@ func (svc *SoloClientService) CallViewByHname(hContract, hFunction wasmtypes.ScH
 	if !iscChainID.Equals(svc.ctx.Chain.ChainID) {
 		return nil, errors.New("SoloClientService.CallViewByHname chain ID mismatch")
 	}
-	res, err := svc.ctx.Chain.CallViewByHname(iscContract, iscFunction, params)
+	res, err := svc.ctx.Chain.CallView(isc.NewMessage(iscContract, iscFunction, params))
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +90,7 @@ func (svc *SoloClientService) PostRequest(chainID wasmtypes.ScChainID, hContract
 	if !iscChainID.Equals(svc.ctx.Chain.ChainID) {
 		return reqID, errors.New("SoloClientService.PostRequest chain ID mismatch")
 	}
-	req := solo.CallParamsFromDictByHname(iscContract, iscFunction, params)
+	req := solo.NewCallParams(isc.NewMessage(iscContract, iscFunction, params))
 
 	key := string(keyPair.GetPublicKey())
 	nonce := svc.nonces[key]

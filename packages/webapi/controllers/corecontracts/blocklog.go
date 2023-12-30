@@ -114,11 +114,11 @@ func GetRequestReceipt(e echo.Context, c interfaces.ChainService, l1API iotago.A
 	}
 
 	invoker := corecontracts.MakeCallViewInvoker(ch)
-	receipt, err := corecontracts.GetRequestReceipt(invoker, requestID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
+	receipt, ok, err := corecontracts.GetRequestReceipt(invoker, requestID, e.QueryParam(params.ParamBlockIndexOrTrieRoot))
 	if err != nil {
 		panic(err)
 	}
-	if receipt == nil {
+	if !ok {
 		return apierrors.NoRecordFoundError(errors.New("no receipt"))
 	}
 

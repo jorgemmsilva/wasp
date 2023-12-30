@@ -44,8 +44,8 @@ var Processor = evm.Contract.Processor(nil,
 	evm.FuncNewL1Deposit.WithHandler(newL1Deposit),
 
 	// views
-	evm.FuncGetERC20ExternalNativeTokenAddress.WithHandler(viewERC20ExternalNativeTokenAddress),
-	evm.FuncGetChainID.WithHandler(getChainID),
+	evm.ViewGetERC20ExternalNativeTokenAddress.WithHandler(viewERC20ExternalNativeTokenAddress),
+	evm.ViewGetChainID.WithHandler(getChainID),
 )
 
 // SetInitialState initializes the evm core contract and the Ethereum genesis
@@ -173,23 +173,20 @@ var (
 	errEVMAccountAlreadyExists = coreerrors.Register("cannot register ERC20NativeTokens contract: EVM account already exists").Create()
 )
 
-func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
-	foundrySN := lo.Must(codec.Uint32.Decode(ctx.Params().Get(evm.FieldFoundrySN)))
-	name := lo.Must(codec.String.Decode(ctx.Params().Get(evm.FieldTokenName)))
-	tickerSymbol := lo.Must(codec.String.Decode(ctx.Params().Get(evm.FieldTokenTickerSymbol)))
-	decimals := lo.Must(codec.Uint8.Decode(ctx.Params().Get(evm.FieldTokenDecimals)))
-
-	{
-		res := ctx.CallView(accounts.Contract.Hname(), accounts.ViewAccountFoundries.Hname(), dict.Dict{
-			accounts.ParamAgentID: codec.AgentID.Encode(ctx.Caller()),
-		})
-		if res[kv.Key(codec.Uint32.Encode(foundrySN))] == nil {
-			panic(errFoundryNotOwnedByCaller.Create(foundrySN))
-		}
+func requireCallerHasFoundry(ctx isc.Sandbox, foundrySN uint32) {
+	res := ctx.CallView(accounts.ViewAccountFoundries.Message(ctx.Caller()))
+	if !accounts.ViewAccountFoundries.Output.HasFoundry(res, foundrySN) {
+		panic(errFoundryNotOwnedByCaller.Create(foundrySN))
 	}
+}
+
+func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
+	token := evm.ERC20NativeTokenParamsFromContext(ctx.Params())
+
+	requireCallerHasFoundry(ctx, token.FoundrySN)
 
 	// deploy the contract to the EVM state
-	addr := iscmagic.ERC20NativeTokensAddress(foundrySN)
+	addr := iscmagic.ERC20NativeTokensAddress(token.FoundrySN)
 	emu := createEmulator(ctx)
 	evmState := emu.StateDB()
 	if evmState.Exist(addr) {
@@ -198,9 +195,9 @@ func registerERC20NativeToken(ctx isc.Sandbox) dict.Dict {
 	evmState.CreateAccount(addr)
 	evmState.SetCode(addr, iscmagic.ERC20NativeTokensRuntimeBytecode)
 	// see ERC20NativeTokens_storage.json
-	evmState.SetState(addr, solidity.StorageSlot(0), solidity.StorageEncodeShortString(name))
-	evmState.SetState(addr, solidity.StorageSlot(1), solidity.StorageEncodeShortString(tickerSymbol))
-	evmState.SetState(addr, solidity.StorageSlot(2), solidity.StorageEncodeUint8(decimals))
+	evmState.SetState(addr, solidity.StorageSlot(0), solidity.StorageEncodeShortString(token.Name))
+	evmState.SetState(addr, solidity.StorageSlot(1), solidity.StorageEncodeShortString(token.TickerSymbol))
+	evmState.SetState(addr, solidity.StorageSlot(2), solidity.StorageEncodeUint8(token.Decimals))
 
 	addToPrivileged(ctx.State(), addr)
 
@@ -213,29 +210,17 @@ var (
 )
 
 func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
-	foundrySN := lo.Must(codec.Uint32.Decode(ctx.Params().Get(evm.FieldFoundrySN)))
-	name := lo.Must(codec.String.Decode(ctx.Params().Get(evm.FieldTokenName)))
-	tickerSymbol := lo.Must(codec.String.Decode(ctx.Params().Get(evm.FieldTokenTickerSymbol)))
-	decimals := lo.Must(codec.Uint8.Decode(ctx.Params().Get(evm.FieldTokenDecimals)))
+	token := evm.ERC20NativeTokenParamsFromContext(ctx.Params())
 	target := lo.Must(codec.Address.Decode(ctx.Params().Get(evm.FieldTargetAddress)))
 	if target.Type() != iotago.AddressAnchor {
 		panic(errTargetMustBeAnchor)
 	}
 
-	{
-		res := ctx.CallView(accounts.Contract.Hname(), accounts.ViewAccountFoundries.Hname(), dict.Dict{
-			accounts.ParamAgentID: codec.AgentID.Encode(ctx.Caller()),
-		})
-		if res[kv.Key(codec.Uint32.Encode(foundrySN))] == nil {
-			panic(errFoundryNotOwnedByCaller.Create(foundrySN))
-		}
-	}
+	requireCallerHasFoundry(ctx, token.FoundrySN)
 
 	tokenScheme := func() iotago.TokenScheme {
-		res := ctx.CallView(accounts.Contract.Hname(), accounts.ViewFoundryOutput.Hname(), dict.Dict{
-			accounts.ParamFoundrySN: codec.Uint32.Encode(foundrySN),
-		})
-		o := lo.Must(codec.Output.Decode(res[accounts.ParamFoundryOutputBin]))
+		res := ctx.CallView(accounts.ViewFoundryOutput.Message(token.FoundrySN))
+		o := lo.Must(accounts.ViewFoundryOutput.Output.Decode(res))
 		foundryOutput, ok := o.(*iotago.FoundryOutput)
 		if !ok {
 			panic(errOutputMustBeFoundry)
@@ -255,16 +240,11 @@ func registerERC20NativeTokenOnRemoteChain(ctx isc.Sandbox) dict.Dict {
 		TargetAddress: target,
 		Assets:        isc.NewAssetsBaseTokens(tokensForGasFee),
 		Metadata: &isc.SendMetadata{
-			TargetContract: evm.Contract.Hname(),
-			EntryPoint:     evm.FuncRegisterERC20ExternalNativeToken.Hname(),
-			Params: dict.Dict{
-				evm.FieldFoundrySN:          codec.Uint32.Encode(foundrySN),
-				evm.FieldTokenName:          codec.String.Encode(name),
-				evm.FieldTokenTickerSymbol:  codec.String.Encode(tickerSymbol),
-				evm.FieldTokenDecimals:      codec.Uint8.Encode(decimals),
-				evm.FieldFoundryTokenScheme: codec.TokenScheme.Encode(tokenScheme),
-				evm.FieldTargetAddress:      codec.Address.Encode(accountID.ToAddress()),
-			},
+			Message: evm.FuncRegisterERC20ExternalNativeToken.Message(
+				token,
+				tokenScheme,
+				accountID.ToAddress(),
+			),
 			GasBudget: gasBudget,
 		},
 	}
@@ -294,11 +274,7 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 		panic(errFoundryMustBeOffChain)
 	}
 
-	name := lo.Must(codec.String.Decode(ctx.Params().Get(evm.FieldTokenName)))
-	tickerSymbol := lo.Must(codec.String.Decode(ctx.Params().Get(evm.FieldTokenTickerSymbol)))
-	decimals := lo.Must(codec.Uint8.Decode(ctx.Params().Get(evm.FieldTokenDecimals)))
-
-	foundrySN := lo.Must(codec.Uint32.Decode(ctx.Params().Get(evm.FieldFoundrySN)))
+	token := evm.ERC20NativeTokenParamsFromContext(ctx.Params())
 	tokenScheme := lo.Must(codec.TokenScheme.Decode(ctx.Params().Get(evm.FieldFoundryTokenScheme)))
 	simpleTS, ok := tokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {
@@ -308,7 +284,7 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 
 	nativeTokenID := lo.Must(iotago.FoundryIDFromAddressAndSerialNumberAndTokenScheme(
 		accountAddress,
-		foundrySN,
+		token.FoundrySN,
 		tokenScheme.Type(),
 	))
 
@@ -329,9 +305,9 @@ func registerERC20ExternalNativeToken(ctx isc.Sandbox) dict.Dict {
 	evmState.CreateAccount(addr)
 	evmState.SetCode(addr, iscmagic.ERC20ExternalNativeTokensRuntimeBytecode)
 	// see ERC20ExternalNativeTokens_storage.json
-	evmState.SetState(addr, solidity.StorageSlot(0), solidity.StorageEncodeShortString(name))
-	evmState.SetState(addr, solidity.StorageSlot(1), solidity.StorageEncodeShortString(tickerSymbol))
-	evmState.SetState(addr, solidity.StorageSlot(2), solidity.StorageEncodeUint8(decimals))
+	evmState.SetState(addr, solidity.StorageSlot(0), solidity.StorageEncodeShortString(token.Name))
+	evmState.SetState(addr, solidity.StorageSlot(1), solidity.StorageEncodeShortString(token.TickerSymbol))
+	evmState.SetState(addr, solidity.StorageSlot(2), solidity.StorageEncodeUint8(token.Decimals))
 	for k, v := range solidity.StorageEncodeBytes(3, nativeTokenID[:]) {
 		evmState.SetState(addr, k, v)
 	}
@@ -357,10 +333,8 @@ func registerERC721NFTCollection(ctx isc.Sandbox) dict.Dict {
 	// The collection NFT must be deposited into the chain before registering. Afterwards it may be
 	// withdrawn to L1.
 	collection := func() *isc.NFT {
-		res := ctx.CallView(accounts.Contract.Hname(), accounts.ViewNFTData.Hname(), dict.Dict{
-			accounts.ParamNFTID: codec.NFTID.Encode(collectionID),
-		})
-		collection, err := isc.NFTFromBytes(res[accounts.ParamNFTData])
+		res := ctx.CallView(accounts.ViewNFTData.Message(collectionID))
+		collection, err := accounts.ViewNFTData.Output.Decode(res)
 		ctx.RequireNoError(err)
 		return collection
 	}()
@@ -447,8 +421,8 @@ func callContract(ctx isc.Sandbox) dict.Dict {
 }
 
 func getEVMGasRatio(ctx isc.SandboxBase) util.Ratio32 {
-	gasRatioViewRes := ctx.CallView(governance.Contract.Hname(), governance.ViewGetEVMGasRatio.Hname(), nil)
-	return lo.Must(codec.Ratio32.Decode(gasRatioViewRes.Get(governance.ParamEVMGasRatio), gas.DefaultEVMGasRatio))
+	gasRatioViewRes := ctx.CallView(governance.ViewGetEVMGasRatio.Message())
+	return lo.Must(governance.ViewGetEVMGasRatio.Output.Decode(gasRatioViewRes))
 }
 
 func newL1Deposit(ctx isc.Sandbox) dict.Dict {

@@ -3,54 +3,29 @@ package corecontracts
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
 
 func GetAllowedStateControllerAddresses(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) ([]iotago.Address, error) {
-	_, res, err := callViewInvoker(governance.Contract.Hname(), governance.ViewGetAllowedStateControllerAddresses.Hname(), nil, blockIndexOrTrieRoot)
+	_, res, err := callViewInvoker(governance.ViewGetAllowedStateControllerAddresses.Message(), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	addresses := collections.NewArrayReadOnly(res, governance.ParamAllowedStateControllerAddresses)
-	ret := make([]iotago.Address, addresses.Len())
-	for i := range ret {
-		ret[i], err = codec.Address.Decode(addresses.GetAt(uint32(i)))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ret, nil
+	return governance.ViewGetAllowedStateControllerAddresses.Output.Decode(res)
 }
 
 func GetChainOwner(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (isc.AgentID, error) {
-	_, ret, err := callViewInvoker(governance.Contract.Hname(), governance.ViewGetChainOwner.Hname(), nil, blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(governance.ViewGetChainOwner.Message(), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	ownerBytes := ret.Get(governance.ParamChainOwner)
-	ownerID, err := isc.AgentIDFromBytes(ownerBytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return ownerID, nil
+	return governance.ViewGetChainOwner.Output.Decode(ret)
 }
 
 func GetChainInfo(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*isc.ChainInfo, error) {
-	chainID, ret, err := callViewInvoker(governance.Contract.Hname(), governance.ViewGetChainInfo.Hname(), nil, blockIndexOrTrieRoot)
+	chainID, ret, err := callViewInvoker(governance.ViewGetChainInfo.Message(), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-
-	var chainInfo *isc.ChainInfo
-
-	if chainInfo, err = governance.GetChainInfo(ret, chainID); err != nil {
-		return nil, err
-	}
-
-	return chainInfo, nil
+	return governance.ViewGetChainInfo.Output.Decode(ret, chainID)
 }

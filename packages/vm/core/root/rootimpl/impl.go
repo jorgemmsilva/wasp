@@ -103,7 +103,7 @@ func deployContract(ctx isc.Sandbox) dict.Dict {
 		ProgramHash: progHash,
 		Name:        name,
 	})
-	ctx.Call(isc.Hn(name), isc.EntryPointInit, initParams, nil)
+	ctx.Call(isc.NewMessage(isc.Hn(name), isc.EntryPointInit, initParams), nil)
 	eventDeploy(ctx, progHash, name)
 	return nil
 }

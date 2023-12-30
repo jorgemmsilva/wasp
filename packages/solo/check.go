@@ -45,7 +45,7 @@ func (ch *Chain) AssertL2BaseTokens(agentID isc.AgentID, bal iotago.BaseToken) {
 
 // CheckChain checks fundamental integrity of the chain
 func (ch *Chain) CheckChain() {
-	_, err := ch.CallView(governance.Contract.Name, governance.ViewGetChainInfo.Name)
+	_, err := ch.CallView(governance.ViewGetChainInfo.Message())
 	require.NoError(ch.Env.T, err)
 
 	for _, c := range corecontracts.All {

@@ -58,10 +58,6 @@ func (*soloContext) Name() string {
 	return "evmemulator"
 }
 
-func init() {
-	parameters.InitL1(parameters.L1ForTesting)
-}
-
 func main() {
 	cmd := &cobra.Command{
 		Args:  cobra.NoArgs,
@@ -100,7 +96,7 @@ func start(cmd *cobra.Command, args []string) {
 	env := solo.New(ctx, &solo.InitOptions{Debug: log.DebugFlag, PrintStackTrace: log.DebugFlag})
 
 	chainOwner, chainOwnerAddr := env.NewKeyPairWithFunds()
-	chain, _ := env.NewChainExt(chainOwner, 1*isc.Million, "evmemulator", dict.Dict{
+	chain, _ := env.NewChainExt(chainOwner, 1*isc.Million, 0, "evmemulator", dict.Dict{
 		origin.ParamChainOwner:      isc.NewAgentID(chainOwnerAddr).Bytes(),
 		origin.ParamEVMChainID:      codec.Uint16.Encode(1074),
 		origin.ParamBlockKeepAmount: codec.Int32.Encode(emulator.BlockKeepAll),

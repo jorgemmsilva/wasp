@@ -6,23 +6,9 @@ import (
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
 )
-
-func EventsFromViewResult(viewResult dict.Dict) (ret []*isc.Event, err error) {
-	events := collections.NewArrayReadOnly(viewResult, ParamEvent)
-	ret = make([]*isc.Event, events.Len())
-	for i := range ret {
-		ret[i], err = isc.EventFromBytes(events.GetAt(uint32(i)))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ret, nil
-}
 
 func GetRequestsInBlock(partition kv.KVStoreReader, blockIndex uint32) (*BlockInfo, []isc.Request, error) {
 	blockInfo, ok := GetBlockInfo(partition, blockIndex)
@@ -163,22 +149,4 @@ func Prune(partition kv.KVStore, latestBlockIndex uint32, blockKeepAmount int32)
 	// assume that all blocks prior to `toDelete` have been already deleted, so
 	// we only need to delete this one.
 	pruneBlock(partition, toDelete)
-}
-
-func ReceiptsFromViewCallResult(res dict.Dict) ([]*RequestReceipt, error) {
-	receipts := collections.NewArrayReadOnly(res, ParamRequestRecord)
-	ret := make([]*RequestReceipt, receipts.Len())
-	var err error
-	blockIndex, err := codec.Uint32.Decode(res.Get(ParamBlockIndex))
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range ret {
-		ret[i], err = RequestReceiptFromBytes(receipts.GetAt(uint32(i)), blockIndex, uint16(i))
-		if err != nil {
-			return nil, err
-		}
-	}
-	return ret, nil
 }

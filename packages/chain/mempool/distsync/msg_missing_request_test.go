@@ -16,15 +16,12 @@ import (
 
 func TestMsgMissingRequestSerialization(t *testing.T) {
 	senderKP := cryptolib.NewKeyPair()
-	contract := governance.Contract.Hname()
-	entryPoint := governance.FuncAddCandidateNode.Hname()
+	m := isc.NewMessage(governance.Contract.Hname(), governance.FuncAddCandidateNode.Hname(), nil)
 	gasBudget := gas.LimitsDefault.MaxGasPerRequest
-	req := isc.NewOffLedgerRequest(isc.RandomChainID(), contract, entryPoint, nil, 0, gasBudget).Sign(senderKP)
-
+	req := isc.NewOffLedgerRequest(isc.RandomChainID(), m, 0, gasBudget).Sign(senderKP)
 	msg := &msgMissingRequest{
 		gpa.BasicMessage{},
 		isc.RequestRefFromRequest(req),
 	}
-
 	rwutil.ReadWriteTest(t, msg, new(msgMissingRequest))
 }

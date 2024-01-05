@@ -6,13 +6,19 @@
 package governance
 
 import (
+	"errors"
+
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util"
+	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -21,85 +27,95 @@ var Contract = coreutil.NewContract(coreutil.CoreContractGovernance)
 var (
 	// state controller (entity that owns the state output via AccountAddress)
 	FuncRotateStateController = coreutil.NewEP1(Contract, coreutil.CoreEPRotateStateController,
-		ParamStateControllerAddress, codec.Address,
+		coreutil.FieldWithCodec(ParamStateControllerAddress, codec.Address),
 	)
 	FuncAddAllowedStateControllerAddress = coreutil.NewEP1(Contract, "addAllowedStateControllerAddress",
-		ParamStateControllerAddress, codec.Address,
+		coreutil.FieldWithCodec(ParamStateControllerAddress, codec.Address),
 	)
 	FuncRemoveAllowedStateControllerAddress = coreutil.NewEP1(Contract, "removeAllowedStateControllerAddress",
-		ParamStateControllerAddress, codec.Address,
+		coreutil.FieldWithCodec(ParamStateControllerAddress, codec.Address),
 	)
-	ViewGetAllowedStateControllerAddresses = EPViewGetAllowedStateControllerAddresses{
-		EP0: coreutil.NewViewEP0(Contract, "getAllowedStateControllerAddresses"),
-	}
+	ViewGetAllowedStateControllerAddresses = coreutil.NewViewEP01(Contract, "getAllowedStateControllerAddresses",
+		OutputAddressList{},
+	)
 
 	// chain owner (L1 entity that is the "owner of the chain")
 	FuncClaimChainOwnership    = coreutil.NewEP0(Contract, "claimChainOwnership")
 	FuncDelegateChainOwnership = coreutil.NewEP1(Contract, "delegateChainOwnership",
-		ParamChainOwner, codec.AgentID,
+		coreutil.FieldWithCodec(ParamChainOwner, codec.AgentID),
 	)
 	FuncSetPayoutAgentID = coreutil.NewEP1(Contract, "setPayoutAgentID",
-		ParamSetPayoutAgentID, codec.AgentID,
+		coreutil.FieldWithCodec(ParamSetPayoutAgentID, codec.AgentID),
 	)
 	FuncSetMinCommonAccountBalance = coreutil.NewEP1(Contract, "setMinCommonAccountBalance",
-		ParamSetMinCommonAccountBalance, codec.Uint64,
+		coreutil.FieldWithCodec(ParamSetMinCommonAccountBalance, codec.BaseToken),
 	)
 	ViewGetPayoutAgentID = coreutil.NewViewEP01(Contract, "getPayoutAgentID",
-		ParamSetPayoutAgentID, codec.AgentID,
+		coreutil.FieldWithCodec(ParamSetPayoutAgentID, codec.AgentID),
 	)
 	ViewGetMinCommonAccountBalance = coreutil.NewViewEP01(Contract, "getMinCommonAccountBalance",
-		ParamSetMinCommonAccountBalance, codec.Uint64,
+		coreutil.FieldWithCodec(ParamSetMinCommonAccountBalance, codec.BaseToken),
 	)
 	ViewGetChainOwner = coreutil.NewViewEP01(Contract, "getChainOwner",
-		ParamChainOwner, codec.AgentID,
+		coreutil.FieldWithCodec(ParamChainOwner, codec.AgentID),
 	)
 
 	// gas
 	FuncSetFeePolicy = coreutil.NewEP1(Contract, "setFeePolicy",
-		ParamFeePolicyBytes, codec.NewCodecEx(gas.FeePolicyFromBytes),
+		coreutil.FieldWithCodec(ParamFeePolicyBytes, codec.NewCodecEx(gas.FeePolicyFromBytes)),
 	)
 	FuncSetGasLimits = coreutil.NewEP1(Contract, "setGasLimits",
-		ParamGasLimitsBytes, codec.NewCodecEx(gas.LimitsFromBytes),
+		coreutil.FieldWithCodec(ParamGasLimitsBytes, codec.NewCodecEx(gas.LimitsFromBytes)),
 	)
 	ViewGetFeePolicy = coreutil.NewViewEP01(Contract, "getFeePolicy",
-		ParamFeePolicyBytes, codec.NewCodecEx(gas.FeePolicyFromBytes),
+		coreutil.FieldWithCodec(ParamFeePolicyBytes, codec.NewCodecEx(gas.FeePolicyFromBytes)),
 	)
 	ViewGetGasLimits = coreutil.NewViewEP01(Contract, "getGasLimits",
-		ParamGasLimitsBytes, codec.NewCodecEx(gas.LimitsFromBytes),
+		coreutil.FieldWithCodec(ParamGasLimitsBytes, codec.NewCodecEx(gas.LimitsFromBytes)),
 	)
 
 	// evm fees
 	FuncSetEVMGasRatio = coreutil.NewEP1(Contract, "setEVMGasRatio",
-		ParamEVMGasRatio, codec.NewCodecEx(util.Ratio32FromBytes),
+		coreutil.FieldWithCodec(ParamEVMGasRatio, codec.NewCodecEx(util.Ratio32FromBytes)),
 	)
 	ViewGetEVMGasRatio = coreutil.NewViewEP01(Contract, "getEVMGasRatio",
-		ParamEVMGasRatio, codec.NewCodecEx(util.Ratio32FromBytes),
+		coreutil.FieldWithCodec(ParamEVMGasRatio, codec.NewCodecEx(util.Ratio32FromBytes)),
 	)
 
 	// chain info
-	ViewGetChainInfo = EPViewGetChainInfo{EP0: coreutil.NewViewEP0(Contract, "getChainInfo")}
+	ViewGetChainInfo = coreutil.NewViewEP01(Contract, "getChainInfo",
+		OutputChainInfo{},
+	)
 
 	// access nodes
-	FuncAddCandidateNode  = EPAddCandidateNode{EntryPointInfo: Contract.Func("addCandidateNode")}
-	FuncRevokeAccessNode  = EPRevokeAccessNode{EntryPointInfo: Contract.Func("revokeAccessNode")}
-	FuncChangeAccessNodes = EPChangeAccessNodes{EntryPointInfo: Contract.Func("changeAccessNodes")}
-	ViewGetChainNodes     = EPGetChainNodes{EP0: coreutil.NewViewEP0(Contract, "getChainNodes")}
+	FuncAddCandidateNode = coreutil.NewEP1(Contract, "addCandidateNode",
+		InputAddCandidateNode{},
+	)
+	FuncRevokeAccessNode = coreutil.NewEP1(Contract, "revokeAccessNode",
+		InputRevokeAccessNode{},
+	)
+	FuncChangeAccessNodes = coreutil.NewEP1(Contract, "changeAccessNodes",
+		InputChangeAccessNodes{},
+	)
+	ViewGetChainNodes = coreutil.NewViewEP01(Contract, "getChainNodes",
+		OutputChainNodes{},
+	)
 
 	// maintenance
 	FuncStartMaintenance     = coreutil.NewEP0(Contract, "startMaintenance")
 	FuncStopMaintenance      = coreutil.NewEP0(Contract, "stopMaintenance")
 	ViewGetMaintenanceStatus = coreutil.NewViewEP01(Contract, "getMaintenanceStatus",
-		VarMaintenanceStatus, codec.Bool,
+		coreutil.FieldWithCodec(VarMaintenanceStatus, codec.Bool),
 	)
 
 	// public chain metadata
 	FuncSetMetadata = coreutil.NewEP2(Contract, "setMetadata",
-		ParamPublicURL, codec.String,
-		ParamMetadata, codec.Bytes,
+		coreutil.FieldWithCodecOptional(ParamPublicURL, codec.String),
+		coreutil.FieldWithCodecOptional(ParamMetadata, codec.NewCodecEx(isc.PublicChainMetadataFromBytes)),
 	)
 	ViewGetMetadata = coreutil.NewViewEP02(Contract, "getMetadata",
-		ParamPublicURL, codec.String,
-		ParamMetadata, codec.Bytes,
+		coreutil.FieldWithCodec(ParamPublicURL, codec.String),
+		coreutil.FieldWithCodec(ParamMetadata, codec.NewCodecEx(isc.PublicChainMetadataFromBytes)),
 	)
 )
 
@@ -194,71 +210,162 @@ const (
 	DefaultBlockKeepAmount = 10_000
 )
 
-type EPViewGetAllowedStateControllerAddresses struct {
-	coreutil.EP0[isc.SandboxView]
-	Output FieldAddressList
+type OutputAddressList struct{}
+
+func (e OutputAddressList) Encode(addrs []iotago.Address) dict.Dict {
+	return codec.SliceToArray(codec.Address, addrs, ParamAllowedStateControllerAddresses)
 }
 
-type FieldAddressList struct{}
+func (e OutputAddressList) Decode(r dict.Dict) ([]iotago.Address, error) {
+	return codec.SliceFromArray(codec.Address, r, ParamAllowedStateControllerAddresses)
+}
 
-func (e FieldAddressList) Decode(r dict.Dict) ([]iotago.Address, error) {
-	if len(r) == 0 {
-		return nil, nil
+type OutputChainInfo struct{}
+
+func (o OutputChainInfo) Encode(info *isc.ChainInfo) dict.Dict {
+	ret := dict.Dict{
+		ParamChainID:         codec.ChainID.Encode(info.ChainID),
+		VarChainOwnerID:      codec.AgentID.Encode(info.ChainOwnerID),
+		VarGasFeePolicyBytes: info.GasFeePolicy.Bytes(),
+		VarGasLimitsBytes:    info.GasLimits.Bytes(),
+		VarMetadata:          info.Metadata.Bytes(),
 	}
-	addresses := collections.NewArrayReadOnly(r, ParamAllowedStateControllerAddresses)
-	ret := make([]iotago.Address, addresses.Len())
-	for i := range ret {
-		var err error
-		ret[i], err = codec.Address.Decode(addresses.GetAt(uint32(i)))
-		if err != nil {
-			return nil, err
-		}
+	if len(info.PublicURL) > 0 {
+		ret.Set(VarPublicURL, codec.String.Encode(info.PublicURL))
 	}
-	return ret, nil
+	return ret
 }
 
-type EPViewGetChainInfo struct {
-	coreutil.EP0[isc.SandboxView]
-	Output GetChainInfoOutput
-}
-
-type GetChainInfoOutput struct{}
-
-func (o GetChainInfoOutput) Decode(r dict.Dict, chainID isc.ChainID) (*isc.ChainInfo, error) {
+func (o OutputChainInfo) Decode(r dict.Dict) (*isc.ChainInfo, error) {
+	chainID, err := codec.ChainID.Decode(r[ParamChainID])
+	if err != nil {
+		return nil, err
+	}
 	return GetChainInfo(r, chainID)
 }
 
-type EPAddCandidateNode struct {
-	coreutil.EntryPointInfo[isc.Sandbox]
+type InputAddCandidateNode struct{}
+
+func (_ InputAddCandidateNode) Encode(a *AccessNodeInfo) dict.Dict {
+	return dict.Dict{
+		ParamAccessNodeInfoForCommittee: codec.Bool.Encode(a.ForCommittee),
+		ParamAccessNodeInfoPubKey:       a.NodePubKey,
+		ParamAccessNodeInfoCertificate:  a.Certificate,
+		ParamAccessNodeInfoAccessAPI:    codec.String.Encode(a.AccessAPI),
+	}
 }
 
-func (e EPAddCandidateNode) Message(a *AccessNodeInfo) isc.Message {
-	return e.EntryPointInfo.Message(a.ToAddCandidateNodeParams())
+func (_ InputAddCandidateNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
+	return &AccessNodeInfo{
+		NodePubKey:   d[ParamAccessNodeInfoPubKey],
+		Certificate:  d[ParamAccessNodeInfoCertificate],
+		ForCommittee: lo.Must(codec.Bool.Decode(d[ParamAccessNodeInfoForCommittee], false)),
+		AccessAPI:    lo.Must(codec.String.Decode(d[ParamAccessNodeInfoAccessAPI], "")),
+	}, nil
 }
 
-type EPRevokeAccessNode struct {
-	coreutil.EntryPointInfo[isc.Sandbox]
+type InputRevokeAccessNode struct{}
+
+func (e InputRevokeAccessNode) Encode(a *AccessNodeInfo) dict.Dict {
+	return dict.Dict{
+		ParamAccessNodeInfoPubKey:      a.NodePubKey,
+		ParamAccessNodeInfoCertificate: a.Certificate,
+	}
 }
 
-func (e EPRevokeAccessNode) Message(a *AccessNodeInfo) isc.Message {
-	return e.EntryPointInfo.Message(a.ToRevokeAccessNodeParams())
+func (_ InputRevokeAccessNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
+	return &AccessNodeInfo{
+		NodePubKey:  d[ParamAccessNodeInfoPubKey],
+		Certificate: d[ParamAccessNodeInfoCertificate],
+	}, nil
 }
 
-type EPChangeAccessNodes struct {
-	coreutil.EntryPointInfo[isc.Sandbox]
+type InputChangeAccessNodes struct{}
+
+func (_ InputChangeAccessNodes) Encode(r ChangeAccessNodesRequest) dict.Dict {
+	d := dict.New()
+	actionsMap := collections.NewMap(d, ParamChangeAccessNodesActions)
+	for pubKey, action := range r {
+		actionsMap.SetAt(pubKey[:], []byte{byte(action)})
+	}
+	return d
 }
 
-func (e EPChangeAccessNodes) Message(r *ChangeAccessNodesRequest) isc.Message {
-	return e.EntryPointInfo.Message(r.AsDict())
+var errInvalidAction = coreerrors.Register("invalid action").Create()
+
+func (_ InputChangeAccessNodes) Decode(d dict.Dict) (ChangeAccessNodesRequest, error) {
+	actions := NewChangeAccessNodesRequest()
+	m := collections.NewMapReadOnly(d, ParamChangeAccessNodesActions)
+	var err error
+	m.Iterate(func(pubKey, actionBin []byte) bool {
+		var pk cryptolib.PublicKeyKey
+		if len(pubKey) != len(pk) {
+			err = errors.New("invalid public key")
+			return false
+		}
+		copy(pk[:], pubKey)
+		var action byte
+		action, err = codec.Uint8.Decode(actionBin)
+		if err != nil || action >= byte(ChangeAccessNodeActionLast) {
+			err = errInvalidAction
+			return false
+		}
+		actions[pk] = ChangeAccessNodeAction(action)
+		return true
+	})
+	return actions, err
 }
 
-type EPGetChainNodes struct {
-	coreutil.EP0[isc.SandboxView]
-	Output GetChainNodesOutput
+type OutputChainNodes struct{}
+
+func (_ OutputChainNodes) Encode(r *GetChainNodesResponse) dict.Dict {
+	res := dict.New()
+	candidates := collections.NewMap(res, ParamGetChainNodesAccessNodeCandidates)
+	for pk, ani := range r.AccessNodeCandidates {
+		candidates.SetAt(pk[:], ani.Bytes())
+	}
+	nodes := collections.NewMap(res, ParamGetChainNodesAccessNodes)
+	for pk := range r.AccessNodes {
+		nodes.SetAt(pk[:], []byte{0x01})
+	}
+	return res
 }
 
-type GetChainNodesOutput struct{}
+func (_ OutputChainNodes) Decode(d dict.Dict) (*GetChainNodesResponse, error) {
+	res := &GetChainNodesResponse{
+		AccessNodeCandidates: make(map[cryptolib.PublicKeyKey]*AccessNodeInfo),
+		AccessNodes:          make(map[cryptolib.PublicKeyKey]struct{}),
+	}
 
-func (o GetChainNodesOutput) Decode(r dict.Dict) *GetChainNodesResponse {
-	return getChainNodesResponseFromDict(r)
+	var err error
+	ac := collections.NewMapReadOnly(d, ParamGetChainNodesAccessNodeCandidates)
+	ac.Iterate(func(pubKey, value []byte) bool {
+		var ani *AccessNodeInfo
+		ani, err = AccessNodeInfoFromBytes(pubKey, value)
+		if err != nil {
+			return false
+		}
+		var pk *cryptolib.PublicKey
+		pk, err = cryptolib.PublicKeyFromBytes(pubKey)
+		if err != nil {
+			return false
+		}
+		res.AccessNodeCandidates[pk.AsKey()] = ani
+		return true
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	an := collections.NewMapReadOnly(d, ParamGetChainNodesAccessNodes)
+	an.Iterate(func(pubKeyBin, value []byte) bool {
+		var pk *cryptolib.PublicKey
+		pk, err = cryptolib.PublicKeyFromBytes(pubKeyBin)
+		if err != nil {
+			return false
+		}
+		res.AccessNodes[pk.AsKey()] = struct{}{}
+		return true
+	})
+	return res, err
 }

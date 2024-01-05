@@ -68,15 +68,9 @@ func IsRequestProcessed(stateReader kv.KVStoreReader, requestID isc.RequestID) (
 	return requestReceipt != nil, nil
 }
 
-type GetRequestReceiptResult struct {
-	ReceiptBin   []byte
-	BlockIndex   uint32
-	RequestIndex uint16
-}
-
 // GetRequestRecordDataByRequestID tries to obtain the receipt data for a given request
 // returns nil if receipt was not found
-func GetRequestRecordDataByRequestID(stateReader kv.KVStoreReader, reqID isc.RequestID) (*GetRequestReceiptResult, error) {
+func GetRequestRecordDataByRequestID(stateReader kv.KVStoreReader, reqID isc.RequestID) (*RequestReceipt, error) {
 	lookupDigest := reqID.LookupDigest()
 	lookupTable := collections.NewMapReadOnly(stateReader, prefixRequestLookupIndex)
 	lookupKeyListBin := lookupTable.GetAt(lookupDigest[:])
@@ -97,11 +91,7 @@ func GetRequestRecordDataByRequestID(stateReader kv.KVStoreReader, reqID isc.Req
 			return nil, err
 		}
 		if rec.Request.ID().Equals(reqID) {
-			return &GetRequestReceiptResult{
-				ReceiptBin:   recBin,
-				BlockIndex:   rec.BlockIndex,
-				RequestIndex: rec.RequestIndex,
-			}, nil
+			return rec, nil
 		}
 	}
 	return nil, nil

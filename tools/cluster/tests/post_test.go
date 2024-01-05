@@ -84,7 +84,7 @@ func testPost1Request(t *testing.T, e *ChainEnv) {
 
 	myClient := e.Chain.Client(myWallet)
 
-	tx, err := myClient.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
@@ -103,7 +103,8 @@ func testPost3Recursive(t *testing.T, e *ChainEnv) {
 
 	myClient := e.Chain.Client(myWallet)
 
-	tx, err := myClient.PostRequest(inccounter.FuncIncAndRepeatMany.MessageOpt2(3), chainclient.PostRequestParams{
+	var numRepeats int64 = 3
+	tx, err := myClient.PostRequest(inccounter.FuncIncAndRepeatMany.Message(nil, &numRepeats), chainclient.PostRequestParams{
 		Transfer:  isc.NewAssetsBaseTokens(10 * isc.Million),
 		Allowance: isc.NewAssetsBaseTokens(9 * isc.Million),
 	})
@@ -129,7 +130,7 @@ func testPost5Requests(t *testing.T, e *ChainEnv) {
 	onChainBalance := iotago.BaseToken(0)
 	for i := 0; i < 5; i++ {
 		baseTokesSent := 1 * isc.Million
-		tx, err := myClient.PostRequest(inccounter.FuncIncCounter.MessageOpt(), chainclient.PostRequestParams{
+		tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil), chainclient.PostRequestParams{
 			Transfer: isc.NewAssets(baseTokesSent, nil),
 		})
 		require.NoError(t, err)
@@ -163,7 +164,7 @@ func testPost5AsyncRequests(t *testing.T, e *ChainEnv) {
 	onChainBalance := iotago.BaseToken(0)
 	baseTokesSent := 1 * isc.Million
 	for i := 0; i < 5; i++ {
-		tx[i], err = myClient.PostRequest(inccounter.FuncIncCounter.MessageOpt(), chainclient.PostRequestParams{
+		tx[i], err = myClient.PostRequest(inccounter.FuncIncCounter.Message(nil), chainclient.PostRequestParams{
 			Transfer: isc.NewAssets(baseTokesSent, nil),
 		})
 		require.NoError(t, err)

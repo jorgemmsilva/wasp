@@ -70,7 +70,7 @@ func (e *contractEnv) checkSC(numRequests int) {
 		cl := e.Chain.Client(nil, i)
 		r, err := cl.CallView(context.Background(), governance.ViewGetChainInfo.Message())
 		require.NoError(e.t, err)
-		info, err := governance.ViewGetChainInfo.Output.Decode(r, e.Chain.ChainID)
+		info, err := governance.ViewGetChainInfo.Output.Decode(r)
 		require.NoError(e.t, err)
 
 		require.EqualValues(e.t, e.Chain.OriginatorID(), info.ChainOwnerID)

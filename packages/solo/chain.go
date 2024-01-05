@@ -30,6 +30,7 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -89,14 +90,14 @@ func (ch *Chain) FindContract(scName string) (*root.ContractRecord, error) {
 	if err != nil {
 		return nil, err
 	}
-	ok, rec, err := root.ViewFindContract.Output.DecodeOpt(retDict)
+	ok, err := root.ViewFindContract.Output1.Decode(retDict)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		return nil, fmt.Errorf("smart contract '%s' not found", scName)
 	}
-	return rec, nil
+	return root.ViewFindContract.Output2.Decode(retDict)
 }
 
 // GetBlobInfo return info about blob with the given hash with existence flag
@@ -104,9 +105,9 @@ func (ch *Chain) FindContract(scName string) (*root.ContractRecord, error) {
 func (ch *Chain) GetBlobInfo(blobHash hashing.HashValue) (map[string]uint32, bool) {
 	res, err := ch.CallView(blob.ViewGetBlobInfo.Message(blobHash))
 	require.NoError(ch.Env.T, err)
-	sizes, ok, err := blob.ViewGetBlobInfo.Output.Decode(res)
+	sizes, err := blob.ViewGetBlobInfo.Output.Decode(res)
 	require.NoError(ch.Env.T, err)
-	return sizes, ok
+	return sizes, len(sizes) > 0
 }
 
 func (ch *Chain) GetGasFeePolicy() *gas.FeePolicy {
@@ -301,7 +302,9 @@ func (ch *Chain) GetInfo() (isc.ChainID, isc.AgentID, map[isc.Hname]*root.Contra
 
 // GetEventsForContract calls the view in the 'blocklog' core smart contract to retrieve events for a given smart contract.
 func (ch *Chain) GetEventsForContract(name string) ([]*isc.Event, error) {
-	viewResult, err := ch.CallView(blocklog.ViewGetEventsForContract.Message(isc.Hn(name)))
+	viewResult, err := ch.CallView(blocklog.ViewGetEventsForContract.Message(blocklog.EventsForContractQuery{
+		Contract: isc.Hn(name),
+	}))
 	if err != nil {
 		return nil, err
 	}
@@ -319,18 +322,18 @@ func (ch *Chain) GetEventsForRequest(reqID isc.RequestID) ([]*isc.Event, error) 
 
 // GetEventsForBlock calls the view in the 'blocklog' core smart contract to retrieve events for a given block.
 func (ch *Chain) GetEventsForBlock(blockIndex uint32) ([]*isc.Event, error) {
-	viewResult, err := ch.CallView(blocklog.ViewGetEventsForBlock.Message(blockIndex))
+	viewResult, err := ch.CallView(blocklog.ViewGetEventsForBlock.Message(&blockIndex))
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetEventsForBlock.Output.Decode(viewResult)
+	return blocklog.ViewGetEventsForBlock.Output2.Decode(viewResult)
 }
 
 // GetLatestBlockInfo return BlockInfo for the latest block in the chain
 func (ch *Chain) GetLatestBlockInfo() *blocklog.BlockInfo {
-	ret, err := ch.CallView(blocklog.ViewGetBlockInfo.MessageOpt())
+	ret, err := ch.CallView(blocklog.ViewGetBlockInfo.Message(nil))
 	require.NoError(ch.Env.T, err)
-	return lo.Must(blocklog.ViewGetBlockInfo.Output.F2.Decode(ret))
+	return lo.Must(blocklog.ViewGetBlockInfo.Output2.Decode(ret))
 }
 
 func (ch *Chain) GetErrorMessageFormat(code isc.VMErrorCode) (string, error) {
@@ -343,11 +346,11 @@ func (ch *Chain) GetErrorMessageFormat(code isc.VMErrorCode) (string, error) {
 
 // GetBlockInfo return BlockInfo for the particular block index in the chain
 func (ch *Chain) GetBlockInfo(blockIndex ...uint32) (*blocklog.BlockInfo, error) {
-	ret, err := ch.CallView(blocklog.ViewGetBlockInfo.MessageOpt(blockIndex...))
+	ret, err := ch.CallView(blocklog.ViewGetBlockInfo.Message(coreutil.Optional(blockIndex...)))
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetBlockInfo.Output.F2.Decode(ret)
+	return blocklog.ViewGetBlockInfo.Output2.Decode(ret)
 }
 
 // IsRequestProcessed checks if the request is booked on the chain as processed
@@ -361,18 +364,18 @@ func (ch *Chain) IsRequestProcessed(reqID isc.RequestID) bool {
 func (ch *Chain) GetRequestReceipt(reqID isc.RequestID) (*blocklog.RequestReceipt, bool) {
 	ret, err := ch.CallView(blocklog.ViewGetRequestReceipt.Message(reqID))
 	require.NoError(ch.Env.T, err)
-	rec, ok, err := blocklog.ViewGetRequestReceipt.Output.Decode(ret)
+	rec, err := blocklog.ViewGetRequestReceipt.Output.Decode(ret)
 	require.NoError(ch.Env.T, err)
-	return rec, ok
+	return rec, rec != nil
 }
 
 // GetRequestReceiptsForBlock returns all request log records for a particular block
 func (ch *Chain) GetRequestReceiptsForBlock(blockIndex ...uint32) []*blocklog.RequestReceipt {
-	res, err := ch.CallView(blocklog.ViewGetRequestReceiptsForBlock.MessageOpt(blockIndex...))
+	res, err := ch.CallView(blocklog.ViewGetRequestReceiptsForBlock.Message(coreutil.Optional(blockIndex...)))
 	if err != nil {
 		return nil
 	}
-	recs, err := blocklog.ViewGetRequestReceiptsForBlock.Output.Decode(res)
+	recs, err := blocklog.ViewGetRequestReceiptsForBlock.Output2.Decode(res)
 	if err != nil {
 		ch.Log().Warn(err)
 		return nil
@@ -382,9 +385,9 @@ func (ch *Chain) GetRequestReceiptsForBlock(blockIndex ...uint32) []*blocklog.Re
 
 // GetRequestIDsForBlock returns the list of requestIDs settled in a particular block
 func (ch *Chain) GetRequestIDsForBlock(blockIndex uint32) []isc.RequestID {
-	res, err := ch.CallView(blocklog.ViewGetRequestIDsForBlock.Message(blockIndex))
+	res, err := ch.CallView(blocklog.ViewGetRequestIDsForBlock.Message(&blockIndex))
 	require.NoError(ch.Env.T, err)
-	return lo.Must(blocklog.ViewGetRequestIDsForBlock.Output.Decode(res))
+	return lo.Must(blocklog.ViewGetRequestIDsForBlock.Output2.Decode(res))
 }
 
 // GetRequestReceiptsForBlockRange returns all request log records for range of blocks, inclusively.
@@ -602,7 +605,7 @@ func (ch *Chain) Nonce(agentID isc.AgentID) uint64 {
 		require.NoError(ch.Env.T, err)
 		return nonce
 	}
-	res, err := ch.CallView(accounts.ViewGetAccountNonce.Message(agentID))
+	res, err := ch.CallView(accounts.ViewGetAccountNonce.Message(&agentID))
 	require.NoError(ch.Env.T, err)
 	return lo.Must(accounts.ViewGetAccountNonce.Output.Decode(res))
 }

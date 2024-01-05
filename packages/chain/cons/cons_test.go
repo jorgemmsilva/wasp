@@ -349,7 +349,7 @@ func testChained(t *testing.T, n, f, b int) {
 		for ii := 0; ii < reqPerBlock; ii++ {
 			scRequest := isc.NewOffLedgerRequest(
 				chainID,
-				inccounter.FuncIncCounter.MessageOpt(),
+				inccounter.FuncIncCounter.Message(nil),
 				uint64(i*reqPerBlock+ii),
 				gas.LimitsDefault.MinGasPerRequest,
 			).Sign(scClient)

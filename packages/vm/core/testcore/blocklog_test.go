@@ -111,7 +111,8 @@ func TestRequestIsProcessed(t *testing.T) {
 
 	ch.MustDepositBaseTokensToL2(10_000, nil)
 
-	req := solo.NewCallParams(governance.FuncSetMetadata.MessageOpt1("foo")).
+	publicURL := "foo"
+	req := solo.NewCallParams(governance.FuncSetMetadata.Message(&publicURL, nil)).
 		WithGasBudget(100_000)
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
@@ -132,7 +133,8 @@ func TestRequestReceipt(t *testing.T) {
 
 	ch.MustDepositBaseTokensToL2(10_000, nil)
 
-	req := solo.NewCallParams(governance.FuncSetMetadata.MessageOpt1("foo")).
+	publicURL := "foo"
+	req := solo.NewCallParams(governance.FuncSetMetadata.Message(&publicURL, nil)).
 		WithGasBudget(100_000)
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
@@ -159,7 +161,8 @@ func TestRequestReceiptsForBlocks(t *testing.T) {
 
 	ch.MustDepositBaseTokensToL2(10_000, nil)
 
-	req := solo.NewCallParams(governance.FuncSetMetadata.MessageOpt1("foo")).
+	publicURL := "foo"
+	req := solo.NewCallParams(governance.FuncSetMetadata.Message(&publicURL, nil)).
 		WithGasBudget(100_000)
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)
@@ -182,7 +185,8 @@ func TestRequestIDsForBlocks(t *testing.T) {
 
 	ch.MustDepositBaseTokensToL2(10_000, nil)
 
-	req := solo.NewCallParams(governance.FuncSetMetadata.MessageOpt1("foo")).
+	publicURL := "foo"
+	req := solo.NewCallParams(governance.FuncSetMetadata.Message(&publicURL, nil)).
 		WithGasBudget(100_000)
 	tx, _, err := ch.PostRequestSyncTx(req, nil)
 	require.NoError(t, err)

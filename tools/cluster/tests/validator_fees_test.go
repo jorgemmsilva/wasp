@@ -64,7 +64,7 @@ func TestValidatorFees(t *testing.T) {
 	require.NoError(t, err)
 	scClient := chainclient.New(clu.L1Client(), clu.WaspClient(0), chainID, userWallet)
 	for i := 0; i < 20; i++ {
-		reqTx, err := scClient.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+		reqTx, err := scClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 		require.NoError(t, err)
 		_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chainID, reqTx, false, 30*time.Second)
 		require.NoError(t, err)

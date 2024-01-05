@@ -1,9 +1,11 @@
 package blob
 
 import (
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/wasp/packages/hashing"
-	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -14,15 +16,18 @@ var Contract = coreutil.NewContract(coreutil.CoreContractBlob)
 var (
 	FuncStoreBlob = Contract.Func("storeBlob")
 
-	ViewGetBlobInfo = EPViewGetBlobInfo{EP1: coreutil.NewViewEP1(Contract, "getBlobInfo",
-		ParamHash, codec.HashValue,
-	)}
-	ViewGetBlobField = coreutil.NewViewEP21(Contract, "getBlobField",
-		ParamHash, codec.HashValue,
-		ParamField, codec.Bytes,
-		ParamBytes, codec.Bytes,
+	ViewGetBlobInfo = coreutil.NewViewEP11(Contract, "getBlobInfo",
+		coreutil.FieldWithCodec(ParamHash, codec.HashValue),
+		OutputFieldSizesMap{},
 	)
-	ViewListBlobs = EPViewListBlobs{EP0: coreutil.NewViewEP0(Contract, "listBlobs")}
+	ViewGetBlobField = coreutil.NewViewEP21(Contract, "getBlobField",
+		coreutil.FieldWithCodec(ParamHash, codec.HashValue),
+		coreutil.FieldWithCodec(ParamField, codec.Bytes),
+		coreutil.FieldWithCodec(ParamBytes, codec.Bytes),
+	)
+	ViewListBlobs = coreutil.NewViewEP01(Contract, "listBlobs",
+		OutputBlobDirectory{},
+	)
 )
 
 // state variables
@@ -46,24 +51,26 @@ func FieldValueKey(blobHash hashing.HashValue, fieldName string) []byte {
 	return []byte(collections.MapElemKey(valuesMapName(blobHash), []byte(fieldName)))
 }
 
-type EPViewGetBlobInfo struct {
-	coreutil.EP1[isc.SandboxView, hashing.HashValue]
-	Output FieldSizesMap
+type OutputFieldSizesMap struct{}
+
+func (_ OutputFieldSizesMap) Encode(sizes map[string]uint32) dict.Dict {
+	return lo.MapEntries(sizes, func(field string, size uint32) (kv.Key, []byte) {
+		return kv.Key(field), EncodeSize(size)
+	})
 }
 
-type FieldSizesMap struct{}
-
-func (f FieldSizesMap) Decode(r dict.Dict) (map[string]uint32, bool, error) {
+func (_ OutputFieldSizesMap) Decode(r dict.Dict) (map[string]uint32, error) {
 	return decodeSizesMap(r)
 }
 
-type EPViewListBlobs struct {
-	coreutil.EP0[isc.SandboxView]
-	Output FieldDirectory
+type OutputBlobDirectory struct{}
+
+func (_ OutputBlobDirectory) Encode(d map[hashing.HashValue]uint32) dict.Dict {
+	return lo.MapEntries(d, func(hash hashing.HashValue, size uint32) (kv.Key, []byte) {
+		return kv.Key(codec.HashValue.Encode(hash)), EncodeSize(size)
+	})
 }
 
-type FieldDirectory struct{}
-
-func (f FieldDirectory) Decode(r dict.Dict) (map[hashing.HashValue]uint32, error) {
+func (_ OutputBlobDirectory) Decode(r dict.Dict) (map[hashing.HashValue]uint32, error) {
 	return decodeDirectory(r)
 }

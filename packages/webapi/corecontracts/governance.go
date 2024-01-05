@@ -23,9 +23,9 @@ func GetChainOwner(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string)
 }
 
 func GetChainInfo(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*isc.ChainInfo, error) {
-	chainID, ret, err := callViewInvoker(governance.ViewGetChainInfo.Message(), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(governance.ViewGetChainInfo.Message(), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-	return governance.ViewGetChainInfo.Output.Decode(ret, chainID)
+	return governance.ViewGetChainInfo.Output.Decode(ret)
 }

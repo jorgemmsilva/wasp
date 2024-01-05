@@ -97,19 +97,19 @@ func DecodeSize(size []byte) (uint32, error) {
 	return codec.Uint32.Decode(size)
 }
 
-func decodeSizesMap(sizes dict.Dict) (map[string]uint32, bool, error) {
+func decodeSizesMap(sizes dict.Dict) (map[string]uint32, error) {
 	if sizes.IsEmpty() {
-		return nil, false, nil
+		return nil, nil
 	}
 	ret := make(map[string]uint32)
 	for field, size := range sizes {
 		v, err := DecodeSize(size)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 		ret[string(field)] = v
 	}
-	return ret, true, nil
+	return ret, nil
 }
 
 func decodeDirectory(blobs dict.Dict) (map[hashing.HashValue]uint32, error) {

@@ -84,7 +84,7 @@ func testAccounts(e *ChainEnv) {
 	chClient := chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), e.Chain.ChainID, myWallet)
 
 	par := chainclient.NewPostRequestParams().WithBaseTokens(transferBaseTokens)
-	reqTx, err := chClient.PostRequest(inccounter.FuncIncCounter.MessageOpt(), *par)
+	reqTx, err := chClient.PostRequest(inccounter.FuncIncCounter.Message(nil), *par)
 	require.NoError(e.t, err)
 
 	receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 10*time.Second)
@@ -155,7 +155,7 @@ func testBasic2Accounts(t *testing.T, env *ChainEnv) {
 	myWalletClient := chainclient.New(env.Clu.L1Client(), env.Clu.WaspClient(0), chain.ChainID, myWallet)
 
 	par := chainclient.NewPostRequestParams().WithBaseTokens(transferBaseTokens)
-	reqTx, err := myWalletClient.PostRequest(inccounter.FuncIncCounter.MessageOpt(), *par)
+	reqTx, err := myWalletClient.PostRequest(inccounter.FuncIncCounter.Message(nil), *par)
 	require.NoError(t, err)
 
 	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, reqTx, false, 30*time.Second)

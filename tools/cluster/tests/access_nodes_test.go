@@ -90,7 +90,7 @@ func testPermitionlessAccessNode(t *testing.T, env *ChainEnv) {
 		env.Chain.ChainID,
 		keyPair,
 	)
-	req, err := myClient.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err := myClient.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	// request has been processed
@@ -104,7 +104,7 @@ func testPermitionlessAccessNode(t *testing.T, env *ChainEnv) {
 	time.Sleep(1 * time.Second) // Access/Server node info is exchanged asynchronously.
 
 	// try sending the request again
-	req, err = myClient.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err = myClient.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	// request is not processed after a while

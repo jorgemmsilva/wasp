@@ -33,7 +33,7 @@ func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
 		TargetAddress: targetChain.AsAddress(),
 		Assets:        isc.NewAssetsBaseTokens(storageDeposit + gasReserveTransferAccountToChain + iotago.BaseToken(gasReserve)),
 		Metadata: &isc.SendMetadata{
-			Message:   accounts.FuncTransferAccountToChain.Message(uint64(gasReserve)),
+			Message:   accounts.FuncTransferAccountToChain.Message(&gasReserve),
 			GasBudget: gas.GasUnits(gasReserve),
 			Allowance: isc.NewAssetsBaseTokens(withdrawal + storageDeposit + iotago.BaseToken(gasReserve)),
 		},

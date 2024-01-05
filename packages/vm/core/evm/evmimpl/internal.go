@@ -129,9 +129,8 @@ func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.Bas
 	ret := iotago.BaseToken(0)
 	// do not charge gas for this, internal checks of the emulator require this function to run before executing the request
 	ctx.WithoutGasBurn(func() {
-		res := ctx.sandbox.CallView(accounts.ViewBalanceBaseToken.Message(
-			isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
-		))
+		var agentID isc.AgentID = isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr)
+		res := ctx.sandbox.CallView(accounts.ViewBalanceBaseToken.Message(&agentID))
 		ret = lo.Must(accounts.ViewBalanceBaseToken.Output.Decode(res))
 	})
 	return ret

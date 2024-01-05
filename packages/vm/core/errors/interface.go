@@ -8,11 +8,13 @@ import (
 var Contract = coreutil.NewContract(coreutil.CoreContractErrors)
 
 var (
-	FuncRegisterError = coreutil.NewEP1(Contract, "registerError", ParamErrorMessageFormat, codec.String)
+	FuncRegisterError = coreutil.NewEP1(Contract, "registerError",
+		coreutil.FieldWithCodec(ParamErrorMessageFormat, codec.String),
+	)
 
 	ViewGetErrorMessageFormat = coreutil.NewViewEP11(Contract, "getErrorMessageFormat",
-		ParamErrorCode, codec.VMErrorCode,
-		ParamErrorMessageFormat, codec.String,
+		coreutil.FieldWithCodec(ParamErrorCode, codec.VMErrorCode),
+		coreutil.FieldWithCodec(ParamErrorMessageFormat, codec.String),
 	)
 )
 

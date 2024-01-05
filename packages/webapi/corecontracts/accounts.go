@@ -14,7 +14,7 @@ func GetAccounts(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (
 	if err != nil {
 		return nil, err
 	}
-	return accounts.ViewAccounts.Output.Decode(res, chainID)
+	return accounts.ViewAccounts.Output.DecodeAccounts(res, chainID)
 }
 
 func GetTotalAssets(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
@@ -26,7 +26,7 @@ func GetTotalAssets(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string
 }
 
 func GetAccountBalance(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) (*isc.FungibleTokens, error) {
-	_, ret, err := callViewInvoker(accounts.ViewBalance.Message(agentID), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(accounts.ViewBalance.Message(&agentID), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
@@ -34,16 +34,16 @@ func GetAccountBalance(callViewInvoker CallViewInvoker, agentID isc.AgentID, blo
 }
 
 func GetAccountNFTs(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]iotago.NFTID, error) {
-	_, res, err := callViewInvoker(accounts.ViewAccountNFTs.Message(agentID), blockIndexOrTrieRoot)
+	_, res, err := callViewInvoker(accounts.ViewAccountNFTs.Message(&agentID), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-	return accounts.ViewAccountNFTs.Output.Decode(res), nil
+	return accounts.ViewAccountNFTs.Output.Decode(res)
 }
 
 func GetAccountFoundries(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) ([]uint32, error) {
 	_, ret, err := callViewInvoker(
-		accounts.ViewAccountFoundries.Message(agentID),
+		accounts.ViewAccountFoundries.Message(&agentID),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -58,7 +58,7 @@ func GetAccountFoundries(callViewInvoker CallViewInvoker, agentID isc.AgentID, b
 
 func GetAccountNonce(callViewInvoker CallViewInvoker, agentID isc.AgentID, blockIndexOrTrieRoot string) (uint64, error) {
 	_, ret, err := callViewInvoker(
-		accounts.ViewGetAccountNonce.Message(agentID),
+		accounts.ViewGetAccountNonce.Message(&agentID),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
@@ -80,7 +80,7 @@ func GetNativeTokenIDRegistry(callViewInvoker CallViewInvoker, blockIndexOrTrieR
 	if err != nil {
 		return nil, err
 	}
-	return accounts.ViewGetNativeTokenIDRegistry.Output.Decode(res), nil
+	return accounts.ViewGetNativeTokenIDRegistry.Output.Decode(res)
 }
 
 func GetFoundryOutput(callViewInvoker CallViewInvoker, l1Api iotago.API, serialNumber uint32, blockIndexOrTrieRoot string) (*iotago.FoundryOutput, error) {

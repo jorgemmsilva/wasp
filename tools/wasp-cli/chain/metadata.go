@@ -171,7 +171,7 @@ func updateMetadata(node string, chainAliasName string, chainID isc.ChainID, wit
 	validateAndPushURL(&chainInfo.Metadata.Website, metadataArgs.ChainWebsite)
 
 	// Map data to serialize to bytes
-	chainMetadata := isc.PublicChainMetadata{
+	chainMetadata := &isc.PublicChainMetadata{
 		EVMJsonRPCURL:   chainInfo.Metadata.EvmJsonRpcURL,
 		EVMWebSocketURL: chainInfo.Metadata.EvmWebSocketURL,
 		Name:            chainInfo.Metadata.Name,
@@ -182,7 +182,7 @@ func updateMetadata(node string, chainAliasName string, chainID isc.ChainID, wit
 	postRequest(
 		node,
 		chainAliasName,
-		governance.FuncSetMetadata.Message(publicURL, chainMetadata.Bytes()),
+		governance.FuncSetMetadata.Message(&publicURL, &chainMetadata),
 		chainclient.PostRequestParams{},
 		withOffLedger,
 		true,

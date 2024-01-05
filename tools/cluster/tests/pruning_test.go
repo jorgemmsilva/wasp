@@ -226,22 +226,24 @@ func TestPruning(t *testing.T) {
 	t.Run("isc view call", func(t *testing.T) {
 		t.Parallel()
 		// archive node
+		var bi uint32 = 10
 		res, err := chain.Client(nil, 0).CallView(
 			context.Background(),
-			blocklog.ViewGetRequestReceiptsForBlock.Message(10),
+			blocklog.ViewGetRequestReceiptsForBlock.Message(&bi),
 			"10",
 		)
 		require.NoError(t, err)
-		receipts, err := blocklog.ViewGetRequestReceiptsForBlock.Output.Decode(res)
+		receipts, err := blocklog.ViewGetRequestReceiptsForBlock.Output2.Decode(res)
 		require.NoError(t, err)
 		require.Len(t, receipts, 1)
 		require.NoError(t, err)
 		require.NotZero(t, receipts[0].GasFeeCharged)
 
 		// light node
+		bi = 0
 		_, err = chain.Client(nil, 1).CallView(
 			context.Background(),
-			blocklog.ViewGetRequestReceiptsForBlock.Message(0),
+			blocklog.ViewGetRequestReceiptsForBlock.Message(&bi),
 			"10",
 		)
 		require.Error(t, err)

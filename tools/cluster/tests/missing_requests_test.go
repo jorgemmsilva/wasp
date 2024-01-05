@@ -43,7 +43,7 @@ func TestMissingRequests(t *testing.T) {
 
 	// TODO: Validate offleder logic
 	// send off-ledger request to all nodes except #3
-	req := isc.NewOffLedgerRequest(chainID, inccounter.FuncIncCounter.MessageOpt(), 0, gas.LimitsDefault.MaxGasPerRequest).Sign(userWallet)
+	req := isc.NewOffLedgerRequest(chainID, inccounter.FuncIncCounter.Message(nil), 0, gas.LimitsDefault.MaxGasPerRequest).Sign(userWallet)
 
 	_, err = clu.WaspClient(0).RequestsApi.OffLedger(context.Background()).OffLedgerRequest(apiclient.OffLedgerRequest{
 		ChainId: chainID.String(),

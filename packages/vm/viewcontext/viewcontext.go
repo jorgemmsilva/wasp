@@ -270,8 +270,8 @@ func (ctx *ViewContext) GetMerkleProof(key []byte) (ret *trie.MerkleProof, err e
 func (ctx *ViewContext) GetBlockProof(blockIndex uint32) (blockInfo *blocklog.BlockInfo, proof *trie.MerkleProof, err error) {
 	err = panicutil.CatchAllButDBError(func() {
 		// retrieve serialized block info record
-		r := ctx.initAndCallView(blocklog.ViewGetBlockInfo.Message(blockIndex))
-		blockInfo = lo.Must(blocklog.ViewGetBlockInfo.Output.F2.Decode(r))
+		r := ctx.initAndCallView(blocklog.ViewGetBlockInfo.Message(&blockIndex))
+		blockInfo = lo.Must(blocklog.ViewGetBlockInfo.Output2.Decode(r))
 
 		// retrieve proof to serialized block
 		key := blocklog.Contract.FullKey(blocklog.BlockInfoKey(blockIndex))

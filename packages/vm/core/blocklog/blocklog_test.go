@@ -147,6 +147,9 @@ func TestGetEventsInternal(t *testing.T) {
 	eventMap := collections.NewMap(d, prefixRequestEvents)
 	createEventLookupKeys(registry, eventMap, contractID, maxBlocks, maxRequests, maxEventsPerRequest)
 
-	events := getSmartContractEventsInternal(d, contractID, blockFrom, blockTo)
+	events := getSmartContractEventsInternal(d, EventsForContractQuery{
+		Contract:   contractID,
+		BlockRange: &BlockRange{From: blockFrom, To: blockTo},
+	})
 	validateEvents(t, events, maxRequests, maxEventsPerRequest, blockFrom, blockTo)
 }

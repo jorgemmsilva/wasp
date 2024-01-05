@@ -61,7 +61,7 @@ func TestIncDefaultParam(t *testing.T) {
 	require.NoError(t, err)
 	checkCounter(chain, 17)
 
-	req := solo.NewCallParams(FuncIncCounter.MessageOpt()).
+	req := solo.NewCallParams(FuncIncCounter.Message(nil)).
 		AddBaseTokens(1).
 		WithMaxAffordableGasBudget()
 	_, err = chain.PostRequestSync(req, nil)
@@ -78,7 +78,8 @@ func TestIncParam(t *testing.T) {
 	require.NoError(t, err)
 	checkCounter(chain, 17)
 
-	req := solo.NewCallParams(FuncIncCounter.Message(3)).
+	var inc int64 = 3
+	req := solo.NewCallParams(FuncIncCounter.Message(&inc)).
 		AddBaseTokens(1).
 		WithMaxAffordableGasBudget()
 	_, err = chain.PostRequestSync(req, nil)
@@ -148,7 +149,7 @@ func initBenchmark(b *testing.B) (*solo.Chain, []*solo.CallParams) {
 	// setup: prepare N requests that call FuncIncCounter
 	reqs := make([]*solo.CallParams, b.N)
 	for i := 0; i < b.N; i++ {
-		reqs[i] = solo.NewCallParams(FuncIncCounter.MessageOpt()).AddBaseTokens(1)
+		reqs[i] = solo.NewCallParams(FuncIncCounter.Message(nil)).AddBaseTokens(1)
 	}
 
 	return chain, reqs

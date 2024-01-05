@@ -92,7 +92,7 @@ func TestErrorWithCustomError(t *testing.T) {
 func TestPanicDueMissingErrorMessage(t *testing.T) {
 	chain := setupErrorsTest(t)
 
-	req := solo.NewCallParams(errors.FuncRegisterError.MessageOpt()).
+	req := solo.NewCallParams(errors.FuncRegisterError.EntryPointInfo.Message(nil)).
 		WithGasBudget(100_000)
 
 	_, _, err := chain.PostRequestSyncTx(req, nil)

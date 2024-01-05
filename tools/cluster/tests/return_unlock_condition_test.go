@@ -27,7 +27,7 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 			TargetAddress: env.Chain.ChainAddress(),
 			Assets:        isc.NewAssets(2*isc.Million, nil),
 			Metadata: &isc.SendMetadata{
-				Message:   inccounter.FuncIncCounter.MessageOpt(),
+				Message:   inccounter.FuncIncCounter.Message(nil),
 				GasBudget: math.MaxUint64,
 			},
 		},

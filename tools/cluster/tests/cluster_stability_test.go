@@ -42,7 +42,7 @@ func initializeStabilityTest(t *testing.T, numValidators, clusterSize int) *Sabo
 func (e *SabotageEnv) sendRequests(numRequests int, messageDelay time.Duration) {
 	client := e.chainEnv.createNewClient()
 	for i := 0; i < numRequests; i++ {
-		_, err := client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+		_, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 		require.NoError(e.chainEnv.t, err)
 
 		time.Sleep(messageDelay)

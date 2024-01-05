@@ -28,7 +28,7 @@ var (
 	TokenScheme = newIotagoCodec[iotago.TokenScheme](l1API)
 )
 
-func newIotagoCodec[T any](l1API iotago.API) *Codec[T] {
+func newIotagoCodec[T any](l1API iotago.API) Codec[T] {
 	return NewCodec(
 		func(b []byte) (v T, err error) {
 			n, err := l1API.Decode(b, &v)

@@ -74,7 +74,7 @@ func TestNoSenderFeature(t *testing.T) {
 				iotago.NativeTokenSum{nativeTokenID: nativeTokenAmount},
 			).AddNFTs(nft.ID),
 			Metadata: &isc.SendMetadata{
-				Message:   inccounter.FuncIncCounter.MessageOpt(),
+				Message:   inccounter.FuncIncCounter.Message(nil),
 				GasBudget: math.MaxUint64,
 			},
 		},
@@ -143,7 +143,7 @@ func TestSendBack(t *testing.T) {
 	// send a normal request
 	wallet, addr := env.NewKeyPairWithFunds()
 
-	req := solo.NewCallParams(inccounter.FuncIncCounter.MessageOpt()).WithMaxAffordableGasBudget()
+	req := solo.NewCallParams(inccounter.FuncIncCounter.Message(nil)).WithMaxAffordableGasBudget()
 	_, _, err = ch.PostRequestSyncTx(req, wallet)
 	require.NoError(t, err)
 
@@ -164,7 +164,7 @@ func TestSendBack(t *testing.T) {
 			TargetAddress: ch.ChainID.AsAddress(),
 			Assets:        isc.NewAssetsBaseTokens(1 * isc.Million),
 			Metadata: &isc.SendMetadata{
-				Message:   inccounter.FuncIncCounter.MessageOpt(),
+				Message:   inccounter.FuncIncCounter.Message(nil),
 				GasBudget: math.MaxUint64,
 			},
 		},
@@ -232,7 +232,7 @@ func TestBadMetadata(t *testing.T) {
 			TargetAddress: ch.ChainID.AsAddress(),
 			Assets:        isc.NewAssetsBaseTokens(1 * isc.Million),
 			Metadata: &isc.SendMetadata{
-				Message:   inccounter.FuncIncCounter.MessageOpt(),
+				Message:   inccounter.FuncIncCounter.Message(nil),
 				GasBudget: math.MaxUint64,
 			},
 		},

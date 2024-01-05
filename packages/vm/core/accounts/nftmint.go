@@ -3,6 +3,8 @@ package accounts
 import (
 	"io"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -81,15 +83,7 @@ type mintParameters struct {
 	withdrawOnMint    bool
 }
 
-func mintParams(ctx isc.Sandbox) mintParameters {
-	params := ctx.Params()
-
-	immutableMetadata := params.MustGetBytes(ParamNFTImmutableData)
-	targetAgentID := params.MustGetAgentID(ParamAgentID)
-	withdrawOnMint := params.MustGetBool(ParamNFTWithdrawOnMint, false)
-	emptyNFTID := iotago.NFTID{}
-	collectionID := params.MustGetNFTID(ParamCollectionID, emptyNFTID)
-
+func mintParams(ctx isc.Sandbox, immutableMetadata []byte, targetAgentID isc.AgentID, withdrawOnMint bool, collectionID iotago.NFTID) mintParameters {
 	chainAddress := ctx.ChainID().AsAddress()
 	ret := mintParameters{
 		immutableMetadata: immutableMetadata,
@@ -99,7 +93,7 @@ func mintParams(ctx isc.Sandbox) mintParameters {
 		withdrawOnMint:    withdrawOnMint,
 	}
 
-	if collectionID != emptyNFTID {
+	if !collectionID.Empty() {
 		// assert the NFT of collectionID is on-chain and owned by the caller
 		if !hasNFT(ctx.State(), ctx.Caller(), collectionID) {
 			panic(errCollectionNotAllowed)
@@ -132,8 +126,8 @@ func mintID(blockIndex uint32, positionInMintedList uint16) []byte {
 }
 
 // NFTs are always minted with the minimumSD and that must be provided via allowance
-func mintNFT(ctx isc.Sandbox) dict.Dict {
-	params := mintParams(ctx)
+func mintNFT(ctx isc.Sandbox, immutableMetadata []byte, target isc.AgentID, withdrawOnMint bool, collectionID iotago.NFTID) dict.Dict {
+	params := mintParams(ctx, immutableMetadata, target, withdrawOnMint, collectionID)
 
 	positionInMintedList, nftOutput := ctx.Privileged().MintNFT(
 		params.targetAddress,
@@ -159,12 +153,8 @@ func mintNFT(ctx isc.Sandbox) dict.Dict {
 	}
 }
 
-func viewNFTIDbyMintID(ctx isc.SandboxView) dict.Dict {
-	internalMintID := ctx.Params().MustGetBytes(ParamMintID)
-	nftID := mintIDMapR(ctx.StateR()).GetAt(internalMintID)
-	return dict.Dict{
-		ParamNFTID: nftID,
-	}
+func viewNFTIDbyMintID(ctx isc.SandboxView, internalMintID []byte) iotago.NFTID {
+	return lo.Must(codec.NFTID.Decode(mintIDMapR(ctx.StateR()).GetAt(internalMintID)))
 }
 
 // ----  output management

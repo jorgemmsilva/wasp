@@ -10,7 +10,8 @@ func GetBlobInfo(callViewInvoker CallViewInvoker, blobHash hashing.HashValue, bl
 	if err != nil {
 		return nil, false, err
 	}
-	return blob.ViewGetBlobInfo.Output.Decode(ret)
+	fields, err := blob.ViewGetBlobInfo.Output.Decode(ret)
+	return fields, len(fields) > 0, err
 }
 
 func GetBlobValue(callViewInvoker CallViewInvoker, blobHash hashing.HashValue, key string, blockIndexOrTrieRoot string) ([]byte, error) {

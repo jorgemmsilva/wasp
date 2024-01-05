@@ -277,10 +277,10 @@ func (e *SoloChainEnv) registerERC20ExternalNativeToken(
 	token evm.ERC20NativeTokenParams,
 ) (ret common.Address, err error) {
 	_, err = fromChain.PostRequestOffLedger(
-		solo.NewCallParams(evm.FuncRegisterERC20NativeTokenOnRemoteChain.Message(
-			token,
-			e.Chain.ChainID.AsAddress(),
-		)).
+		solo.NewCallParams(evm.FuncRegisterERC20NativeTokenOnRemoteChain.Message(evm.RegisterERC20NativeTokenOnRemoteChainRequest{
+			TargetChain: e.Chain.ChainID.AsAddress(),
+			Token:       token,
+		})).
 			// to cover sd and gas fee for the 'FuncRegisterERC20ExternalNativeToken' func call in 'FuncRegisterERC20NativeTokenOnRemoteChain'
 			WithAllowance(isc.NewAssetsBaseTokens(iotago.BaseToken(1000*gas.LimitsDefault.MinGasPerRequest))).
 			WithGasBudget(10*gas.LimitsDefault.MinGasPerRequest),
@@ -296,11 +296,12 @@ func (e *SoloChainEnv) registerERC20ExternalNativeToken(
 	if !e.Chain.WaitUntil(func() bool {
 		res, err2 := e.Chain.CallView(evm.ViewGetERC20ExternalNativeTokenAddress.Message(nativeTokenID))
 		require.NoError(e.t, err2)
-		if !evm.ViewGetERC20ExternalNativeTokenAddress.Output.Has(res) {
+		addr, err3 := evm.ViewGetERC20ExternalNativeTokenAddress.Output.Decode(res)
+		require.NoError(e.t, err3)
+		if addr == nil {
 			return false
 		}
-		ret, err2 = evm.ViewGetERC20ExternalNativeTokenAddress.Output.Decode(res)
-		require.NoError(e.t, err2)
+		ret = *addr
 		return true
 	}) {
 		require.FailNow(e.t, "could not get ERC20 address on target chain")

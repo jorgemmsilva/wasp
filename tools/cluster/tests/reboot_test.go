@@ -37,7 +37,7 @@ func TestReboot(t *testing.T) {
 	require.NoError(t, er)
 	//-------
 
-	tx, err := client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(env.Clu.WaspClient(0), env.Chain.ChainID, tx, true, 10*time.Second)
@@ -45,7 +45,7 @@ func TestReboot(t *testing.T) {
 
 	env.expectCounter(1)
 
-	req, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
@@ -79,7 +79,7 @@ func TestReboot(t *testing.T) {
 	require.NoError(t, err)
 
 	// after rebooting, the chain should resume processing requests without issues
-	tx, err = client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err = client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(env.Clu.WaspClient(0), env.Chain.ChainID, tx, true, 10*time.Second)
@@ -87,7 +87,7 @@ func TestReboot(t *testing.T) {
 	env.expectCounter(3)
 
 	// ensure offledger requests are still working
-	req, err = client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err = client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
@@ -102,7 +102,7 @@ func TestReboot2(t *testing.T) {
 	env := setupNativeInccounterTest(t, 4, []int{0, 1, 2, 3})
 	client := env.createNewClient()
 
-	tx, err := client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(env.Clu.WaspClient(0), env.Chain.ChainID, tx, true, 10*time.Second)
@@ -110,7 +110,7 @@ func TestReboot2(t *testing.T) {
 
 	env.expectCounter(1)
 
-	req, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
@@ -141,13 +141,13 @@ func TestReboot2(t *testing.T) {
 	// er = env.Clu.WaspClient(0).ActivateChain(env.Chain.ChainID)
 	// require.NoError(t, er)
 
-	// tx, err = client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	// tx, err = client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	// require.NoError(t, err)
 	// _, err = env.Clu.WaspClient(0).WaitUntilAllRequestsProcessed(env.Chain.ChainID, tx, true,10*time.Second)
 	// require.NoError(t, err)
 	// env.expectCounter( 3)
 
-	// reqx, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	// reqx, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	// require.NoError(t, err)
 	// env.Clu.WaspClient(0).WaitUntilRequestProcessed(env.Chain.ChainID, reqx.ID(), 10*time.Second)
 	// env.expectCounter( 4)
@@ -158,7 +158,7 @@ func TestReboot2(t *testing.T) {
 	require.NoError(t, err)
 
 	// after rebooting, the chain should resume processing requests without issues
-	tx, err = client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err = client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(env.Clu.WaspClient(0), env.Chain.ChainID, tx, true, 10*time.Second)
@@ -166,7 +166,7 @@ func TestReboot2(t *testing.T) {
 
 	env.expectCounter(3)
 	// ensure off-ledger requests are still working
-	req, err = client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err = client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
@@ -190,7 +190,7 @@ func newIncCounterClient(t *testing.T, env *ChainEnv, client *chainclient.Client
 }
 
 func (icc *incCounterClient) MustIncOnLedger() {
-	tx, err := icc.client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err := icc.client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(icc.t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(icc.env.Clu.WaspClient(0), icc.env.Chain.ChainID, tx, true, 10*time.Second)
@@ -201,7 +201,7 @@ func (icc *incCounterClient) MustIncOnLedger() {
 }
 
 func (icc *incCounterClient) MustIncOffLedger() {
-	req, err := icc.client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err := icc.client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(icc.t, err)
 
 	_, _, err = icc.env.Clu.WaspClient(0).ChainsApi.
@@ -305,7 +305,7 @@ func TestRebootDuringTasks(t *testing.T) {
 		go func() {
 			for i := 0; i < postCount; i++ {
 				// ignore any error (nodes might be down when sending)
-				client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+				client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 				time.Sleep(postDelay)
 			}
 		}()
@@ -315,7 +315,7 @@ func TestRebootDuringTasks(t *testing.T) {
 			require.NoError(t, err)
 			client := env.Chain.Client(keyPair)
 			for i := 0; i < postCount; i++ {
-				_, err = client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+				_, err = client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 				require.NoError(t, err)
 				time.Sleep(postDelay)
 			}
@@ -374,7 +374,7 @@ func TestRebootRecoverFromWAL(t *testing.T) {
 	env := setupNativeInccounterTest(t, 4, []int{0, 1, 2, 3})
 	client := env.createNewClient()
 
-	tx, err := client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(env.Clu.WaspClient(0), env.Chain.ChainID, tx, true, 10*time.Second)
@@ -382,7 +382,7 @@ func TestRebootRecoverFromWAL(t *testing.T) {
 
 	env.expectCounter(1)
 
-	req, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err := client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
@@ -398,7 +398,7 @@ func TestRebootRecoverFromWAL(t *testing.T) {
 	require.NoError(t, err)
 
 	// after rebooting, the chain should resume processing requests without issues
-	tx, err = client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err = client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, err = apiextensions.APIWaitUntilAllRequestsProcessed(env.Clu.WaspClient(0), env.Chain.ChainID, tx, false, 10*time.Second)
@@ -406,7 +406,7 @@ func TestRebootRecoverFromWAL(t *testing.T) {
 	env.expectCounter(3)
 
 	// ensure off-ledger requests are still working
-	req, err = client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.MessageOpt())
+	req, err = client.PostOffLedgerRequest(context.Background(), inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.

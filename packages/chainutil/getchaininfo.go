@@ -8,7 +8,7 @@ import (
 )
 
 func GetAccountBalance(ch chaintypes.ChainCore, agentID isc.AgentID) (*isc.FungibleTokens, error) {
-	ret, err := CallView(mustLatestState(ch), ch, accounts.ViewBalance.Message(agentID))
+	ret, err := CallView(mustLatestState(ch), ch, accounts.ViewBalance.Message(&agentID))
 	if err != nil {
 		return nil, err
 	}

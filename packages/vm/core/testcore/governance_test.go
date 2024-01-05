@@ -9,6 +9,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -180,7 +181,8 @@ func TestAccessNodes(t *testing.T) {
 	// Initially the state is empty.
 	res, err = chain.CallView(governance.ViewGetChainNodes.Message())
 	require.NoError(t, err)
-	getChainNodesResponse := governance.ViewGetChainNodes.Output.Decode(res)
+	getChainNodesResponse, err := governance.ViewGetChainNodes.Output.Decode(res)
+	require.NoError(t, err)
 	require.Empty(t, getChainNodesResponse.AccessNodeCandidates)
 	require.Empty(t, getChainNodesResponse.AccessNodes)
 
@@ -200,9 +202,10 @@ func TestAccessNodes(t *testing.T) {
 
 	res, err = chain.CallView(governance.ViewGetChainNodes.Message())
 	require.NoError(t, err)
-	getChainNodesResponse = governance.ViewGetChainNodes.Output.Decode(res)
+	getChainNodesResponse, err = governance.ViewGetChainNodes.Output.Decode(res)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(getChainNodesResponse.AccessNodeCandidates)) // Candidate registered.
-	require.Equal(t, "http://my-api/url", getChainNodesResponse.AccessNodeCandidates[0].AccessAPI)
+	require.Equal(t, "http://my-api/url", getChainNodesResponse.AccessNodeCandidates[node1KP.GetPublicKey().AsKey()].AccessAPI)
 	require.Empty(t, getChainNodesResponse.AccessNodes)
 
 	//
@@ -218,9 +221,10 @@ func TestAccessNodes(t *testing.T) {
 
 	res, err = chain.CallView(governance.ViewGetChainNodes.Message())
 	require.NoError(t, err)
-	getChainNodesResponse = governance.ViewGetChainNodes.Output.Decode(res)
+	getChainNodesResponse, err = governance.ViewGetChainNodes.Output.Decode(res)
+	require.NoError(t, err)
 	require.Equal(t, 1, len(getChainNodesResponse.AccessNodeCandidates)) // Candidate registered.
-	require.Equal(t, "http://my-api/url", getChainNodesResponse.AccessNodeCandidates[0].AccessAPI)
+	require.Equal(t, "http://my-api/url", getChainNodesResponse.AccessNodeCandidates[node1KP.GetPublicKey().AsKey()].AccessAPI)
 	require.Equal(t, 1, len(getChainNodesResponse.AccessNodes))
 
 	//
@@ -237,7 +241,8 @@ func TestAccessNodes(t *testing.T) {
 
 	res, err = chain.CallView(governance.ViewGetChainNodes.Message())
 	require.NoError(t, err)
-	getChainNodesResponse = governance.ViewGetChainNodes.Output.Decode(res)
+	getChainNodesResponse, err = governance.ViewGetChainNodes.Output.Decode(res)
+	require.NoError(t, err)
 	require.Empty(t, getChainNodesResponse.AccessNodeCandidates)
 	require.Empty(t, getChainNodesResponse.AccessNodes)
 }
@@ -311,7 +316,7 @@ func TestMaintenanceMode(t *testing.T) {
 	var reqs []isc.OffLedgerRequest
 	{
 		for _, wallet := range []*cryptolib.KeyPair{userWallet, ownerWallet} {
-			req := solo.NewCallParams(inccounter.FuncIncCounter.MessageOpt()).
+			req := solo.NewCallParams(inccounter.FuncIncCounter.Message(nil)).
 				WithMaxAffordableGasBudget().
 				NewRequestOffLedger(ch, wallet)
 			env.AddRequestsToMempool(ch, []isc.Request{req})
@@ -474,7 +479,7 @@ func TestMetadata(t *testing.T) {
 
 	testValue := "TESTYTEST"
 
-	testMetadata := isc.PublicChainMetadata{
+	testMetadata := &isc.PublicChainMetadata{
 		EVMJsonRPCURL:   testValue,
 		EVMWebSocketURL: testValue,
 		Name:            testValue,
@@ -484,7 +489,7 @@ func TestMetadata(t *testing.T) {
 
 	// Set proper metadata value
 	_, err := ch.PostRequestSync(
-		solo.NewCallParams(governance.FuncSetMetadata.MessageOpt2(testMetadata.Bytes())).
+		solo.NewCallParams(governance.FuncSetMetadata.Message(nil, &testMetadata)).
 			WithMaxAffordableGasBudget(),
 		nil,
 	)
@@ -492,10 +497,10 @@ func TestMetadata(t *testing.T) {
 
 	res, err := ch.CallView(governance.ViewGetMetadata.Message())
 	require.NoError(t, err)
-	resMetadata := lo.Must(governance.ViewGetMetadata.Output.F2.Decode(res))
+	resMetadata := lo.Must(governance.ViewGetMetadata.Output2.Decode(res))
 
 	// Chain name should be equal to the configured one.
-	require.Equal(t, testMetadata.Bytes(), resMetadata)
+	require.Equal(t, testMetadata.Bytes(), resMetadata.Bytes())
 
 	// Call SetMetadata without args. The metadata should be the same as it was previously configured and not be emptied.
 	_, err = ch.PostRequestSync(
@@ -507,14 +512,16 @@ func TestMetadata(t *testing.T) {
 
 	res, err = ch.CallView(governance.ViewGetMetadata.Message())
 	require.NoError(t, err)
-	resMetadata = lo.Must(governance.ViewGetMetadata.Output.F2.Decode(res))
+	resMetadata = lo.Must(governance.ViewGetMetadata.Output2.Decode(res))
 
 	// Chain name should be equal to the configured one.
-	require.Equal(t, testMetadata.Bytes(), resMetadata)
+	require.Equal(t, testMetadata.Bytes(), resMetadata.Bytes())
 
 	// Call SetMetadata with an empty arg. The metadata call should fail.
 	_, err = ch.PostRequestSync(
-		solo.NewCallParams(governance.FuncSetMetadata.MessageOpt2([]byte{})).
+		solo.NewCallParams(governance.FuncSetMetadata.EntryPointInfo.Message(dict.Dict{
+			governance.ParamMetadata: []byte{},
+		})).
 			WithMaxAffordableGasBudget(),
 		nil,
 	)
@@ -523,7 +530,7 @@ func TestMetadata(t *testing.T) {
 	// set invalid URL
 	hugePublicURL := string(make([]byte, transaction.MaxPublicURLLength+1))
 	_, err = ch.PostRequestOffLedger(
-		solo.NewCallParams(governance.FuncSetMetadata.MessageOpt1(hugePublicURL)).
+		solo.NewCallParams(governance.FuncSetMetadata.Message(&hugePublicURL, nil)).
 			WithMaxAffordableGasBudget(),
 		nil,
 	)
@@ -541,7 +548,7 @@ func TestL1Metadata(t *testing.T) {
 	publicURLMetadata := "https://iota.org"
 
 	_, err := ch.PostRequestSync(
-		solo.NewCallParams(governance.FuncSetMetadata.MessageOpt1(publicURLMetadata)).
+		solo.NewCallParams(governance.FuncSetMetadata.Message(&publicURLMetadata, nil)).
 			WithMaxAffordableGasBudget(),
 		nil,
 	)
@@ -550,7 +557,7 @@ func TestL1Metadata(t *testing.T) {
 	// assert metadata is correct on view call
 	res, err := ch.CallView(governance.ViewGetMetadata.Message())
 	require.NoError(t, err)
-	resMetadata := lo.Must(governance.ViewGetMetadata.Output.F1.Decode(res))
+	resMetadata := lo.Must(governance.ViewGetMetadata.Output1.Decode(res))
 	require.Equal(t, publicURLMetadata, resMetadata)
 
 	// assert metadata is correct on L1 anchor output
@@ -688,7 +695,7 @@ func TestGovernanceSetGetMinCommonAccountBalance(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, governance.DefaultMinBaseTokensOnCommonAccount, retMinCommonAccountBalance)
 
-	minCommonAccountBalance := uint64(123456)
+	minCommonAccountBalance := iotago.BaseToken(123456)
 	_, err = ch.PostRequestSync(
 		solo.NewCallParams(governance.FuncSetMinCommonAccountBalance.Message(minCommonAccountBalance)).
 			WithMaxAffordableGasBudget(),

@@ -15,22 +15,24 @@ var (
 	// Funcs
 	FuncDeployContract        = EPDeployContract{EntryPointInfo: Contract.Func("deployContract")}
 	FuncGrantDeployPermission = coreutil.NewEP1(Contract, "grantDeployPermission",
-		ParamDeployer, codec.AgentID,
+		coreutil.FieldWithCodec(ParamDeployer, codec.AgentID),
 	)
 	FuncRevokeDeployPermission = coreutil.NewEP1(Contract, "revokeDeployPermission",
-		ParamDeployer, codec.AgentID,
+		coreutil.FieldWithCodec(ParamDeployer, codec.AgentID),
 	)
 	FuncRequireDeployPermissions = coreutil.NewEP1(Contract, "requireDeployPermissions",
-		ParamDeployPermissionsEnabled, codec.Bool,
+		coreutil.FieldWithCodec(ParamDeployPermissionsEnabled, codec.Bool),
 	)
 
 	// Views
 	ViewFindContract = coreutil.NewViewEP12(Contract, "findContract",
-		ParamHname, codec.Hname,
-		ParamContractFound, codec.Bool,
-		ParamContractRecData, codec.NewCodecEx(ContractRecordFromBytes),
+		coreutil.FieldWithCodec(ParamHname, codec.Hname),
+		coreutil.FieldWithCodec(ParamContractFound, codec.Bool),
+		coreutil.FieldWithCodec(ParamContractRecData, ContractRegistryCodec),
 	)
-	ViewGetContractRecords = EPGetContractRecords{EP0: coreutil.NewViewEP0(Contract, "getContractRecords")}
+	ViewGetContractRecords = coreutil.NewViewEP01(Contract, "getContractRecords",
+		OutputContractRecords{},
+	)
 )
 
 // state variables
@@ -52,6 +54,8 @@ const (
 	ParamDeployPermissionsEnabled = "de"
 )
 
+var ContractRegistryCodec = codec.NewCodecEx(ContractRecordFromBytes)
+
 type EPDeployContract struct {
 	coreutil.EntryPointInfo[isc.Sandbox]
 }
@@ -63,13 +67,17 @@ func (e EPDeployContract) Message(name string, programHash hashing.HashValue, in
 	return e.EntryPointInfo.Message(d)
 }
 
-type EPGetContractRecords struct {
-	coreutil.EP0[isc.SandboxView]
-	Output ContractRecordsOutput
+type OutputContractRecords struct{}
+
+func (c OutputContractRecords) Encode(recs map[isc.Hname]*ContractRecord) dict.Dict {
+	ret := dict.Dict{}
+	dst := collections.NewMap(ret, VarContractRegistry)
+	for hname, rec := range recs {
+		dst.SetAt(codec.Hname.Encode(hname), ContractRegistryCodec.Encode(rec))
+	}
+	return ret
 }
 
-type ContractRecordsOutput struct{}
-
-func (c ContractRecordsOutput) Decode(d dict.Dict) (map[isc.Hname]*ContractRecord, error) {
+func (c OutputContractRecords) Decode(d dict.Dict) (map[isc.Hname]*ContractRecord, error) {
 	return decodeContractRegistry(collections.NewMapReadOnly(d, VarContractRegistry))
 }

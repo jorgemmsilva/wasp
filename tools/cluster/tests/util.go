@@ -28,7 +28,7 @@ func (e *ChainEnv) checkCoreContracts() {
 		cl := e.Chain.Client(nil, i)
 		ret, err := cl.CallView(context.Background(), governance.ViewGetChainInfo.Message())
 		require.NoError(e.t, err)
-		info, err := governance.ViewGetChainInfo.Output.Decode(ret, e.Chain.ChainID)
+		info, err := governance.ViewGetChainInfo.Output.Decode(ret)
 		require.NoError(e.t, err)
 
 		require.EqualValues(e.t, e.Chain.OriginatorID(), info.ChainOwnerID)

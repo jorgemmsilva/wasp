@@ -41,7 +41,7 @@ func TestBasicRotation(t *testing.T) {
 	myClient := env.Chain.Client(kp)
 
 	// check the chain works
-	tx, err := myClient.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	mustLogRequestsInTransaction(tx, t.Logf, "Posted request - FuncIncCounter (before rotation)")
 	require.NoError(t, err)
 	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 20*time.Second)
@@ -68,7 +68,7 @@ func TestBasicRotation(t *testing.T) {
 	require.True(t, stateController.Equal(newCmtAddr), "StateController, expected=%v, received=%v", newCmtAddr, stateController)
 
 	// check the chain still works
-	tx, err = myClient.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+	tx, err = myClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	mustLogRequestsInTransaction(tx, t.Logf, "Posted request - FuncIncCounter")
 	require.NoError(t, err)
 	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 20*time.Second)
@@ -100,7 +100,7 @@ func TestRotation(t *testing.T) {
 
 	myClient := chain.Client(keyPair)
 
-	_, err = myClient.PostNRequests(inccounter.FuncIncCounter.MessageOpt(), numRequests)
+	_, err = myClient.PostNRequests(inccounter.FuncIncCounter.Message(nil), numRequests)
 	require.NoError(t, err)
 
 	waitUntil(t, chEnv.counterEquals(int64(numRequests)), chEnv.Clu.Config.AllNodes(), 5*time.Second)
@@ -124,7 +124,7 @@ func TestRotation(t *testing.T) {
 	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, tx, false, 15*time.Second)
 	require.NoError(t, err)
 
-	_, err = myClient.PostNRequests(inccounter.FuncIncCounter.MessageOpt(), numRequests)
+	_, err = myClient.PostNRequests(inccounter.FuncIncCounter.Message(nil), numRequests)
 	require.NoError(t, err)
 
 	waitUntil(t, chEnv.counterEquals(int64(2*numRequests)), clu.Config.AllNodes(), 15*time.Second)
@@ -169,7 +169,7 @@ func TestRotationFromSingle(t *testing.T) {
 		myClient := chain.Client(keyPair)
 		for i := 0; i < numRequests; i++ {
 			t.Logf("Posting inccounter request number %v", i)
-			_, err2 = myClient.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+			_, err2 = myClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 			if err2 != nil {
 				incCounterResultChan <- fmt.Errorf("failed to post inccounter request number %v: %w", i, err2)
 				return
@@ -274,7 +274,7 @@ func TestRotationMany(t *testing.T) {
 	for i, rotation := range rotations {
 		t.Logf("Rotating to %v-th committee %v with quorum %v and address %s", i, rotation.Committee, rotation.Quorum, rotation.Address)
 
-		_, err = myClient.PostNRequests(inccounter.FuncIncCounter.MessageOpt(), numRequests)
+		_, err = myClient.PostNRequests(inccounter.FuncIncCounter.Message(nil), numRequests)
 		require.NoError(t, err)
 
 		waitUntil(t, chEnv.counterEquals(int64(numRequests*(i+1))), chEnv.Clu.Config.AllNodes(), 30*time.Second)

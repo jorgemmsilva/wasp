@@ -138,9 +138,9 @@ func TestFoundries(t *testing.T) {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch = env.NewChain()
 
-		req := solo.NewCallParams(accounts.FuncFoundryCreateNew.Message(
-			&iotago.SimpleTokenScheme{MaximumSupply: big.NewInt(1), MintedTokens: util.Big0, MeltedTokens: util.Big0},
-		)).AddBaseTokens(2 * isc.Million).WithGasBudget(math.MaxUint64)
+		var ts iotago.TokenScheme = &iotago.SimpleTokenScheme{MaximumSupply: big.NewInt(1), MintedTokens: util.Big0, MeltedTokens: util.Big0}
+		req := solo.NewCallParams(accounts.FuncFoundryCreateNew.Message(&ts)).
+			AddBaseTokens(2 * isc.Million).WithGasBudget(math.MaxUint64)
 		_, err := ch.PostRequestSync(req, nil)
 		require.Error(t, err)
 		// it succeeds when allowance is added
@@ -151,9 +151,9 @@ func TestFoundries(t *testing.T) {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 		ch = env.NewChain()
 
-		req := solo.NewCallParams(accounts.FuncFoundryCreateNew.Message(
-			&iotago.SimpleTokenScheme{MaximumSupply: big.NewInt(1), MintedTokens: big.NewInt(10), MeltedTokens: big.NewInt(10)},
-		)).AddBaseTokens(2 * isc.Million).WithGasBudget(math.MaxUint64)
+		var ts iotago.TokenScheme = &iotago.SimpleTokenScheme{MaximumSupply: big.NewInt(1), MintedTokens: big.NewInt(10), MeltedTokens: big.NewInt(10)}
+		req := solo.NewCallParams(accounts.FuncFoundryCreateNew.Message(&ts)).
+			AddBaseTokens(2 * isc.Million).WithGasBudget(math.MaxUint64)
 		_, err := ch.PostRequestSync(req.AddAllowanceBaseTokens(1*isc.Million), nil)
 		require.NoError(t, err)
 	})

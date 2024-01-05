@@ -140,7 +140,7 @@ func TestEventTooLarge(t *testing.T) {
 
 func incrementSCCounter(t *testing.T, ch *solo.Chain) isc.RequestID {
 	tx, _, err := ch.PostRequestSyncTx(
-		solo.NewCallParams(inccounter.FuncIncCounter.MessageOpt()).WithGasBudget(math.MaxUint64),
+		solo.NewCallParams(inccounter.FuncIncCounter.Message(nil)).WithGasBudget(math.MaxUint64),
 		nil,
 	)
 	require.NoError(t, err)
@@ -158,15 +158,18 @@ func getEventsForRequest(t *testing.T, chain *solo.Chain, reqID isc.RequestID) (
 }
 
 func getEventsForBlock(t *testing.T, chain *solo.Chain, blockNumber ...uint32) (events []*isc.Event) {
-	res, err := chain.CallView(blocklog.ViewGetEventsForBlock.MessageOpt(blockNumber...))
+	res, err := chain.CallView(blocklog.ViewGetEventsForBlock.Message(coreutil.Optional(blockNumber...)))
 	require.NoError(t, err)
-	events, err = blocklog.ViewGetEventsForBlock.Output.Decode(res)
+	events, err = blocklog.ViewGetEventsForBlock.Output2.Decode(res)
 	require.NoError(t, err)
 	return events
 }
 
 func getEventsForSC(t *testing.T, chain *solo.Chain, fromBlock, toBlock uint32) (events []*isc.Event) {
-	res, err := chain.CallView(blocklog.ViewGetEventsForContract.MessageWithRange(inccounter.Contract.Hname(), fromBlock, toBlock))
+	res, err := chain.CallView(blocklog.ViewGetEventsForContract.Message(blocklog.EventsForContractQuery{
+		Contract:   inccounter.Contract.Hname(),
+		BlockRange: &blocklog.BlockRange{From: fromBlock, To: toBlock},
+	}))
 	require.NoError(t, err)
 	events, err = blocklog.ViewGetEventsForContract.Output.Decode(res)
 	require.NoError(t, err)

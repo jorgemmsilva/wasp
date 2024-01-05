@@ -20,7 +20,7 @@ import (
 func (ch *Chain) L2Accounts() []isc.AgentID {
 	d, err := ch.CallView(accounts.ViewAccounts.Message())
 	require.NoError(ch.Env.T, err)
-	return lo.Must(accounts.ViewAccounts.Output.Decode(d, ch.ChainID))
+	return lo.Must(accounts.ViewAccounts.Output.DecodeAccounts(d, ch.ChainID))
 }
 
 func (ch *Chain) L2Ledger() map[string]*isc.Assets {
@@ -56,7 +56,7 @@ func (ch *Chain) L2AssetsAtStateIndex(agentID isc.AgentID, stateIndex uint32) *i
 	chainState, err := ch.store.StateByIndex(stateIndex)
 	require.NoError(ch.Env.T, err)
 	assets := lo.Must(accounts.ViewBalance.Output.Decode(
-		lo.Must(ch.CallViewAtState(chainState, accounts.ViewBalance.Message(agentID))),
+		lo.Must(ch.CallViewAtState(chainState, accounts.ViewBalance.Message(&agentID))),
 	)).ToAssets()
 	assets.NFTs = ch.L2NFTs(agentID)
 	return assets
@@ -71,9 +71,9 @@ func (ch *Chain) L2BaseTokensAtStateIndex(agentID isc.AgentID, stateIndex uint32
 }
 
 func (ch *Chain) L2NFTs(agentID isc.AgentID) []iotago.NFTID {
-	res, err := ch.CallView(accounts.ViewAccountNFTs.Message(agentID))
+	res, err := ch.CallView(accounts.ViewAccountNFTs.Message(&agentID))
 	require.NoError(ch.Env.T, err)
-	return accounts.ViewAccountNFTs.Output.Decode(res)
+	return lo.Must(accounts.ViewAccountNFTs.Output.Decode(res))
 }
 
 func (ch *Chain) L2NativeTokens(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int {
@@ -107,7 +107,7 @@ func (ch *Chain) L2TotalBaseTokens() iotago.BaseToken {
 func (ch *Chain) GetOnChainTokenIDs() []iotago.NativeTokenID {
 	res, err := ch.CallView(accounts.ViewGetNativeTokenIDRegistry.Message())
 	require.NoError(ch.Env.T, err)
-	return accounts.ViewGetNativeTokenIDRegistry.Output.Decode(res)
+	return lo.Must(accounts.ViewGetNativeTokenIDRegistry.Output.Decode(res))
 }
 
 func (ch *Chain) GetFoundryOutput(sn uint32) (*iotago.FoundryOutput, error) {
@@ -169,15 +169,15 @@ const (
 )
 
 func (fp *foundryParams) CreateFoundry() (uint32, iotago.NativeTokenID, error) {
-	var sch []iotago.TokenScheme
+	var sch *iotago.TokenScheme
 	if fp.sch != nil {
-		sch = append(sch, fp.sch)
+		sch = &fp.sch
 	}
 	user := fp.ch.OriginatorPrivateKey
 	if fp.user != nil {
 		user = fp.user
 	}
-	req := NewCallParams(accounts.FuncFoundryCreateNew.MessageOpt(sch...)).
+	req := NewCallParams(accounts.FuncFoundryCreateNew.Message(sch)).
 		WithAllowance(isc.NewAssetsBaseTokens(allowanceForFoundryStorageDeposit)).
 		AddBaseTokens(allowanceForFoundryStorageDeposit)
 

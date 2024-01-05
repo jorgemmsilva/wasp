@@ -44,7 +44,7 @@ func testAccessNodesOnLedger(t *testing.T, numRequests, numValidatorNodes, clust
 
 	for i := 0; i < numRequests; i++ {
 		client := e.createNewClient()
-		_, err := client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+		_, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 		require.NoError(t, err)
 	}
 
@@ -100,7 +100,7 @@ func testAccessNodesOffLedger(t *testing.T, numRequests, numValidatorNodes, clus
 	for i := 0; i < numRequests; i++ {
 		_, err = myClient.PostOffLedgerRequest(
 			context.Background(),
-			inccounter.FuncIncCounter.MessageOpt(),
+			inccounter.FuncIncCounter.Message(nil),
 			chainclient.PostRequestParams{Nonce: uint64(i)},
 		)
 		require.NoError(t, err)

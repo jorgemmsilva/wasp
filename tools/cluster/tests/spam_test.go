@@ -64,7 +64,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 			for i := 0; i < numRequestsPerAccount; i++ {
 				retries := 0
 				for {
-					tx, err := chainClient.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+					tx, err := chainClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 					if err != nil {
 						if retries >= 5 {
 							errCh <- fmt.Errorf("failed to issue tx, an error 5 times, %w", err)
@@ -146,7 +146,7 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 				// send the request
 				req, er := myClient.PostOffLedgerRequest(
 					context.Background(),
-					inccounter.FuncIncCounter.MessageOpt(),
+					inccounter.FuncIncCounter.Message(nil),
 					chainclient.PostRequestParams{Nonce: nonce},
 				)
 				if er != nil {
@@ -212,7 +212,7 @@ func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
 	client := env.Chain.Client(wallet)
 	{
 		// increment counter once
-		tx, err := client.PostRequest(inccounter.FuncIncCounter.MessageOpt())
+		tx, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 		require.NoError(t, err)
 		_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 30*time.Second)
 		require.NoError(t, err)

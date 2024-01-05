@@ -44,7 +44,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 
 	// send off-ledger request via Web API (to the access node)
 	_, err = chClient.PostOffLedgerRequest(context.Background(),
-		inccounter.FuncIncCounter.MessageOpt(),
+		inccounter.FuncIncCounter.Message(nil),
 	)
 	require.NoError(t, err)
 
@@ -71,7 +71,7 @@ func testOffledgerRequest(t *testing.T, e *ChainEnv) {
 
 	// send off-ledger request via Web API
 	offledgerReq, err := chClient.PostOffLedgerRequest(context.Background(),
-		inccounter.FuncIncCounter.MessageOpt(),
+		inccounter.FuncIncCounter.Message(nil),
 	)
 	require.NoError(t, err)
 	_, err = e.Chain.CommitteeMultiClient().WaitUntilRequestProcessedSuccessfully(e.Chain.ChainID, offledgerReq.ID(), false, 30*time.Second)
@@ -159,7 +159,7 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 
 	// send off-ledger request with a high nonce
 	offledgerReq, err := chClient.PostOffLedgerRequest(context.Background(),
-		inccounter.FuncIncCounter.MessageOpt(),
+		inccounter.FuncIncCounter.Message(nil),
 		chainclient.PostRequestParams{
 			Nonce: 1_000_000,
 		},
@@ -171,7 +171,7 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 	// send off-ledger requests with the correct nonce
 	for i := uint64(0); i < 5; i++ {
 		req, err2 := chClient.PostOffLedgerRequest(context.Background(),
-			inccounter.FuncIncCounter.MessageOpt(),
+			inccounter.FuncIncCounter.Message(nil),
 			chainclient.PostRequestParams{
 				Nonce: i,
 			},
@@ -183,7 +183,7 @@ func testOffledgerNonce(t *testing.T, e *ChainEnv) {
 
 	// try replaying an older nonce
 	_, err = chClient.PostOffLedgerRequest(context.Background(),
-		accounts.FuncTransferAccountToChain.MessageOpt(),
+		accounts.FuncTransferAccountToChain.Message(nil),
 		chainclient.PostRequestParams{
 			Nonce: 1,
 		},

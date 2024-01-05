@@ -151,7 +151,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 	for i := 0; i < incCount; i++ {
 		scRequest := isc.NewOffLedgerRequest(
 			te.chainID,
-			inccounter.FuncIncCounter.MessageOpt(),
+			inccounter.FuncIncCounter.Message(nil),
 			uint64(i),
 			2000000,
 		).Sign(scClient)
@@ -192,7 +192,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 			for ii := 0; ii < incCount; ii++ {
 				scRequest := isc.NewOffLedgerRequest(
 					te.chainID,
-					inccounter.FuncIncCounter.MessageOpt(),
+					inccounter.FuncIncCounter.Message(nil),
 					uint64(ii),
 					20000,
 				).Sign(scClient)

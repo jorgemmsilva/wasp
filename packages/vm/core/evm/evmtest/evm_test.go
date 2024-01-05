@@ -652,7 +652,7 @@ func TestSendPayableValueTX(t *testing.T) {
 		iscmagic.WrapISCAssets(isc.NewEmptyAssets()),
 		false, // auto adjust SD
 		iscmagic.WrapISCSendMetadata(isc.SendMetadata{
-			Message:   inccounter.FuncIncCounter.MessageOpt(),
+			Message:   inccounter.FuncIncCounter.Message(nil),
 			Allowance: isc.NewEmptyAssets(),
 			GasBudget: math.MaxUint64,
 		}),
@@ -1163,7 +1163,7 @@ func TestISCSendWithArgs(t *testing.T) {
 		iscmagic.WrapISCAssets(isc.NewAssetsBaseTokens(sendBaseTokens)),
 		false, // auto adjust SD
 		iscmagic.WrapISCSendMetadata(isc.SendMetadata{
-			Message:   inccounter.FuncIncCounter.MessageOpt(),
+			Message:   inccounter.FuncIncCounter.Message(nil),
 			Allowance: isc.NewEmptyAssets(),
 			GasBudget: math.MaxUint64,
 		}),
@@ -1561,7 +1561,7 @@ func TestEVMWithdrawAll(t *testing.T) {
 	// try withdrawing all base tokens
 	metadata := iscmagic.WrapISCSendMetadata(
 		isc.SendMetadata{
-			Message:   inccounter.FuncIncCounter.MessageOpt(),
+			Message:   inccounter.FuncIncCounter.Message(nil),
 			Allowance: isc.NewEmptyAssets(),
 			GasBudget: math.MaxUint64,
 		},

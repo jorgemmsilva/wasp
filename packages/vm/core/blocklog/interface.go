@@ -3,6 +3,8 @@
 package blocklog
 
 import (
+	"math"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -15,52 +17,49 @@ var Contract = coreutil.NewContract(coreutil.CoreContractBlocklog)
 var (
 	// Funcs
 	FuncRetryUnprocessable = coreutil.NewEP1(Contract, "retryUnprocessable",
-		ParamRequestID, codec.RequestID,
+		coreutil.FieldWithCodec(ParamRequestID, codec.RequestID),
 	)
 
 	// Views
 	ViewGetBlockInfo = coreutil.NewViewEP12(Contract, "getBlockInfo",
-		ParamBlockIndex, codec.Uint32, // optional
-		ParamBlockIndex, codec.Uint32,
-		ParamBlockInfo, codec.NewCodecEx(BlockInfoFromBytes),
+		coreutil.FieldWithCodecOptional(ParamBlockIndex, codec.Uint32),
+		coreutil.FieldWithCodec(ParamBlockIndex, codec.Uint32),
+		coreutil.FieldWithCodec(ParamBlockInfo, codec.NewCodecEx(BlockInfoFromBytes)),
 	)
-	ViewGetRequestIDsForBlock = EPViewGetRequestIDsForBlock{
-		EP1: coreutil.NewViewEP1(Contract, "getRequestIDsForBlock",
-			ParamBlockIndex, codec.Uint32, // optional
-		),
-	}
-	ViewGetRequestReceipt = EPViewGetRequestReceipt{
-		EP1: coreutil.NewViewEP1(Contract, "getRequestReceipt",
-			ParamRequestID, codec.RequestID,
-		),
-	}
-	ViewGetRequestReceiptsForBlock = EPViewGetRequestReceiptsForBlock{
-		EP1: coreutil.NewViewEP1(Contract, "getRequestReceiptsForBlock",
-			ParamBlockIndex, codec.Uint32, // optional
-		),
-	}
+	ViewGetRequestIDsForBlock = coreutil.NewViewEP12(Contract, "getRequestIDsForBlock",
+		coreutil.FieldWithCodecOptional(ParamBlockIndex, codec.Uint32),
+		coreutil.FieldWithCodec(ParamBlockIndex, codec.Uint32),
+		OutputRequestIDs{},
+	)
+	ViewGetRequestReceipt = coreutil.NewViewEP11(Contract, "getRequestReceipt",
+		coreutil.FieldWithCodec(ParamRequestID, codec.RequestID),
+		OutputRequestReceipt{},
+	)
+	ViewGetRequestReceiptsForBlock = coreutil.NewViewEP12(Contract, "getRequestReceiptsForBlock",
+		coreutil.FieldWithCodecOptional(ParamBlockIndex, codec.Uint32),
+		coreutil.FieldWithCodec(ParamBlockIndex, codec.Uint32),
+		OutputRequestReceipts{},
+	)
 	ViewIsRequestProcessed = coreutil.NewViewEP11(Contract, "isRequestProcessed",
-		ParamRequestID, codec.RequestID,
-		ParamRequestProcessed, codec.Bool,
+		coreutil.FieldWithCodec(ParamRequestID, codec.RequestID),
+		coreutil.FieldWithCodec(ParamRequestProcessed, codec.Bool),
 	)
-	ViewGetEventsForRequest = EPViewGetEventsForRequest{
-		EP1: coreutil.NewViewEP1(Contract, "getEventsForRequest",
-			ParamRequestID, codec.RequestID,
-		),
-	}
-	ViewGetEventsForBlock = EPViewGetEventsForBlock{
-		EP1: coreutil.NewViewEP1(Contract, "getEventsForBlock",
-			ParamBlockIndex, codec.Uint32, // optional
-		),
-	}
-	ViewGetEventsForContract = EPViewGetEventsForContract{
-		EP1: coreutil.NewViewEP1(Contract, "getEventsForContract",
-			ParamContractHname, codec.Hname,
-		),
-	}
+	ViewGetEventsForRequest = coreutil.NewViewEP11(Contract, "getEventsForRequest",
+		coreutil.FieldWithCodec(ParamRequestID, codec.RequestID),
+		OutputEvents{},
+	)
+	ViewGetEventsForBlock = coreutil.NewViewEP12(Contract, "getEventsForBlock",
+		coreutil.FieldWithCodecOptional(ParamBlockIndex, codec.Uint32),
+		coreutil.FieldWithCodec(ParamBlockIndex, codec.Uint32),
+		OutputEvents{},
+	)
+	ViewGetEventsForContract = coreutil.NewViewEP11(Contract, "getEventsForContract",
+		InputEventsForContract{},
+		OutputEvents{},
+	)
 	ViewHasUnprocessable = coreutil.NewViewEP11(Contract, "hasUnprocessable",
-		ParamRequestID, codec.RequestID,
-		ParamUnprocessableRequestExists, codec.Bool,
+		coreutil.FieldWithCodec(ParamRequestID, codec.RequestID),
+		coreutil.FieldWithCodec(ParamUnprocessableRequestExists, codec.Bool),
 	)
 )
 
@@ -105,60 +104,60 @@ const (
 	prefixNewUnprocessableRequests = "U"
 )
 
-type EPViewGetRequestIDsForBlock struct {
-	coreutil.EP1[isc.SandboxView, uint32]
-	Output EPViewRequestIDsOutput
+type OutputRequestIDs struct{}
+
+func (_ OutputRequestIDs) Encode(reqIDs []isc.RequestID) dict.Dict {
+	return codec.SliceToArray(codec.RequestID, reqIDs, ParamRequestID)
 }
 
-type EPViewRequestIDsOutput struct{}
+func (_ OutputRequestIDs) Decode(r dict.Dict) ([]isc.RequestID, error) {
+	return codec.SliceFromArray(codec.RequestID, r, ParamRequestID)
+}
 
-func (e EPViewRequestIDsOutput) Decode(r dict.Dict) ([]isc.RequestID, error) {
-	requestIDs := collections.NewArrayReadOnly(r, ParamRequestID)
-	ret := make([]isc.RequestID, requestIDs.Len())
-	for i := range ret {
-		var err error
-		ret[i], err = isc.RequestIDFromBytes(requestIDs.GetAt(uint32(i)))
-		if err != nil {
-			return nil, err
-		}
+type OutputRequestReceipt struct{}
+
+func (_ OutputRequestReceipt) Encode(rec *RequestReceipt) dict.Dict {
+	if rec == nil {
+		return nil
 	}
-	return ret, nil
+	return dict.Dict{
+		ParamRequestRecord: rec.Bytes(),
+		ParamBlockIndex:    codec.Uint32.Encode(rec.BlockIndex),
+		ParamRequestIndex:  codec.Uint16.Encode(rec.RequestIndex),
+	}
 }
 
-type EPViewGetRequestReceipt struct {
-	coreutil.EP1[isc.SandboxView, isc.RequestID]
-	Output RequestReceiptOutput
-}
-
-type RequestReceiptOutput struct{}
-
-func (e RequestReceiptOutput) Decode(r dict.Dict) (*RequestReceipt, bool, error) {
+func (_ OutputRequestReceipt) Decode(r dict.Dict) (*RequestReceipt, error) {
 	if r.IsEmpty() {
-		return nil, false, nil
+		return nil, nil
 	}
 	blockIndex, err := codec.Uint32.Decode(r[ParamBlockIndex])
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	reqIndex, err := codec.Uint16.Decode(r[ParamRequestIndex])
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	rec, err := RequestReceiptFromBytes(r[ParamRequestRecord], blockIndex, reqIndex)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return rec, true, nil
+	return rec, nil
 }
 
-type EPViewGetRequestReceiptsForBlock struct {
-	coreutil.EP1[isc.SandboxView, uint32]
-	Output RequestReceiptsOutput
+type OutputRequestReceipts struct{}
+
+func (_ OutputRequestReceipts) Encode(receipts []*RequestReceipt) dict.Dict {
+	ret := dict.New()
+	requestReceipts := collections.NewArray(ret, ParamRequestRecord)
+	for _, receipt := range receipts {
+		requestReceipts.Push(receipt.Bytes())
+	}
+	return ret
 }
 
-type RequestReceiptsOutput struct{}
-
-func (e RequestReceiptsOutput) Decode(r dict.Dict) ([]*RequestReceipt, error) {
+func (_ OutputRequestReceipts) Decode(r dict.Dict) ([]*RequestReceipt, error) {
 	receipts := collections.NewArrayReadOnly(r, ParamRequestRecord)
 	ret := make([]*RequestReceipt, receipts.Len())
 	var err error
@@ -175,39 +174,49 @@ func (e RequestReceiptsOutput) Decode(r dict.Dict) ([]*RequestReceipt, error) {
 	return ret, nil
 }
 
-type EventsOutput struct{}
+type OutputEvents struct{}
 
-func (e EventsOutput) Decode(r dict.Dict) ([]*isc.Event, error) {
-	events := collections.NewArrayReadOnly(r, ParamEvent)
-	ret := make([]*isc.Event, events.Len())
-	for i := range ret {
-		var err error
-		ret[i], err = isc.EventFromBytes(events.GetAt(uint32(i)))
-		if err != nil {
-			return nil, err
-		}
+func (_ OutputEvents) Encode(events []*isc.Event) dict.Dict {
+	return codec.SliceToArray(codec.NewCodecEx(isc.EventFromBytes), events, ParamEvent)
+}
+
+func (_ OutputEvents) Decode(r dict.Dict) ([]*isc.Event, error) {
+	return codec.SliceFromArray(codec.NewCodecEx(isc.EventFromBytes), r, ParamEvent)
+}
+
+type BlockRange struct {
+	From uint32
+	To   uint32
+}
+
+type EventsForContractQuery struct {
+	Contract   isc.Hname
+	BlockRange *BlockRange
+}
+
+type InputEventsForContract struct{}
+
+func (_ InputEventsForContract) Encode(q EventsForContractQuery) dict.Dict {
+	r := dict.Dict{
+		ParamContractHname: codec.Hname.Encode(q.Contract),
 	}
-	return ret, nil
+	if q.BlockRange != nil {
+		r[ParamFromBlock] = codec.Uint32.Encode(q.BlockRange.From)
+		r[ParamToBlock] = codec.Uint32.Encode(q.BlockRange.To)
+	}
+	return r
 }
 
-type EPViewGetEventsForRequest struct {
-	coreutil.EP1[isc.SandboxView, isc.RequestID]
-	Output EventsOutput
-}
-
-type EPViewGetEventsForBlock struct {
-	coreutil.EP1[isc.SandboxView, uint32]
-	Output EventsOutput
-}
-
-type EPViewGetEventsForContract struct {
-	coreutil.EP1[isc.SandboxView, isc.Hname]
-	Output EventsOutput
-}
-
-func (e EPViewGetEventsForContract) MessageWithRange(contract isc.Hname, fromBlock, toBlock uint32) isc.Message {
-	msg := e.Message(contract)
-	msg.Params[ParamFromBlock] = codec.Uint32.Encode(fromBlock)
-	msg.Params[ParamToBlock] = codec.Uint32.Encode(toBlock)
-	return msg
+func (_ InputEventsForContract) Decode(d dict.Dict) (ret EventsForContractQuery, err error) {
+	ret.Contract, err = codec.Hname.Decode(d[ParamContractHname])
+	if err != nil {
+		return
+	}
+	ret.BlockRange = &BlockRange{}
+	ret.BlockRange.From, err = codec.Uint32.Decode(d[ParamFromBlock], 0)
+	if err != nil {
+		return
+	}
+	ret.BlockRange.To, err = codec.Uint32.Decode(d[ParamToBlock], math.MaxUint32)
+	return
 }

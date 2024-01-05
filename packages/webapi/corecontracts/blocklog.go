@@ -23,35 +23,35 @@ func GetControlAddresses(ch chaintypes.Chain) (*isc.ControlAddresses, error) {
 }
 
 func GetLatestBlockInfo(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) (*blocklog.BlockInfo, error) {
-	_, ret, err := callViewInvoker(blocklog.ViewGetBlockInfo.MessageOpt(), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetBlockInfo.Message(nil), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetBlockInfo.Output.F2.Decode(ret)
+	return blocklog.ViewGetBlockInfo.Output2.Decode(ret)
 }
 
 func GetBlockInfo(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) (*blocklog.BlockInfo, error) {
-	_, ret, err := callViewInvoker(blocklog.ViewGetBlockInfo.Message(blockIndex), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetBlockInfo.Message(&blockIndex), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetBlockInfo.Output.F2.Decode(ret)
+	return blocklog.ViewGetBlockInfo.Output2.Decode(ret)
 }
 
 func GetRequestIDsForLatestBlock(callViewInvoker CallViewInvoker, blockIndexOrTrieRoot string) ([]isc.RequestID, error) {
-	_, ret, err := callViewInvoker(blocklog.ViewGetRequestIDsForBlock.MessageOpt(), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetRequestIDsForBlock.Message(nil), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetRequestIDsForBlock.Output.Decode(ret)
+	return blocklog.ViewGetRequestIDsForBlock.Output2.Decode(ret)
 }
 
 func GetRequestIDsForBlock(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) ([]isc.RequestID, error) {
-	_, ret, err := callViewInvoker(blocklog.ViewGetRequestIDsForBlock.Message(blockIndex), blockIndexOrTrieRoot)
+	_, ret, err := callViewInvoker(blocklog.ViewGetRequestIDsForBlock.Message(&blockIndex), blockIndexOrTrieRoot)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetRequestIDsForBlock.Output.Decode(ret)
+	return blocklog.ViewGetRequestIDsForBlock.Output2.Decode(ret)
 }
 
 func GetRequestReceipt(callViewInvoker CallViewInvoker, requestID isc.RequestID, blockIndexOrTrieRoot string) (*blocklog.RequestReceipt, bool, error) {
@@ -59,18 +59,19 @@ func GetRequestReceipt(callViewInvoker CallViewInvoker, requestID isc.RequestID,
 	if err != nil || ret == nil {
 		return nil, false, err
 	}
-	return blocklog.ViewGetRequestReceipt.Output.Decode(ret)
+	rec, err := blocklog.ViewGetRequestReceipt.Output.Decode(ret)
+	return rec, rec != nil, err
 }
 
 func GetRequestReceiptsForBlock(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) ([]*blocklog.RequestReceipt, error) {
 	_, res, err := callViewInvoker(
-		blocklog.ViewGetRequestReceiptsForBlock.Message(blockIndex),
+		blocklog.ViewGetRequestReceiptsForBlock.Message(&blockIndex),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetRequestReceiptsForBlock.Output.Decode(res)
+	return blocklog.ViewGetRequestReceiptsForBlock.Output2.Decode(res)
 }
 
 func IsRequestProcessed(callViewInvoker CallViewInvoker, requestID isc.RequestID, blockIndexOrTrieRoot string) (bool, error) {
@@ -97,18 +98,18 @@ func GetEventsForRequest(callViewInvoker CallViewInvoker, requestID isc.RequestI
 
 func GetEventsForBlock(callViewInvoker CallViewInvoker, blockIndex uint32, blockIndexOrTrieRoot string) ([]*isc.Event, error) {
 	_, ret, err := callViewInvoker(
-		blocklog.ViewGetEventsForBlock.Message(blockIndex),
+		blocklog.ViewGetEventsForBlock.Message(&blockIndex),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return blocklog.ViewGetEventsForBlock.Output.Decode(ret)
+	return blocklog.ViewGetEventsForBlock.Output2.Decode(ret)
 }
 
 func GetEventsForContract(callViewInvoker CallViewInvoker, contractHname isc.Hname, blockIndexOrTrieRoot string) ([]*isc.Event, error) {
 	_, ret, err := callViewInvoker(
-		blocklog.ViewGetEventsForContract.Message(contractHname),
+		blocklog.ViewGetEventsForContract.Message(blocklog.EventsForContractQuery{Contract: contractHname}),
 		blockIndexOrTrieRoot,
 	)
 	if err != nil {

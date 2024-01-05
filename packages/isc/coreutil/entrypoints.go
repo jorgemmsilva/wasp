@@ -1,70 +1,96 @@
 package coreutil
 
 import (
+	"fmt"
+
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 )
 
-type Field[T any] struct {
-	Key   kv.Key
-	Codec *codec.Codec[T]
-}
-
-func (f Field[T]) Encode(v T) dict.Dict {
-	return dict.Dict{f.Key: f.Codec.Encode(v)}
-}
-
-func (f Field[T]) EncodeOpt(v ...T) dict.Dict {
-	if len(v) == 0 {
-		return nil
+func Optional[T any](v ...T) *T {
+	if len(v) > 0 {
+		return &v[0]
 	}
-	return f.Encode(v[0])
+	return nil
 }
 
-func (f Field[T]) Has(r dict.Dict) bool {
-	return r[f.Key] != nil
-}
-
-func (f Field[T]) Decode(r dict.Dict, def ...T) (T, error) {
-	return f.Codec.Decode(r[f.Key], def...)
-}
-
-func (f Field[T]) DecodeOpt(r dict.Dict) (ret T, err error) {
-	if !f.Has(r) {
-		return
+func FromOptional[T any](opt *T, def T) T {
+	if opt == nil {
+		return def
 	}
-	return f.Decode(r)
+	return *opt
 }
 
-type Field2[T1, T2 any] struct {
-	F1 Field[T1]
-	F2 Field[T2]
+// DictCodec is the interface for any type that can be converted to/from dict.Dict
+type DictCodec[T any] interface {
+	Encode(T) dict.Dict
+	Decode(dict.Dict) (T, error)
 }
 
-func (t Field2[T1, T2]) Encode(v1 T1, v2 T2) dict.Dict {
-	d := t.F1.Encode(v1)
-	d.Extend(t.F2.Encode(v2))
+// RawDictCodec is a DictCodec that performs no conversion
+type RawDictCodec struct{}
+
+func (RawDictCodec) Decode(d dict.Dict) (dict.Dict, error) {
+	return d, nil
+}
+
+func (RawDictCodec) Encode(d dict.Dict) dict.Dict {
 	return d
 }
 
-func (t Field2[T1, T2]) Decode(r dict.Dict) (r1 T1, r2 T2, err error) {
-	r1, err = t.F1.Decode(r)
-	if err != nil {
-		return
-	}
-	r2, err = t.F2.Decode(r)
-	return
+// Field is a DictCodec that converts a single value into a single dict key
+type Field[T any] struct {
+	Key   kv.Key
+	Codec codec.Codec[T]
 }
 
-func (t Field2[T1, T2]) DecodeOpt(r dict.Dict) (r1 T1, r2 T2, err error) {
-	r1, err = t.F1.DecodeOpt(r)
-	if err != nil {
-		return
+func (f Field[T]) Encode(v T) dict.Dict {
+	b := f.Codec.Encode(v)
+	if b == nil {
+		return dict.Dict{}
 	}
-	r2, err = t.F2.DecodeOpt(r)
-	return
+	return dict.Dict{f.Key: b}
+}
+
+func (f Field[T]) Decode(d dict.Dict) (T, error) {
+	return f.Codec.Decode(d[f.Key])
+}
+
+func FieldWithCodec[T any](key kv.Key, codec codec.Codec[T]) Field[T] {
+	return Field[T]{Key: key, Codec: codec}
+}
+
+type OptionalCodec[T any] struct {
+	codec.Codec[T]
+}
+
+func (c *OptionalCodec[T]) Decode(b []byte, def ...*T) (r *T, err error) {
+	if b == nil {
+		if len(def) != 0 {
+			err = fmt.Errorf("%T: unexpected default value", r)
+			return
+		}
+		return nil, nil
+	}
+	v, err := c.Codec.Decode(b)
+	if err != nil {
+		return nil, err
+	}
+	return &v, nil
+}
+
+func (c *OptionalCodec[T]) Encode(v *T) []byte {
+	if v == nil {
+		return nil
+	}
+	return c.Codec.Encode(*v)
+}
+
+// FieldWithCodecOptional returns a Field that accepts an optional value
+func FieldWithCodecOptional[T any](key kv.Key, c codec.Codec[T]) Field[*T] {
+	return Field[*T]{Key: key, Codec: &OptionalCodec[T]{Codec: c}}
 }
 
 // EP0 is a utility type for entry points that receive 0 parameters
@@ -81,168 +107,219 @@ func NewViewEP0(contract *ContractInfo, name string) EP0[isc.SandboxView] {
 }
 
 // EP1 is a utility type for entry points that receive 1 parameter
-type EP1[S isc.SandboxBase, T any] struct {
+type EP1[S isc.SandboxBase, T any, I DictCodec[T]] struct {
 	EntryPointInfo[S]
-	Input Field[T]
+	Input I
 }
 
-func (e EP1[S, T]) Message(p1 T) isc.Message {
+func (e EP1[S, T, I]) Message(p1 T) isc.Message {
 	return e.EntryPointInfo.Message(e.Input.Encode(p1))
 }
 
-// MessageOpt constructs a Message where the parameter is optional
-func (e EP1[S, T]) MessageOpt(p ...T) isc.Message {
-	return e.EntryPointInfo.Message(e.Input.EncodeOpt(p...))
+func (e EP1[S, T, I]) WithHandler(f func(ctx S, p T) dict.Dict) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		p, err := e.Input.Decode(ctx.Params().Dict)
+		ctx.RequireNoError(err)
+		return f(ctx, p)
+	})
 }
 
-func NewEP1[T any](contract *ContractInfo, name string, p1Key kv.Key, p1Codec *codec.Codec[T]) EP1[isc.Sandbox, T] {
-	return EP1[isc.Sandbox, T]{
+func NewEP1[T any, I DictCodec[T]](contract *ContractInfo, name string, in I) EP1[isc.Sandbox, T, I] {
+	return EP1[isc.Sandbox, T, I]{
 		EntryPointInfo: contract.Func(name),
-		Input:          Field[T]{Key: p1Key, Codec: p1Codec},
+		Input:          in,
 	}
 }
 
-func NewViewEP1[T any](contract *ContractInfo, name string, p1Key kv.Key, p1Codec *codec.Codec[T]) EP1[isc.SandboxView, T] {
-	return EP1[isc.SandboxView, T]{
+func NewViewEP1[T any, I DictCodec[T]](contract *ContractInfo, name string, in I) EP1[isc.SandboxView, T, I] {
+	return EP1[isc.SandboxView, T, I]{
 		EntryPointInfo: contract.ViewFunc(name),
-		Input:          Field[T]{Key: p1Key, Codec: p1Codec},
+		Input:          in,
 	}
 }
 
 // EP2 is a utility type for entry points that receive 2 parameters
-type EP2[S isc.SandboxBase, T1, T2 any] struct {
+type EP2[S isc.SandboxBase, T1, T2 any, I1 DictCodec[T1], I2 DictCodec[T2]] struct {
 	EntryPointInfo[S]
-	Input Field2[T1, T2]
+	Input1 I1
+	Input2 I2
 }
 
-func NewEP2[T1 any, T2 any](
+func NewEP2[T1 any, T2 any, I1 DictCodec[T1], I2 DictCodec[T2]](
 	contract *ContractInfo, name string,
-	p1Key kv.Key, p1Codec *codec.Codec[T1],
-	p2Key kv.Key, p2Codec *codec.Codec[T2],
-) EP2[isc.Sandbox, T1, T2] {
-	return EP2[isc.Sandbox, T1, T2]{
+	in1 I1,
+	in2 I2,
+) EP2[isc.Sandbox, T1, T2, I1, I2] {
+	return EP2[isc.Sandbox, T1, T2, I1, I2]{
 		EntryPointInfo: contract.Func(name),
-		Input: Field2[T1, T2]{
-			F1: Field[T1]{Key: p1Key, Codec: p1Codec},
-			F2: Field[T2]{Key: p2Key, Codec: p2Codec},
-		},
+		Input1:         in1,
+		Input2:         in2,
 	}
 }
 
-func NewViewEP2[T1 any, T2 any](
+func NewViewEP2[T1 any, T2 any, I1 DictCodec[T1], I2 DictCodec[T2]](
 	contract *ContractInfo, name string,
-	p1Key kv.Key, p1Codec *codec.Codec[T1],
-	p2Key kv.Key, p2Codec *codec.Codec[T2],
-) EP2[isc.SandboxView, T1, T2] {
-	return EP2[isc.SandboxView, T1, T2]{
+	in1 I1,
+	in2 I2,
+) EP2[isc.SandboxView, T1, T2, I1, I2] {
+	return EP2[isc.SandboxView, T1, T2, I1, I2]{
 		EntryPointInfo: contract.ViewFunc(name),
-		Input: Field2[T1, T2]{
-			F1: Field[T1]{Key: p1Key, Codec: p1Codec},
-			F2: Field[T2]{Key: p2Key, Codec: p2Codec},
-		},
+		Input1:         in1,
+		Input2:         in2,
 	}
 }
 
-func (e EP2[S, T1, T2]) MessageOpt1(p1 T1) isc.Message {
-	return e.EntryPointInfo.Message(e.Input.F1.Encode(p1))
+func (e EP2[S, T1, T2, I1, I2]) WithHandler(f func(ctx S, p1 T1, p2 T2) dict.Dict) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		params := ctx.Params()
+		p1, err := e.Input1.Decode(params.Dict)
+		ctx.RequireNoError(err)
+		p2, err := e.Input2.Decode(params.Dict)
+		ctx.RequireNoError(err)
+		return f(ctx, p1, p2)
+	})
 }
 
-func (e EP2[S, T1, T2]) MessageOpt2(p2 T2) isc.Message {
-	return e.EntryPointInfo.Message(e.Input.F2.Encode(p2))
-}
-
-func (e EP2[S, T1, T2]) Message(p1 T1, p2 T2) isc.Message {
-	return e.EntryPointInfo.Message(e.Input.Encode(p1, p2))
+func (e EP2[S, T1, T2, I1, I2]) Message(p1 T1, p2 T2) isc.Message {
+	p := e.Input1.Encode(p1)
+	p.Extend(e.Input2.Encode(p2))
+	return e.EntryPointInfo.Message(p)
 }
 
 // EP01 is a utility type for entry points that receive 0 parameters and return 1 value
-type EP01[S isc.SandboxBase, R any] struct {
+type EP01[S isc.SandboxBase, R any, O DictCodec[R]] struct {
 	EP0[S]
-	Output Field[R]
+	Output O
 }
 
-func NewViewEP01[R any](
+func NewViewEP01[R any, O DictCodec[R]](
 	contract *ContractInfo, name string,
-	r1Key kv.Key, r1Codec *codec.Codec[R],
-) EP01[isc.SandboxView, R] {
-	return EP01[isc.SandboxView, R]{
+	out O,
+) EP01[isc.SandboxView, R, O] {
+	return EP01[isc.SandboxView, R, O]{
 		EP0:    NewViewEP0(contract, name),
-		Output: Field[R]{Key: r1Key, Codec: r1Codec},
+		Output: out,
 	}
+}
+
+func (e EP01[S, R, O]) WithHandler(f func(ctx S) R) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		r := f(ctx)
+		return e.Output.Encode(r)
+	})
 }
 
 // EP02 is a utility type for entry points that receive 0 parameters and return 1 value
-type EP02[S isc.SandboxBase, R1, R2 any] struct {
+type EP02[S isc.SandboxBase, R1, R2 any, O1 DictCodec[R1], O2 DictCodec[R2]] struct {
 	EP0[S]
-	Output Field2[R1, R2]
+	Output1 O1
+	Output2 O2
 }
 
-func NewViewEP02[R1, R2 any](
+func NewViewEP02[R1, R2 any, O1 DictCodec[R1], O2 DictCodec[R2]](
 	contract *ContractInfo, name string,
-	r1Key kv.Key, r1Codec *codec.Codec[R1],
-	r2Key kv.Key, r2Codec *codec.Codec[R2],
-) EP02[isc.SandboxView, R1, R2] {
-	return EP02[isc.SandboxView, R1, R2]{
-		EP0: NewViewEP0(contract, name),
-		Output: Field2[R1, R2]{
-			F1: Field[R1]{Key: r1Key, Codec: r1Codec},
-			F2: Field[R2]{Key: r2Key, Codec: r2Codec},
-		},
+	out1 O1,
+	out2 O2,
+) EP02[isc.SandboxView, R1, R2, O1, O2] {
+	return EP02[isc.SandboxView, R1, R2, O1, O2]{
+		EP0:     NewViewEP0(contract, name),
+		Output1: out1,
+		Output2: out2,
 	}
+}
+
+func (e EP02[S, R1, R2, O1, O2]) WithHandler(f func(ctx S) (R1, R2)) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		r1, r2 := f(ctx)
+		d := e.Output1.Encode(r1)
+		d.Extend(e.Output2.Encode(r2))
+		return d
+	})
 }
 
 // EP11 is a utility type for entry points that receive 1 parameter and return 1 value
-type EP11[S isc.SandboxView, T any, R any] struct {
-	EP1[S, T]
-	Output Field[R]
+type EP11[S isc.SandboxView, T any, R any, I DictCodec[T], O DictCodec[R]] struct {
+	EP1[S, T, I]
+	Output O
 }
 
-func NewViewEP11[T any, R any](
+func NewViewEP11[T any, R any, I DictCodec[T], O DictCodec[R]](
 	contract *ContractInfo, name string,
-	p1Key kv.Key, p1Codec *codec.Codec[T],
-	r1Key kv.Key, r1Codec *codec.Codec[R],
-) EP11[isc.SandboxView, T, R] {
-	return EP11[isc.SandboxView, T, R]{
-		EP1:    NewViewEP1(contract, name, p1Key, p1Codec),
-		Output: Field[R]{Key: r1Key, Codec: r1Codec},
+	in I,
+	out O,
+) EP11[isc.SandboxView, T, R, I, O] {
+	return EP11[isc.SandboxView, T, R, I, O]{
+		EP1:    NewViewEP1(contract, name, in),
+		Output: out,
 	}
+}
+
+func (e EP11[S, T, R, I, O]) WithHandler(f func(S, T) R) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		p, err := e.Input.Decode(ctx.Params().Dict)
+		ctx.RequireNoError(err)
+		r := f(ctx, p)
+		return e.Output.Encode(r)
+	})
 }
 
 // EP12 is a utility type for entry points that receive 1 parameter and return 1 value
-type EP12[S isc.SandboxBase, T any, R1 any, R2 any] struct {
-	EP1[S, T]
-	Output Field2[R1, R2]
+type EP12[S isc.SandboxBase, T any, R1 any, R2 any, I DictCodec[T], O1 DictCodec[R1], O2 DictCodec[R2]] struct {
+	EP1[S, T, I]
+	Output1 O1
+	Output2 O2
 }
 
-func NewViewEP12[T any, R1 any, R2 any](
+func NewViewEP12[T any, R1 any, R2 any, I DictCodec[T], O1 DictCodec[R1], O2 DictCodec[R2]](
 	contract *ContractInfo, name string,
-	p1Key kv.Key, p1Codec *codec.Codec[T],
-	r1Key kv.Key, r1Codec *codec.Codec[R1],
-	r2Key kv.Key, r2Codec *codec.Codec[R2],
-) EP12[isc.SandboxView, T, R1, R2] {
-	return EP12[isc.SandboxView, T, R1, R2]{
-		EP1: NewViewEP1(contract, name, p1Key, p1Codec),
-		Output: Field2[R1, R2]{
-			F1: Field[R1]{Key: r1Key, Codec: r1Codec},
-			F2: Field[R2]{Key: r2Key, Codec: r2Codec},
-		},
+	in I,
+	out1 O1,
+	out2 O2,
+) EP12[isc.SandboxView, T, R1, R2, I, O1, O2] {
+	return EP12[isc.SandboxView, T, R1, R2, I, O1, O2]{
+		EP1:     NewViewEP1(contract, name, in),
+		Output1: out1,
+		Output2: out2,
 	}
+}
+
+func (e EP12[S, T, R1, R2, I, O1, O2]) WithHandler(f func(S, T) (R1, R2)) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		p, err := e.Input.Decode(ctx.Params().Dict)
+		ctx.RequireNoError(err)
+		r1, r2 := f(ctx, p)
+		d := e.Output1.Encode(r1)
+		d.Extend(e.Output2.Encode(r2))
+		return d
+	})
 }
 
 // EP21 is a utility type for entry points that receive 2 parameters and return 1 value
-type EP21[S isc.SandboxBase, T1 any, T2 any, R any] struct {
-	EP2[S, T1, T2]
-	Output Field[R]
+type EP21[S isc.SandboxBase, T1 any, T2 any, R any, I1 DictCodec[T1], I2 DictCodec[T2], O DictCodec[R]] struct {
+	EP2[S, T1, T2, I1, I2]
+	Output O
 }
 
-func NewViewEP21[T1 any, T2 any, R any](
+func NewViewEP21[T1 any, T2 any, R any, I1 DictCodec[T1], I2 DictCodec[T2], O DictCodec[R]](
 	contract *ContractInfo, name string,
-	p1Key kv.Key, p1Codec *codec.Codec[T1],
-	p2Key kv.Key, p2Codec *codec.Codec[T2],
-	r1Key kv.Key, r1Codec *codec.Codec[R],
-) EP21[isc.SandboxView, T1, T2, R] {
-	return EP21[isc.SandboxView, T1, T2, R]{
-		EP2:    NewViewEP2(contract, name, p1Key, p1Codec, p2Key, p2Codec),
-		Output: Field[R]{Key: r1Key, Codec: r1Codec},
+	in1 I1,
+	in2 I2,
+	out O,
+) EP21[isc.SandboxView, T1, T2, R, I1, I2, O] {
+	return EP21[isc.SandboxView, T1, T2, R, I1, I2, O]{
+		EP2:    NewViewEP2(contract, name, in1, in2),
+		Output: out,
 	}
+}
+
+func (e EP21[S, T1, T2, R, I1, I2, O]) WithHandler(f func(S, T1, T2) R) *EntryPointHandler[S] {
+	return e.EntryPointInfo.WithHandler(func(ctx S) dict.Dict {
+		params := ctx.Params()
+		p1, err := e.Input1.Decode(params.Dict)
+		ctx.RequireNoError(err)
+		p2, err := e.Input2.Decode(params.Dict)
+		ctx.RequireNoError(err)
+		r := f(ctx, p1, p2)
+		return e.Output.Encode(r)
+	})
 }

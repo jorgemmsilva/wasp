@@ -31,51 +31,28 @@ import (
 )
 
 type CallParams struct {
-	targetName string
-	target     isc.Hname
-	epName     string
-	entryPoint isc.Hname
-	assets     *isc.Assets // ignored off-ledger
-	nft        *isc.NFT
-	allowance  *isc.Assets
-	gasBudget  gas.GasUnits
-	nonce      uint64 // ignored for on-ledger
-	params     dict.Dict
-	sender     iotago.Address
+	msg       isc.Message
+	assets    *isc.Assets // ignored off-ledger
+	nft       *isc.NFT
+	allowance *isc.Assets
+	gasBudget gas.GasUnits
+	nonce     uint64 // ignored for on-ledger
+	sender    iotago.Address
 }
 
-// NewCallParams creates structure which wraps in one object call parameters, used in PostRequestSync and callViewFull
-// calls:
-//   - 'scName' is a name of the target smart contract
-//   - 'funName' is a name of the target entry point (the function) of the smart contract program
-//   - 'params' is either a dict.Dict, or a sequence of pairs 'paramName', 'paramValue' which constitute call parameters
-//     The 'paramName' must be a string and 'paramValue' must different types (encoded based on type)
-//
+func NewCallParamsEx(c, ep string, params ...any) *CallParams {
+	return NewCallParams(isc.NewMessageFromNames(c, ep, codec.DictFromSlice(params)))
+}
+
+// NewCallParams creates a CallParams instance.
 // With the WithTransfers the CallParams structure may be complemented with attached assets
 // sent together with the request
-func NewCallParams(scName, funName string, params ...interface{}) *CallParams {
-	return CallParamsFromDict(scName, funName, parseParams(params))
-}
-
-func CallParamsFromDict(scName, funName string, par dict.Dict) *CallParams {
-	ret := CallParamsFromDictByHname(isc.Hn(scName), isc.Hn(funName), par)
-	ret.targetName = scName
-	ret.epName = funName
-	return ret
-}
-
-func CallParamsFromDictByHname(hContract, hFunction isc.Hname, par dict.Dict) *CallParams {
-	ret := &CallParams{
-		target:     hContract,
-		entryPoint: hFunction,
-		allowance:  isc.NewEmptyAssets(),
-		assets:     isc.NewEmptyAssets(),
+func NewCallParams(msg isc.Message) *CallParams {
+	return &CallParams{
+		msg:       msg,
+		allowance: isc.NewEmptyAssets(),
+		assets:    isc.NewEmptyAssets(),
 	}
-	ret.params = dict.New()
-	for k, v := range par {
-		ret.params.Set(k, v)
-	}
-	return ret
 }
 
 func (r *CallParams) WithAllowance(allowance *isc.Assets) *CallParams {
@@ -156,7 +133,7 @@ func (r *CallParams) NewRequestOffLedger(ch *Chain, keyPair *cryptolib.KeyPair) 
 	if r.nonce == 0 {
 		r.nonce = ch.Nonce(isc.NewAgentID(keyPair.Address()))
 	}
-	ret := isc.NewOffLedgerRequest(ch.ID(), r.target, r.entryPoint, r.params, r.nonce, r.gasBudget).
+	ret := isc.NewOffLedgerRequest(ch.ID(), r.msg, r.nonce, r.gasBudget).
 		WithAllowance(r.allowance)
 	return ret.Sign(keyPair)
 }
@@ -166,20 +143,11 @@ func (r *CallParams) Build(targetAddress iotago.Address) *isc.RequestParameters 
 		TargetAddress: targetAddress,
 		Assets:        r.assets,
 		Metadata: &isc.SendMetadata{
-			TargetContract: r.target,
-			EntryPoint:     r.entryPoint,
-			Params:         r.params,
-			Allowance:      r.allowance,
-			GasBudget:      r.gasBudget,
+			Message:   r.msg,
+			Allowance: r.allowance,
+			GasBudget: r.gasBudget,
 		},
 	}
-}
-
-func parseParams(params []interface{}) dict.Dict {
-	if len(params) == 1 {
-		return params[0].(dict.Dict)
-	}
-	return codec.MakeDict(toMap(params))
 }
 
 // makes map without hashing
@@ -417,41 +385,23 @@ func (ch *Chain) EstimateNeededStorageDeposit(req *CallParams, keyPair *cryptoli
 }
 
 func (ch *Chain) ResolveVMError(e *isc.UnresolvedVMError) *isc.VMError {
-	resolved, err := vmerrors.Resolve(e, func(contractName string, funcName string, params dict.Dict) (dict.Dict, error) {
-		return ch.CallView(contractName, funcName, params)
-	})
+	resolved, err := vmerrors.Resolve(e, ch.CallView)
 	require.NoError(ch.Env.T, err)
 	return resolved
 }
 
+func (ch *Chain) CallViewEx(c, ep string, params ...any) (dict.Dict, error) {
+	return ch.CallView(isc.NewMessageFromNames(c, ep, codec.DictFromSlice(params)))
+}
+
 // CallView calls the view entry point of the smart contract.
-// The call params should be either a dict.Dict, or pairs of ('paramName',
-// 'paramValue') where 'paramName' is a string and 'paramValue' must be of type
-// accepted by the 'codec' package
-func (ch *Chain) CallView(scName, funName string, params ...interface{}) (dict.Dict, error) {
+func (ch *Chain) CallView(msg isc.Message) (dict.Dict, error) {
 	latestState, err := ch.LatestState(chaintypes.ActiveOrCommittedState)
-	if err != nil {
-		return nil, err
-	}
-	return ch.CallViewAtState(latestState, scName, funName, params...)
-}
-
-func (ch *Chain) CallViewAtState(chainState state.State, scName, funName string, params ...interface{}) (dict.Dict, error) {
-	// ch.Log().Debugf("callView: %s::%s", scName, funName)
-	return ch.callViewByHnameAtState(chainState, isc.Hn(scName), isc.Hn(funName), params...)
-}
-
-func (ch *Chain) CallViewByHname(hContract, hFunction isc.Hname, params ...interface{}) (dict.Dict, error) {
-	latestState, err := ch.store.LatestState()
 	require.NoError(ch.Env.T, err)
-	return ch.callViewByHnameAtState(latestState, hContract, hFunction, params...)
+	return ch.CallViewAtState(latestState, msg)
 }
 
-func (ch *Chain) callViewByHnameAtState(chainState state.State, hContract, hFunction isc.Hname, params ...interface{}) (dict.Dict, error) {
-	// ch.Log().Debugf("callView: %s::%s", hContract.String(), hFunction.String())
-
-	p := parseParams(params)
-
+func (ch *Chain) CallViewAtState(chainState state.State, msg isc.Message) (dict.Dict, error) {
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
 
@@ -459,7 +409,7 @@ func (ch *Chain) callViewByHnameAtState(chainState state.State, hContract, hFunc
 	if err != nil {
 		return nil, err
 	}
-	return vmctx.CallViewExternal(hContract, hFunction, p)
+	return vmctx.CallViewExternal(msg)
 }
 
 // GetMerkleProofRaw returns Merkle proof of the key in the state
@@ -491,16 +441,7 @@ func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie.Me
 	if err != nil {
 		return nil, nil, err
 	}
-	biBin, retProof, err := vmctx.GetBlockProof(blockIndex)
-	if err != nil {
-		return nil, nil, err
-	}
-	retBlockInfo, err := blocklog.BlockInfoFromBytes(biBin)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return retBlockInfo, retProof, nil
+	return vmctx.GetBlockProof(blockIndex)
 }
 
 // GetMerkleProof return the merkle proof of the key in the smart contract. Assumes Merkle model is used

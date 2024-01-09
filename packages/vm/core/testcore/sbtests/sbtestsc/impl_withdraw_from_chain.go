@@ -3,7 +3,6 @@ package sbtestsc
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/gas"
@@ -34,11 +33,7 @@ func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
 		TargetAddress: targetChain.AsAddress(),
 		Assets:        isc.NewAssetsBaseTokens(storageDeposit + gasReserveTransferAccountToChain + iotago.BaseToken(gasReserve)),
 		Metadata: &isc.SendMetadata{
-			TargetContract: accounts.Contract.Hname(),
-			EntryPoint:     accounts.FuncTransferAccountToChain.Hname(),
-			Params: dict.Dict{
-				accounts.ParamGasReserve: codec.Uint64.Encode(uint64(gasReserve)),
-			},
+			Message:   accounts.FuncTransferAccountToChain.Message(&gasReserve),
 			GasBudget: gas.GasUnits(gasReserve),
 			Allowance: isc.NewAssetsBaseTokens(withdrawal + storageDeposit + iotago.BaseToken(gasReserve)),
 		},

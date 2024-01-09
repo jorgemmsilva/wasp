@@ -14,7 +14,7 @@ func testChainOwnerIDView(t *testing.T, w bool) {
 	_, chain := setupChain(t, nil)
 	setupTestSandboxSC(t, chain, nil, w)
 
-	ret, err := chain.CallView(ScName, sbtestsc.FuncChainOwnerIDView.Name)
+	ret, err := chain.CallViewEx(ScName, sbtestsc.FuncChainOwnerIDView.Name)
 	require.NoError(t, err)
 
 	c := ret.Get(sbtestsc.ParamChainOwnerID)
@@ -27,7 +27,7 @@ func testChainOwnerIDFull(t *testing.T, w bool) {
 	_, chain := setupChain(t, nil)
 	setupTestSandboxSC(t, chain, nil, w)
 
-	req := solo.NewCallParams(ScName, sbtestsc.FuncChainOwnerIDFull.Name).
+	req := solo.NewCallParamsEx(ScName, sbtestsc.FuncChainOwnerIDFull.Name).
 		WithGasBudget(100_000)
 	ret, err := chain.PostRequestSync(req, nil)
 	require.NoError(t, err)
@@ -41,7 +41,7 @@ func testSandboxCall(t *testing.T, w bool) {
 	_, chain := setupChain(t, nil)
 	setupTestSandboxSC(t, chain, nil, w)
 
-	ret, err := chain.CallView(ScName, sbtestsc.FuncSandboxCall.Name)
+	ret, err := chain.CallViewEx(ScName, sbtestsc.FuncSandboxCall.Name)
 	require.NoError(t, err)
 	require.NotNil(t, ret)
 }

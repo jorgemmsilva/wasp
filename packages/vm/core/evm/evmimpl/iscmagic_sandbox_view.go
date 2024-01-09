@@ -10,8 +10,6 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/iscmagic"
@@ -55,11 +53,11 @@ func (h *magicContractHandler) CallView(
 	entryPoint uint32,
 	params iscmagic.ISCDict,
 ) iscmagic.ISCDict {
-	callRet := h.callView(
+	callRet := h.callView(isc.NewMessage(
 		isc.Hname(contractHname),
 		isc.Hname(entryPoint),
 		params.Unwrap(),
-	)
+	))
 	return iscmagic.WrapISCDict(callRet)
 }
 
@@ -107,13 +105,10 @@ func (h *magicContractHandler) Erc20NativeTokensFoundrySerialNumber(addr common.
 
 // handler for ISCSandbox::getNativeTokenID
 func (h *magicContractHandler) GetNativeTokenID(foundrySN uint32) iscmagic.NativeTokenID {
-	r := h.callView(accounts.Contract.Hname(), accounts.ViewFoundryOutput.Hname(), dict.Dict{
-		accounts.ParamFoundrySN: codec.Uint32.Encode(foundrySN),
-	})
-	out := &iotago.FoundryOutput{}
-	_, err := h.ctx.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
+	r := h.callView(accounts.ViewFoundryOutput.Message(foundrySN))
+	out, err := accounts.ViewFoundryOutput.Output.Decode(r)
 	h.ctx.RequireNoError(err)
-	nativeTokenID := out.MustNativeTokenID()
+	nativeTokenID := out.(*iotago.FoundryOutput).MustNativeTokenID()
 	return iscmagic.WrapNativeTokenID(nativeTokenID)
 }
 
@@ -121,13 +116,10 @@ var errUnsupportedTokenScheme = coreerrors.Register("unsupported TokenScheme kin
 
 // handler for ISCSandbox::getNativeTokenScheme
 func (h *magicContractHandler) GetNativeTokenScheme(foundrySN uint32) iotago.SimpleTokenScheme {
-	r := h.callView(accounts.Contract.Hname(), accounts.ViewFoundryOutput.Hname(), dict.Dict{
-		accounts.ParamFoundrySN: codec.Uint32.Encode(foundrySN),
-	})
-	out := &iotago.FoundryOutput{}
-	_, err := h.ctx.L1API().Decode(r.Get(accounts.ParamFoundryOutputBin), &out)
+	r := h.callView(accounts.ViewFoundryOutput.Message(foundrySN))
+	out, err := accounts.ViewFoundryOutput.Output.Decode(r)
 	h.ctx.RequireNoError(err)
-	s, ok := out.TokenScheme.(*iotago.SimpleTokenScheme)
+	s, ok := out.(*iotago.FoundryOutput).TokenScheme.(*iotago.SimpleTokenScheme)
 	if !ok {
 		panic(errUnsupportedTokenScheme)
 	}

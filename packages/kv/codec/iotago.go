@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
@@ -27,7 +28,7 @@ var (
 	TokenScheme = newIotagoCodec[iotago.TokenScheme](l1API)
 )
 
-func newIotagoCodec[T any](l1API iotago.API) *Codec[T] {
+func newIotagoCodec[T any](l1API iotago.API) Codec[T] {
 	return NewCodec(
 		func(b []byte) (v T, err error) {
 			n, err := l1API.Decode(b, &v)
@@ -72,3 +73,5 @@ func decodeNFTID(b []byte) (ret iotago.NFTID, err error) {
 func encodeNFTID(nftID iotago.NFTID) []byte {
 	return nftID[:]
 }
+
+var BaseToken = newIntCodec[iotago.BaseToken](8, binary.LittleEndian.Uint64, binary.LittleEndian.PutUint64)

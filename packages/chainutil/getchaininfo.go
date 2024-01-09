@@ -1,29 +1,18 @@
 package chainutil
 
 import (
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
 
-func GetAccountBalance(
-	ch chaintypes.ChainCore,
-	agentID isc.AgentID,
-	l1API iotago.API,
-	tokenInfo api.InfoResBaseToken,
-) (*isc.FungibleTokens, error) {
-	params := codec.MakeDict(map[string]interface{}{
-		accounts.ParamAgentID: codec.AgentID.Encode(agentID),
-	})
-	ret, err := CallView(mustLatestState(ch), ch, accounts.Contract.Hname(), accounts.ViewBalance.Hname(), params)
+func GetAccountBalance(ch chaintypes.ChainCore, agentID isc.AgentID) (*isc.FungibleTokens, error) {
+	ret, err := CallView(mustLatestState(ch), ch, accounts.ViewBalance.Message(&agentID))
 	if err != nil {
 		return nil, err
 	}
-	return isc.FungibleTokensFromDict(ret)
+	return accounts.ViewBalance.Output.Decode(ret)
 }
 
 func mustLatestState(ch chaintypes.ChainCore) state.State {

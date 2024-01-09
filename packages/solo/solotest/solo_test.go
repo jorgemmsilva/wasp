@@ -1,6 +1,7 @@
 package solo_test
 
 import (
+	"math/big"
 	"os"
 	"testing"
 
@@ -25,10 +26,10 @@ func TestSaveSnapshot(t *testing.T) {
 	ch.MustDepositBaseTokensToL2(2*isc.Million, ch.OriginatorPrivateKey)
 
 	// create foundry and native tokens on L2
-	sn, nativeTokenID, err := ch.NewFoundryParams(1000).CreateFoundry()
+	sn, nativeTokenID, err := ch.NewFoundryParams(big.NewInt(1000)).CreateFoundry()
 	require.NoError(t, err)
 	// mint some tokens for the user
-	err = ch.MintTokens(sn, 1000, ch.OriginatorPrivateKey)
+	err = ch.MintTokens(sn, big.NewInt(1000), ch.OriginatorPrivateKey)
 	require.NoError(t, err)
 
 	_, err = ch.GetNativeTokenIDByFoundrySN(sn)
@@ -41,7 +42,7 @@ func TestSaveSnapshot(t *testing.T) {
 	})
 	require.NoError(t, err)
 	_, err = ch.PostRequestSync(
-		solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).
+		solo.NewCallParams(accounts.FuncDeposit.Message()).
 			WithNFT(nft).
 			AddBaseTokens(10*isc.Million).
 			WithMaxAffordableGasBudget(),

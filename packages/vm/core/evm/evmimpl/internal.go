@@ -16,7 +16,6 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -130,12 +129,9 @@ func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.Bas
 	ret := iotago.BaseToken(0)
 	// do not charge gas for this, internal checks of the emulator require this function to run before executing the request
 	ctx.WithoutGasBurn(func() {
-		res := ctx.sandbox.CallView(
-			accounts.Contract.Hname(),
-			accounts.ViewBalanceBaseToken.Hname(),
-			dict.Dict{accounts.ParamAgentID: isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr).Bytes()},
-		)
-		ret = iotago.BaseToken(lo.Must(codec.Uint64.Decode(res.Get(accounts.ParamBalance), 0)))
+		var agentID isc.AgentID = isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr)
+		res := ctx.sandbox.CallView(accounts.ViewBalanceBaseToken.Message(&agentID))
+		ret = lo.Must(accounts.ViewBalanceBaseToken.Output.Decode(res))
 	})
 	return ret
 }

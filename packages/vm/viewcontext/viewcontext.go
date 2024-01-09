@@ -15,7 +15,6 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
 	"github.com/iotaledger/wasp/packages/state"
@@ -145,9 +144,9 @@ func (ctx *ViewContext) GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID
 		nativeTokenID, ctx.chainID)
 }
 
-func (ctx *ViewContext) Call(targetContract, epCode isc.Hname, params dict.Dict, _ *isc.Assets) dict.Dict {
-	ctx.log.Debugf("Call. TargetContract: %s entry point: %s", targetContract, epCode)
-	return ctx.callView(targetContract, epCode, params)
+func (ctx *ViewContext) Call(msg isc.Message, _ *isc.Assets) dict.Dict {
+	ctx.log.Debugf("Call. TargetContract: %s entry point: %s", msg.Target.Contract, msg.Target.EntryPoint)
+	return ctx.callView(msg)
 }
 
 func (ctx *ViewContext) ChainInfo() *isc.ChainInfo {
@@ -209,24 +208,24 @@ func (ctx *ViewContext) GasBurnLog() *gas.BurnLog {
 	return ctx.gasBurnLog
 }
 
-func (ctx *ViewContext) callView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret dict.Dict) {
-	contractRecord := ctx.GetContractRecord(targetContract)
+func (ctx *ViewContext) callView(msg isc.Message) (ret dict.Dict) {
+	contractRecord := ctx.GetContractRecord(msg.Target.Contract)
 	if contractRecord == nil {
-		panic(vm.ErrContractNotFound.Create(targetContract))
+		panic(vm.ErrContractNotFound.Create(msg.Target.Contract))
 	}
-	ep := execution.GetEntryPointByProgHash(ctx, targetContract, entryPoint, contractRecord.ProgramHash)
+	ep := execution.GetEntryPointByProgHash(ctx, msg.Target.EntryPoint, contractRecord.ProgramHash)
 
 	if !ep.IsView() {
 		panic("target entrypoint is not a view")
 	}
 
-	ctx.pushCallContext(targetContract, params)
+	ctx.pushCallContext(msg.Target.Contract, msg.Params)
 	defer ctx.popCallContext()
 
 	return ep.Call(sandbox.NewSandboxView(ctx))
 }
 
-func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, params dict.Dict) (ret dict.Dict) {
+func (ctx *ViewContext) initAndCallView(msg isc.Message) (ret dict.Dict) {
 	ctx.chainInfo = lo.Must(governance.GetChainInfo(
 		ctx.contractStateReaderWithGasBurn(governance.Contract.Hname()),
 		ctx.chainID,
@@ -237,13 +236,13 @@ func (ctx *ViewContext) initAndCallView(targetContract, entryPoint isc.Hname, pa
 		ctx.gasBurnLog = gas.NewGasBurnLog()
 	}
 	ctx.GasBurnEnable(true)
-	return ctx.callView(targetContract, entryPoint, params)
+	return ctx.callView(msg)
 }
 
 // CallViewExternal calls a view from outside the VM, for example API call
-func (ctx *ViewContext) CallViewExternal(targetContract, epCode isc.Hname, params dict.Dict) (ret dict.Dict, err error) {
+func (ctx *ViewContext) CallViewExternal(msg isc.Message) (ret dict.Dict, err error) {
 	err = panicutil.CatchAllButDBError(func() {
-		ret = ctx.initAndCallView(targetContract, epCode, params)
+		ret = ctx.initAndCallView(msg)
 	}, ctx.log, "CallViewExternal: ")
 
 	if err != nil {
@@ -268,26 +267,17 @@ func (ctx *ViewContext) GetMerkleProof(key []byte) (ret *trie.MerkleProof, err e
 // - blockInfo record in serialized form
 // - proof that the blockInfo is stored under the respective key.
 // Useful for proving commitment to the past state, because blockInfo contains commitment to that block
-func (ctx *ViewContext) GetBlockProof(blockIndex uint32) ([]byte, *trie.MerkleProof, error) {
-	var retBlockInfoBin []byte
-	var retProof *trie.MerkleProof
-
-	err := panicutil.CatchAllButDBError(func() {
+func (ctx *ViewContext) GetBlockProof(blockIndex uint32) (blockInfo *blocklog.BlockInfo, proof *trie.MerkleProof, err error) {
+	err = panicutil.CatchAllButDBError(func() {
 		// retrieve serialized block info record
-		retBlockInfoBin = ctx.initAndCallView(
-			blocklog.Contract.Hname(),
-			blocklog.ViewGetBlockInfo.Hname(),
-			codec.MakeDict(map[string]interface{}{
-				blocklog.ParamBlockIndex: blockIndex,
-			}),
-		).Get(blocklog.ParamBlockInfo)
+		r := ctx.initAndCallView(blocklog.ViewGetBlockInfo.Message(&blockIndex))
+		blockInfo = lo.Must(blocklog.ViewGetBlockInfo.Output2.Decode(r))
 
 		// retrieve proof to serialized block
 		key := blocklog.Contract.FullKey(blocklog.BlockInfoKey(blockIndex))
-		retProof = ctx.stateReader.GetMerkleProof(key)
+		proof = ctx.stateReader.GetMerkleProof(key)
 	}, ctx.log, "GetMerkleProof: ")
-
-	return retBlockInfoBin, retProof, err
+	return
 }
 
 // GetRootCommitment calculates root commitment from state.

@@ -19,7 +19,7 @@ func testMainCallsFromFullEP(t *testing.T, w bool) {
 
 	setupTestSandboxSC(t, chain, user, w)
 
-	req := solo.NewCallParams(ScName, sbtestsc.FuncCheckContextFromFullEP.Name,
+	req := solo.NewCallParamsEx(ScName, sbtestsc.FuncCheckContextFromFullEP.Name,
 		sbtestsc.ParamChainID, chain.ChainID,
 		sbtestsc.ParamAgentID, isc.NewContractAgentID(chain.ChainID, HScName),
 		sbtestsc.ParamCaller, userAgentID,
@@ -38,7 +38,7 @@ func testMainCallsFromViewEP(t *testing.T, w bool) {
 
 	setupTestSandboxSC(t, chain, user, w)
 
-	_, err := chain.CallView(ScName, sbtestsc.FuncCheckContextFromViewEP.Name,
+	_, err := chain.CallViewEx(ScName, sbtestsc.FuncCheckContextFromViewEP.Name,
 		sbtestsc.ParamChainID, chain.ChainID,
 		sbtestsc.ParamAgentID, isc.NewContractAgentID(chain.ChainID, HScName),
 		sbtestsc.ParamChainOwnerID, chain.OriginatorAgentID,

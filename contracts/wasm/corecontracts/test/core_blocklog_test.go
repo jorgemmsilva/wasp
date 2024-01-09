@@ -116,9 +116,7 @@ func TestGetRequestReceipt(t *testing.T) {
 		f.Results.RequestIndex().Value(),
 	)
 	require.NoError(t, err)
-	soloreceipt, err := ctx.Chain.GetRequestReceipt(reqs[0])
-	require.NoError(t, err)
-
+	soloreceipt, _ := ctx.Chain.GetRequestReceipt(reqs[0])
 	require.Equal(t, soloreceipt, receipt)
 }
 

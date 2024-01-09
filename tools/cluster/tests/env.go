@@ -22,13 +22,10 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/clients/chainclient"
-	"github.com/iotaledger/wasp/clients/scclient"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/tools/cluster"
@@ -59,7 +56,7 @@ type contractEnv struct {
 	programHash hashing.HashValue
 }
 
-func (e *ChainEnv) deployWasmContract(wasmName string, initParams map[string]interface{}) *contractEnv {
+func (e *ChainEnv) deployWasmContract(wasmName string) *contractEnv {
 	ret := &contractEnv{ChainEnv: e}
 
 	wasmPath := "wasm/" + wasmName + "_bg.wasm"
@@ -73,14 +70,14 @@ func (e *ChainEnv) deployWasmContract(wasmName string, initParams map[string]int
 	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 30*time.Second)
 	require.NoError(e.t, err)
 
-	ph, err := e.Chain.DeployWasmContract(wasmName, wasm, initParams)
+	ph, err := e.Chain.DeployWasmContract(wasmName, wasm, nil)
 	require.NoError(e.t, err)
 	ret.programHash = ph
 	e.t.Logf("deployContract: proghash = %s\n", ph.String())
 	return ret
 }
 
-func (e *ChainEnv) createNewClient() *scclient.SCClient {
+func (e *ChainEnv) createNewClient() *chainclient.Client {
 	keyPair, addr, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(e.t, err)
 	retries := 0
@@ -96,7 +93,7 @@ func (e *ChainEnv) createNewClient() *scclient.SCClient {
 		}
 		time.Sleep(300 * time.Millisecond)
 	}
-	return e.Chain.SCClient(isc.Hn(nativeIncCounterSCName), keyPair)
+	return e.Chain.Client(keyPair)
 }
 
 func SetupWithChain(t *testing.T, opt ...waspClusterOpts) *ChainEnv {
@@ -113,8 +110,7 @@ func (e *ChainEnv) NewChainClient() *chainclient.Client {
 }
 
 func (e *ChainEnv) DepositFunds(amount iotago.BaseToken, keyPair *cryptolib.KeyPair) {
-	accountsClient := e.Chain.SCClient(accounts.Contract.Hname(), keyPair)
-	tx, err := accountsClient.PostRequest(accounts.FuncDeposit.Name, chainclient.PostRequestParams{
+	tx, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncDeposit.Message(), chainclient.PostRequestParams{
 		Transfer: isc.NewAssetsBaseTokens(iotago.BaseToken(amount)),
 	})
 	require.NoError(e.t, err)
@@ -125,12 +121,10 @@ func (e *ChainEnv) DepositFunds(amount iotago.BaseToken, keyPair *cryptolib.KeyP
 }
 
 func (e *ChainEnv) TransferFundsTo(assets *isc.Assets, nft *isc.NFT, keyPair *cryptolib.KeyPair, targetAccount isc.AgentID) {
-	accountsClient := e.Chain.SCClient(accounts.Contract.Hname(), keyPair)
 	transferAssets := assets.Clone()
 	transferAssets.AddBaseTokens(1 * isc.Million) // to pay for the fees
-	tx, err := accountsClient.PostRequest(accounts.FuncTransferAllowanceTo.Name, chainclient.PostRequestParams{
+	tx, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncTransferAllowanceTo.Message(targetAccount), chainclient.PostRequestParams{
 		Transfer:                 transferAssets,
-		Args:                     map[kv.Key][]byte{accounts.ParamAgentID: codec.AgentID.Encode(targetAccount)},
 		NFT:                      nft,
 		Allowance:                assets,
 		AutoAdjustStorageDeposit: false,

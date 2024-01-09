@@ -12,13 +12,11 @@ import (
 func CallView(
 	chainState state.State,
 	ch chaintypes.ChainCore,
-	contractHname,
-	viewHname isc.Hname,
-	params dict.Dict,
+	msg isc.Message,
 ) (dict.Dict, error) {
 	vctx, err := viewcontext.New(ch, chainState, false)
 	if err != nil {
 		return nil, err
 	}
-	return vctx.CallViewExternal(contractHname, viewHname, params)
+	return vctx.CallViewExternal(msg)
 }

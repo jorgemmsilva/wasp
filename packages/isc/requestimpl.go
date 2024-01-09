@@ -205,12 +205,7 @@ func (rid *RequestID) Write(w io.Writer) error {
 
 type RequestMetadata struct {
 	SenderContract ContractIdentity `json:"senderContract"`
-	// ID of the target smart contract
-	TargetContract Hname `json:"targetContract"`
-	// entry point code
-	EntryPoint Hname `json:"entryPoint"`
-	// request arguments
-	Params dict.Dict `json:"params"`
+	Message        Message          `json:"message"`
 	// Allowance intended to the target contract to take. Nil means zero allowance
 	Allowance *Assets `json:"allowance"`
 	// gas budget
@@ -238,9 +233,7 @@ func (meta *RequestMetadata) Clone() *RequestMetadata {
 
 	return &RequestMetadata{
 		SenderContract: meta.SenderContract,
-		TargetContract: meta.TargetContract,
-		EntryPoint:     meta.EntryPoint,
-		Params:         meta.Params.Clone(),
+		Message:        meta.Message.Clone(),
 		Allowance:      meta.Allowance.Clone(),
 		GasBudget:      meta.GasBudget,
 	}
@@ -253,11 +246,11 @@ func (meta *RequestMetadata) Bytes() []byte {
 func (meta *RequestMetadata) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
 	rr.Read(&meta.SenderContract)
-	rr.Read(&meta.TargetContract)
-	rr.Read(&meta.EntryPoint)
+	rr.Read(&meta.Message.Target.Contract)
+	rr.Read(&meta.Message.Target.EntryPoint)
 	meta.GasBudget = gas.GasUnits(rr.ReadGas64())
-	meta.Params = dict.New()
-	rr.Read(&meta.Params)
+	meta.Message.Params = dict.New()
+	rr.Read(&meta.Message.Params)
 	meta.Allowance = NewEmptyAssets()
 	rr.Read(meta.Allowance)
 	return rr.Err
@@ -266,10 +259,10 @@ func (meta *RequestMetadata) Read(r io.Reader) error {
 func (meta *RequestMetadata) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
 	ww.Write(&meta.SenderContract)
-	ww.Write(&meta.TargetContract)
-	ww.Write(&meta.EntryPoint)
+	ww.Write(&meta.Message.Target.Contract)
+	ww.Write(&meta.Message.Target.EntryPoint)
 	ww.WriteGas64(uint64(meta.GasBudget))
-	ww.Write(&meta.Params)
+	ww.Write(&meta.Message.Params)
 	ww.Write(meta.Allowance)
 	return ww.Err
 }

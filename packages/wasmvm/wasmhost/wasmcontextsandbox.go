@@ -175,11 +175,9 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 		TargetAddress:                 chainID.AsAddress(),
 		Assets:                        transfer,
 		Metadata: &isc.SendMetadata{
-			TargetContract: contract,
-			EntryPoint:     function,
-			Params:         params,
-			Allowance:      allowance,
-			GasBudget:      s.ctx.ChainInfo().GasLimits.MaxGasPerRequest,
+			Message:   isc.NewMessage(contract, function, params),
+			Allowance: allowance,
+			GasBudget: s.ctx.ChainInfo().GasLimits.MaxGasPerRequest,
 		},
 	}
 	if req.Delay != 0 {
@@ -256,9 +254,9 @@ func (s *WasmContextSandbox) callUnlocked(contract, function isc.Hname, params d
 	defer s.wc.proc.instanceLock.Lock()
 
 	if s.ctx != nil {
-		return s.ctx.Call(contract, function, params, transfer)
+		return s.ctx.Call(isc.NewMessage(contract, function, params), transfer)
 	}
-	return s.ctxView.CallView(contract, function, params)
+	return s.ctxView.CallView(isc.NewMessage(contract, function, params))
 }
 
 func (s *WasmContextSandbox) fnCaller(_ []byte) []byte {

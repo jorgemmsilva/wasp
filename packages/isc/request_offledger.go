@@ -22,14 +22,12 @@ type offLedgerSignature struct {
 }
 
 type OffLedgerRequestData struct {
-	allowance  *Assets
-	chainID    ChainID
-	contract   Hname
-	entryPoint Hname
-	gasBudget  gas.GasUnits
-	nonce      uint64
-	params     dict.Dict
-	signature  offLedgerSignature
+	allowance *Assets
+	chainID   ChainID
+	msg       Message
+	gasBudget gas.GasUnits
+	nonce     uint64
+	signature offLedgerSignature
 }
 
 var (
@@ -42,19 +40,16 @@ var (
 
 func NewOffLedgerRequest(
 	chainID ChainID,
-	contract, entryPoint Hname,
-	params dict.Dict,
+	msg Message,
 	nonce uint64,
 	gasBudget gas.GasUnits,
 ) UnsignedOffLedgerRequest {
 	return &OffLedgerRequestData{
-		chainID:    chainID,
-		contract:   contract,
-		entryPoint: entryPoint,
-		params:     params,
-		nonce:      nonce,
-		allowance:  NewEmptyAssets(),
-		gasBudget:  gasBudget,
+		chainID:   chainID,
+		msg:       msg,
+		nonce:     nonce,
+		allowance: NewEmptyAssets(),
+		gasBudget: gasBudget,
 	}
 }
 
@@ -78,10 +73,10 @@ func (req *OffLedgerRequestData) Write(w io.Writer) error {
 func (req *OffLedgerRequestData) readEssence(rr *rwutil.Reader) {
 	rr.ReadKindAndVerify(rwutil.Kind(requestKindOffLedgerISC))
 	rr.Read(&req.chainID)
-	rr.Read(&req.contract)
-	rr.Read(&req.entryPoint)
-	req.params = dict.New()
-	rr.Read(&req.params)
+	rr.Read(&req.msg.Target.Contract)
+	rr.Read(&req.msg.Target.EntryPoint)
+	req.msg.Params = dict.New()
+	rr.Read(&req.msg.Params)
 	req.nonce = rr.ReadAmount64()
 	req.gasBudget = gas.GasUnits(rr.ReadGas64())
 	req.allowance = NewEmptyAssets()
@@ -91,9 +86,9 @@ func (req *OffLedgerRequestData) readEssence(rr *rwutil.Reader) {
 func (req *OffLedgerRequestData) writeEssence(ww *rwutil.Writer) {
 	ww.WriteKind(rwutil.Kind(requestKindOffLedgerISC))
 	ww.Write(&req.chainID)
-	ww.Write(&req.contract)
-	ww.Write(&req.entryPoint)
-	ww.Write(&req.params)
+	ww.Write(&req.msg.Target.Contract)
+	ww.Write(&req.msg.Target.EntryPoint)
+	ww.Write(&req.msg.Params)
 	ww.WriteAmount64(req.nonce)
 	ww.WriteGas64(uint64(req.gasBudget))
 	ww.Write(req.allowance)
@@ -113,11 +108,8 @@ func (req *OffLedgerRequestData) Bytes() []byte {
 	return rwutil.WriteToBytes(req)
 }
 
-func (req *OffLedgerRequestData) CallTarget() CallTarget {
-	return CallTarget{
-		Contract:   req.contract,
-		EntryPoint: req.entryPoint,
-	}
+func (req *OffLedgerRequestData) Message() Message {
+	return req.msg
 }
 
 func (req *OffLedgerRequestData) ChainID() ChainID {
@@ -164,10 +156,6 @@ func (req *OffLedgerRequestData) Nonce() uint64 {
 	return req.nonce
 }
 
-func (req *OffLedgerRequestData) Params() dict.Dict {
-	return req.params
-}
-
 func (req *OffLedgerRequestData) ReturnAmount() (iotago.BaseToken, bool) {
 	return 0, false
 }
@@ -189,9 +177,9 @@ func (req *OffLedgerRequestData) String(bech32HRP iotago.NetworkPrefix) string {
 	return fmt.Sprintf("offLedgerRequestData::{ ID: %s, sender: %s, target: %s, entrypoint: %s, Params: %s, nonce: %d }",
 		req.ID().String(),
 		req.SenderAccount().String(),
-		req.contract.String(),
-		req.entryPoint.String(),
-		req.Params().String(),
+		req.msg.Target.Contract.String(),
+		req.msg.Target.EntryPoint.String(),
+		req.msg.Params.String(),
 		req.nonce,
 	)
 }

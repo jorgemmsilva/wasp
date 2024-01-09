@@ -23,7 +23,7 @@ func infiniteLoopRequest(ch *solo.Chain, gasBudget ...gas.GasUnits) (*solo.CallP
 	wallet, address := ch.Env.NewKeyPairWithFunds()
 	baseTokensToSend := ch.Env.L1BaseTokens(address)
 
-	req := solo.NewCallParams(ScName, sbtestsc.FuncInfiniteLoop.Name).
+	req := solo.NewCallParamsEx(ScName, sbtestsc.FuncInfiniteLoop.Name).
 		AddBaseTokens(baseTokensToSend).
 		WithGasBudget(budget)
 	return req, wallet
@@ -124,7 +124,7 @@ func testViewGasLimit(t *testing.T, w bool) {
 	}
 	_, ch := setupChain(t, nil)
 	setupTestSandboxSC(t, ch, nil, w)
-	_, err := ch.CallView(sbtestsc.Contract.Name, sbtestsc.FuncInfiniteLoopView.Name)
+	_, err := ch.CallViewEx(sbtestsc.Contract.Name, sbtestsc.FuncInfiniteLoopView.Name)
 	require.Error(t, err)
 	testmisc.RequireErrorToBe(t, err, vm.ErrGasBudgetExceeded)
 }

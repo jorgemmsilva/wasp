@@ -154,7 +154,7 @@ func (reqctx *requestContext) shouldChargeGasFee() bool {
 	if reqctx.req.SenderAccount() == nil {
 		return false
 	}
-	if reqctx.req.SenderAccount().Equals(reqctx.vm.ChainOwnerID()) && reqctx.req.CallTarget().Contract == governance.Contract.Hname() {
+	if reqctx.req.SenderAccount().Equals(reqctx.vm.ChainOwnerID()) && reqctx.req.Message().Target.Contract == governance.Contract.Hname() {
 		return false
 	}
 	return true
@@ -286,16 +286,7 @@ func (reqctx *requestContext) callFromRequest() dict.Dict {
 		panic(vm.ErrSenderUnknown)
 	}
 
-	contract := req.CallTarget().Contract
-	entryPoint := req.CallTarget().EntryPoint
-
-	return reqctx.callProgram(
-		contract,
-		entryPoint,
-		req.Params(),
-		req.Allowance(),
-		req.SenderAccount(),
-	)
+	return reqctx.callProgram(req.Message(), req.Allowance(), req.SenderAccount())
 }
 
 func (reqctx *requestContext) getGasBudget() gas.GasUnits {

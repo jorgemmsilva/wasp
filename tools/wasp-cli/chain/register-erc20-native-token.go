@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/iotaledger/wasp/clients/chainclient"
+	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
@@ -46,7 +47,7 @@ func initRegisterERC20NativeTokenOnRemoteChainCmd() *cobra.Command {
 	)
 }
 
-func buildPostRequestCmd(name, desc, hname, fname string, initFlags func(cmd *cobra.Command), funcArgs func(cmd *cobra.Command) []string) *cobra.Command {
+func buildPostRequestCmd(name, desc, cname, fname string, initFlags func(cmd *cobra.Command), funcArgs func(cmd *cobra.Command) []string) *cobra.Command {
 	var (
 		chain             string
 		node              string
@@ -62,19 +63,14 @@ func buildPostRequestCmd(name, desc, hname, fname string, initFlags func(cmd *co
 			chain = defaultChainFallback(chain)
 			chainID := config.GetChain(chain)
 
-			allowanceTokens := util.ParseFungibleTokens(postrequestParams.allowance)
-
-			params := chainclient.PostRequestParams{
-				Args:      util.EncodeParams(funcArgs(cmd), chainID),
-				Transfer:  util.ParseFungibleTokens(postrequestParams.transfer),
-				Allowance: allowanceTokens,
-			}
 			postRequest(
 				node,
 				chain,
-				hname,
-				fname,
-				params,
+				isc.NewMessageFromNames(cname, fname, util.EncodeParams(funcArgs(cmd), chainID)),
+				chainclient.PostRequestParams{
+					Transfer:  util.ParseFungibleTokens(postrequestParams.transfer),
+					Allowance: util.ParseFungibleTokens(postrequestParams.allowance),
+				},
 				postrequestParams.offLedger,
 				postrequestParams.adjustStorageDeposit,
 			)

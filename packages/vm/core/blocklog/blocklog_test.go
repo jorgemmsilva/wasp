@@ -18,7 +18,11 @@ import (
 
 func TestSerdeRequestReceipt(t *testing.T) {
 	nonce := uint64(time.Now().UnixNano())
-	req := isc.NewOffLedgerRequest(isc.RandomChainID(), isc.Hn("0"), isc.Hn("0"), nil, nonce, gas.LimitsDefault.MaxGasPerRequest)
+	req := isc.NewOffLedgerRequest(
+		isc.RandomChainID(),
+		isc.NewMessage(isc.Hn("0"), isc.Hn("0"), nil),
+		nonce, gas.LimitsDefault.MaxGasPerRequest,
+	)
 	signedReq := req.Sign(cryptolib.NewKeyPair())
 	rec := &RequestReceipt{
 		Request: signedReq,
@@ -143,6 +147,9 @@ func TestGetEventsInternal(t *testing.T) {
 	eventMap := collections.NewMap(d, prefixRequestEvents)
 	createEventLookupKeys(registry, eventMap, contractID, maxBlocks, maxRequests, maxEventsPerRequest)
 
-	events := getSmartContractEventsInternal(d, contractID, blockFrom, blockTo)
+	events := getSmartContractEventsInternal(d, EventsForContractQuery{
+		Contract:   contractID,
+		BlockRange: &BlockRange{From: blockFrom, To: blockTo},
+	})
 	validateEvents(t, events, maxRequests, maxEventsPerRequest, blockFrom, blockTo)
 }

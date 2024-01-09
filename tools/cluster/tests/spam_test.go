@@ -60,11 +60,11 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 			break
 		}
 		go func() {
-			chainClient := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), keyPair)
+			chainClient := env.Chain.Client(keyPair)
 			for i := 0; i < numRequestsPerAccount; i++ {
 				retries := 0
 				for {
-					tx, err := chainClient.PostRequest(inccounter.FuncIncCounter.Name)
+					tx, err := chainClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 					if err != nil {
 						if retries >= 5 {
 							errCh <- fmt.Errorf("failed to issue tx, an error 5 times, %w", err)
@@ -129,7 +129,7 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 
 	env.DepositFunds(utxodb.FundsFromFaucetAmount, keyPair)
 
-	myClient := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), keyPair)
+	myClient := env.Chain.Client(keyPair)
 
 	durationsMutex := sync.Mutex{}
 	processingDurationsSum := uint64(0)
@@ -144,7 +144,11 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 			maxChan <- i
 			go func(nonce uint64) {
 				// send the request
-				req, er := myClient.PostOffLedgerRequest(inccounter.FuncIncCounter.Name, chainclient.PostRequestParams{Nonce: nonce})
+				req, er := myClient.PostOffLedgerRequest(
+					context.Background(),
+					inccounter.FuncIncCounter.Message(nil),
+					chainclient.PostRequestParams{Nonce: nonce},
+				)
 				if er != nil {
 					reqErrorChan <- er
 					return
@@ -205,10 +209,10 @@ func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
 
 	wallet, _, err := env.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
-	client := env.Chain.SCClient(isc.Hn(nativeIncCounterSCName), wallet)
+	client := env.Chain.Client(wallet)
 	{
 		// increment counter once
-		tx, err := client.PostRequest(inccounter.FuncIncCounter.Name)
+		tx, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 		require.NoError(t, err)
 		_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 30*time.Second)
 		require.NoError(t, err)
@@ -219,13 +223,13 @@ func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
 
 	for i := 0; i < n; i++ {
 		go func() {
-			r, err := client.CallView(context.Background(), "getCounter", nil)
+			r, err := client.CallView(context.Background(), inccounter.ViewGetCounter.Message())
 			if err != nil {
 				ch <- err
 				return
 			}
 
-			v, err := codec.Int64.Decode(r.Get(inccounter.VarCounter))
+			v, err := inccounter.ViewGetCounter.Output.Decode(r)
 			if err == nil && v != 1 {
 				err = errors.New("v != 1")
 			}

@@ -7,6 +7,59 @@ import (
 
 var Contract = coreutil.NewContract("testcore")
 
+var (
+	// function eventlog test
+	FuncEventLogGenericData = Contract.Func("testEventLogGenericData")
+	FuncEventLogEventData   = Contract.Func("testEventLogEventData")
+	FuncEventLogDeploy      = Contract.Func("testEventLogDeploy")
+
+	// Function sandbox test
+	FuncChainOwnerIDView = Contract.ViewFunc("testChainOwnerIDView")
+	FuncChainOwnerIDFull = Contract.Func("testChainOwnerIDFull")
+
+	FuncSandboxCall            = Contract.ViewFunc("testSandboxCall")
+	FuncCheckContextFromFullEP = Contract.Func("checkContextFromFullEP")
+	FuncCheckContextFromViewEP = Contract.ViewFunc("checkContextFromViewEP")
+
+	FuncPanicFullEP             = Contract.Func("testPanicFullEP")
+	FuncPanicViewEP             = Contract.ViewFunc("testPanicViewEP")
+	FuncCallPanicFullEP         = Contract.Func("testCallPanicFullEP")
+	FuncCallPanicViewEPFromFull = Contract.Func("testCallPanicViewEPFromFull")
+	FuncCallPanicViewEPFromView = Contract.ViewFunc("testCallPanicViewEPFromView")
+
+	FuncWithdrawFromChain = Contract.Func("withdrawFromChain")
+
+	FuncDoNothing = Contract.Func("doNothing")
+	// FuncSendToAddress = Contract.Func("sendToAddress")
+	FuncJustView = Contract.ViewFunc("justView")
+
+	FuncCallOnChain                     = Contract.Func("callOnChain")
+	FuncSetInt                          = Contract.Func("setInt")
+	FuncGetInt                          = Contract.ViewFunc("getInt")
+	FuncGetFibonacci                    = Contract.ViewFunc("fibonacci")
+	FuncGetFibonacciIndirect            = Contract.ViewFunc("fibonacciIndirect")
+	FuncCalcFibonacciIndirectStoreValue = Contract.Func("calcFibonacciIndirectStoreValue")
+	FuncViewCalcFibonacciResult         = Contract.ViewFunc("getFibCalcResult")
+	FuncGetCounter                      = Contract.ViewFunc("getCounter")
+	FuncIncCounter                      = Contract.Func("incCounter")
+	FuncRunRecursion                    = Contract.Func("runRecursion")
+
+	FuncPassTypesFull = Contract.Func("passTypesFull")
+	FuncPassTypesView = Contract.ViewFunc("passTypesView")
+
+	FuncSpawn = Contract.Func("spawn")
+
+	FuncSplitFunds                = Contract.Func("splitFunds")
+	FuncSplitFundsNativeTokens    = Contract.Func("splitFundsNativeTokens")
+	FuncPingAllowanceBack         = Contract.Func("pingAllowanceBack")
+	FuncSendLargeRequest          = Contract.Func("sendLargeRequest")
+	FuncEstimateMinStorageDeposit = Contract.Func("estimateMinStorageDeposit")
+	FuncInfiniteLoop              = Contract.Func("infiniteLoop")
+	FuncInfiniteLoopView          = Contract.ViewFunc("infiniteLoopView")
+	FuncSendNFTsBack              = Contract.Func("sendNFTsBack")
+	FuncClaimAllowance            = Contract.Func("claimAllowance")
+)
+
 var Processor = Contract.Processor(initialize,
 	FuncChainOwnerIDView.WithHandler(testChainOwnerIDView),
 	FuncChainOwnerIDFull.WithHandler(testChainOwnerIDFull),
@@ -55,59 +108,6 @@ var Processor = Contract.Processor(initialize,
 	FuncInfiniteLoopView.WithHandler(infiniteLoopView),
 	FuncSendNFTsBack.WithHandler(sendNFTsBack),
 	FuncClaimAllowance.WithHandler(claimAllowance),
-)
-
-var (
-	// function eventlog test
-	FuncEventLogGenericData = coreutil.Func("testEventLogGenericData")
-	FuncEventLogEventData   = coreutil.Func("testEventLogEventData")
-	FuncEventLogDeploy      = coreutil.Func("testEventLogDeploy")
-
-	// Function sandbox test
-	FuncChainOwnerIDView = coreutil.ViewFunc("testChainOwnerIDView")
-	FuncChainOwnerIDFull = coreutil.Func("testChainOwnerIDFull")
-
-	FuncSandboxCall            = coreutil.ViewFunc("testSandboxCall")
-	FuncCheckContextFromFullEP = coreutil.Func("checkContextFromFullEP")
-	FuncCheckContextFromViewEP = coreutil.ViewFunc("checkContextFromViewEP")
-
-	FuncPanicFullEP             = coreutil.Func("testPanicFullEP")
-	FuncPanicViewEP             = coreutil.ViewFunc("testPanicViewEP")
-	FuncCallPanicFullEP         = coreutil.Func("testCallPanicFullEP")
-	FuncCallPanicViewEPFromFull = coreutil.Func("testCallPanicViewEPFromFull")
-	FuncCallPanicViewEPFromView = coreutil.ViewFunc("testCallPanicViewEPFromView")
-
-	FuncWithdrawFromChain = coreutil.Func("withdrawFromChain")
-
-	FuncDoNothing = coreutil.Func("doNothing")
-	// FuncSendToAddress = coreutil.Func("sendToAddress")
-	FuncJustView = coreutil.ViewFunc("justView")
-
-	FuncCallOnChain                     = coreutil.Func("callOnChain")
-	FuncSetInt                          = coreutil.Func("setInt")
-	FuncGetInt                          = coreutil.ViewFunc("getInt")
-	FuncGetFibonacci                    = coreutil.ViewFunc("fibonacci")
-	FuncGetFibonacciIndirect            = coreutil.ViewFunc("fibonacciIndirect")
-	FuncCalcFibonacciIndirectStoreValue = coreutil.Func("calcFibonacciIndirectStoreValue")
-	FuncViewCalcFibonacciResult         = coreutil.ViewFunc("getFibCalcResult")
-	FuncGetCounter                      = coreutil.ViewFunc("getCounter")
-	FuncIncCounter                      = coreutil.Func("incCounter")
-	FuncRunRecursion                    = coreutil.Func("runRecursion")
-
-	FuncPassTypesFull = coreutil.Func("passTypesFull")
-	FuncPassTypesView = coreutil.ViewFunc("passTypesView")
-
-	FuncSpawn = coreutil.Func("spawn")
-
-	FuncSplitFunds                = coreutil.Func("splitFunds")
-	FuncSplitFundsNativeTokens    = coreutil.Func("splitFundsNativeTokens")
-	FuncPingAllowanceBack         = coreutil.Func("pingAllowanceBack")
-	FuncSendLargeRequest          = coreutil.Func("sendLargeRequest")
-	FuncEstimateMinStorageDeposit = coreutil.Func("estimateMinStorageDeposit")
-	FuncInfiniteLoop              = coreutil.Func("infiniteLoop")
-	FuncInfiniteLoopView          = coreutil.ViewFunc("infiniteLoopView")
-	FuncSendNFTsBack              = coreutil.Func("sendNFTsBack")
-	FuncClaimAllowance            = coreutil.Func("claimAllowance")
 )
 
 const (

@@ -196,7 +196,7 @@ func TestInvalidTypeParams(t *testing.T) {
 		for index, value := range values {
 			t.Run("InvalidType "+param+" "+strconv.Itoa(index), func(t *testing.T) {
 				invalidParam := fmt.Sprintf("invalid %s%s", strings.ToUpper(param[:1]), param[1:])
-				req := solo.NewCallParams(testwasmlib.ScName, testwasmlib.FuncParamTypes,
+				req := solo.NewCallParamsEx(testwasmlib.ScName, testwasmlib.FuncParamTypes,
 					param, value,
 				).AddBaseTokens(1).WithMaxAffordableGasBudget()
 				_, err := ctx.Chain.PostRequestSync(req, nil)

@@ -17,6 +17,8 @@ import (
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
+	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
@@ -136,9 +138,9 @@ func NewSoloContextForChain(t testing.TB, chain *solo.Chain, creator *SoloAgent,
 
 	ctx.Balances()
 
-	var params []interface{}
+	params := dict.Dict{}
 	if len(init) != 0 {
-		params = init[0].Params()
+		params = codec.DictFromSlice(init[0].Params())
 	}
 	if !ctx.IsWasm {
 		wasmhost.GoWasmVM = func() wasmhost.WasmVM {
@@ -148,7 +150,7 @@ func NewSoloContextForChain(t testing.TB, chain *solo.Chain, creator *SoloAgent,
 	//if ctx.IsWasm && *UseWasmEdge && wasmproc.GoWasmVM == nil {
 	//	wasmproc.GoWasmVM = wasmhost.NewWasmEdgeVM
 	//}
-	ctx.Err = ctx.Chain.DeployContract(keyPair, ctx.scName, ctx.Hprog, params...)
+	ctx.Err = ctx.Chain.DeployContract(keyPair, ctx.scName, ctx.Hprog, params)
 	if !ctx.IsWasm {
 		// just in case deploy failed we don't want to leave this around
 		wasmhost.GoWasmVM = nil
@@ -190,11 +192,11 @@ func NewSoloContextForNative(t testing.TB, chain *solo.Chain, creator *SoloAgent
 		keyPair = creator.Pair
 		chain.MustDepositBaseTokensToL2(L2FundsCreator, creator.Pair)
 	}
-	var params []interface{}
+	var params dict.Dict
 	if len(init) != 0 {
-		params = init[0].Params()
+		params = codec.DictFromSlice(init[0].Params())
 	}
-	ctx.Err = ctx.Chain.DeployContract(keyPair, scName, ctx.Hprog, params...)
+	ctx.Err = ctx.Chain.DeployContract(keyPair, scName, ctx.Hprog, params)
 	if ctx.Err != nil {
 		return ctx
 	}

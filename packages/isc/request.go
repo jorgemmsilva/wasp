@@ -9,7 +9,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -28,11 +27,10 @@ type Request interface {
 type Calldata interface {
 	Allowance() *Assets // transfer of assets to the smart contract. Debited from sender anchor
 	Assets() *Assets    // attached assets for the UTXO request, nil for off-ledger. All goes to sender
-	CallTarget() CallTarget
+	Message() Message
 	GasBudget() (gas uint64, isEVM bool)
 	ID() RequestID
 	NFT() *NFT // Not nil if the request is an NFT request
-	Params() dict.Dict
 	SenderAccount() AgentID
 	TargetAddress() iotago.Address
 }

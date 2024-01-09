@@ -12,7 +12,6 @@ import (
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
@@ -133,12 +132,11 @@ func (c *ChainService) GetEVMChainID(chainID isc.ChainID, blockIndexOrTrieRoot s
 	if err != nil {
 		return 0, err
 	}
-	ret, err := common.CallView(ch, evm.Contract.Hname(), evm.FuncGetChainID.Hname(), nil, blockIndexOrTrieRoot)
+	ret, err := common.CallView(ch, evm.ViewGetChainID.Message(), blockIndexOrTrieRoot)
 	if err != nil {
 		return 0, err
 	}
-
-	return codec.Uint16.Decode(ret.Get(evm.FieldResult))
+	return evm.ViewGetChainID.Output.Decode(ret)
 }
 
 func (c *ChainService) GetAllChainIDs() ([]isc.ChainID, error) {

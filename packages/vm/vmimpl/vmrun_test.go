@@ -26,10 +26,7 @@ import (
 
 func TestNFTDepositNoIssuer(t *testing.T) {
 	res := simulateRunOutput(t, func(chainID isc.ChainID) (iotago.OutputID, iotago.Output) {
-		metadata := isc.RequestMetadata{
-			TargetContract: accounts.Contract.Hname(),
-			EntryPoint:     accounts.FuncDeposit.Hname(),
-		}
+		metadata := isc.RequestMetadata{Message: accounts.FuncDeposit.Message()}
 		o := &iotago.NFTOutput{
 			Amount: 100 * isc.Million,
 			NFTID:  iotago.NFTID{0x1},

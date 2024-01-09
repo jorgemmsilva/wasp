@@ -125,12 +125,11 @@ func (e *EVMContractInstance) CallFn(opts []ethCallOptions, fnName string, args 
 	if err != nil {
 		return CallFnResult{}, err
 	}
+
+	sendTxErr := e.chain.evmChain.SendTransaction(tx)
 	res := CallFnResult{tx: tx}
-
-	sendTxErr := e.chain.evmChain.SendTransaction(res.tx)
 	res.ISCReceipt = e.chain.Chain.LastReceipt()
-	res.EVMReceipt = e.chain.evmChain.TransactionReceipt(res.tx.Hash())
-
+	res.EVMReceipt = e.chain.evmChain.TransactionReceipt(tx.Hash())
 	return res, sendTxErr
 }
 

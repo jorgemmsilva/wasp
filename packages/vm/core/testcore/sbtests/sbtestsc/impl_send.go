@@ -94,8 +94,7 @@ func testEstimateMinimumStorageDeposit(ctx isc.Sandbox) dict.Dict {
 	requestParams := isc.RequestParameters{
 		TargetAddress: addr,
 		Metadata: &isc.SendMetadata{
-			EntryPoint:     isc.Hn("foo"),
-			TargetContract: isc.Hn("bar"),
+			Message: isc.NewMessageFromNames("foo", "bar"),
 		},
 		AdjustToMinimumStorageDeposit: true,
 	}
@@ -144,9 +143,8 @@ func sendLargeRequest(ctx isc.Sandbox) dict.Dict {
 	req := isc.RequestParameters{
 		TargetAddress: tpkg.RandEd25519Address(),
 		Metadata: &isc.SendMetadata{
-			EntryPoint:     isc.Hn("foo"),
-			TargetContract: isc.Hn("bar"),
-			Params:         dict.Dict{"x": make([]byte, ctx.Params().MustGetInt32(ParamSize))},
+			Message: isc.NewMessageFromNames("foo", "bar",
+				dict.Dict{"x": make([]byte, ctx.Params().MustGetInt32(ParamSize))}),
 		},
 		AdjustToMinimumStorageDeposit: true,
 		Assets:                        ctx.AllowanceAvailable(),

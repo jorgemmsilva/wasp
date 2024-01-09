@@ -28,9 +28,7 @@ func BasicOutputFromPostData(
 		0,
 		&isc.RequestMetadata{
 			SenderContract: senderContract,
-			TargetContract: metadata.TargetContract,
-			EntryPoint:     metadata.EntryPoint,
-			Params:         metadata.Params,
+			Message:        metadata.Message,
 			Allowance:      metadata.Allowance,
 			GasBudget:      metadata.GasBudget,
 		},

@@ -33,8 +33,6 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
@@ -479,7 +477,7 @@ func TestISCNFTData(t *testing.T) {
 	nft, _, err := env.solo.MintNFTL1(issuerWallet, issuerAddress, metadata)
 	require.NoError(t, err)
 	_, err = env.Chain.PostRequestSync(
-		solo.NewCallParams(accounts.Contract.Name, accounts.FuncDeposit.Name).
+		solo.NewCallParams(accounts.FuncDeposit.Message()).
 			AddBaseTokens(100000).
 			WithNFT(nft).
 			WithMaxAffordableGasBudget().
@@ -654,11 +652,9 @@ func TestSendPayableValueTX(t *testing.T) {
 		iscmagic.WrapISCAssets(isc.NewEmptyAssets()),
 		false, // auto adjust SD
 		iscmagic.WrapISCSendMetadata(isc.SendMetadata{
-			TargetContract: inccounter.Contract.Hname(),
-			EntryPoint:     inccounter.FuncIncCounter.Hname(),
-			Params:         dict.Dict{},
-			Allowance:      isc.NewEmptyAssets(),
-			GasBudget:      math.MaxUint64,
+			Message:   inccounter.FuncIncCounter.Message(nil),
+			Allowance: isc.NewEmptyAssets(),
+			GasBudget: math.MaxUint64,
 		}),
 		iscmagic.ISCSendOptions{},
 	)
@@ -1070,7 +1066,7 @@ func TestERC721NFTCollection(t *testing.T) {
 func TestISCCall(t *testing.T) {
 	env := InitEVM(t, inccounter.Processor)
 	ethKey, _ := env.Chain.NewEthereumAccountWithL2Funds()
-	err := env.Chain.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash)
+	err := env.Chain.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash, nil)
 	require.NoError(t, err)
 	iscTest := env.deployISCTestContract(ethKey)
 
@@ -1078,12 +1074,9 @@ func TestISCCall(t *testing.T) {
 	require.NoError(env.solo.T, err)
 	require.Equal(env.solo.T, types.ReceiptStatusSuccessful, res.EVMReceipt.Status)
 
-	r, err := env.Chain.CallView(
-		inccounter.Contract.Name,
-		inccounter.ViewGetCounter.Name,
-	)
+	r, err := env.Chain.CallView(inccounter.ViewGetCounter.Message())
 	require.NoError(env.solo.T, err)
-	require.EqualValues(t, 42, lo.Must(codec.Int64.Decode(r.Get(inccounter.VarCounter))))
+	require.EqualValues(t, 42, lo.Must(inccounter.ViewGetCounter.Output.Decode(r)))
 }
 
 func TestFibonacciContract(t *testing.T) {
@@ -1145,13 +1138,13 @@ func TestISCPanic(t *testing.T) {
 
 func TestISCSendWithArgs(t *testing.T) {
 	env := InitEVM(t, inccounter.Processor)
-	err := env.Chain.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash)
+	err := env.Chain.DeployContract(nil, inccounter.Contract.Name, inccounter.Contract.ProgramHash, nil)
 	require.NoError(t, err)
 
 	checkCounter := func(c int) {
-		ret, err2 := env.Chain.CallView(inccounter.Contract.Name, inccounter.ViewGetCounter.Name)
+		ret, err2 := env.Chain.CallView(inccounter.ViewGetCounter.Message())
 		require.NoError(t, err2)
-		counter := lo.Must(codec.Uint64.Decode(ret.Get(inccounter.VarCounter)))
+		counter := lo.Must(inccounter.ViewGetCounter.Output.Decode(ret))
 		require.EqualValues(t, c, counter)
 	}
 	checkCounter(0)
@@ -1170,11 +1163,9 @@ func TestISCSendWithArgs(t *testing.T) {
 		iscmagic.WrapISCAssets(isc.NewAssetsBaseTokens(sendBaseTokens)),
 		false, // auto adjust SD
 		iscmagic.WrapISCSendMetadata(isc.SendMetadata{
-			TargetContract: inccounter.Contract.Hname(),
-			EntryPoint:     inccounter.FuncIncCounter.Hname(),
-			Params:         dict.Dict{},
-			Allowance:      isc.NewEmptyAssets(),
-			GasBudget:      math.MaxUint64,
+			Message:   inccounter.FuncIncCounter.Message(nil),
+			Allowance: isc.NewEmptyAssets(),
+			GasBudget: math.MaxUint64,
 		}),
 		iscmagic.ISCSendOptions{},
 	)
@@ -1314,11 +1305,17 @@ func TestERC20NativeTokens(t *testing.T) {
 	err = env.Chain.MintTokens(foundrySN, supply, foundryOwner)
 	require.NoError(t, err)
 
-	err = env.registerERC20NativeToken(foundryOwner, foundrySN, tokenName, tokenTickerSymbol, tokenDecimals)
+	token := evm.ERC20NativeTokenParams{
+		FoundrySN:    foundrySN,
+		Name:         tokenName,
+		TickerSymbol: tokenTickerSymbol,
+		Decimals:     tokenDecimals,
+	}
+	err = env.registerERC20NativeToken(foundryOwner, token)
 	require.NoError(t, err)
 
 	// should not allow to register again
-	err = env.registerERC20NativeToken(foundryOwner, foundrySN, tokenName, tokenTickerSymbol, tokenDecimals)
+	err = env.registerERC20NativeToken(foundryOwner, token)
 	require.ErrorContains(t, err, "already exists")
 
 	ethKey, ethAddr := env.Chain.NewEthereumAccountWithL2Funds()
@@ -1374,7 +1371,13 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 	err = foundryChain.MintTokens(foundrySN, supply, foundryOwner)
 	require.NoError(t, err)
 
-	erc20addr, err := env.registerERC20ExternalNativeToken(foundryChain, foundrySN, tokenName, tokenTickerSymbol, tokenDecimals)
+	token := evm.ERC20NativeTokenParams{
+		FoundrySN:    foundrySN,
+		Name:         tokenName,
+		TickerSymbol: tokenTickerSymbol,
+		Decimals:     tokenDecimals,
+	}
+	erc20addr, err := env.registerERC20ExternalNativeToken(foundryChain, token)
 	require.NoError(t, err)
 
 	ethKey, ethAddr := env.Chain.NewEthereumAccountWithL2Funds()
@@ -1537,7 +1540,13 @@ func TestERC20NativeTokensLongName(t *testing.T) {
 	foundrySN, _, err := env.Chain.NewFoundryParams(supply).WithUser(foundryOwner).CreateFoundry()
 	require.NoError(t, err)
 
-	err = env.registerERC20NativeToken(foundryOwner, foundrySN, tokenName, tokenTickerSymbol, tokenDecimals)
+	token := evm.ERC20NativeTokenParams{
+		FoundrySN:    foundrySN,
+		Name:         tokenName,
+		TickerSymbol: tokenTickerSymbol,
+		Decimals:     tokenDecimals,
+	}
+	err = env.registerERC20NativeToken(foundryOwner, token)
 	require.ErrorContains(t, err, "too long")
 }
 
@@ -1552,11 +1561,9 @@ func TestEVMWithdrawAll(t *testing.T) {
 	// try withdrawing all base tokens
 	metadata := iscmagic.WrapISCSendMetadata(
 		isc.SendMetadata{
-			TargetContract: inccounter.Contract.Hname(),
-			EntryPoint:     inccounter.FuncIncCounter.Hname(),
-			Params:         dict.Dict{},
-			Allowance:      isc.NewEmptyAssets(),
-			GasBudget:      math.MaxUint64,
+			Message:   inccounter.FuncIncCounter.Message(nil),
+			Allowance: isc.NewEmptyAssets(),
+			GasBudget: math.MaxUint64,
 		},
 	)
 	_, err := env.ISCMagicSandbox(ethKey).CallFn(

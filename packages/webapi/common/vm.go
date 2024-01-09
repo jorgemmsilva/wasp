@@ -26,7 +26,7 @@ func ParseReceipt(chain chaintypes.Chain, receipt *blocklog.RequestReceipt) (*is
 	return iscReceipt, nil
 }
 
-func CallView(ch chaintypes.Chain, contractName, functionName isc.Hname, params dict.Dict, blockIndexOrHash string) (dict.Dict, error) {
+func CallView(ch chaintypes.Chain, msg isc.Message, blockIndexOrHash string) (dict.Dict, error) {
 	var chainState state.State
 	var err error
 	switch {
@@ -59,7 +59,7 @@ func CallView(ch chaintypes.Chain, contractName, functionName isc.Hname, params 
 		}
 	}
 
-	return chainutil.CallView(chainState, ch, contractName, functionName, params)
+	return chainutil.CallView(chainState, ch, msg)
 }
 
 func EstimateGas(ch chaintypes.Chain, req isc.Request) (*isc.Receipt, error) {

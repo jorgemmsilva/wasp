@@ -127,9 +127,6 @@ type mempoolImpl struct {
 	tangleTime    time.Time
 	l1APIProvider iotago.APIProvider
 
-	// TODO: <lmoe> this was added artificially to support the timeLock logic below. It's not set anywhere, just read atm.
-	currentSlotIndex iotago.SlotIndex
-
 	timePool                       TimePool
 	onLedgerPool                   RequestPool[isc.OnLedgerRequest]
 	offLedgerPool                  *TypedPoolByNonce[isc.OffLedgerRequest]
@@ -589,12 +586,13 @@ func (mpi *mempoolImpl) refsToPropose(consensusID consGR.ConsensusID) []*isc.Req
 	if !mpi.tangleTime.IsZero() { // Wait for tangle-time to process the on ledger requests.
 		mpi.onLedgerPool.Filter(func(request isc.OnLedgerRequest, _ time.Time) bool {
 			// TODO: <lmoe> Switch tangleTime to currentSlotIndex
-			if isc.RequestIsExpired(request, mpi.currentSlotIndex) {
+			currentSlotIndex := mpi.l1APIProvider.APIForTime(mpi.tangleTime).TimeProvider().SlotFromTime(mpi.tangleTime)
+			if isc.RequestIsExpired(request, currentSlotIndex) {
 				return false // Drop it from the mempool
 			}
 
 			// TODO: <lmoe> Double check if this is correct here (turned from tangleTime to request.Slot/currentSlotIndex)
-			if isc.RequestIsUnlockable(request, mpi.chainID.AsAddress(), request.OutputID().Slot(), mpi.currentSlotIndex) {
+			if isc.RequestIsUnlockable(request, mpi.chainID.AsAddress(), request.OutputID().Slot(), currentSlotIndex) {
 				reqRefs = append(reqRefs, isc.RequestRefFromRequest(request))
 			}
 			return true // Keep them for now
@@ -602,7 +600,7 @@ func (mpi *mempoolImpl) refsToPropose(consensusID consGR.ConsensusID) []*isc.Req
 	}
 
 	mpi.offLedgerPool.Iterate(func(account string, entries []*OrderedPoolEntry[isc.OffLedgerRequest]) {
-		agentID, err := isc.AgentIDFromString(mpi.l1APIProvider.LatestAPI().ProtocolParameters().Bech32HRP(), account)
+		agentID, err := isc.AgentIDFromString(account)
 		if err != nil {
 			panic(fmt.Errorf("invalid agentID string: %s", err.Error()))
 		}
@@ -750,9 +748,9 @@ func (mpi *mempoolImpl) handleReceiveOnLedgerRequest(request isc.OnLedgerRequest
 			return
 		}
 
-		if mpi.tangleTime.IsZero() || timeLock.Slot > mpi.currentSlotIndex {
-			// TODO: <lmoe> Commented it out to get rid off the missing unixTime logic
-			// mpi.timePool.AddRequest(time.Unix(int64(timeLock.UnixTime), 0), request)
+		slotStartTime := mpi.l1APIProvider.APIForTime(mpi.tangleTime).TimeProvider().SlotStartTime(timeLock.Slot)
+		if mpi.tangleTime.IsZero() || slotStartTime.After(mpi.tangleTime) {
+			mpi.timePool.AddRequest(slotStartTime, request)
 			return
 		}
 	}

@@ -112,7 +112,7 @@ func AgentIDToWriter(ww *rwutil.Writer, agent AgentID) {
 }
 
 // AgentIDFromString parses the human-readable string representation
-func AgentIDFromString(prefix iotago.NetworkPrefix, s string) (AgentID, error) {
+func AgentIDFromString(s string) (AgentID, error) {
 	if s == nilAgentIDString {
 		return &NilAgentID{}, nil
 	}
@@ -136,7 +136,7 @@ func AgentIDFromString(prefix iotago.NetworkPrefix, s string) (AgentID, error) {
 		}
 		return contractAgentIDFromString(contractPart, addrPart)
 	}
-	return addressAgentIDFromString(prefix, s)
+	return addressAgentIDFromString(s)
 }
 
 // NewRandomAgentID creates random AgentID

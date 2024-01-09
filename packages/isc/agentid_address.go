@@ -19,8 +19,8 @@ func NewAddressAgentID(addr iotago.Address) *AddressAgentID {
 	return &AddressAgentID{a: addr}
 }
 
-func addressAgentIDFromString(prefix iotago.NetworkPrefix, s string) (*AddressAgentID, error) {
-	addr, err := AddressFromString(prefix, s)
+func addressAgentIDFromString(s string) (*AddressAgentID, error) {
+	addr, err := AddressFromString(s)
 	if err != nil {
 		return nil, err
 	}

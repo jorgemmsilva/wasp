@@ -203,8 +203,9 @@ func blockFn(te *testEnv, reqs []isc.Request, ao *isc.ChainOutputs, tangleTime t
 
 	store := te.stores[0]
 	vmTask := &vm.VMTask{
-		Processors: processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
-		Inputs:     isc.NewChainOutputs(ao.AnchorOutput, ao.AnchorOutputID, nil, iotago.OutputID{}),
+		Processors:    processors.MustNew(coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)),
+		Inputs:        isc.NewChainOutputs(ao.AnchorOutput, ao.AnchorOutputID, nil, iotago.OutputID{}),
+		L1APIProvider: testutil.L1APIProvider,
 
 		Store:                store,
 		Requests:             reqs,
@@ -277,12 +278,12 @@ func testTimeLock(t *testing.T, n, f int, reliable bool) { //nolint:gocyclo
 		case 2: // + Time lock slightly before start due to time.Now() in ReadyNow being called later than in this test
 			timeLock = start
 		case 3: // - Time lock 5s after start
-			timeLock = start.Add(5 * time.Second)
+			timeLock = start.Add(5 * time.Minute)
 		case 4: // - Time lock 2h after start
 			timeLock = start.Add(2 * time.Hour)
 		case 5: // - Time lock after expiration
-			timeLock = start.Add(3 * time.Second)
-			expirationSlot := testutil.L1API.TimeProvider().SlotFromTime(start.Add(2 * time.Second))
+			timeLock = start.Add(3 * time.Minute)
+			expirationSlot := testutil.L1API.TimeProvider().SlotFromTime(start.Add(2 * time.Minute))
 
 			p.UnlockConditions = append(p.UnlockConditions, &iotago.ExpirationUnlockCondition{
 				Slot:          expirationSlot,
@@ -343,7 +344,7 @@ func testTimeLock(t *testing.T, n, f int, reliable bool) { //nolint:gocyclo
 	//
 	// More requests are proposed after 5s
 	for _, mp := range te.mempools {
-		mp.TangleTimeUpdated(start.Add(10 * time.Second))
+		mp.TangleTimeUpdated(start.Add(10 * time.Minute))
 	}
 	time.Sleep(100 * time.Millisecond) // Just to make sure all the events have been consumed.
 	for _, mp := range te.mempools {
@@ -410,8 +411,7 @@ func testExpiration(t *testing.T, n, f int, reliable bool) {
 			expiration = start.Add(-RequestConsideredExpiredWindow / 2)
 
 		case 3: // not expired yet
-			expiration = start.Add(-RequestConsideredExpiredWindow * 2)
-
+			expiration = start.Add(RequestConsideredExpiredWindow)
 		}
 
 		if !expiration.IsZero() {
@@ -852,7 +852,7 @@ func getRequestsOnLedger(t *testing.T, chainAddress iotago.Address, amount int, 
 	for i := range result {
 		requestParams := isc.RequestParameters{
 			TargetAddress: chainAddress,
-			Assets:        nil,
+			Assets:        &isc.Assets{},
 			Metadata: &isc.SendMetadata{
 				TargetContract: isc.Hn("dummyTargetContract"),
 				EntryPoint:     isc.Hn("dummyEP"),

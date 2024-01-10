@@ -21,7 +21,6 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -85,25 +84,25 @@ func TestWithdrawEverything(t *testing.T) {
 	depositGasFee := ch.LastReceipt().GasFeeCharged
 	l2balance := ch.L2BaseTokens(senderAgentID)
 
-	// construct request with low allowance (just sufficient for storage deposit balance), so its possible to estimate the gas fees
-	sd := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(transaction.BasicOutputFromPostData(
-		&iotago.AnchorAddress{},
-		isc.ContractIdentityFromHname(accounts.Contract.Hname()),
-		isc.RequestParameters{
-			TargetAddress: &iotago.Ed25519Address{},
-			Assets:        isc.NewAssetsBaseTokens(100),
-		},
-		testutil.L1API,
-	)))
+	// construct the request to estimate an withdrawal (leave a few tokens to pay for gas)
 	req := solo.NewCallParams(accounts.FuncWithdraw.Message()).
-		WithFungibleTokens(isc.NewAssetsBaseTokens(l2balance)).AddAllowance(isc.NewAssetsBaseTokens(sd))
+		AddAllowance(isc.NewAssetsBaseTokens(l2balance - 1000)).
+		WithMaxAffordableGasBudget() // SET A GAS BUDGET, otherwise user max balance will be simulated
 
-	gasEstimate, fee, err := ch.EstimateGasOffLedger(req, sender, true)
+	_, estimate, err := ch.EstimateGasOffLedger(req, sender, false)
 	require.NoError(t, err)
 
 	// set the allowance to the maximum possible value
-	req = req.WithAllowance(isc.NewAssetsBaseTokens(l2balance - fee)).
-		WithGasBudget(gasEstimate)
+	req = req.WithAllowance(isc.NewAssetsBaseTokens(l2balance - estimate.GasFeeCharged)).
+		WithGasBudget(estimate.GasBurned)
+
+	// retry the estimation (fee will be lower when writing "0" to the user account, instead of some positive number)
+	_, estimate2, err := ch.EstimateGasOffLedger(req, sender, false)
+	require.NoError(t, err)
+
+	// set the allowance to the maximum possible value
+	req = req.WithAllowance(isc.NewAssetsBaseTokens(l2balance - estimate2.GasFeeCharged)).
+		WithGasBudget(estimate2.GasBurned)
 
 	_, err = ch.PostRequestOffLedger(req, sender)
 	require.NoError(t, err)
@@ -113,7 +112,7 @@ func TestWithdrawEverything(t *testing.T) {
 	finalL2Balance := ch.L2BaseTokens(senderAgentID)
 
 	// ensure everything was withdrawn
-	require.Equal(t, initialL1balance, finalL1Balance+depositGasFee+withdrawalGasFee)
+	require.EqualValues(t, initialL1balance, finalL1Balance+depositGasFee+withdrawalGasFee)
 	require.Zero(t, finalL2Balance)
 }
 
@@ -598,10 +597,10 @@ func TestDepositBaseTokens(t *testing.T) {
 		t.Run("add base tokens "+strconv.Itoa(int(addBaseTokens)), func(t *testing.T) {
 			v := initDepositTest(t, nil)
 			v.req.WithGasBudget(100_000)
-			estimatedGas, _, err := v.ch.EstimateGasOnLedger(v.req, v.user)
+			_, estimateRec, err := v.ch.EstimateGasOnLedger(v.req, v.user)
 			require.NoError(t, err)
 
-			v.req.WithGasBudget(estimatedGas)
+			v.req.WithGasBudget(estimateRec.GasBurned)
 
 			v.req = v.req.AddBaseTokens(addBaseTokens)
 			tx, _, err := v.ch.PostRequestSyncTx(v.req, v.user)
@@ -1120,23 +1119,23 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 
 	// deposit just enough tokens for the retryReq gas fee
 	{
-		_, gasFee, err2 := v.ch.EstimateGasOffLedger(retryReq, newUser)
+		_, estimate, err2 := v.ch.EstimateGasOffLedger(retryReq, newUser)
 		require.NoError(t, err2)
-		v.ch.MustDepositBaseTokensToL2(gasFee, newUser)
+		v.ch.MustDepositBaseTokensToL2(estimate.GasFeeCharged, newUser)
 		bal := v.ch.L2BaseTokens(newUserAgentID)
-		if bal > gasFee { // because of minSD -- transfer the excess to OriginatorAgentID
+		if bal > estimate.GasFeeCharged { // because of minSD -- transfer the excess to OriginatorAgentID
 			req2 := solo.NewCallParams(accounts.FuncTransferAllowanceTo.Message(v.ch.OriginatorAgentID)).
-				WithAllowance(isc.NewAssetsBaseTokens(bal - gasFee)).
+				WithAllowance(isc.NewAssetsBaseTokens(bal - estimate.GasFeeCharged)).
 				WithMaxAffordableGasBudget()
-			_, gasFee2, err2 := v.ch.EstimateGasOffLedger(req2, newUser)
+			_, estimate2, err2 := v.ch.EstimateGasOffLedger(req2, newUser)
 			require.NoError(t, err2)
 			_, err2 = v.ch.PostRequestOffLedger(
-				req2.WithAllowance(isc.NewAssetsBaseTokens(bal-gasFee-gasFee2)),
+				req2.WithAllowance(isc.NewAssetsBaseTokens(bal-estimate.GasFeeCharged-estimate2.GasFeeCharged)),
 				newUser,
 			)
 			require.NoError(t, err2)
 		}
-		require.EqualValues(t, gasFee, v.ch.L2BaseTokens(newUserAgentID))
+		require.EqualValues(t, estimate.GasFeeCharged, v.ch.L2BaseTokens(newUserAgentID))
 	}
 
 	_, err = v.ch.PostRequestOffLedger(retryReq, newUser)

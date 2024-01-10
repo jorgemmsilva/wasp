@@ -81,7 +81,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	for i, nid := range nodeIDs {
 		consensusStateRegistry := testutil.NewConsensusStateRegistry()
 		stores[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err := origin.InitChainByAnchorOutput(stores[nid], originAO, testutil.L1APIProvider)
+		_, err := origin.InitChainByAnchorOutput(stores[nid], originAO, testutil.L1APIProvider, testutil.TokenInfo)
 		require.NoError(t, err)
 		activeAccessNodesCB := func() ([]*cryptolib.PublicKey, []*cryptolib.PublicKey) {
 			return []*cryptolib.PublicKey{}, []*cryptolib.PublicKey{}
@@ -128,7 +128,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 	for nid := range nodes {
 		consReq := nodes[nid].Output().(*chainmanager.Output).NeedConsensus()
 		fake2ST := indexedstore.NewFake(state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()))
-		origin.InitChain(fake2ST, nil, 0)
+		origin.InitChain(fake2ST, nil, 0, testutil.TokenInfo)
 		block0, err := fake2ST.BlockByIndex(0)
 		require.NoError(t, err)
 		// TODO: Commit a block to the store, if needed.

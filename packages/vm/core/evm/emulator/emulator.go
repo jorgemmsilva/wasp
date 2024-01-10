@@ -21,7 +21,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	lru "github.com/hashicorp/golang-lru/v2"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
@@ -46,9 +45,9 @@ type Context interface {
 	RevertToSnapshot(int)
 
 	BaseTokensDecimals() uint32
-	GetBaseTokensBalance(addr common.Address) iotago.BaseToken
-	AddBaseTokensBalance(addr common.Address, amount iotago.BaseToken)
-	SubBaseTokensBalance(addr common.Address, amount iotago.BaseToken)
+	GetBaseTokensBalance(addr common.Address) *big.Int
+	AddBaseTokensBalance(addr common.Address, amount *big.Int)
+	SubBaseTokensBalance(addr common.Address, amount *big.Int)
 
 	WithoutGasBurn(f func())
 }

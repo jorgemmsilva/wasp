@@ -48,6 +48,8 @@ type Client interface {
 	APIProvider() iotago.APIProvider
 	// Bech32HRP returns the bech32 humanly readable prefix for the current network
 	Bech32HRP() iotago.NetworkPrefix
+	// TokenInfo returns information about the L1 BaseToken
+	TokenInfo(timeout ...time.Duration) (*api.InfoResBaseToken, error)
 }
 
 var _ Client = &l1client{}
@@ -84,6 +86,18 @@ func NewClient(config Config, log *logger.Logger, timeout ...time.Duration) Clie
 		log:           log.Named("nc"),
 		config:        config,
 	}
+}
+
+// TokenInfo implements Client.
+func (c *l1client) TokenInfo(timeout ...time.Duration) (*api.InfoResBaseToken, error) {
+	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
+	defer cancelContext()
+
+	res, err := c.nodeAPIClient.Info(ctxWithTimeout)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query info: %w", err)
+	}
+	return res.BaseToken, nil
 }
 
 // OutputMap implements L1Connection

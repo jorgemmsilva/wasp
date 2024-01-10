@@ -43,7 +43,6 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations"
-	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
 	"github.com/iotaledger/wasp/packages/vm/processors"
 	_ "github.com/iotaledger/wasp/packages/vm/sandbox"
 )
@@ -90,7 +89,10 @@ type chainData struct {
 	// ValidatorFeeTarget is the agent ID to which all fees are accrued. By default, it is equal to OriginatorAgentID
 	ValidatorFeeTarget isc.AgentID
 
-	db kvstore.KVStore
+	db         kvstore.KVStore
+	writeMutex *sync.Mutex
+
+	migrationScheme *migrations.MigrationScheme
 }
 
 type dbKind byte
@@ -323,6 +325,7 @@ func (env *Solo) deployChain(
 		env.SlotIndex(),
 		0,
 		testutil.L1APIProvider,
+		testutil.TokenInfo,
 	)
 	require.NoError(env.T, err)
 
@@ -341,7 +344,7 @@ func (env *Solo) deployChain(
 	chainDB := env.getDB(dbKindChainState, chainID)
 	require.NoError(env.T, err)
 	store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(chainDB))
-	_, err = origin.InitChainByAnchorOutput(store, chainOutputs, env.L1APIProvider())
+	_, err = origin.InitChainByAnchorOutput(store, chainOutputs, env.L1APIProvider(), testutil.TokenInfo)
 	require.NoError(env.T, err)
 
 	{
@@ -413,7 +416,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 		log:                    env.logger.Named(chData.Name),
 		metrics:                metrics.NewChainMetricsProvider().GetChainMetrics(chData.ChainID),
 		mempool:                newMempool(env.Timestamp, chData.ChainID),
-		migrationScheme:        allmigrations.DefaultScheme,
+		migrationScheme:        chData.migrationScheme,
 	}
 	env.chains[chData.ChainID] = ch
 	return ch

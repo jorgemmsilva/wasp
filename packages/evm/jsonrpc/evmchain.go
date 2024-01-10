@@ -187,7 +187,7 @@ func (e *EVMChain) SendTransaction(tx *types.Transaction) error {
 	if err := e.checkEnoughL2FundsForGasBudget(sender, tx.Gas(), gasFeePolicy); err != nil {
 		return err
 	}
-	if err := evmutil.CheckGasPrice(tx, gasFeePolicy, e.backend.BaseTokenDecimals()); err != nil {
+	if err := evmutil.CheckGasPrice(tx, gasFeePolicy, e.backend.BaseTokenInfo().Decimals); err != nil {
 		return err
 	}
 	return e.backend.EVMSendTransaction(tx)
@@ -297,12 +297,14 @@ func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockN
 		return nil, err
 	}
 	accountsPartition := subrealm.NewReadOnly(chainState, kv.Key(accounts.Contract.Hname().Bytes()))
+	tokenInfo := e.backend.BaseTokenInfo()
 	baseTokens := accounts.GetBaseTokensBalance(
 		accountsPartition,
 		isc.NewEthereumAddressAgentID(*e.backend.ISCChainID(), address),
 		*e.backend.ISCChainID(),
+		tokenInfo,
 	)
-	ether, _ := util.BaseTokensDecimalsToEthereumDecimals(baseTokens, e.backend.BaseTokenDecimals())
+	ether, _ := util.BaseTokensDecimalsToEthereumDecimals(baseTokens, tokenInfo.Decimals)
 	// discard remainder
 	return ether, nil
 }
@@ -446,7 +448,7 @@ func (e *EVMChain) EstimateGas(callMsg ethereum.CallMsg, blockNumberOrHash *rpc.
 
 func (e *EVMChain) GasPrice() *big.Int {
 	e.log.Debugf("GasPrice()")
-	return e.GasFeePolicy().GasPriceWei(e.backend.BaseTokenDecimals())
+	return e.GasFeePolicy().GasPriceWei(e.backend.BaseTokenInfo().Decimals)
 }
 
 func (e *EVMChain) StorageAt(address common.Address, key common.Hash, blockNumberOrHash *rpc.BlockNumberOrHash) (common.Hash, error) {

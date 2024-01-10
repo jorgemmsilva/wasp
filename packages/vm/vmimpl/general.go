@@ -138,7 +138,7 @@ func (reqctx *requestContext) transferAllowedFunds(target isc.AgentID, transfer 
 		caller = accounts.CommonAccount()
 	}
 	reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
-		if err := accounts.MoveBetweenAccounts(s, caller, target, toMove, reqctx.ChainID()); err != nil {
+		if err := accounts.MoveBetweenAccounts(s, caller, target, toMove, reqctx.ChainID(), reqctx.TokenInfo()); err != nil {
 			panic(vm.ErrNotEnoughFundsForAllowance)
 		}
 	})

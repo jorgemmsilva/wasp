@@ -4,6 +4,7 @@
 package evmimpl
 
 import (
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -12,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/samber/lo"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -125,28 +125,28 @@ func (ctx *emulatorContext) BaseTokensDecimals() uint32 {
 	return ctx.sandbox.TokenInfo().Decimals
 }
 
-func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) iotago.BaseToken {
-	ret := iotago.BaseToken(0)
+func (ctx *emulatorContext) GetBaseTokensBalance(addr common.Address) *big.Int {
+	ret := new(big.Int)
 	// do not charge gas for this, internal checks of the emulator require this function to run before executing the request
 	ctx.WithoutGasBurn(func() {
 		var agentID isc.AgentID = isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr)
-		res := ctx.sandbox.CallView(accounts.ViewBalanceBaseToken.Message(&agentID))
-		ret = lo.Must(accounts.ViewBalanceBaseToken.Output.Decode(res))
+		res := ctx.sandbox.CallView(accounts.ViewBalanceBaseTokenEVM.Message(&agentID))
+		ret = lo.Must(accounts.ViewBalanceBaseTokenEVM.Output.Decode(res))
 	})
 	return ret
 }
 
-func (ctx *emulatorContext) AddBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
+func (ctx *emulatorContext) AddBaseTokensBalance(addr common.Address, amount *big.Int) {
 	ctx.sandbox.Privileged().CreditToAccount(
 		isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
-		isc.NewFungibleTokens(amount, nil),
+		amount,
 	)
 }
 
-func (ctx *emulatorContext) SubBaseTokensBalance(addr common.Address, amount iotago.BaseToken) {
+func (ctx *emulatorContext) SubBaseTokensBalance(addr common.Address, amount *big.Int) {
 	ctx.sandbox.Privileged().DebitFromAccount(
 		isc.NewEthereumAddressAgentID(ctx.sandbox.ChainID(), addr),
-		isc.NewFungibleTokens(amount, nil),
+		amount,
 	)
 }
 

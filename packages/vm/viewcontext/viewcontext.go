@@ -134,7 +134,7 @@ func (ctx *ViewContext) Timestamp() time.Time {
 }
 
 func (ctx *ViewContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken {
-	return accounts.GetBaseTokensBalance(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID)
+	return accounts.GetBaseTokensBalance(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID, ctx.tokenInfo)
 }
 
 func (ctx *ViewContext) GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int {

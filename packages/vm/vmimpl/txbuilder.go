@@ -78,7 +78,7 @@ func (vmctx *vmContext) loadNFT(nftID iotago.NFTID) (out *iotago.NFTOutput, id i
 func (vmctx *vmContext) loadTotalFungibleTokens() *isc.FungibleTokens {
 	var totalAssets *isc.FungibleTokens
 	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		totalAssets = accounts.GetTotalL2FungibleTokens(s)
+		totalAssets = accounts.GetTotalL2FungibleTokens(s, vmctx.task.TokenInfo)
 	})
 	return totalAssets
 }

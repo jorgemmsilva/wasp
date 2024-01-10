@@ -108,8 +108,8 @@ func (b *jsonRPCSoloBackend) ISCStateByTrieRoot(trieRoot trie.Hash) (state.State
 	return b.Chain.store.StateByTrieRoot(trieRoot)
 }
 
-func (b *jsonRPCSoloBackend) BaseToken() api.InfoResBaseToken {
-	return *testutil.TokenInfo
+func (b *jsonRPCSoloBackend) BaseTokenInfo() *api.InfoResBaseToken {
+	return testutil.TokenInfo
 }
 
 func (b *jsonRPCSoloBackend) ISCChainID() *isc.ChainID {
@@ -128,10 +128,6 @@ func (b *jsonRPCSoloBackend) RevertToSnapshot(i int) error {
 func (b *jsonRPCSoloBackend) TakeSnapshot() (int, error) {
 	b.snapshots = append(b.snapshots, b.Chain.Env.TakeSnapshot())
 	return len(b.snapshots) - 1, nil
-}
-
-func (b *jsonRPCSoloBackend) BaseTokenDecimals() uint32 {
-	return testutil.TokenInfo.Decimals
 }
 
 /*

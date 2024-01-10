@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -102,8 +103,8 @@ func (b *WaspEVMBackend) ISCCallView(chainState state.State, msg isc.Message) (d
 	return chainutil.CallView(chainState, b.chain, msg)
 }
 
-func (b *WaspEVMBackend) BaseTokenDecimals() uint32 {
-	return b.chain.TokenInfo().Decimals
+func (b *WaspEVMBackend) BaseTokenInfo() *api.InfoResBaseToken {
+	return b.chain.TokenInfo()
 }
 
 func (b *WaspEVMBackend) ISCLatestChainOutputs() (*isc.ChainOutputs, error) {

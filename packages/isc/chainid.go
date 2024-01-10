@@ -4,6 +4,7 @@
 package isc
 
 import (
+	"fmt"
 	"io"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -41,6 +42,17 @@ func ChainIDFromAnchorID(anchorID iotago.AnchorID) ChainID {
 func ChainIDFromBytes(data []byte) (ret ChainID, err error) {
 	_, err = rwutil.ReadFromBytes(data, &ret)
 	return ret, err
+}
+
+func ChainIDFromBech32(bech32 string) (ChainID, error) {
+	_, addr, err := iotago.ParseBech32(bech32)
+	if err != nil {
+		return ChainID{}, err
+	}
+	if addr.Type() != iotago.AddressAnchor {
+		return ChainID{}, fmt.Errorf("chainID must be an anchor address (%s)", bech32)
+	}
+	return ChainIDFromAddress(addr.(*iotago.AnchorAddress)), nil
 }
 
 func ChainIDFromString(s string) (ChainID, error) {

@@ -609,52 +609,31 @@ func TestGovernanceZeroGasFee(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
 	ch := env.NewChain()
 
-	user1, userAddr1 := env.NewKeyPairWithFunds()
-	userAgentID1 := isc.NewAgentID(userAddr1)
-	_, userAddr2 := env.NewKeyPairWithFunds()
-	userAgentID2 := isc.NewAgentID(userAddr2)
+	user, userAddr := env.NewKeyPairWithFunds()
+	userAgentID := isc.NewAgentID(userAddr)
 
-	fp := &gas.FeePolicy{
+	ch.SetGasFeePolicy(nil, &gas.FeePolicy{
 		EVMGasRatio: gas.DefaultEVMGasRatio,
 		GasPerToken: util.Ratio32{
 			A: 0,
 			B: 0,
 		},
 		ValidatorFeeShare: 1,
-	}
-	_, err := ch.PostRequestSync(
-		solo.NewCallParams(governance.FuncSetFeePolicy.Message(fp)).WithMaxAffordableGasBudget(),
-		nil,
-	)
+	})
+
+	_, estimate, err := ch.EstimateGasOnLedger(solo.NewCallParams(accounts.FuncDeposit.Message()), user, true)
 	require.NoError(t, err)
+	require.Zero(t, estimate.GasFeeCharged)
 
-	_, gasFee, err := ch.EstimateGasOnLedger(
-		solo.NewCallParams(accounts.FuncDeposit.Message()),
-		user1,
-		true,
-	)
+	amount := 1 * isc.Million
+	initialBalanceL1 := ch.Env.L1BaseTokens(userAddr)
+
+	err = ch.DepositAssetsToL2(isc.NewAssetsBaseTokens(1*isc.Million), user)
 	require.NoError(t, err)
-	require.Zero(t, gasFee)
-
-	userL2Bal1 := ch.L2BaseTokens(userAgentID1)
-	userL1Bal1 := ch.Env.L1BaseTokens(userAddr1)
-
-	const amount = 1 * isc.Million
-	_, err = ch.PostRequestSync(
-		solo.NewCallParams(accounts.FuncTransferAllowanceTo.Message(userAgentID2)).
-			AddBaseTokens(amount).
-			AddAllowanceBaseTokens(amount),
-		user1,
-	)
-	require.NoError(t, err)
-
-	userL2Bal2 := ch.L2BaseTokens(userAgentID1)
-	userL1Bal2 := ch.Env.L1BaseTokens(userAddr1)
-	require.Equal(t, userL2Bal1, userL2Bal2)
-	require.Equal(t, userL1Bal1-amount, userL1Bal2)
-	require.Greater(t, ch.LastReceipt().GasBurned, uint64(0))
+	require.Equal(t, initialBalanceL1-amount, env.L1BaseTokens(userAddr))
+	require.Equal(t, amount, ch.L2BaseTokens(userAgentID))
+	require.NotZero(t, ch.LastReceipt().GasBurned)
 	require.Zero(t, ch.LastReceipt().GasFeeCharged)
-	require.EqualValues(t, amount, ch.L2BaseTokens(userAgentID2))
 }
 
 func TestGovernanceSetMustGetPayoutAgentID(t *testing.T) {

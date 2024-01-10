@@ -82,6 +82,7 @@ func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.Output
 		0,
 		0,
 		testutil.L1APIProvider,
+		testutil.TokenInfo,
 	)
 	require.NoError(t, err)
 
@@ -101,7 +102,7 @@ func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.Output
 		TokenInfo:     testutil.TokenInfo,
 	}
 
-	origin.InitChainByAnchorOutput(task.Store, chainOutputs, testutil.L1APIProvider)
+	origin.InitChainByAnchorOutput(task.Store, chainOutputs, testutil.L1APIProvider, testutil.TokenInfo)
 
 	return runTask(task)
 }

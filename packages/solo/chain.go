@@ -147,11 +147,11 @@ func (ch *Chain) UploadBlob(user *cryptolib.KeyPair, fields dict.Dict) (ret hash
 		return expectedHash, nil
 	}
 	req := NewCallParams(blob.FuncStoreBlob.Message(fields))
-	g, _, err := ch.EstimateGasOffLedger(req, nil, true)
+	_, estimate, err := ch.EstimateGasOffLedger(req, nil, true)
 	if err != nil {
 		return [32]byte{}, err
 	}
-	req.WithGasBudget(g)
+	req.WithGasBudget(estimate.GasBurned)
 	res, err := ch.PostRequestOffLedger(req, user)
 	if err != nil {
 		return ret, err

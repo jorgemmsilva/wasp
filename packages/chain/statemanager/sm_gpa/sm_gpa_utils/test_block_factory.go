@@ -43,7 +43,7 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 	anchorOutput0ID := iotago.OutputIDFromTransactionIDAndIndex(getRandomTxID(t), 0)
 	chainID := isc.ChainIDFromAnchorID(iotago.AnchorIDFromOutputID(anchorOutput0ID))
 	stateAddress := cryptolib.NewKeyPair().GetPublicKey().AsEd25519Address()
-	originCommitment := origin.L1Commitment(chainInitParams, 0)
+	originCommitment := origin.L1Commitment(chainInitParams, 0, testutil.TokenInfo)
 	anchorOutput0 := &iotago.AnchorOutput{
 		Amount:   tpkg.TestTokenSupply,
 		AnchorID: chainID.AsAnchorID(), // NOTE: not very correct: origin output's AccountID should be empty; left here to make mocking transitions easier
@@ -66,7 +66,7 @@ func NewBlockFactory(t require.TestingT, chainInitParamsOpt ...dict.Dict) *Block
 	originOutput := isc.NewChainOutputs(anchorOutput0, anchorOutput0ID, nil, iotago.OutputID{})
 	anchorOutputs[originCommitment.BlockHash()] = originOutput
 	chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-	origin.InitChain(chainStore, chainInitParams, 0)
+	origin.InitChain(chainStore, chainInitParams, 0, testutil.TokenInfo)
 	return &BlockFactory{
 		t:                   t,
 		store:               chainStore,
@@ -86,11 +86,11 @@ func (bfT *BlockFactory) GetChainInitParameters() dict.Dict {
 }
 
 func (bfT *BlockFactory) GetOriginOutput() *isc.ChainOutputs {
-	return bfT.GetChainOutputs(origin.L1Commitment(bfT.chainInitParams, 0))
+	return bfT.GetChainOutputs(origin.L1Commitment(bfT.chainInitParams, 0, testutil.TokenInfo))
 }
 
 func (bfT *BlockFactory) GetOriginBlock() state.Block {
-	block, err := bfT.store.BlockByTrieRoot(origin.L1Commitment(bfT.chainInitParams, 0).TrieRoot())
+	block, err := bfT.store.BlockByTrieRoot(origin.L1Commitment(bfT.chainInitParams, 0, testutil.TokenInfo).TrieRoot())
 	require.NoError(bfT.t, err)
 	return block
 }

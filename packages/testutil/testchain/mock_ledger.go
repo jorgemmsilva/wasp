@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/hive.go/runtime/event"
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -11,7 +13,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/testutil"
-	"github.com/samber/lo"
 )
 
 type MockedLedger struct {
@@ -43,7 +44,7 @@ func NewMockedLedger(stateAddress iotago.Address, log *logger.Logger) (*MockedLe
 			},
 			&iotago.StateMetadataFeature{
 				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
-					"": testutil.DummyStateMetadata(origin.L1Commitment(nil, 0)).Bytes(),
+					"": testutil.DummyStateMetadata(origin.L1Commitment(nil, 0, testutil.TokenInfo)).Bytes(),
 				},
 			},
 		},

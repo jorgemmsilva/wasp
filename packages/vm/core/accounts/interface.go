@@ -75,6 +75,10 @@ var (
 		coreutil.FieldWithCodecOptional(ParamAgentID, codec.AgentID),
 		coreutil.FieldWithCodec(ParamBalance, codec.BaseToken),
 	)
+	ViewBalanceBaseTokenEVM = coreutil.NewViewEP11(Contract, "balanceBaseTokenEVM",
+		coreutil.FieldWithCodecOptional(ParamAgentID, codec.AgentID),
+		coreutil.FieldWithCodec(ParamBalance, codec.BigIntAbs),
+	)
 	ViewBalanceNativeToken = coreutil.NewViewEP21(Contract, "balanceNativeToken",
 		coreutil.FieldWithCodecOptional(ParamAgentID, codec.AgentID),
 		coreutil.FieldWithCodec(ParamNativeTokenID, codec.NativeTokenID),

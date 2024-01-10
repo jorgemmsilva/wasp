@@ -7,6 +7,7 @@ import (
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/util"
@@ -20,11 +21,17 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/vmexceptions"
 )
 
-// creditToAccount deposits transfer from request to chain account of of the called contract
-// It adds new tokens to the chain ledger. It is used when new tokens arrive with a request
-func creditToAccount(chainState kv.KVStore, agentID isc.AgentID, ftokens *isc.FungibleTokens, chainID isc.ChainID) {
+// creditToAccount credits assets to the chain ledger
+func creditToAccount(chainState kv.KVStore, agentID isc.AgentID, ftokens *isc.FungibleTokens, chainID isc.ChainID, tokenInfo *api.InfoResBaseToken) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		accounts.CreditToAccount(s, agentID, ftokens, chainID)
+		accounts.CreditToAccount(s, agentID, ftokens, chainID, tokenInfo)
+	})
+}
+
+// creditToAccountFullDecimals credits assets to the chain ledger
+func creditToAccountFullDecimals(chainState kv.KVStore, agentID isc.AgentID, amount *big.Int, chainID isc.ChainID) {
+	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
+		accounts.CreditToAccountFullDecimals(s, agentID, amount, chainID)
 	})
 }
 
@@ -43,25 +50,30 @@ func creditNFTToAccount(chainState kv.KVStore, agentID isc.AgentID, req isc.OnLe
 	})
 }
 
-// debitFromAccount subtracts tokens from account if it is enough of it.
-// should be called only when posting request
-func debitFromAccount(chainState kv.KVStore, agentID isc.AgentID, transfer *isc.FungibleTokens, chainID isc.ChainID) {
+// debitFromAccount subtracts tokens from account if there are enough.
+func debitFromAccount(chainState kv.KVStore, agentID isc.AgentID, transfer *isc.FungibleTokens, chainID isc.ChainID, tokenInfo *api.InfoResBaseToken) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		accounts.DebitFromAccount(s, agentID, transfer, chainID)
+		accounts.DebitFromAccount(s, agentID, transfer, chainID, tokenInfo)
 	})
 }
 
-// debitNFTFromAccount removes a NFT from account.
-// should be called only when posting request
+// debitFromAccountFullDecimals subtracts basetokens tokens from account if there are enough.
+func debitFromAccountFullDecimals(chainState kv.KVStore, agentID isc.AgentID, amount *big.Int, chainID isc.ChainID) {
+	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
+		accounts.DebitFromAccountFullDecimals(s, agentID, amount, chainID)
+	})
+}
+
+// debitNFTFromAccount removes a NFT from an account.
 func debitNFTFromAccount(chainState kv.KVStore, agentID isc.AgentID, nftID iotago.NFTID, chainID isc.ChainID) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
 		accounts.DebitNFTFromAccount(s, agentID, nftID, chainID)
 	})
 }
 
-func mustMoveBetweenAccounts(chainState kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID) {
+func mustMoveBetweenAccounts(chainState kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID, tokenInfo *api.InfoResBaseToken) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		lo.Must0(accounts.MoveBetweenAccounts(s, fromAgentID, toAgentID, assets, chainID))
+		lo.Must0(accounts.MoveBetweenAccounts(s, fromAgentID, toAgentID, assets, chainID, tokenInfo))
 	})
 }
 
@@ -75,7 +87,7 @@ func findContractByHname(chainState kv.KVStore, contractHname isc.Hname) (ret *r
 func (reqctx *requestContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken {
 	var ret iotago.BaseToken
 	reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
-		ret = accounts.GetBaseTokensBalance(s, agentID, reqctx.ChainID())
+		ret = accounts.GetBaseTokensBalance(s, agentID, reqctx.ChainID(), reqctx.TokenInfo())
 	})
 	return ret
 }
@@ -83,7 +95,7 @@ func (reqctx *requestContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.B
 func (reqctx *requestContext) HasEnoughForAllowance(agentID isc.AgentID, allowance *isc.Assets) bool {
 	var ret bool
 	reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
-		ret = accounts.HasEnoughForAllowance(s, agentID, allowance, reqctx.ChainID())
+		ret = accounts.HasEnoughForAllowance(s, agentID, allowance, reqctx.ChainID(), reqctx.TokenInfo())
 	})
 	return ret
 }
@@ -240,7 +252,7 @@ func (reqctx *requestContext) adjustL2BaseTokensIfNeeded(adjustment int64, accou
 	}
 	err := panicutil.CatchPanicReturnError(func() {
 		reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
-			accounts.AdjustAccountBaseTokens(s, account, adjustment, reqctx.ChainID())
+			accounts.AdjustAccountBaseTokens(s, account, adjustment, reqctx.ChainID(), reqctx.TokenInfo())
 		})
 	}, accounts.ErrNotEnoughFunds)
 	if err != nil {

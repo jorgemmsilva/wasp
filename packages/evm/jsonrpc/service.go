@@ -203,7 +203,7 @@ func (e *EthService) GetTransactionReceipt(txHash common.Hash) (map[string]inter
 		if err != nil {
 			return nil, err
 		}
-		effectiveGasPrice := feePolicy.GasPriceWei(e.evmChain.backend.BaseTokenDecimals())
+		effectiveGasPrice := feePolicy.GasPriceWei(e.evmChain.backend.BaseTokenInfo().Decimals)
 		return RPCMarshalReceipt(r, tx, effectiveGasPrice), nil
 	})
 }

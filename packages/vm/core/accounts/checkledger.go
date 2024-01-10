@@ -5,13 +5,14 @@ import (
 
 	"github.com/samber/lo"
 
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/kv"
 )
 
 // only used in internal tests and solo
-func CheckLedger(state kv.KVStoreReader, checkpoint string) {
-	t := GetTotalL2FungibleTokens(state)
-	c := calcL2TotalFungibleTokens(state)
+func CheckLedger(state kv.KVStoreReader, checkpoint string, baseToken *api.InfoResBaseToken) {
+	t := GetTotalL2FungibleTokens(state, baseToken)
+	c := calcL2TotalFungibleTokens(state, baseToken)
 	if !t.Equals(c) {
 		panic(fmt.Sprintf("inconsistent on-chain account ledger @ checkpoint '%s'\n total assets: %s\ncalc total: %s\n",
 			checkpoint, t, c))

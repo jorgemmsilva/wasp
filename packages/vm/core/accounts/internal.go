@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -26,18 +27,18 @@ var (
 )
 
 const (
-	// keyAllAccounts stores a map of <agentID> => true
+	// KeyAllAccounts stores a map of <agentID> => true
 	// where sum = baseTokens + native tokens + nfts
-	keyAllAccounts = "a"
+	KeyAllAccounts = "a"
 
 	// prefixBaseTokens | <accountID> stores the amount of base tokens (big.Int)
 	prefixBaseTokens = "b"
 	// prefixBaseTokens | <accountID> stores a map of <nativeTokenID> => big.Int
 	PrefixNativeTokens = "t"
 
-	// l2TotalsAccount is the special <accountID> storing the total fungible tokens
+	// L2TotalsAccount is the special <accountID> storing the total fungible tokens
 	// controlled by the chain
-	l2TotalsAccount = "*"
+	L2TotalsAccount = "*"
 
 	// PrefixNFTs | <agentID> stores a map of <NFTID> => true
 	PrefixNFTs = "n"
@@ -82,11 +83,11 @@ func accountKey(agentID isc.AgentID, chainID isc.ChainID) kv.Key {
 }
 
 func allAccountsMap(state kv.KVStore) *collections.Map {
-	return collections.NewMap(state, keyAllAccounts)
+	return collections.NewMap(state, KeyAllAccounts)
 }
 
 func allAccountsMapR(state kv.KVStoreReader) *collections.ImmutableMap {
-	return collections.NewMapReadOnly(state, keyAllAccounts)
+	return collections.NewMapReadOnly(state, KeyAllAccounts)
 }
 
 func accountExists(state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID) bool {
@@ -108,13 +109,19 @@ func touchAccount(state kv.KVStore, agentID isc.AgentID, chainID isc.ChainID) {
 }
 
 // HasEnoughForAllowance checks whether an account has enough balance to cover for the allowance
-func HasEnoughForAllowance(state kv.KVStoreReader, agentID isc.AgentID, allowance *isc.Assets, chainID isc.ChainID) bool {
+func HasEnoughForAllowance(
+	state kv.KVStoreReader,
+	agentID isc.AgentID,
+	allowance *isc.Assets,
+	chainID isc.ChainID,
+	tokenInfo *api.InfoResBaseToken,
+) bool {
 	if allowance == nil || allowance.IsEmpty() {
 		return true
 	}
 	accountKey := accountKey(agentID, chainID)
 	if allowance != nil {
-		if getBaseTokens(state, accountKey) < allowance.BaseTokens {
+		if getBaseTokens(state, accountKey, tokenInfo) < allowance.BaseTokens {
 			return false
 		}
 		for id, amount := range allowance.NativeTokens {
@@ -132,7 +139,13 @@ func HasEnoughForAllowance(state kv.KVStoreReader, agentID isc.AgentID, allowanc
 }
 
 // MoveBetweenAccounts moves assets between on-chain accounts
-func MoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID) error {
+func MoveBetweenAccounts(
+	state kv.KVStore,
+	fromAgentID, toAgentID isc.AgentID,
+	assets *isc.Assets,
+	chainID isc.ChainID,
+	tokenInfo *api.InfoResBaseToken,
+) error {
 	if fromAgentID.Equals(toAgentID) {
 		// no need to move
 		return nil
@@ -141,10 +154,10 @@ func MoveBetweenAccounts(state kv.KVStore, fromAgentID, toAgentID isc.AgentID, a
 		return nil
 	}
 
-	if !debitFromAccount(state, accountKey(fromAgentID, chainID), &assets.FungibleTokens) {
+	if !debitFromAccount(state, accountKey(fromAgentID, chainID), &assets.FungibleTokens, tokenInfo) {
 		return errors.New("MoveBetweenAccounts: not enough funds")
 	}
-	creditToAccount(state, accountKey(toAgentID, chainID), &assets.FungibleTokens)
+	creditToAccount(state, accountKey(toAgentID, chainID), &assets.FungibleTokens, tokenInfo)
 
 	for _, nftID := range assets.NFTs {
 		nft := GetNFTData(state, nftID)
@@ -170,7 +183,7 @@ func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chai
 	}
 	storageDepositAssets := isc.NewAssetsBaseTokens(amount)
 	ctx.TransferAllowedFunds(CommonAccount(), storageDepositAssets)
-	DebitFromAccount(ctx.State(), CommonAccount(), &storageDepositAssets.FungibleTokens, chainID)
+	DebitFromAccount(ctx.State(), CommonAccount(), &storageDepositAssets.FungibleTokens, chainID, ctx.TokenInfo())
 }
 
 func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32) {

@@ -21,6 +21,7 @@ import (
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/util"
 )
@@ -124,7 +125,7 @@ func (teT *testEnv) addVariedNodes(
 		sms[nodeID], err = New(chainID, loadedSnapshotStateIndex, nr, wal, store, mockStateManagerMetrics(), smLog, teT.parameters)
 		require.NoError(teT.t, err)
 		snapms[nodeID] = snapshotManager
-		origin.InitChain(store, teT.bf.GetChainInitParameters(), 0)
+		origin.InitChain(store, teT.bf.GetChainInitParameters(), 0, testutil.TokenInfo)
 	}
 	teT.nodeIDs = nodeIDs
 	teT.sms = sms

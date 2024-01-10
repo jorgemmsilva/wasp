@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
@@ -46,6 +47,7 @@ func createChain(t *testing.T) isc.ChainID {
 		layer1Client.APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 		layer1Client.APIProvider(),
+		lo.Must(layer1Client.TokenInfo()),
 	)
 	require.NoError(t, err)
 	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)

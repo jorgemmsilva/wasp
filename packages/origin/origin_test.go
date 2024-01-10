@@ -24,9 +24,9 @@ import (
 )
 
 func TestOrigin(t *testing.T) {
-	l1commitment := origin.L1Commitment(nil, 0)
+	l1commitment := origin.L1Commitment(nil, 0, testutil.TokenInfo)
 	store := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-	initBlock := origin.InitChain(store, nil, 0)
+	initBlock := origin.InitChain(store, nil, 0, testutil.TokenInfo)
 	latestBlock, err := store.LatestBlock()
 	require.NoError(t, err)
 	require.True(t, l1commitment.Equals(initBlock.L1Commitment()))
@@ -69,6 +69,7 @@ func TestCreateOrigin(t *testing.T) {
 			u.SlotIndex(),
 			allmigrations.DefaultScheme.LatestSchemaVersion(),
 			testutil.L1APIProvider,
+			testutil.TokenInfo,
 		)
 		require.NoError(t, err)
 
@@ -140,12 +141,12 @@ func TestMetadataBad(t *testing.T) {
 	for deposit := iotago.BaseToken(0); deposit <= 10*isc.Million; deposit++ {
 		db := mapdb.NewMapDB()
 		st := state.NewStoreWithUniqueWriteMutex(db)
-		block1A := origin.InitChain(st, initParams, deposit)
-		block1B := origin.InitChain(st, initParams, 10*isc.Million-deposit)
-		block1C := origin.InitChain(st, initParams, 10*isc.Million+deposit)
-		block2A := origin.InitChain(st, nil, deposit)
-		block2B := origin.InitChain(st, nil, 10*isc.Million-deposit)
-		block2C := origin.InitChain(st, nil, 10*isc.Million+deposit)
+		block1A := origin.InitChain(st, initParams, deposit, testutil.TokenInfo)
+		block1B := origin.InitChain(st, initParams, 10*isc.Million-deposit, testutil.TokenInfo)
+		block1C := origin.InitChain(st, initParams, 10*isc.Million+deposit, testutil.TokenInfo)
+		block2A := origin.InitChain(st, nil, deposit, testutil.TokenInfo)
+		block2B := origin.InitChain(st, nil, 10*isc.Million-deposit, testutil.TokenInfo)
+		block2C := origin.InitChain(st, nil, 10*isc.Million+deposit, testutil.TokenInfo)
 		t.Logf("Block0, deposit=%v => %v %v %v / %v %v %v", deposit,
 			block1A.L1Commitment(), block1B.L1Commitment(), block1C.L1Commitment(),
 			block2A.L1Commitment(), block2B.L1Commitment(), block2C.L1Commitment(),
@@ -213,6 +214,6 @@ func TestMismatchOriginCommitment(t *testing.T) {
 		iotago.OutputID{},
 	)
 
-	_, err = origin.InitChainByAnchorOutput(store, ao, testutil.L1APIProvider)
+	_, err = origin.InitChainByAnchorOutput(store, ao, testutil.L1APIProvider, testutil.TokenInfo)
 	testmisc.RequireErrorToBe(t, err, "l1Commitment mismatch between originAO / originBlock")
 }

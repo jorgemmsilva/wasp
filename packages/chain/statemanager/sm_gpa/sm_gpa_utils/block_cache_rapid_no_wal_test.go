@@ -5,16 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-
+	"golang.org/x/exp/maps"
 	"pgregory.net/rapid"
 
 	"github.com/iotaledger/hive.go/logger"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/util"
 )
@@ -36,7 +35,7 @@ var _ rapid.StateMachine = &blockCacheNoWALTestSM{}
 func (bcnwtsmT *blockCacheNoWALTestSM) initStateMachine(t *rapid.T, bcms int, wal BlockWAL, addBlockCallback func(state.Block)) {
 	var err error
 	bcnwtsmT.factory = NewBlockFactory(t)
-	bcnwtsmT.lastBlockCommitment = origin.L1Commitment(nil, 0)
+	bcnwtsmT.lastBlockCommitment = origin.L1Commitment(nil, 0, testutil.TokenInfo)
 	bcnwtsmT.log = testlogger.NewLogger(t)
 	bcnwtsmT.blockCacheMaxSize = bcms
 	bcnwtsmT.bc, err = NewBlockCache(NewDefaultTimeProvider(), bcnwtsmT.blockCacheMaxSize, wal, mockStateManagerMetrics(), bcnwtsmT.log)

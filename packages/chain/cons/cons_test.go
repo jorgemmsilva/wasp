@@ -96,6 +96,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 		testutil.L1APIProvider,
+		testutil.TokenInfo,
 	)
 	require.NoError(t, err)
 	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
@@ -162,7 +163,7 @@ func testConsBasic(t *testing.T, n, f int) {
 		nodeSK := peerIdentities[i].GetPrivateKey()
 		nodeDKShare, err := dkShareProviders[i].LoadDKShare(committeeAddress)
 		chainStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		_, err = origin.InitChainByAnchorOutput(chainStates[nid], ao0, testutil.L1APIProvider)
+		_, err = origin.InitChainByAnchorOutput(chainStates[nid], ao0, testutil.L1APIProvider, testutil.TokenInfo)
 		require.NoError(t, err)
 		nodes[nid] = cons.New(
 			testutil.L1APIProvider,
@@ -369,7 +370,7 @@ func testChained(t *testing.T, n, f, b int) {
 	testNodeStates := map[gpa.NodeID]state.Store{}
 	for _, nid := range nodeIDs {
 		testNodeStates[nid] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
-		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO, testutil.L1APIProvider)
+		origin.InitChainByAnchorOutput(testNodeStates[nid], originAO, testutil.L1APIProvider, testutil.TokenInfo)
 	}
 	testChainInsts := make([]testConsInst, b)
 	for i := range testChainInsts {

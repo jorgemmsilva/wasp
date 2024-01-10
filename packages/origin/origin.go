@@ -8,6 +8,7 @@ import (
 
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
@@ -33,8 +34,8 @@ import (
 
 // L1Commitment calculates the L1 commitment for the origin state
 // originDeposit must exclude the minSD for the AnchorOutput
-func L1Commitment(initParams dict.Dict, originDeposit iotago.BaseToken) *state.L1Commitment {
-	block := InitChain(state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()), initParams, originDeposit)
+func L1Commitment(initParams dict.Dict, originDeposit iotago.BaseToken, tokenInfo *api.InfoResBaseToken) *state.L1Commitment {
+	block := InitChain(state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()), initParams, originDeposit, tokenInfo)
 	return block.L1Commitment()
 }
 
@@ -45,7 +46,7 @@ const (
 	ParamWaspVersion     = "d"
 )
 
-func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.BaseToken) state.Block {
+func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.BaseToken, tokenInfo *api.InfoResBaseToken) state.Block {
 	if initParams == nil {
 		initParams = dict.New()
 	}
@@ -64,7 +65,7 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 	// init the state of each core contract
 	rootimpl.SetInitialState(contractState(root.Contract))
 	blob.SetInitialState(contractState(blob.Contract))
-	accounts.SetInitialState(contractState(accounts.Contract), originDeposit)
+	accounts.SetInitialState(contractState(accounts.Contract), originDeposit, tokenInfo)
 	blocklog.SetInitialState(contractState(blocklog.Contract))
 	errors.SetInitialState(contractState(errors.Contract))
 	governanceimpl.SetInitialState(contractState(governance.Contract), chainOwner, blockKeepAmount)
@@ -77,7 +78,7 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 	return block
 }
 
-func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutputs, l1 iotago.APIProvider) (state.Block, error) {
+func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutputs, l1 iotago.APIProvider, tokenInfo *api.InfoResBaseToken) (state.Block, error) {
 	var initParams dict.Dict
 	if originMetadata := chainOutputs.AnchorOutput.FeatureSet().Metadata(); originMetadata != nil {
 		var err error
@@ -88,7 +89,7 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 	}
 	anchorSD := lo.Must(chainOutputs.L1API(l1).StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
 	commonAccountAmount := chainOutputs.AnchorOutput.Amount - anchorSD
-	originBlock := InitChain(chainStore, initParams, commonAccountAmount)
+	originBlock := InitChain(chainStore, initParams, commonAccountAmount, tokenInfo)
 
 	originAOStateMetadata, err := transaction.StateMetadataFromAnchorOutput(chainOutputs.AnchorOutput)
 	if err != nil {
@@ -107,9 +108,9 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 	return originBlock, nil
 }
 
-func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToken, schemaVersion uint32) []byte {
+func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToken, schemaVersion uint32, tokenInfo *api.InfoResBaseToken) []byte {
 	s := transaction.NewStateMetadata(
-		L1Commitment(initParams, commonAccountAmount),
+		L1Commitment(initParams, commonAccountAmount, tokenInfo),
 		gas.DefaultFeePolicy(),
 		schemaVersion,
 		"",
@@ -144,6 +145,7 @@ func NewChainOriginTransaction(
 	creationSlot iotago.SlotIndex,
 	schemaVersion uint32,
 	l1APIProvider iotago.APIProvider,
+	tokenInfo *api.InfoResBaseToken,
 ) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID, error) {
 	walletAddr := keyPair.GetPublicKey().AsEd25519Address()
 
@@ -164,7 +166,7 @@ func NewChainOriginTransaction(
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.MetadataFeature{Entries: iotago.MetadataFeatureEntries{"": initParams.Bytes()}},
 			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{
-				"": calcStateMetadata(initParams, deposit, schemaVersion), // NOTE: Updated below.
+				"": calcStateMetadata(initParams, deposit, schemaVersion, tokenInfo), // NOTE: Updated below.
 			}},
 		},
 		Mana: depositMana,
@@ -182,7 +184,7 @@ func NewChainOriginTransaction(
 	// update the L1 commitment to not include the minimumSD -- should not affect the SD needed
 	anchorOutput.Features.Upsert(
 		&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{
-			"": calcStateMetadata(initParams, anchorOutput.Amount-anchorSD, schemaVersion),
+			"": calcStateMetadata(initParams, anchorOutput.Amount-anchorSD, schemaVersion, tokenInfo),
 		}},
 	)
 

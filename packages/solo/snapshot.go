@@ -3,6 +3,7 @@ package solo
 import (
 	"encoding/json"
 	"os"
+	"sync"
 
 	"github.com/stretchr/testify/require"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
+	"github.com/iotaledger/wasp/packages/vm/core/migrations"
 )
 
 type Snapshot struct {
@@ -89,6 +91,8 @@ func (env *Solo) RestoreSnapshot(snapshot *Snapshot) {
 			OriginatorPrivateKey:   okp,
 			ValidatorFeeTarget:     val,
 			db:                     chainDB,
+			writeMutex:             &sync.Mutex{},
+			migrationScheme:        &migrations.MigrationScheme{},
 		}
 		env.addChain(chainData)
 	}

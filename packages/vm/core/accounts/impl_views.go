@@ -18,13 +18,21 @@ import (
 func viewBalance(ctx isc.SandboxView, agentIDOpt *isc.AgentID) *isc.FungibleTokens {
 	ctx.Log().Debugf("accounts.viewBalance")
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
-	return getFungibleTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()))
+	return getFungibleTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
 }
 
 // viewBalanceBaseToken returns the base tokens balance of the account belonging to the AgentID
 func viewBalanceBaseToken(ctx isc.SandboxView, agentIDOpt *isc.AgentID) iotago.BaseToken {
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
-	return getBaseTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()))
+	return getBaseTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
+}
+
+// viewBalanceBaseTokenEVM returns the base tokens balance of the account belonging to the AgentID (in the EVM format with 18 decimals)
+// Params:
+// - ParamAgentID (optional -- default: caller)
+func viewBalanceBaseTokenEVM(ctx isc.SandboxView, agentIDOpt *isc.AgentID) *big.Int {
+	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
+	return getBaseTokensFullDecimals(ctx.StateR(), accountKey(agentID, ctx.ChainID()))
 }
 
 // viewBalanceNativeToken returns the native token balance of the account belonging to the AgentID
@@ -36,7 +44,7 @@ func viewBalanceNativeToken(ctx isc.SandboxView, agentIDOpt *isc.AgentID, ntID i
 // viewTotalAssets returns total balances controlled by the chain
 func viewTotalAssets(ctx isc.SandboxView) *isc.FungibleTokens {
 	ctx.Log().Debugf("accounts.viewTotalAssets")
-	return getFungibleTokens(ctx.StateR(), l2TotalsAccount)
+	return getFungibleTokens(ctx.StateR(), L2TotalsAccount, ctx.TokenInfo())
 }
 
 // viewAccounts returns list of all accounts

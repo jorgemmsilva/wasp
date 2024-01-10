@@ -104,6 +104,11 @@ func CreateChainOrigin(
 		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}
 
+	tokenInfo, err := layer1Client.TokenInfo()
+	if err != nil {
+		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
+	}
+
 	// ----------- create origin transaction
 	originTx, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
@@ -116,6 +121,7 @@ func CreateChainOrigin(
 		creationSlot,
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 		layer1Client.APIProvider(),
+		tokenInfo,
 	)
 	if err != nil {
 		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)

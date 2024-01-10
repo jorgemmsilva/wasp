@@ -15,7 +15,7 @@ func TestChainIDSerialization(t *testing.T) {
 	rwutil.ReadWriteTest(t, &chainID, new(isc.ChainID))
 	rwutil.BytesTest(t, chainID, isc.ChainIDFromBytes)
 
-	chainID2, err := isc.ChainIDFromString(chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	chainID2, err := isc.ChainIDFromBech32(chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	require.NoError(t, err)
 	require.Equal(t, chainID, chainID2)
 	require.Equal(t, chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), chainID2.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))

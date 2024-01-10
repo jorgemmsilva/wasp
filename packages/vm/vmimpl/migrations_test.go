@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations"
@@ -51,7 +52,7 @@ func (e *migrationsTestEnv) setSchemaVersion(v uint32) {
 func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 	db := mapdb.NewMapDB()
 	cs := state.NewStoreWithUniqueWriteMutex(db)
-	origin.InitChain(cs, nil, 0)
+	origin.InitChain(cs, nil, 0, testutil.TokenInfo)
 	latest, err := cs.LatestBlock()
 	require.NoError(t, err)
 	stateDraft, err := cs.NewStateDraft(time.Time{}, latest.L1Commitment())

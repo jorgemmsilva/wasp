@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 )
 
@@ -33,7 +34,7 @@ func newBlockWALTestSM(t *rapid.T) *blockWALTestSM {
 	bwtsmT := new(blockWALTestSM)
 	var err error
 	bwtsmT.factory = NewBlockFactory(t)
-	bwtsmT.lastBlockCommitment = origin.L1Commitment(nil, 0)
+	bwtsmT.lastBlockCommitment = origin.L1Commitment(nil, 0, testutil.TokenInfo)
 	bwtsmT.log = testlogger.NewLogger(t)
 	bwtsmT.bw, err = NewBlockWAL(bwtsmT.log, constTestFolder, bwtsmT.factory.GetChainID(), mockBlockWALMetrics())
 	require.NoError(t, err)

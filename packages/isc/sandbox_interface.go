@@ -149,13 +149,15 @@ type Privileged interface {
 	MintNFT(addr iotago.Address, immutableMetadata iotago.MetadataFeatureEntries, issuer iotago.Address) (uint16, *iotago.NFTOutput)
 	GasBurnEnable(enable bool)
 	GasBurnEnabled() bool
-	MustMoveBetweenAccounts(fromAgentID, toAgentID AgentID, assets *Assets)
-	DebitFromAccount(AgentID, *FungibleTokens)
-	CreditToAccount(AgentID, *FungibleTokens)
 	RetryUnprocessable(req Request, outputID iotago.OutputID)
 	OnWriteReceipt(CoreCallbackFunc)
 	CallOnBehalfOf(caller AgentID, msg Message, allowance *Assets) dict.Dict
 	SendOnBehalfOf(caller ContractIdentity, metadata RequestParameters)
+
+	// only called from EVM
+	MustMoveBetweenAccounts(fromAgentID, toAgentID AgentID, assets *Assets)
+	DebitFromAccount(AgentID, *big.Int)
+	CreditToAccount(AgentID, *big.Int)
 }
 
 type CoreCallbackFunc func(contractPartition kv.KVStore, gasBurned gas.GasUnits)

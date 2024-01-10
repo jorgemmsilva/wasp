@@ -65,14 +65,13 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 		// state baseline is always valid in Solo
 		EnableGasBurnLogging: ch.Env.enableGasBurnLogging,
 		EstimateGasMode:      estimateGas,
-		MigrationsOverride:   ch.migrationScheme,
 		L1APIProvider:        testutil.L1APIProvider,
 		TokenInfo:            testutil.TokenInfo,
 	}
 
 	res, err := vmimpl.Run(task)
 	require.NoError(ch.Env.T, err)
-	accounts.CheckLedger(res.StateDraft, "solo")
+	accounts.CheckLedger(res.StateDraft, "solo", task.TokenInfo)
 	return res
 }
 

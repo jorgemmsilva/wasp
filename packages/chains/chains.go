@@ -13,7 +13,7 @@ import (
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/lo"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -43,7 +43,7 @@ type ChainProvider func(chainID isc.ChainID) chaintypes.Chain
 
 type Chains struct {
 	ctx                        context.Context
-	log                        *logger.Logger
+	log                        log.Logger
 	nodeConnection             chain.NodeConnection
 	processorConfig            *processors.Config
 	deriveAnchorOutputByQuorum bool
@@ -101,7 +101,7 @@ type activeChain struct {
 }
 
 func New(
-	log *logger.Logger,
+	log log.Logger,
 	nodeConnection chain.NodeConnection,
 	processorConfig *processors.Config,
 	validatorAddrStr string,
@@ -202,19 +202,19 @@ func (c *Chains) initSnapshotsToLoad(configs []string) {
 		if len(configSplit) == 1 {
 			blockHash, err := state.BlockHashFromString(configSplit[0])
 			if err != nil {
-				c.log.Warnf("Parsing snapshots to load: %s is not a block hash: %v", configSplit[0], err)
+				c.log.LogWarnf("Parsing snapshots to load: %s is not a block hash: %v", configSplit[0], err)
 				continue
 			}
 			c.defaultSnapshotToLoad = &blockHash
 		} else {
 			chainID, err := isc.ChainIDFromString(configSplit[0])
 			if err != nil {
-				c.log.Warnf("Parsing snapshots to load: %s in %s is not a chain ID: %v", configSplit[0], config, err)
+				c.log.LogWarnf("Parsing snapshots to load: %s in %s is not a chain ID: %v", configSplit[0], config, err)
 				continue
 			}
 			blockHash, err := state.BlockHashFromString(configSplit[1])
 			if err != nil {
-				c.log.Warnf("Parsing snapshots to load: %s in %s is not a block hash: %v", configSplit[1], config, err)
+				c.log.LogWarnf("Parsing snapshots to load: %s in %s is not a block hash: %v", configSplit[1], config, err)
 				continue
 			}
 			c.snapshotsToLoad[chainID.Key()] = blockHash
@@ -235,7 +235,7 @@ func (c *Chains) Run(ctx context.Context) error {
 	}
 	c.ctx = ctx
 
-	c.accessMgr = access_mgr.New(ctx, c.chainServersUpdatedCB, c.nodeIdentityProvider.NodeIdentity(), c.networkProvider, c.log.Named("AM"))
+	c.accessMgr = access_mgr.New(ctx, c.chainServersUpdatedCB, c.nodeIdentityProvider.NodeIdentity(), c.networkProvider, c.log.NewChildLogger("AM"))
 	c.trustedNetworkListenerCancel = c.trustedNetworkManager.TrustedPeersListener(c.trustedPeersUpdatedCB)
 
 	unhook := c.chainRecordRegistryProvider.Events().ChainRecordModified.Hook(func(event *registry.ChainRecordModifiedEvent) {
@@ -312,7 +312,7 @@ func (c *Chains) activateWithoutLocking(chainID isc.ChainID) error { //nolint:fu
 	//
 	// Check, maybe it is already running.
 	if c.allChains.Has(chainID) {
-		c.log.Debugf("Chain %v = %v is already activated", chainID.ShortString(), chainID.String())
+		c.log.LogDebugf("Chain %v = %v is already activated", chainID.ShortString(), chainID.String())
 		return nil
 	}
 	//
@@ -335,7 +335,7 @@ func (c *Chains) activateWithoutLocking(chainID isc.ChainID) error { //nolint:fu
 	chainMetrics := c.chainMetricsProvider.GetChainMetrics(chainID)
 
 	// Initialize WAL
-	chainLog := c.log.Named(chainID.ShortString())
+	chainLog := c.log.NewChildLogger(chainID.ShortString())
 	var chainWAL sm_gpa_utils.BlockWAL
 	if c.walEnabled {
 		chainWAL, err = sm_gpa_utils.NewBlockWAL(chainLog, c.walFolderPath, chainID, chainMetrics.BlockWAL)
@@ -426,7 +426,7 @@ func (c *Chains) activateWithoutLocking(chainID isc.ChainID) error { //nolint:fu
 		cancelFunc: chainCancel,
 	})
 
-	c.log.Infof("activated chain: %v = %s", chainID.ShortString(), chainID.String())
+	c.log.LogInfof("activated chain: %v = %s", chainID.ShortString(), chainID.String())
 	return nil
 }
 
@@ -449,13 +449,13 @@ func (c *Chains) Deactivate(chainID isc.ChainID) error {
 
 	ch, exists := c.allChains.Get(chainID)
 	if !exists {
-		c.log.Debugf("chain is not active: %v = %s", chainID.ShortString(), chainID.String())
+		c.log.LogDebugf("chain is not active: %v = %s", chainID.ShortString(), chainID.String())
 		return nil
 	}
 	ch.cancelFunc()
 	c.accessMgr.ChainDismissed(chainID)
 	c.allChains.Delete(chainID)
-	c.log.Debugf("chain has been deactivated: %v = %s", chainID.ShortString(), chainID.String())
+	c.log.LogDebugf("chain has been deactivated: %v = %s", chainID.ShortString(), chainID.String())
 	return nil
 }
 

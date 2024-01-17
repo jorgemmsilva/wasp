@@ -30,11 +30,11 @@ func addCandidateNode(ctx isc.Sandbox, ani *governance.AccessNodeInfo) dict.Dict
 
 	state := ctx.State()
 	governance.AccessNodeCandidatesMap(state).SetAt(ani.NodePubKey, ani.Bytes())
-	ctx.Log().Infof("Governance::AddCandidateNode: accessNodeCandidate added, pubKey=%s", pubKeyStr)
+	ctx.Log().LogInfof("Governance::AddCandidateNode: accessNodeCandidate added, pubKey=%s", pubKeyStr)
 
 	if ctx.ChainOwnerID().Equals(ctx.Request().SenderAccount()) {
 		governance.AccessNodesMap(state).SetAt(ani.NodePubKey, codec.Bool.Encode(true))
-		ctx.Log().Infof("Governance::AddCandidateNode: accessNode added, pubKey=%s", pubKeyStr)
+		ctx.Log().LogInfof("Governance::AddCandidateNode: accessNode added, pubKey=%s", pubKeyStr)
 	}
 
 	return nil
@@ -60,7 +60,7 @@ func changeAccessNodes(ctx isc.Sandbox, req governance.ChangeAccessNodesRequest)
 	state := ctx.State()
 	accessNodeCandidates := governance.AccessNodeCandidatesMap(state)
 	accessNodes := governance.AccessNodesMap(state)
-	ctx.Log().Debugf("changeAccessNodes: actions len: %d", len(req))
+	ctx.Log().LogDebugf("changeAccessNodes: actions len: %d", len(req))
 	for pubKey, action := range req {
 		switch action {
 		case governance.ChangeAccessNodeActionRemove:

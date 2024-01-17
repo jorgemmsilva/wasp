@@ -12,7 +12,7 @@ import (
 
 	"go.uber.org/atomic"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
 	"github.com/iotaledger/wasp/packages/chain/cons"
@@ -132,7 +132,7 @@ type ConsGr struct {
 	consensusID                 ConsensusID
 	ctx                         context.Context
 	pipeMetrics                 *metrics.ChainPipeMetrics
-	log                         *logger.Logger
+	log                         log.Logger
 }
 
 func New(
@@ -153,7 +153,7 @@ func New(
 	printStatusPeriod time.Duration,
 	chainMetrics *metrics.ChainConsensusMetrics,
 	pipeMetrics *metrics.ChainPipeMetrics,
-	log *logger.Logger,
+	log log.Logger,
 ) *ConsGr {
 	cmtPubKey := dkShare.GetSharedPublic()
 	netPeeringID := peering.HashPeeringIDFromBytes(chainID.Bytes(), cmtPubKey.AsBytes(), logIndex.Bytes()) // ChainID × Committee PubKey × LogIndex
@@ -203,10 +203,10 @@ func New(
 
 	unhook := net.Attach(&netPeeringID, peering.ReceiverChainCons, func(recv *peering.PeerMessageIn) {
 		if recv.MsgType != msgTypeCons {
-			cgr.log.Warnf("Unexpected message, type=%v", recv.MsgType)
+			cgr.log.LogWarnf("Unexpected message, type=%v", recv.MsgType)
 			return
 		}
-		cgr.netRecvPipe.TryAdd(recv, cgr.log.Debugf)
+		cgr.netRecvPipe.TryAdd(recv, cgr.log.LogDebugf)
 	})
 	cgr.netDisconnect = unhook
 
@@ -328,15 +328,15 @@ func (cgr *ConsGr) run() { //nolint:gocyclo,funlen
 			if cgr.outputReady || cgr.recoverCB == nil {
 				continue
 			}
-			cgr.log.Warn("Recovery timeout reached.")
+			cgr.log.LogWarn("Recovery timeout reached.")
 			cgr.recoverCB()
 			cgr.recoverCB = nil
 			// Don't terminate, maybe output is still needed. // TODO: Reconsider it.
 		case <-printStatusCh:
 			printStatusCh = time.After(cgr.printStatusPeriod)
-			cgr.log.Debugf("Consensus Instance: %v", cgr.consInst.StatusString())
+			cgr.log.LogDebugf("Consensus Instance: %v", cgr.consInst.StatusString())
 		case <-ctxClose:
-			cgr.log.Debugf("Closing ConsGr because context closed.")
+			cgr.log.LogDebugf("Closing ConsGr because context closed.")
 			return
 		}
 	}
@@ -357,7 +357,7 @@ func (cgr *ConsGr) handleRedeliveryTick(t time.Time) {
 func (cgr *ConsGr) handleNetMessage(recv *peering.PeerMessageIn) {
 	msg, err := cgr.consInst.UnmarshalMessage(recv.MsgData)
 	if err != nil {
-		cgr.log.Warnf("cannot parse message: %v", err)
+		cgr.log.LogWarnf("cannot parse message: %v", err)
 		return
 	}
 	msg.SetSender(gpa.NodeIDFromPublicKey(recv.SenderPubKey))

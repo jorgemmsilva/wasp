@@ -172,7 +172,7 @@ func (reqctx *requestContext) writeReceiptToBlockLog(vmError *isc.VMError) *bloc
 		receipt.Error = vmError.AsUnresolvedError()
 	}
 
-	reqctx.Debugf("writeReceiptToBlockLog - reqID:%s err: %v", reqctx.req.ID(), vmError)
+	reqctx.LogDebugf("writeReceiptToBlockLog - reqID:%s err: %v", reqctx.req.ID(), vmError)
 
 	key := reqctx.requestLookupKey()
 	var err error
@@ -223,7 +223,7 @@ func (reqctx *requestContext) mustSaveEvent(hContract isc.Hname, topic string, p
 	if reqctx.requestEventIndex == math.MaxUint16 {
 		panic(vm.ErrTooManyEvents)
 	}
-	reqctx.Debugf("MustSaveEvent/%s: topic: '%s'", hContract.String(), topic)
+	reqctx.LogDebugf("MustSaveEvent/%s: topic: '%s'", hContract.String(), topic)
 
 	event := &isc.Event{
 		ContractID: hContract,

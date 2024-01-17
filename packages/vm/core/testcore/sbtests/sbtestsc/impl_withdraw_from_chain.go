@@ -11,7 +11,7 @@ import (
 
 // withdrawFromChain withdraws all the available balance existing on the target chain
 func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Infof(FuncWithdrawFromChain.Name)
+	ctx.Log().LogInfof(FuncWithdrawFromChain.Name)
 	params := ctx.Params()
 	targetChain := params.MustGetChainID(ParamChainID)
 	withdrawal := iotago.BaseToken(params.MustGetUint64(ParamBaseTokens))
@@ -39,6 +39,6 @@ func withdrawFromChain(ctx isc.Sandbox) dict.Dict {
 		},
 	})
 
-	ctx.Log().Infof("%s: success", FuncWithdrawFromChain.Name)
+	ctx.Log().LogInfof("%s: success", FuncWithdrawFromChain.Name)
 	return nil
 }

@@ -36,38 +36,38 @@ func passTypesFull(ctx isc.Sandbox) dict.Dict {
 	s, err := params.GetString("string")
 	checkFull(ctx, err)
 	if s != "string" {
-		ctx.Log().Panicf("wrong string")
+		ctx.Log().LogPanicf("wrong string")
 	}
 	ret.Set("string", codec.String.Encode(s))
 
 	i64, err := params.GetInt64("int64")
 	checkFull(ctx, err)
 	if i64 != 42 {
-		ctx.Log().Panicf("wrong int64")
+		ctx.Log().LogPanicf("wrong int64")
 	}
 	ret.Set("string", codec.Int64.Encode(42))
 
 	i64_0, err := params.GetInt64("int64-0")
 	checkFull(ctx, err)
 	if i64_0 != 0 {
-		ctx.Log().Panicf("wrong int64_0")
+		ctx.Log().LogPanicf("wrong int64_0")
 	}
 	ret.Set("string", codec.Int64.Encode(0))
 
 	hash, err := params.GetHashValue("Hash")
 	checkFull(ctx, err)
 	if hash != hashing.HashStrings("Hash") {
-		ctx.Log().Panicf("wrong hash")
+		ctx.Log().LogPanicf("wrong hash")
 	}
 	hname, err := params.GetHname("Hname")
 	checkFull(ctx, err)
 	if hname != isc.Hn("Hname") {
-		ctx.Log().Panicf("wrong hname")
+		ctx.Log().LogPanicf("wrong hname")
 	}
 	hname0, err := params.GetHname("Hname-0")
 	checkFull(ctx, err)
 	if hname0 != 0 {
-		ctx.Log().Panicf("wrong Hname-0")
+		ctx.Log().LogPanicf("wrong Hname-0")
 	}
 	_, err = params.GetAgentID(ParamContractID)
 	checkFull(ctx, err)
@@ -88,32 +88,32 @@ func passTypesView(ctx isc.SandboxView) dict.Dict {
 	s, err := params.GetString("string")
 	checkView(ctx, err)
 	if s != "string" {
-		ctx.Log().Panicf("wrong string")
+		ctx.Log().LogPanicf("wrong string")
 	}
 	i64, err := params.GetInt64("int64")
 	checkView(ctx, err)
 	if i64 != 42 {
-		ctx.Log().Panicf("wrong int64")
+		ctx.Log().LogPanicf("wrong int64")
 	}
 	i64_0, err := params.GetInt64("int64-0")
 	checkView(ctx, err)
 	if i64_0 != 0 {
-		ctx.Log().Panicf("wrong int64_0")
+		ctx.Log().LogPanicf("wrong int64_0")
 	}
 	hash, err := params.GetHashValue("Hash")
 	checkView(ctx, err)
 	if hash != hashing.HashStrings("Hash") {
-		ctx.Log().Panicf("wrong hash")
+		ctx.Log().LogPanicf("wrong hash")
 	}
 	hname, err := params.GetHname("Hname")
 	checkView(ctx, err)
 	if hname != isc.Hn("Hname") {
-		ctx.Log().Panicf("wrong hname")
+		ctx.Log().LogPanicf("wrong hname")
 	}
 	hname0, err := params.GetHname("Hname-0")
 	checkView(ctx, err)
 	if hname0 != 0 {
-		ctx.Log().Panicf("wrong hname-0")
+		ctx.Log().LogPanicf("wrong hname-0")
 	}
 	_, err = params.GetAgentID(ParamContractID)
 	checkView(ctx, err)
@@ -131,12 +131,12 @@ func passTypesView(ctx isc.SandboxView) dict.Dict {
 
 func checkFull(ctx isc.Sandbox, err error) {
 	if err != nil {
-		ctx.Log().Panicf("Full sandbox: %v", err)
+		ctx.Log().LogPanicf("Full sandbox: %v", err)
 	}
 }
 
 func checkView(ctx isc.SandboxView, err error) {
 	if err != nil {
-		ctx.Log().Panicf("View sandbox: %v", err)
+		ctx.Log().LogPanicf("View sandbox: %v", err)
 	}
 }

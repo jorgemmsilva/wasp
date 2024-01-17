@@ -107,7 +107,7 @@ func (vm *WasmVMBase) HostFdWrite(fd, iovs, size, written int32) int32 {
 	vm.reportGasBurned(wc)
 	defer vm.wrapUp(wc)
 
-	wc.log().Debugf("HostFdWrite(...)")
+	wc.log().LogDebugf("HostFdWrite(...)")
 	impl := wc.vm
 
 	// very basic implementation that expects fd to be stdout and iovs to be only one element
@@ -173,7 +173,7 @@ func (vm *WasmVMBase) HostStateSet(keyRef, keyLen, valRef, valLen int32) {
 		name := string(impl.VMGetBytes(valRef, valLen))
 		if keyLen < 0 {
 			// ExportWasmTag, log the wasm tag name
-			wc.log().Infof(name)
+			wc.log().LogInfof(name)
 
 			// // potentially adjust gas fudge factor multiplier here
 			// if strings.Contains(name, "WASM::TYPESCRIPT") {

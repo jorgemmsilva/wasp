@@ -26,7 +26,6 @@ func initSolo(t *testing.T) *solo.Solo {
 	return solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
-		PrintStackTrace:          true,
 	}).WithNativeContract(Processor)
 }
 
@@ -137,7 +136,7 @@ func TestSpawn(t *testing.T) {
 
 func initBenchmark(b *testing.B) (*solo.Chain, []*solo.CallParams) {
 	// setup: deploy the inccounter contract
-	log := testlogger.NewSilentLogger(b.Name(), true)
+	log := testlogger.NewSilentLogger(true, b.Name())
 	opts := solo.DefaultInitOptions()
 	opts.Log = log
 	env := solo.New(b, opts).WithNativeContract(Processor)

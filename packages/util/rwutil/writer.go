@@ -10,8 +10,6 @@ import (
 	"math"
 	"math/big"
 	"time"
-
-	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 type Writer struct {
@@ -190,8 +188,6 @@ func (ww *Writer) WriteSerialized(obj any, sizes ...int) *Writer {
 	}
 
 	var buf []byte
-	// TODO this API should probably be the same version is used for a given block... maybe we should encode/decode the protocol version here...
-	l1API := iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
 	buf, ww.Err = l1API.Encode(obj)
 	switch len(sizes) {
 	case 0:

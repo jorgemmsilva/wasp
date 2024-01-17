@@ -4,8 +4,6 @@ import (
 	"errors"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -33,7 +31,7 @@ func runISCTask(
 		EnableGasBurnLogging: estimateGasMode,
 		EstimateGasMode:      estimateGasMode,
 		EVMTracer:            evmTracer,
-		Log:                  ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
+		Log:                  ch.Log(),
 		L1APIProvider:        ch.L1APIProvider(),
 		TokenInfo:            ch.TokenInfo(),
 	}

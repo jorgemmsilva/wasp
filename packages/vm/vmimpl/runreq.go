@@ -181,7 +181,7 @@ func (reqctx *requestContext) callTheContract() (*vm.RequestResult, error) {
 	})
 	if err != nil {
 		// this should never happen. something is wrong here, SKIP the request
-		reqctx.vm.task.Log.Errorf("panic before request execution (reqid: %s): %v", reqctx.req.ID(), err)
+		reqctx.vm.task.Log.LogErrorf("panic before request execution (reqid: %s): %v", reqctx.req.ID(), err)
 		return nil, err
 	}
 
@@ -207,9 +207,9 @@ func (reqctx *requestContext) callTheContract() (*vm.RequestResult, error) {
 			}
 			skipRequestErr = vmexceptions.IsSkipRequestException(r)
 			executionErr = recoverFromExecutionError(r)
-			reqctx.Debugf("recovered panic from contract call: %v", executionErr)
+			reqctx.LogDebugf("recovered panic from contract call: %v", executionErr)
 			if os.Getenv("DEBUG") != "" || reqctx.vm.task.WillProduceBlock() {
-				reqctx.Debugf(string(debug.Stack()))
+				reqctx.LogDebugf(string(debug.Stack()))
 			}
 		}()
 		// ensure there are enough funds to cover the specified allowance
@@ -251,8 +251,8 @@ func (reqctx *requestContext) callTheContract() (*vm.RequestResult, error) {
 		if executionErr != nil {
 			callErrStr = executionErr.Error()
 		}
-		reqctx.vm.task.Log.Errorf("panic after request execution (reqid: %s, executionErr: %s): %v", reqctx.req.ID(), callErrStr, err)
-		reqctx.vm.task.Log.Debug(string(debug.Stack()))
+		reqctx.vm.task.Log.LogErrorf("panic after request execution (reqid: %s, executionErr: %s): %v", reqctx.req.ID(), callErrStr, err)
+		reqctx.vm.task.Log.LogDebug(string(debug.Stack()))
 		return nil, err
 	}
 
@@ -279,7 +279,7 @@ func recoverFromExecutionError(r interface{}) *isc.VMError {
 // callFromRequest is the call itself. Assumes sc exists
 func (reqctx *requestContext) callFromRequest() dict.Dict {
 	req := reqctx.req
-	reqctx.Debugf("callFromRequest: %s", req.ID().String())
+	reqctx.LogDebugf("callFromRequest: %s", req.ID().String())
 
 	if req.SenderAccount() == nil {
 		// if sender unknown, follow panic path

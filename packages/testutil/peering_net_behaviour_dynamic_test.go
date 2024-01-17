@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 )
@@ -30,7 +30,7 @@ func TestPeeringNetDynamicReliable(t *testing.T) {
 	someNode := peeringNode{peeringURL: "src", identity: srcPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false))
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError))
 	behavior.AddLink(inCh, outCh, dstPeerIdentity.GetPublicKey())
 	for i := 0; i < 10; i++ {
 		sendMessage(&someNode, inCh)
@@ -52,7 +52,7 @@ func TestPeeringNetDynamicUnreliable(t *testing.T) {
 	someNode := peeringNode{peeringURL: "src", identity: srcPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false)).
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError)).
 		WithLosingChannel(nil, 50).
 		WithRepeatingChannel(nil, 50).
 		WithDelayingChannel(nil, 50*time.Millisecond, 100*time.Millisecond)
@@ -89,7 +89,7 @@ func TestPeeringNetDynamicChanging(t *testing.T) {
 	someNode := peeringNode{peeringURL: "src", identity: srcPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false))
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError))
 	behavior.AddLink(inCh, outCh, dstPeerIdentity.GetPublicKey())
 	for i := 0; i < 100; i++ {
 		sendMessage(&someNode, inCh)
@@ -154,7 +154,7 @@ func TestPeeringNetDynamicLosingChannel(t *testing.T) { //nolint:dupl
 	someNode := peeringNode{peeringURL: "src", identity: srcPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false)).WithLosingChannel(nil, 50)
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError)).WithLosingChannel(nil, 50)
 	behavior.AddLink(inCh, outCh, dstPeerIdentity.GetPublicKey())
 	for i := 0; i < 1000; i++ {
 		sendMessage(&someNode, inCh)
@@ -179,7 +179,7 @@ func TestPeeringNetDynamicRepeatingChannel(t *testing.T) { //nolint:dupl
 	someNode := peeringNode{peeringURL: "src", identity: srcPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false)).WithRepeatingChannel(nil, 150)
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError)).WithRepeatingChannel(nil, 150)
 	behavior.AddLink(inCh, outCh, dstPeerIdentity.GetPublicKey())
 	for i := 0; i < 1000; i++ {
 		sendMessage(&someNode, inCh)
@@ -204,7 +204,7 @@ func TestPeeringNetDynamicDelayingChannel(t *testing.T) {
 	someNode := peeringNode{peeringURL: "src", identity: srcPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false)).WithDelayingChannel(nil, 25*time.Millisecond, 75*time.Millisecond)
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError)).WithDelayingChannel(nil, 25*time.Millisecond, 75*time.Millisecond)
 	behavior.AddLink(inCh, outCh, dstPeerIdentity.GetPublicKey())
 	for i := 0; i < 100; i++ {
 		sendMessage(&someNode, inCh)
@@ -235,7 +235,7 @@ func TestPeeringNetDynamicPeerDisconnected(t *testing.T) {
 	disconnectedNode := peeringNode{peeringURL: "disconnected", identity: disPeerIdentity}
 	//
 	// Run the test.
-	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelError, false)).WithPeerDisconnected(nil, disPeerIdentity.GetPublicKey())
+	behavior := NewPeeringNetDynamic(testlogger.WithLevel(testlogger.NewLogger(t), log.LevelError)).WithPeerDisconnected(nil, disPeerIdentity.GetPublicKey())
 	behavior.AddLink(inCh, outCh, dstPeerIdentity.GetPublicKey())
 	behavior.AddLink(inChD, outChD, disPeerIdentity.GetPublicKey())
 	for i := 0; i < 100; i++ {

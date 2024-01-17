@@ -97,7 +97,7 @@ Note: chain data is stored in-memory and will be lost upon termination.
 func initSolo() (*soloContext, *solo.Chain) {
 	ctx := &soloContext{}
 
-	env := solo.New(ctx, &solo.InitOptions{Debug: log.DebugFlag, PrintStackTrace: log.DebugFlag})
+	env := solo.New(ctx, &solo.InitOptions{Debug: log.DebugFlag})
 
 	chainOwner, chainOwnerAddr := env.NewKeyPairWithFunds()
 	chain, _ := env.NewChainExt(chainOwner, 1*isc.Million, 0, "evmemulator", dict.Dict{

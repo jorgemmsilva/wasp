@@ -14,5 +14,5 @@ func (h *magicContractHandler) Hn(s string) isc.Hname {
 
 // handler for ISCUtil::print
 func (h *magicContractHandler) Print(s string) {
-	h.ctx.Log().Debugf("ISCUtil::print -> %q", s)
+	h.ctx.Log().LogDebugf("ISCUtil::print -> %q", s)
 }

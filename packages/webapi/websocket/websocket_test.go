@@ -8,24 +8,22 @@ import (
 	"golang.org/x/net/context"
 	websocketserver "nhooyr.io/websocket"
 
-	"github.com/iotaledger/hive.go/app/configuration"
-	appLogger "github.com/iotaledger/hive.go/app/logger"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 )
 
 func InitWebsocket(ctx context.Context, t *testing.T, eventsToSubscribe []publisher.ISCEventType) (*Service, *websockethub.Hub, *solo.Chain) {
-	_ = appLogger.InitGlobalLogger(configuration.New())
-	log := logger.NewLogger("Test")
+	log := testlogger.NewSimple(false, log.WithName("Test"))
 
 	//nolint:contextcheck
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Log: log})
 
-	websocketHub := websockethub.NewHub(log.Named("Hub"), &websocketserver.AcceptOptions{InsecureSkipVerify: true}, 500, 500, 500)
-	ws := NewWebsocketService(log.Named("Service"), websocketHub, []publisher.ISCEventType{
+	websocketHub := websockethub.NewHub(log.NewChildLogger("Hub"), &websocketserver.AcceptOptions{InsecureSkipVerify: true}, 500, 500, 500)
+	ws := NewWebsocketService(log.NewChildLogger("Service"), websocketHub, []publisher.ISCEventType{
 		publisher.ISCEventKindNewBlock,
 		publisher.ISCEventKindReceipt,
 		publisher.ISCEventKindBlockEvents,

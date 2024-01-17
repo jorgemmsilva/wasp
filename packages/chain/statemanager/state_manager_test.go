@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_snapshots"
@@ -25,8 +25,7 @@ import (
 )
 
 func TestCruelWorld(t *testing.T) { //nolint:gocyclo
-	log := testlogger.NewLogger(t)
-	defer log.Sync()
+	logger := testlogger.NewLogger(t)
 
 	nodeCount := 15
 	committeeSize := 5
@@ -51,11 +50,11 @@ func TestCruelWorld(t *testing.T) { //nolint:gocyclo
 	for i := range peerPubKeys {
 		peerPubKeys[i] = peerIdentities[i].GetPublicKey()
 	}
-	networkBehaviour := testutil.NewPeeringNetReliable(log)
+	networkBehaviour := testutil.NewPeeringNetReliable(logger)
 	network := testutil.NewPeeringNetwork(
 		peeringURLs, peerIdentities, 10000,
 		networkBehaviour,
-		log.Named("net"),
+		logger.NewChildLogger("net"),
 	)
 	netProviders := network.NetworkProviders()
 	bf := sm_gpa_utils.NewBlockFactory(t)
@@ -65,7 +64,7 @@ func TestCruelWorld(t *testing.T) { //nolint:gocyclo
 	parameters := sm_gpa.NewStateManagerParameters()
 	parameters.StateManagerTimerTickPeriod = timerTickPeriod
 	parameters.StateManagerGetBlockRetry = getBlockPeriod
-	NewMockedSnapshotManagerFun := func(createSnapshots bool, store state.Store, log *logger.Logger) sm_snapshots.SnapshotManager {
+	NewMockedSnapshotManagerFun := func(createSnapshots bool, store state.Store, _ log.Logger) sm_snapshots.SnapshotManager {
 		var createPeriod uint32
 		var delayPeriod uint32
 		if createSnapshots {
@@ -75,12 +74,12 @@ func TestCruelWorld(t *testing.T) { //nolint:gocyclo
 			createPeriod = 0
 			delayPeriod = 0
 		}
-		return sm_snapshots.NewMockedSnapshotManager(t, createPeriod, delayPeriod, bf.GetStore(), store, nil, snapshotCommitTime, parameters.TimeProvider, log)
+		return sm_snapshots.NewMockedSnapshotManager(t, createPeriod, delayPeriod, bf.GetStore(), store, nil, snapshotCommitTime, parameters.TimeProvider, logger)
 	}
 	for i := range sms {
 		t.Logf("Creating %v-th state manager for node %s", i, peeringURLs[i])
 		var err error
-		logNode := log.Named(peeringURLs[i])
+		logNode := logger.NewChildLogger(peeringURLs[i])
 		stores[i] = state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
 		snapMs[i] = NewMockedSnapshotManagerFun(i < snapshotCreateNodeCount, stores[i], logNode)
 		origin.InitChain(stores[i], nil, 0, testutil.TokenInfo)

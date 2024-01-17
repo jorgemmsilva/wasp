@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -23,7 +23,7 @@ import (
 )
 
 type ChainService struct {
-	log                         *logger.Logger
+	log                         log.Logger
 	l1API                       iotago.API
 	baseTokenInfo               *api.InfoResBaseToken
 	chainsProvider              chains.Provider
@@ -32,7 +32,7 @@ type ChainService struct {
 }
 
 func NewChainService(
-	logger *logger.Logger,
+	logger log.Logger,
 	l1API iotago.API,
 	baseTokenInfo *api.InfoResBaseToken,
 	chainsProvider chains.Provider,
@@ -73,7 +73,7 @@ func (c *ChainService) SetChainRecord(chainRecord *registry.ChainRecord) error {
 		return err
 	}
 
-	c.log.Infof("StoredChainRec %v %v", storedChainRec, err)
+	c.log.LogInfof("StoredChainRec %v %v", storedChainRec, err)
 
 	if storedChainRec != nil {
 		_, err = c.chainRecordRegistryProvider.UpdateChainRecord(
@@ -84,21 +84,21 @@ func (c *ChainService) SetChainRecord(chainRecord *registry.ChainRecord) error {
 				return true
 			},
 		)
-		c.log.Infof("UpdatechainRec %v %v", chainRecord, err)
+		c.log.LogInfof("UpdatechainRec %v %v", chainRecord, err)
 
 		if err != nil {
 			return err
 		}
 	} else {
 		if err := c.chainRecordRegistryProvider.AddChainRecord(chainRecord); err != nil {
-			c.log.Infof("AddChainRec %v %v", chainRecord, err)
+			c.log.LogInfof("AddChainRec %v %v", chainRecord, err)
 
 			return err
 		}
 	}
 
 	// Activate/deactivate the chain accordingly.
-	c.log.Infof("Chainrecord active %v", chainRecord.Active)
+	c.log.LogInfof("Chainrecord active %v", chainRecord.Active)
 
 	if chainRecord.Active {
 		if err := c.chainsProvider().Activate(chainRecord.ChainID()); err != nil {
@@ -116,7 +116,7 @@ func (c *ChainService) SetChainRecord(chainRecord *registry.ChainRecord) error {
 func (c *ChainService) HasChain(chainID isc.ChainID) bool {
 	storedChainRec, err := c.chainRecordRegistryProvider.ChainRecord(chainID)
 	if err != nil {
-		c.log.Infof("hasChain err:[%v]", err)
+		c.log.LogInfof("hasChain err:[%v]", err)
 		return false
 	}
 

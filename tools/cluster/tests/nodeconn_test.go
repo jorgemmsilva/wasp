@@ -64,14 +64,13 @@ func TestNodeConn(t *testing.T) {
 	l1.StartPrivtangleIfNecessary(t.Logf)
 
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	peerCount := 1
 
 	//
 	// Start a peering network.
 	// peeringID := peering.RandomPeeringID()
 	peeringURLs, peerIdentities := testpeers.SetupKeys(uint16(peerCount))
-	networkLog := testlogger.WithLevel(log.Named("Network"), 0, false)
+	networkLog := testlogger.WithLevel(log.NewChildLogger("Network"), 0)
 	_, networkCloser := testpeers.SetupNet(
 		peeringURLs,
 		peerIdentities,
@@ -86,7 +85,7 @@ func TestNodeConn(t *testing.T) {
 	ctxInit, cancelInit := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancelInit()
 
-	nodeBridge := nodebridge.New(log.Named("NodeBridge"))
+	nodeBridge := nodebridge.New(log.NewChildLogger("NodeBridge"))
 	err := nodeBridge.Connect(ctxInit, l1.Config.INXAddress, 10)
 	require.NoError(t, err)
 

@@ -22,7 +22,7 @@ func decodeAddress(b []byte) (iotago.Address, error) {
 
 var (
 	// using hardcoded L1API, assuming that serializatin format does not change over time
-	l1API = iotago.V3API(iotago.NewV3ProtocolParameters(iotago.WithVersion(3)))
+	l1API = iotago.V3API(iotago.NewV3SnapshotProtocolParameters(iotago.WithVersion(3)))
 
 	Output      = newIotagoCodec[iotago.TxEssenceOutput](l1API)
 	TokenScheme = newIotagoCodec[iotago.TokenScheme](l1API)

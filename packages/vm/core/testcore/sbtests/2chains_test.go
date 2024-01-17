@@ -34,7 +34,6 @@ func test2Chains(t *testing.T, w bool) {
 	env := solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
-		PrintStackTrace:          true,
 	}).
 		WithNativeContract(sbtestsc.Processor)
 	chain1 := env.NewChain()

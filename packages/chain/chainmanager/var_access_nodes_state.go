@@ -6,7 +6,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/state"
@@ -33,7 +33,7 @@ type varAccessNodeStateImpl struct {
 	tipAO     *isc.ChainOutputs                                              // Will point to the latest known good state while the chain don't have the current good state.
 	confirmed *isc.ChainOutputs                                              // Latest known confirmed AO.
 	pending   *shrinkingmap.ShrinkingMap[uint32, []*varAccessNodeStateEntry] // A set of unconfirmed outputs (StateIndex => TX).
-	log       *logger.Logger                                                 // Will write this just for the alignment.
+	log       log.Logger                                                 // Will write this just for the alignment.
 }
 
 type varAccessNodeStateEntry struct {
@@ -41,7 +41,7 @@ type varAccessNodeStateEntry struct {
 	consumed iotago.OutputID   // The AO used as an input for the TX.
 }
 
-func NewVarAccessNodeState(chainID isc.ChainID, log *logger.Logger) VarAccessNodeState {
+func NewVarAccessNodeState(chainID isc.ChainID, log log.Logger) VarAccessNodeState {
 	return &varAccessNodeStateImpl{
 		chainID:   chainID,
 		tipAO:     nil,
@@ -58,16 +58,16 @@ func (vas *varAccessNodeStateImpl) Tip() *isc.ChainOutputs {
 func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.SignedTransaction) (*isc.ChainOutputs, bool, *state.L1Commitment) {
 	txID, err := tx.ID()
 	if err != nil {
-		vas.log.Debugf("BlockProduced: Ignoring, cannot extract txID: %v", err)
+		vas.log.LogDebugf("BlockProduced: Ignoring, cannot extract txID: %v", err)
 		return vas.tipAO, false, nil
 	}
 	consumed, published, err := vas.extractConsumedPublished(tx)
 	if err != nil {
-		vas.log.Debugf("BlockProduced(tx.ID=%v): Ignoring because of %v", txID, err)
+		vas.log.LogDebugf("BlockProduced(tx.ID=%v): Ignoring because of %v", txID, err)
 		return vas.tipAO, false, nil
 	}
 	//
-	vas.log.Debugf("BlockProduced: consumed.ID=%v, published=%v", consumed.ToHex(), published)
+	vas.log.LogDebugf("BlockProduced: consumed.ID=%v, published=%v", consumed.ToHex(), published)
 	stateIndex := published.GetStateIndex()
 	//
 	// Add it to the pending list.
@@ -78,11 +78,11 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.SignedTransaction) (
 	}
 	publishedL1Commitment, err := transaction.L1CommitmentFromAnchorOutput(published.AnchorOutput)
 	if err != nil {
-		vas.log.Warnf("Cannot extract L1Commitment from the published AO: %v", err)
+		vas.log.LogWarnf("Cannot extract L1Commitment from the published AO: %v", err)
 		publishedL1Commitment = nil // Will ignore it.
 	}
 	if lo.ContainsBy(entries, func(e *varAccessNodeStateEntry) bool { return e.output.Equals(published) }) {
-		vas.log.Debugf("⊳ Ignoring it, duplicate.")
+		vas.log.LogDebugf("⊳ Ignoring it, duplicate.")
 		return vas.tipAO, false, nil
 	}
 	entries = append(entries, &varAccessNodeStateEntry{
@@ -93,16 +93,16 @@ func (vas *varAccessNodeStateImpl) BlockProduced(tx *iotago.SignedTransaction) (
 	//
 	// Check, if the added AO is a new tip for the chain.
 	if published.Equals(vas.findLatestPending()) {
-		vas.log.Debugf("⊳ Will consider consensusOutput=%v as a tip, the current confirmed=%v.", published, vas.confirmed)
+		vas.log.LogDebugf("⊳ Will consider consensusOutput=%v as a tip, the current confirmed=%v.", published, vas.confirmed)
 		changedAO, changed := vas.outputIfChanged(published)
 		return changedAO, changed, publishedL1Commitment
 	}
-	vas.log.Debugf("⊳ That's not a tip.")
+	vas.log.LogDebugf("⊳ That's not a tip.")
 	return vas.tipAO, false, publishedL1Commitment
 }
 
 func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
-	vas.log.Debugf("BlockConfirmed: confirmed=%v", confirmed)
+	vas.log.LogDebugf("BlockConfirmed: confirmed=%v", confirmed)
 	stateIndex := confirmed.GetStateIndex()
 	vas.confirmed = confirmed
 	if vas.isAnchorOutputPending(confirmed) {
@@ -114,14 +114,14 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (
 			if si == stateIndex {
 				for _, e := range es {
 					if !e.output.Equals(confirmed) {
-						vas.log.Debugf("⊳ Losing base %v", e.output)
+						vas.log.LogDebugf("⊳ Losing base %v", e.output)
 						losing = append(losing, e.output)
 					}
 				}
 			}
 			if si <= stateIndex {
 				for _, e := range es {
-					vas.log.Debugf("⊳ Removing[%v≤%v] %v", si, stateIndex, e.output)
+					vas.log.LogDebugf("⊳ Removing[%v≤%v] %v", si, stateIndex, e.output)
 				}
 				vas.pending.Delete(si)
 			}
@@ -134,7 +134,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (
 			}
 			es = lo.Filter(es, func(e *varAccessNodeStateEntry, _ int) bool {
 				if lo.ContainsBy(losing, func(o *isc.ChainOutputs) bool { return o.AnchorOutputID == e.consumed }) {
-					vas.log.Debugf("⊳ Removing[losing_fork,consumes=%v] %v", e.consumed, e.output)
+					vas.log.LogDebugf("⊳ Removing[losing_fork,consumes=%v] %v", e.consumed, e.output)
 					losing = append(losing, e.output)
 					return false
 				}
@@ -145,7 +145,7 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (
 	} else {
 		vas.pending.ForEach(func(si uint32, es []*varAccessNodeStateEntry) bool {
 			for _, e := range es {
-				vas.log.Debugf("⊳ Removing[all] %v", e.output)
+				vas.log.LogDebugf("⊳ Removing[all] %v", e.output)
 			}
 			vas.pending.Delete(si)
 			return true
@@ -156,23 +156,23 @@ func (vas *varAccessNodeStateImpl) BlockConfirmed(confirmed *isc.ChainOutputs) (
 
 func (vas *varAccessNodeStateImpl) outputIfChanged(newTip *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
 	if vas.tipAO == nil && newTip == nil {
-		vas.log.Debugf("⊳ Tip remains nil.")
+		vas.log.LogDebugf("⊳ Tip remains nil.")
 		return vas.tipAO, false
 	}
 	if newTip == nil {
-		vas.log.Debugf("⊳ Tip remains %v, new candidate was nil.", vas.tipAO)
+		vas.log.LogDebugf("⊳ Tip remains %v, new candidate was nil.", vas.tipAO)
 		return vas.tipAO, false
 	}
 	if vas.tipAO == nil {
-		vas.log.Debugf("⊳ New tip=%v, was %v", newTip, vas.tipAO)
+		vas.log.LogDebugf("⊳ New tip=%v, was %v", newTip, vas.tipAO)
 		vas.tipAO = newTip
 		return vas.tipAO, true
 	}
 	if vas.tipAO.Equals(newTip) {
-		vas.log.Debugf("⊳ Tip remains %v.", vas.tipAO)
+		vas.log.LogDebugf("⊳ Tip remains %v.", vas.tipAO)
 		return vas.tipAO, false
 	}
-	vas.log.Debugf("⊳ New tip=%v, was %v", newTip, vas.tipAO)
+	vas.log.LogDebugf("⊳ New tip=%v, was %v", newTip, vas.tipAO)
 	vas.tipAO = newTip
 	return vas.tipAO, true
 }

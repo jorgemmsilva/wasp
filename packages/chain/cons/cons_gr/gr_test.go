@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/chain/cmt_log"
@@ -67,8 +67,7 @@ func TestGrBasic(t *testing.T) {
 
 func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	t.Parallel()
-	log := testlogger.NewLogger(t)
-	defer log.Sync()
+	logger := testlogger.NewLogger(t)
 	//
 	// Create ledger accounts.
 	utxoDB := utxodb.New(testutil.L1API)
@@ -84,15 +83,15 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	}
 	var networkBehaviour testutil.PeeringNetBehavior
 	if reliable {
-		networkBehaviour = testutil.NewPeeringNetReliable(log)
+		networkBehaviour = testutil.NewPeeringNetReliable(logger)
 	} else {
-		netLogger := testlogger.WithLevel(log.Named("Network"), logger.LevelInfo, false)
+		netLogger := testlogger.WithLevel(logger.NewChildLogger("Network"), log.LevelInfo)
 		networkBehaviour = testutil.NewPeeringNetUnreliable(80, 20, 10*time.Millisecond, 200*time.Millisecond, netLogger)
 	}
 	peeringNetwork := testutil.NewPeeringNetwork(
 		peeringURL, peerIdentities, 10000,
 		networkBehaviour,
-		testlogger.WithLevel(log, logger.LevelWarn, false),
+		testlogger.WithLevel(logger, log.LevelWarning),
 	)
 	defer peeringNetwork.Close()
 	networkProviders := peeringNetwork.NetworkProviders()
@@ -129,7 +128,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 			5*time.Second, // PrintStatusPeriod
 			chainMetrics.Consensus,
 			chainMetrics.Pipe,
-			log.Named(fmt.Sprintf("N#%v", i)),
+			logger.NewChildLogger(fmt.Sprintf("N#%v", i)),
 		)
 	}
 	//

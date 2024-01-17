@@ -9,10 +9,11 @@ import (
 	"strings"
 	"text/tabwriter"
 	"text/template"
+	"time"
 
 	"github.com/spf13/cobra"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -23,7 +24,7 @@ var (
 	DebugFlag   bool
 	JSONFlag    bool
 
-	hiveLogger *logger.Logger
+	hiveLogger log.Logger
 )
 
 func Init(rootCmd *cobra.Command) {
@@ -32,24 +33,23 @@ func Init(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().BoolVarP(&JSONFlag, "json", "j", false, "json output")
 }
 
-func HiveLogger() *logger.Logger {
+func HiveLogger() log.Logger {
 	if hiveLogger == nil {
-		loggerCfg := logger.Config{
-			Level:             "info",
-			Encoding:          "console",
-			OutputPaths:       []string{"stdout"},
-			DisableEvents:     true,
-			DisableCaller:     true,
-			DisableStacktrace: true,
-			StacktraceLevel:   "panic",
-		}
+		level := "info"
 		if DebugFlag {
-			loggerCfg.Level = "debug"
-			loggerCfg.DisableCaller = false
-			loggerCfg.DisableStacktrace = false
+			level = "debug"
 		}
 		var err error
-		hiveLogger, err = logger.NewRootLogger(loggerCfg)
+		loggerLevel, err := log.LevelFromString(level)
+		if err != nil {
+			panic(err)
+		}
+		hiveLogger = log.NewLogger(
+			log.WithName("wasp-cli"),
+			log.WithLevel(loggerLevel),
+			log.WithTimeFormat(time.RFC3339),
+			log.WithOutput(os.Stdout),
+		)
 		Check(err)
 	}
 	return hiveLogger

@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/peering/domain"
@@ -22,7 +22,7 @@ type PeeringNetwork struct {
 	providers []*peeringNetworkProvider
 	bufSize   int
 	behavior  PeeringNetBehavior
-	log       *logger.Logger
+	log       log.Logger
 }
 
 // NewPeeringNetwork creates new test network, it can then be used to create network nodes.
@@ -31,7 +31,7 @@ func NewPeeringNetwork(
 	nodeIdentities []*cryptolib.KeyPair,
 	bufSize int,
 	behavior PeeringNetBehavior,
-	log *logger.Logger,
+	log log.Logger,
 ) *PeeringNetwork {
 	nodes := make([]*peeringNode, len(peeringURLs))
 	providers := make([]*peeringNetworkProvider, len(peeringURLs))
@@ -90,7 +90,7 @@ type peeringNode struct {
 	recvCh     chan *peeringMsg
 	recvCbs    []*peeringCb
 	network    *PeeringNetwork
-	log        *logger.Logger
+	log        log.Logger
 }
 
 type peeringMsg struct {
@@ -124,7 +124,7 @@ func newPeeringNode(peeringURL string, identity *cryptolib.KeyPair, network *Pee
 		recvCh:     recvCh,
 		recvCbs:    recvCbs,
 		network:    network,
-		log:        network.log.With("loc", peeringURL),
+		log:        network.log.NewChildLogger(fmt.Sprintf("%s:loc:%s", network.log.LogName(), peeringURL)),
 	}
 	network.behavior.AddLink(sendCh, recvCh, identity.GetPublicKey())
 	go n.recvLoop()
@@ -166,7 +166,7 @@ type peeringNetworkProvider struct {
 	self    *peeringNode
 	network *PeeringNetwork
 	senders []*peeringSender // Senders for all the nodes.
-	log     *logger.Logger
+	log     log.Logger
 }
 
 var _ peering.NetworkProvider = &peeringNetworkProvider{}
@@ -178,7 +178,7 @@ func newPeeringNetworkProvider(self *peeringNode, network *PeeringNetwork) *peer
 		self:    self,
 		network: network,
 		senders: senders,
-		log:     network.log.Named(self.peeringURL),
+		log:     network.log.NewChildLogger(self.peeringURL),
 	}
 	for i := range network.nodes {
 		senders[i] = newPeeringSender(network.nodes[i], &netProvider)

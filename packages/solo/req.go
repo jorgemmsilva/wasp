@@ -414,7 +414,7 @@ func (ch *Chain) CallViewAtState(chainState state.State, msg isc.Message) (dict.
 
 // GetMerkleProofRaw returns Merkle proof of the key in the state
 func (ch *Chain) GetMerkleProofRaw(key []byte) *trie.MerkleProof {
-	ch.Log().Debugf("GetMerkleProof")
+	ch.Log().LogDebugf("GetMerkleProof")
 
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()
@@ -430,7 +430,7 @@ func (ch *Chain) GetMerkleProofRaw(key []byte) *trie.MerkleProof {
 
 // GetBlockProof returns Merkle proof of the key in the state
 func (ch *Chain) GetBlockProof(blockIndex uint32) (*blocklog.BlockInfo, *trie.MerkleProof, error) {
-	ch.Log().Debugf("GetBlockProof")
+	ch.Log().LogDebugf("GetBlockProof")
 
 	ch.runVMMutex.Lock()
 	defer ch.runVMMutex.Unlock()

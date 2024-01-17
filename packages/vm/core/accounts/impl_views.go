@@ -16,7 +16,7 @@ import (
 
 // viewBalance returns the balances of the account belonging to the AgentID
 func viewBalance(ctx isc.SandboxView, agentIDOpt *isc.AgentID) *isc.FungibleTokens {
-	ctx.Log().Debugf("accounts.viewBalance")
+	ctx.Log().LogDebugf("accounts.viewBalance")
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
 	return getFungibleTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
 }
@@ -43,7 +43,7 @@ func viewBalanceNativeToken(ctx isc.SandboxView, agentIDOpt *isc.AgentID, ntID i
 
 // viewTotalAssets returns total balances controlled by the chain
 func viewTotalAssets(ctx isc.SandboxView) *isc.FungibleTokens {
-	ctx.Log().Debugf("accounts.viewTotalAssets")
+	ctx.Log().LogDebugf("accounts.viewTotalAssets")
 	return getFungibleTokens(ctx.StateR(), L2TotalsAccount, ctx.TokenInfo())
 }
 
@@ -83,7 +83,7 @@ var errFoundryNotFound = coreerrors.Register("foundry not found").Create()
 
 // viewFoundryOutput takes serial number and returns corresponding foundry output in serialized form
 func viewFoundryOutput(ctx isc.SandboxView, sn uint32) iotago.TxEssenceOutput {
-	ctx.Log().Debugf("accounts.viewFoundryOutput")
+	ctx.Log().LogDebugf("accounts.viewFoundryOutput")
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
@@ -96,7 +96,7 @@ func viewFoundryOutput(ctx isc.SandboxView, sn uint32) iotago.TxEssenceOutput {
 
 // viewAccountNFTs returns the NFTIDs of NFTs owned by an account
 func viewAccountNFTs(ctx isc.SandboxView, agentIDOpt *isc.AgentID) []iotago.NFTID {
-	ctx.Log().Debugf("accounts.viewAccountNFTs")
+	ctx.Log().LogDebugf("accounts.viewAccountNFTs")
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
 	return getAccountNFTs(ctx.StateR(), agentID)
 }
@@ -118,7 +118,7 @@ func viewAccountNFTAmountInCollection(ctx isc.SandboxView, agentIDOpt *isc.Agent
 
 // viewNFTData returns the NFT data for a given NFTID
 func viewNFTData(ctx isc.SandboxView, nftID iotago.NFTID) *isc.NFT {
-	ctx.Log().Debugf("accounts.viewNFTData")
+	ctx.Log().LogDebugf("accounts.viewNFTData")
 	nft := GetNFTData(ctx.StateR(), nftID)
 	if nft == nil {
 		panic("NFTID not found")

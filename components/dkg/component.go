@@ -4,8 +4,6 @@
 package dkg
 
 import (
-	"fmt"
-
 	"go.uber.org/dig"
 
 	"github.com/iotaledger/hive.go/app"
@@ -43,17 +41,17 @@ func provide(c *dig.Container) error {
 			deps.NodeIdentityProvider.NodeIdentity(),
 			deps.NetworkProvider,
 			deps.DKShareRegistryProvider,
-			Component.Logger(),
+			Component,
 		)
 		if err != nil {
-			Component.LogPanic(fmt.Errorf("failed to initialize the DKG node: %w", err))
+			Component.LogPanicf("failed to initialize the DKG node: %s", err.Error())
 		}
 
 		return nodeResult{
 			Node: node,
 		}
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	return nil

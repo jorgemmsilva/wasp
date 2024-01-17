@@ -377,7 +377,7 @@ func (ch *Chain) GetRequestReceiptsForBlock(blockIndex ...uint32) []*blocklog.Re
 	}
 	recs, err := blocklog.ViewGetRequestReceiptsForBlock.Output2.Decode(res)
 	if err != nil {
-		ch.Log().Warn(err)
+		ch.Log().LogWarn(err.Error())
 		return nil
 	}
 	return recs

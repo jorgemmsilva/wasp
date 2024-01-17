@@ -73,7 +73,7 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 )
@@ -125,11 +125,11 @@ type varLocalViewImpl struct {
 	// Callback for the TIP changes.
 	tipUpdatedCB func(ao *isc.ChainOutputs)
 	// Just a logger.
-	log *logger.Logger
+	log log.Logger
 }
 
-func NewVarLocalView(pipeliningLimit int, tipUpdatedCB func(ao *isc.ChainOutputs), log *logger.Logger) VarLocalView {
-	log.Debugf("NewVarLocalView, pipeliningLimit=%v", pipeliningLimit)
+func NewVarLocalView(pipeliningLimit int, tipUpdatedCB func(ao *isc.ChainOutputs), log log.Logger) VarLocalView {
+	log.LogDebugf("NewVarLocalView, pipeliningLimit=%v", pipeliningLimit)
 	return &varLocalViewImpl{
 		confirmed:       nil,
 		pending:         shrinkingmap.New[uint32, []*varLocalViewEntry](),
@@ -146,18 +146,18 @@ func (lvi *varLocalViewImpl) Value() *isc.ChainOutputs {
 }
 
 func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iotago.OutputID, published *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
-	lvi.log.Debugf("ConsensusOutputDone: logIndex=%v, consumed.ID=%v, published=%v", logIndex, consumed.ToHex(), published)
+	lvi.log.LogDebugf("ConsensusOutputDone: logIndex=%v, consumed.ID=%v, published=%v", logIndex, consumed.ToHex(), published)
 	stateIndex := published.GetStateIndex()
 	prevLatest := lvi.findLatestPending()
 	//
 	// Check, if not outdated.
 	if lvi.confirmed == nil {
-		lvi.log.Debugf("⊳ Ignoring it, have no confirmed AO.")
+		lvi.log.LogDebugf("⊳ Ignoring it, have no confirmed AO.")
 		return prevLatest, false
 	}
 	confirmedStateIndex := lvi.confirmed.GetStateIndex()
 	if stateIndex <= confirmedStateIndex {
-		lvi.log.Debugf("⊳ Ignoring it, outdated, current confirmed=%v", lvi.confirmed)
+		lvi.log.LogDebugf("⊳ Ignoring it, outdated, current confirmed=%v", lvi.confirmed)
 		return prevLatest, false
 	}
 	//
@@ -168,7 +168,7 @@ func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iot
 		entries = []*varLocalViewEntry{}
 	}
 	if lo.ContainsBy(entries, func(e *varLocalViewEntry) bool { return e.output.Equals(published) }) {
-		lvi.log.Debugf("⊳ Ignoring it, duplicate.")
+		lvi.log.LogDebugf("⊳ Ignoring it, duplicate.")
 		return prevLatest, false
 	}
 	entries = append(entries, &varLocalViewEntry{
@@ -181,11 +181,11 @@ func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iot
 	//
 	// Check, if the added AO is a new tip for the chain.
 	if published.Equals(lvi.findLatestPending()) {
-		lvi.log.Debugf("⊳ Will consider consensusOutput=%v as a tip, the current confirmed=%v.", published, lvi.confirmed)
+		lvi.log.LogDebugf("⊳ Will consider consensusOutput=%v as a tip, the current confirmed=%v.", published, lvi.confirmed)
 		lvi.tipUpdatedCB(published)
 		return published, true
 	}
-	lvi.log.Debugf("⊳ That's not a tip.")
+	lvi.log.LogDebugf("⊳ That's not a tip.")
 	return lvi.Value(), false
 }
 
@@ -193,7 +193,7 @@ func (lvi *varLocalViewImpl) ConsensusOutputDone(logIndex LogIndex, consumed iot
 // history until the received AO (if we know it was posted before), or we replace
 // the entire history with an unseen AO (probably produced not by this chain×cmt).
 func (lvi *varLocalViewImpl) AnchorOutputConfirmed(confirmed *isc.ChainOutputs) (*isc.ChainOutputs, bool, LogIndex) {
-	lvi.log.Debugf("AnchorOutputConfirmed: confirmed=%v", confirmed)
+	lvi.log.LogDebugf("AnchorOutputConfirmed: confirmed=%v", confirmed)
 	cnfLogIndex := NilLogIndex()
 	stateIndex := confirmed.GetStateIndex()
 	oldTip := lvi.findLatestPending()
@@ -202,7 +202,7 @@ func (lvi *varLocalViewImpl) AnchorOutputConfirmed(confirmed *isc.ChainOutputs) 
 		lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 			if si <= stateIndex {
 				for _, e := range es {
-					lvi.log.Debugf("⊳ Removing[%v≤%v] %v", si, stateIndex, e.output)
+					lvi.log.LogDebugf("⊳ Removing[%v≤%v] %v", si, stateIndex, e.output)
 					if e.output.Equals(lvi.confirmed) {
 						cnfLogIndex = e.logIndex
 					}
@@ -215,7 +215,7 @@ func (lvi *varLocalViewImpl) AnchorOutputConfirmed(confirmed *isc.ChainOutputs) 
 	} else {
 		lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 			for _, e := range es {
-				lvi.log.Debugf("⊳ Removing[all] %v", e.output)
+				lvi.log.LogDebugf("⊳ Removing[all] %v", e.output)
 			}
 			lvi.pending.Delete(si)
 			return true
@@ -228,7 +228,7 @@ func (lvi *varLocalViewImpl) AnchorOutputConfirmed(confirmed *isc.ChainOutputs) 
 // Mark the specified AO as rejected.
 // Trim the suffix of rejected AOs.
 func (lvi *varLocalViewImpl) AnchorOutputRejected(rejected *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
-	lvi.log.Debugf("AnchorOutputRejected: rejected=%v", rejected)
+	lvi.log.LogDebugf("AnchorOutputRejected: rejected=%v", rejected)
 	stateIndex := rejected.GetStateIndex()
 	oldTip := lvi.findLatestPending()
 	//
@@ -236,7 +236,7 @@ func (lvi *varLocalViewImpl) AnchorOutputRejected(rejected *isc.ChainOutputs) (*
 	if entries, ok := lvi.pending.Get(stateIndex); ok {
 		for _, entry := range entries {
 			if entry.output.Equals(rejected) {
-				lvi.log.Debugf("⊳ Entry marked as rejected.")
+				lvi.log.LogDebugf("⊳ Entry marked as rejected.")
 				entry.rejected = true
 				lvi.markDependentAsRejected(rejected)
 			}
@@ -257,7 +257,7 @@ func (lvi *varLocalViewImpl) markDependentAsRejected(ao *isc.ChainOutputs) {
 		}
 		for _, e := range es {
 			if _, ok := accRejected[e.consumed]; ok && !e.rejected {
-				lvi.log.Debugf("⊳ Also marking %v as rejected.", e.output)
+				lvi.log.LogDebugf("⊳ Also marking %v as rejected.", e.output)
 				e.rejected = true
 				accRejected[e.output.AnchorOutputID] = struct{}{}
 			}
@@ -269,10 +269,10 @@ func (lvi *varLocalViewImpl) clearPendingIfAllRejected() {
 	if !lvi.allRejected() || lvi.pending.IsEmpty() {
 		return
 	}
-	lvi.log.Debugf("⊳ All entries are rejected, clearing them.")
+	lvi.log.LogDebugf("⊳ All entries are rejected, clearing them.")
 	lvi.pending.ForEach(func(si uint32, es []*varLocalViewEntry) bool {
 		for _, e := range es {
-			lvi.log.Debugf("⊳ Clearing %v", e.output)
+			lvi.log.LogDebugf("⊳ Clearing %v", e.output)
 		}
 		lvi.pending.Delete(si)
 		return true
@@ -281,19 +281,19 @@ func (lvi *varLocalViewImpl) clearPendingIfAllRejected() {
 
 func (lvi *varLocalViewImpl) outputIfChanged(oldTip, newTip *isc.ChainOutputs) (*isc.ChainOutputs, bool) {
 	if oldTip == nil && newTip == nil {
-		lvi.log.Debugf("⊳ Tip remains nil.")
+		lvi.log.LogDebugf("⊳ Tip remains nil.")
 		return nil, false
 	}
 	if oldTip == nil || newTip == nil {
-		lvi.log.Debugf("⊳ New tip=%v, was %v", newTip, oldTip)
+		lvi.log.LogDebugf("⊳ New tip=%v, was %v", newTip, oldTip)
 		lvi.tipUpdatedCB(newTip)
 		return newTip, true
 	}
 	if oldTip.Equals(newTip) {
-		lvi.log.Debugf("⊳ Tip remains %v.", newTip)
+		lvi.log.LogDebugf("⊳ Tip remains %v.", newTip)
 		return newTip, false
 	}
-	lvi.log.Debugf("⊳ New tip=%v, was %v", newTip, oldTip)
+	lvi.log.LogDebugf("⊳ New tip=%v, was %v", newTip, oldTip)
 	lvi.tipUpdatedCB(newTip)
 	return newTip, true
 }

@@ -918,7 +918,7 @@ func TestTransferPartialAssets(t *testing.T) {
 }
 
 func TestNFTAccount(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	ch := env.NewChain()
 
 	issuerWallet, _ := ch.Env.NewKeyPairWithFunds()

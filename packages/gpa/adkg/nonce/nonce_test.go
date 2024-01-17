@@ -10,7 +10,7 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/share"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/gpa/adkg"
 	"github.com/iotaledger/wasp/packages/gpa/adkg/nonce"
@@ -19,8 +19,7 @@ import (
 )
 
 func TestBasic(t *testing.T) {
-	log := testlogger.WithLevel(testlogger.NewLogger(t), logger.LevelWarn, false)
-	defer log.Sync()
+	log := testlogger.WithLevel(testlogger.NewLogger(t), log.LevelWarning)
 	suite := tcrypto.DefaultEd25519Suite()
 	test := func(tt *testing.T, n, f int) {
 		//

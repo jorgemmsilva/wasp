@@ -86,7 +86,6 @@ SHORT_TESTS = \
 ./packages/state \
 ./packages/tcrypto/bls \
 ./packages/testutil \
-./packages/testutil/testlogger \
 ./packages/testutil/testpeers \
 ./packages/testutil/utxodb \
 ./packages/transaction \

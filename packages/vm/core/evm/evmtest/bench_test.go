@@ -15,7 +15,7 @@ import (
 
 func initBenchmark(b *testing.B) (*solo.Chain, []isc.Request) {
 	// setup: deploy the EVM chain
-	log := testlogger.NewSilentLogger(b.Name(), true)
+	log := testlogger.NewSilentLogger(true, b.Name())
 	s := solo.New(b, &solo.InitOptions{AutoAdjustStorageDeposit: true, Log: log})
 	env := InitEVMWithSolo(b, s)
 	// setup: deploy the `storage` EVM contract

@@ -42,7 +42,7 @@ var (
 )
 
 func setupTest(t *testing.T) *solo.Chain {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true}).
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true}).
 		WithNativeContract(manyEventsContractProcessor)
 	ch := env.NewChain()
 	err := ch.DeployContract(nil, manyEventsContract.Name, manyEventsContract.ProgramHash, nil)

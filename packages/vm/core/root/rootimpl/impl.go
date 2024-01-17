@@ -76,7 +76,7 @@ var errInvalidContractName = coreerrors.Register("invalid contract name").Create
 //   - ParamProgramHash HashValue is a hash of the blob which represents program binary in the 'blob' contract.
 //     In case of hardcoded examples it's an arbitrary unique hash set in the global call examples.AddProcessor
 func deployContract(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Debugf("root.deployContract.begin")
+	ctx.Log().LogDebugf("root.deployContract.begin")
 	if !isAuthorizedToDeploy(ctx) {
 		panic(vm.ErrUnauthorized)
 	}

@@ -21,7 +21,7 @@ func TestSaveSnapshot(t *testing.T) {
 		t.SkipNow()
 	}
 
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	ch := env.NewChain()
 	ch.MustDepositBaseTokensToL2(2*isc.Million, ch.OriginatorPrivateKey)
 
@@ -60,7 +60,7 @@ func TestLoadSnapshot(t *testing.T) {
 	// skipped because this is just an example, the dump is not committed
 	t.SkipNow()
 
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	env.RestoreSnapshot(env.LoadSnapshot("snapshot.db"))
 
 	ch := env.GetChainByName("chain1")

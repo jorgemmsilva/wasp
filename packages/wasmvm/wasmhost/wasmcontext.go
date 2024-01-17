@@ -93,11 +93,11 @@ func (wc *WasmContext) Call(ctx interface{}) dict.Dict {
 		return nil
 	}
 
-	wc.log().Debugf("Calling %s", wc.funcName)
+	wc.log().LogDebugf("Calling %s", wc.funcName)
 	wc.results = nil
 	err := wc.callFunction()
 	if err != nil {
-		wc.log().Panicf("VM call %s(): error %v", wc.funcName, err)
+		wc.log().LogPanicf("VM call %s(): error %v", wc.funcName, err)
 	}
 	return wc.results
 }
@@ -124,7 +124,7 @@ func (wc *WasmContext) callFunction() error {
 	//}
 	wc.gasBurned = wc.gasBudget - wc.GasBudget()
 	proc.currentContextID = saveID
-	wc.log().Debugf("WC ID %2d, GAS BUDGET %10d, BURNED %10d\n", wc.id, wc.gasBudget, wc.gasBurned)
+	wc.log().LogDebugf("WC ID %2d, GAS BUDGET %10d, BURNED %10d\n", wc.id, wc.gasBudget, wc.gasBurned)
 	return err
 }
 
@@ -140,7 +140,7 @@ func (wc *WasmContext) ExportName(index int32, name string) {
 	// index -1 means log WASM tag
 	if wc.proc != nil {
 		// Invocation through WasmGoVM
-		wc.proc.log.Infof("WASM::GO::DEBUG")
+		wc.proc.log.LogInfof("WASM::GO::DEBUG")
 		return
 	}
 
@@ -263,7 +263,7 @@ func (wc *WasmContext) StateSet(key, value []byte) {
 
 func (wc *WasmContext) tracef(format string, args ...interface{}) {
 	if wc.proc != nil {
-		wc.log().Debugf(format, args...)
+		wc.log().LogDebugf(format, args...)
 		return
 	}
 	wc.sandbox.Tracef(format, args...)

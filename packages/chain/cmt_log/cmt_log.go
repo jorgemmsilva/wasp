@@ -94,7 +94,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/gpa"
@@ -156,7 +156,7 @@ type cmtLogImpl struct {
 	varLocalView           VarLocalView           // Tracks the pending anchor outputs.
 	varOutput              VarOutput              // Calculate the output.
 	asGPA                  gpa.GPA                // This object, just with all the needed wrappers.
-	log                    *logger.Logger
+	log                    log.Logger
 }
 
 var _ gpa.GPA = &cmtLogImpl{}
@@ -176,7 +176,7 @@ func New(
 	deriveAOByQuorum bool,
 	pipeliningLimit int,
 	cclMetrics *metrics.ChainCmtLogMetrics,
-	log *logger.Logger,
+	log log.Logger,
 ) (CmtLog, error) {
 	cmtAddr := dkShare.GetSharedPublic().AsEd25519Address()
 	//
@@ -204,13 +204,13 @@ func New(
 	n := len(nodeIDs)
 	f := dkShare.DSS().MaxFaulty()
 	if f > byz_quorum.MaxF(n) {
-		log.Panicf("invalid f=%v for n=%v", f, n)
+		log.LogPanicf("invalid f=%v for n=%v", f, n)
 	}
 	//
 	// Log important info.
-	log.Infof("Committee: N=%v, F=%v, address=%v", n, f, cmtAddr.String())
+	log.LogInfof("Committee: N=%v, F=%v, address=%v", n, f, cmtAddr.String())
 	for i := range nodePKs {
-		log.Infof("Committee node[%v]=%v", i, nodePKs[i])
+		log.LogInfof("Committee node[%v]=%v", i, nodePKs[i])
 	}
 	//
 	// Create it.
@@ -228,9 +228,9 @@ func New(
 			// Nothing to do, if we cannot persist this.
 			panic(fmt.Errorf("cannot persist the cmtLog state: %w", err))
 		}
-	}, log.Named("VO"))
-	cl.varLogIndex = NewVarLogIndex(nodeIDs, n, f, prevLI, cl.varOutput.LogIndexAgreed, cclMetrics, log.Named("VLI"))
-	cl.varLocalView = NewVarLocalView(pipeliningLimit, cl.varOutput.TipAOChanged, log.Named("VLV"))
+	}, log.NewChildLogger("VO"))
+	cl.varLogIndex = NewVarLogIndex(nodeIDs, n, f, prevLI, cl.varOutput.LogIndexAgreed, cclMetrics, log.NewChildLogger("VLI"))
+	cl.varLocalView = NewVarLocalView(pipeliningLimit, cl.varOutput.TipAOChanged, log.NewChildLogger("VLV"))
 	cl.asGPA = gpa.NewOwnHandler(me, cl)
 	return cl, nil
 }
@@ -242,7 +242,7 @@ func (cl *cmtLogImpl) AsGPA() gpa.GPA {
 
 // Implements the gpa.GPA interface.
 func (cl *cmtLogImpl) Input(input gpa.Input) gpa.OutMessages {
-	cl.log.Debugf("Input %T: %+v", input, input)
+	cl.log.LogDebugf("Input %T: %+v", input, input)
 	switch input := input.(type) {
 	case *inputAnchorOutputConfirmed:
 		return cl.handleInputAnchorOutputConfirmed(input)
@@ -270,7 +270,7 @@ func (cl *cmtLogImpl) Input(input gpa.Input) gpa.OutMessages {
 func (cl *cmtLogImpl) Message(msg gpa.Message) gpa.OutMessages {
 	msgNLI, ok := msg.(*MsgNextLogIndex)
 	if !ok {
-		cl.log.Warnf("dropping unexpected message %T: %+v", msg, msg)
+		cl.log.LogWarnf("dropping unexpected message %T: %+v", msg, msg)
 		return nil
 	}
 	return cl.handleMsgNextLogIndex(msgNLI)

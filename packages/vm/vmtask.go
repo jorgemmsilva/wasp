@@ -3,7 +3,7 @@ package vm
 import (
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -38,7 +38,7 @@ type VMTask struct {
 	L1APIProvider iotago.APIProvider
 	TokenInfo     *api.InfoResBaseToken
 
-	Log *logger.Logger
+	Log log.Logger
 }
 
 type VMTaskResult struct {

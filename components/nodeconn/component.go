@@ -39,7 +39,7 @@ type dependencies struct {
 func provide(c *dig.Container) error {
 	if err := c.Provide(func() (nodebridge.NodeBridge, error) {
 		nodeBridge := nodebridge.New(
-			Component.Logger(),
+			Component,
 			nodebridge.WithTargetNetworkName(ParamsINX.TargetNetworkName),
 		)
 
@@ -53,7 +53,7 @@ func provide(c *dig.Container) error {
 
 		return nodeBridge, nil
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	type nodeConnectionDeps struct {
@@ -66,7 +66,7 @@ func provide(c *dig.Container) error {
 	if err := c.Provide(func(deps nodeConnectionDeps) chain.NodeConnection {
 		nodeConnection, err := nodeconn.New(
 			Component.Daemon().ContextStopped(),
-			Component.Logger().Named("nc"),
+			Component.NewChildLogger("nc"),
 			deps.NodeBridge,
 			deps.ShutdownHandler,
 		)
@@ -75,7 +75,7 @@ func provide(c *dig.Container) error {
 		}
 		return nodeConnection
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	return nil

@@ -60,7 +60,7 @@ import (
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/suites"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/chain/cons/bp"
 	"github.com/iotaledger/wasp/packages/chain/dss"
@@ -162,7 +162,7 @@ type consImpl struct {
 	msgWrapper       *gpa.MsgWrapper
 	output           *Output
 	validatorAgentID isc.AgentID
-	log              *logger.Logger
+	log              log.Logger
 }
 
 const (
@@ -186,7 +186,7 @@ func New(
 	instID []byte,
 	nodeIDFromPubKey func(pubKey *cryptolib.PublicKey) gpa.NodeID,
 	validatorAgentID isc.AgentID,
-	log *logger.Logger,
+	log log.Logger,
 ) Cons {
 	edSuite := tcrypto.DefaultEd25519Suite()
 	blsSuite := tcrypto.DefaultBLSSuite()
@@ -209,7 +209,7 @@ func New(
 		panic(fmt.Errorf("cannot convert node's SK to kyber.Scalar: %w", err))
 	}
 	longTermDKS := dkShare.DSS()
-	acsLog := log.Named("ACS")
+	acsLog := log.NewChildLogger("ACS")
 	acsCCInstFunc := func(nodeID gpa.NodeID, round int) gpa.GPA {
 		var roundBin [4]byte
 		binary.BigEndian.PutUint32(roundBin[:], uint32(round))
@@ -228,7 +228,7 @@ func New(
 		l1APIProvider:    l1APIProvider,
 		me:               me,
 		f:                f,
-		dss:              dss.New(edSuite, nodeIDs, nodePKs, f, me, myKyberKeys.Private, longTermDKS, log.Named("DSS")),
+		dss:              dss.New(edSuite, nodeIDs, nodePKs, f, me, myKyberKeys.Private, longTermDKS, log.NewChildLogger("DSS")),
 		acs:              acs.New(nodeIDs, me, f, acsCCInstFunc, acsLog),
 		output:           &Output{Status: Running},
 		log:              log,
@@ -305,12 +305,12 @@ func (c *consImpl) Input(input gpa.Input) gpa.OutMessages {
 	case *inputTimeData:
 		// ignore this to filter out ridiculously excessive logging
 	default:
-		c.log.Debugf("Input %T: %+v", input, input)
+		c.log.LogDebugf("Input %T: %+v", input, input)
 	}
 
 	switch input := input.(type) {
 	case *inputProposal:
-		c.log.Infof("Consensus started, received %v", input.String())
+		c.log.LogInfof("Consensus started, received %v", input.String())
 		return gpa.NoMessages().
 			AddAll(c.subMP.BaseAnchorOutputReceived(input.baseAnchorOutput)).
 			AddAll(c.subSM.ProposedBaseAnchorOutputReceived(input.baseAnchorOutput)).
@@ -342,7 +342,7 @@ func (c *consImpl) Message(msg gpa.Message) gpa.OutMessages {
 	case *gpa.WrappingMsg:
 		sub, subMsgs, err := c.msgWrapper.DelegateMessage(msgT)
 		if err != nil {
-			c.log.Warnf("unexpected wrapped message: %w", err)
+			c.log.LogWarnf("unexpected wrapped message: %w", err)
 			return nil
 		}
 		msgs := gpa.NoMessages().AddAll(subMsgs)
@@ -352,7 +352,7 @@ func (c *consImpl) Message(msg gpa.Message) gpa.OutMessages {
 		case subsystemTypeDSS:
 			return msgs.AddAll(c.subDSS.DSSOutputReceived(sub.Output()))
 		default:
-			c.log.Warnf("unexpected subsystem after check: %+v", msg)
+			c.log.LogWarnf("unexpected subsystem after check: %+v", msg)
 			return nil
 		}
 	}
@@ -441,7 +441,7 @@ func (c *consImpl) uponSMSaveProducedBlockDone(block state.Block) gpa.OutMessage
 // DSS
 
 func (c *consImpl) uponDSSInitialInputsReady() gpa.OutMessages {
-	c.log.Debugf("uponDSSInitialInputsReady")
+	c.log.LogDebugf("uponDSSInitialInputsReady")
 	sub, subMsgs, err := c.msgWrapper.DelegateInput(subsystemTypeDSS, 0, dss.NewInputStart())
 	if err != nil {
 		panic(fmt.Errorf("cannot provide input to DSS: %w", err))
@@ -452,12 +452,12 @@ func (c *consImpl) uponDSSInitialInputsReady() gpa.OutMessages {
 }
 
 func (c *consImpl) uponDSSIndexProposalReady(indexProposal []int) gpa.OutMessages {
-	c.log.Debugf("uponDSSIndexProposalReady")
+	c.log.LogDebugf("uponDSSIndexProposalReady")
 	return c.subACS.DSSIndexProposalReceived(indexProposal)
 }
 
 func (c *consImpl) uponDSSSigningInputsReceived(decidedIndexProposals map[gpa.NodeID][]int, messageToSign []byte) gpa.OutMessages {
-	c.log.Debugf("uponDSSSigningInputsReceived(decidedIndexProposals=%+v, H(messageToSign)=%v)", decidedIndexProposals, hashing.HashDataBlake2b(messageToSign))
+	c.log.LogDebugf("uponDSSSigningInputsReceived(decidedIndexProposals=%+v, H(messageToSign)=%v)", decidedIndexProposals, hashing.HashDataBlake2b(messageToSign))
 	dssDecidedInput := dss.NewInputDecided(decidedIndexProposals, messageToSign)
 	subDSS, subMsgs, err := c.msgWrapper.DelegateInput(subsystemTypeDSS, 0, dssDecidedInput)
 	if err != nil {
@@ -469,7 +469,7 @@ func (c *consImpl) uponDSSSigningInputsReceived(decidedIndexProposals map[gpa.No
 }
 
 func (c *consImpl) uponDSSOutputReady(signature []byte) gpa.OutMessages {
-	c.log.Debugf("uponDSSOutputReady")
+	c.log.LogDebugf("uponDSSOutputReady")
 	return c.subTX.SignatureReceived(signature)
 }
 
@@ -499,7 +499,7 @@ func (c *consImpl) uponACSOutputReceived(outputValues map[gpa.NodeID][]byte) gpa
 	if aggr.ShouldBeSkipped() {
 		// Cannot proceed with such proposals.
 		// Have to retry the consensus after some time with the next log index.
-		c.log.Infof("Terminating consensus with status=Skipped, there is no way to aggregate batch proposal.")
+		c.log.LogInfof("Terminating consensus with status=Skipped, there is no way to aggregate batch proposal.")
 		c.output.Status = Skipped
 		c.term.haveOutputProduced()
 		return nil
@@ -507,7 +507,7 @@ func (c *consImpl) uponACSOutputReceived(outputValues map[gpa.NodeID][]byte) gpa
 	bao := aggr.DecidedBaseAnchorOutput()
 	baoID := bao.AnchorOutputID
 	reqs := aggr.DecidedRequestRefs()
-	c.log.Debugf("ACS decision: baseAO=%v, requests=%v", bao, reqs)
+	c.log.LogDebugf("ACS decision: baseAO=%v, requests=%v", bao, reqs)
 	return gpa.NoMessages().
 		AddAll(c.subMP.RequestsNeeded(reqs)).
 		AddAll(c.subSM.DecidedVirtualStateNeeded(bao)).
@@ -542,7 +542,7 @@ func (c *consImpl) uponRNDSigSharesReady(dataToSign []byte, partialSigs map[gpa.
 	}
 	sig, err := c.dkShare.BLSRecoverMasterSignature(partialSigArray, dataToSign)
 	if err != nil {
-		c.log.Warnf("Cannot reconstruct BLS signature from %v/%v sigShares: %v", len(partialSigs), c.dkShare.GetN(), err)
+		c.log.LogWarnf("Cannot reconstruct BLS signature from %v/%v sigShares: %v", len(partialSigs), c.dkShare.GetN(), err)
 		return false, nil // Continue to wait for other sig shares.
 	}
 	return true, c.subVM.RandomnessReceived(hashing.HashDataBlake2b(sig.Signature.Bytes()))
@@ -567,7 +567,7 @@ func (c *consImpl) uponVMInputsReceived(aggregatedProposals *bp.AggregatedBatchP
 		ValidatorFeeTarget:   aggregatedProposals.ValidatorFeeTarget(*randomness),
 		EstimateGasMode:      false,
 		EnableGasBurnLogging: false,
-		Log:                  c.log.Named("VM"),
+		Log:                  c.log.NewChildLogger("VM"),
 	}
 	return nil
 }
@@ -577,7 +577,7 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 	if len(vmResult.RequestResults) == 0 {
 		// No requests were processed, don't have what to do.
 		// Will need to retry the consensus with the next log index some time later.
-		c.log.Infof("Terminating consensus with status=Skipped, 0 requests processed.")
+		c.log.LogInfof("Terminating consensus with status=Skipped, 0 requests processed.")
 		c.output.Status = Skipped
 		c.term.haveOutputProduced()
 		return nil
@@ -593,7 +593,7 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 			l1API,
 		)
 		if err != nil {
-			c.log.Warnf("Cannot create rotation TX, failed to make TX essence: %w", err)
+			c.log.LogWarnf("Cannot create rotation TX, failed to make TX essence: %w", err)
 			c.output.Status = Skipped
 			c.term.haveOutputProduced()
 			return nil
@@ -654,7 +654,7 @@ func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Bloc
 		Block:            block,
 	}
 	c.output.Status = Completed
-	c.log.Infof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.Inputs.AnchorOutputID.ToHex())
+	c.log.LogInfof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.Inputs.AnchorOutputID.ToHex())
 	c.term.haveOutputProduced()
 	return nil
 }

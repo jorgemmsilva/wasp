@@ -7,7 +7,7 @@ import (
 
 // spawn deploys new contract and calls it
 func spawn(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Debugf(FuncSpawn.Name)
+	ctx.Log().LogDebugf(FuncSpawn.Name)
 	progHash := ctx.Params().MustGetHashValue(ParamProgHash)
 	name := Contract.Name + "_spawned"
 	hname := isc.Hn(name)
@@ -16,6 +16,6 @@ func spawn(ctx isc.Sandbox) dict.Dict {
 	for i := 0; i < 5; i++ {
 		ctx.Call(isc.NewMessage(hname, FuncIncCounter.Hname(), nil), nil)
 	}
-	ctx.Log().Debugf("sbtestsc.spawn: new contract name = %s hname = %s", name, hname.String())
+	ctx.Log().LogDebugf("sbtestsc.spawn: new contract name = %s hname = %s", name, hname.String())
 	return nil
 }

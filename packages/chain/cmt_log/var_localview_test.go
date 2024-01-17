@@ -16,7 +16,6 @@ import (
 
 func TestVarLocalView(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	j := cmt_log.NewVarLocalView(-1, func(ao *isc.ChainOutputs) {}, log)
 	require.Nil(t, j.Value())
 	tipAO, ok, _ := j.AnchorOutputConfirmed(&isc.ChainOutputs{

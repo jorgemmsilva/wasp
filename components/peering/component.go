@@ -59,7 +59,7 @@ func provide(c *dig.Container) error {
 			nodeIdentity,
 			deps.TrustedPeersRegistryProvider,
 			deps.PeeringMetricsProvider,
-			Component.Logger(),
+			Component,
 		)
 		if err != nil {
 			Component.LogPanicf("Init.peering: %v", err)
@@ -71,7 +71,7 @@ func provide(c *dig.Container) error {
 			TrustedNetworkManager: tnmImpl,
 		}
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	return nil

@@ -163,5 +163,5 @@ func UnmarshalMessage(data []byte, mapper Mapper, fallback ...Fallback) (Message
 }
 
 type Logger interface {
-	Warnf(msg string, args ...any)
+	LogWarnf(msg string, args ...any)
 }

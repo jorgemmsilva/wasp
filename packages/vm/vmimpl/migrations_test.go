@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -82,7 +82,7 @@ func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 
 	env.incCounter = migrations.Migration{
 		Contract: governance.Contract,
-		Apply: func(state kv.KVStore, log *zap.SugaredLogger) error {
+		Apply: func(state kv.KVStore, _ log.Logger) error {
 			env.counter++
 			return nil
 		},
@@ -90,7 +90,7 @@ func newMigrationsTest(t *testing.T, stateIndex uint32) *migrationsTestEnv {
 
 	env.panic = migrations.Migration{
 		Contract: governance.Contract,
-		Apply: func(state kv.KVStore, log *zap.SugaredLogger) error {
+		Apply: func(state kv.KVStore, _ log.Logger) error {
 			panic("should not be called")
 		},
 	}

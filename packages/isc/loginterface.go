@@ -1,7 +1,7 @@
 package isc
 
 type LogInterface interface {
-	Infof(format string, param ...interface{})
-	Debugf(format string, param ...interface{})
-	Panicf(format string, param ...interface{})
+	LogInfof(format string, param ...interface{})
+	LogDebugf(format string, param ...interface{})
+	LogPanicf(format string, param ...interface{})
 }

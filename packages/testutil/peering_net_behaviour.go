@@ -11,7 +11,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 )
 
@@ -25,11 +25,11 @@ type PeeringNetBehavior interface {
 // That's for basic tests.
 type peeringNetReliable struct {
 	closeChs []chan bool
-	log      *logger.Logger
+	log      log.Logger
 }
 
 // NewPeeringNetReliable constructs the PeeringNetBehavior.
-func NewPeeringNetReliable(log *logger.Logger) PeeringNetBehavior {
+func NewPeeringNetReliable(log log.Logger) PeeringNetBehavior {
 	return &peeringNetReliable{
 		closeChs: make([]chan bool, 0),
 		log:      log,
@@ -68,11 +68,11 @@ type peeringNetUnreliable struct {
 	delayFrom  time.Duration
 	delayTill  time.Duration
 	closeChs   []chan bool
-	log        *logger.Logger
+	log        log.Logger
 }
 
 // NewPeeringNetReliable constructs the PeeringNetBehavior.
-func NewPeeringNetUnreliable(deliverPct, repeatPct int, delayFrom, delayTill time.Duration, log *logger.Logger) PeeringNetBehavior {
+func NewPeeringNetUnreliable(deliverPct, repeatPct int, delayFrom, delayTill time.Duration, log log.Logger) PeeringNetBehavior {
 	return &peeringNetUnreliable{
 		deliverPct: deliverPct,
 		repeatPct:  repeatPct,
@@ -107,7 +107,7 @@ func (n *peeringNetUnreliable) recvLoop(inCh, outCh chan *peeringMsg, closeCh ch
 				return
 			}
 			if rand.Intn(100) > n.deliverPct {
-				n.log.Debugf("Network dropped message %v -%v-> %v", recv.from.String(), recv.PeerMessageData().MsgType, dstPubKey.String())
+				n.log.LogDebugf("Network dropped message %v -%v-> %v", recv.from.String(), recv.PeerMessageData().MsgType, dstPubKey.String())
 				continue // Drop the message.
 			}
 			//
@@ -136,7 +136,7 @@ func (n *peeringNetUnreliable) sendDelayed(recv *peeringMsg, outCh chan *peering
 		}
 		<-time.After(delay)
 	}
-	n.log.Debugf(
+	n.log.LogDebugf(
 		"Network delivers message %v -%v-> %v (duplicate %v/%v, delay=%vms)",
 		recv.from.String(), recv.PeerMessageData().MsgType, dstPubKey.String(), dupNum, dupCount, delay.Milliseconds(),
 	)
@@ -144,7 +144,7 @@ func (n *peeringNetUnreliable) sendDelayed(recv *peeringMsg, outCh chan *peering
 }
 
 // To avoid panics when tests are being stopped.
-func safeSendPeeringMsg(outCh chan *peeringMsg, recv *peeringMsg, log *logger.Logger) {
+func safeSendPeeringMsg(outCh chan *peeringMsg, recv *peeringMsg, log log.Logger) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Printf("NOTE: peeringNetReliable dropping message: %v\n", err)
@@ -154,6 +154,6 @@ func safeSendPeeringMsg(outCh chan *peeringMsg, recv *peeringMsg, log *logger.Lo
 	case outCh <- recv:
 		return
 	default:
-		log.Warnf("Dropping message, because outCh is overflown.")
+		log.LogWarnf("Dropping message, because outCh is overflown.")
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -18,7 +18,7 @@ type WasmProcessor struct {
 	funcTable        *WasmFuncTable
 	gasFactorX       uint64
 	instanceLock     sync.Mutex
-	log              *logger.Logger
+	log              log.Logger
 	nextContextID    int32
 	vm               WasmVM
 }
@@ -28,7 +28,7 @@ var _ isc.VMProcessor = new(WasmProcessor)
 var GoWasmVM func() WasmVM
 
 // GetProcessor creates a new Wasm VM processor.
-func GetProcessor(wasmBytes []byte, log *logger.Logger) (isc.VMProcessor, error) {
+func GetProcessor(wasmBytes []byte, log log.Logger) (isc.VMProcessor, error) {
 	proc := &WasmProcessor{
 		contexts:   shrinkingmap.New[int32, *WasmContext](),
 		funcTable:  NewWasmFuncTable(),

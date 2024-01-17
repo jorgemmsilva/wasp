@@ -6,7 +6,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 
@@ -75,7 +75,7 @@ type ChainCore interface {
 	GetCandidateNodes() []*governance.AccessNodeInfo // All the current candidates.
 	L1APIProvider() iotago.APIProvider
 	TokenInfo() *api.InfoResBaseToken
-	Log() *logger.Logger
+	Log() log.Logger
 }
 
 type ChainRequests interface {

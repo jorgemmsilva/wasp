@@ -43,7 +43,6 @@ func TestInitLoad(t *testing.T) {
 	env.AssertL1BaseTokens(userAddr, utxodb.FundsFromFaucetAmount)
 	originAmount := 10 * isc.Million
 	ch, _ := env.NewChainExt(user, originAmount, initMana, "chain1")
-	_ = ch.Log().Sync()
 
 	cassets := ch.L2CommonAccountAssets()
 	require.EqualValues(t,
@@ -66,9 +65,6 @@ func TestLedgerBaseConsistency(t *testing.T) {
 
 	// create chain
 	ch, _ := env.NewChainExt(nil, 10*isc.Million, initMana, "chain1")
-	defer func() {
-		_ = ch.Log().Sync()
-	}()
 
 	// get all native tokens. Must be empty
 	nativeTokenIDs := ch.GetOnChainTokenIDs()
@@ -515,7 +511,6 @@ func TestMessageSize(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
-		PrintStackTrace:          true,
 	}).
 		WithNativeContract(sbtestsc.Processor)
 	ch := env.NewChain()

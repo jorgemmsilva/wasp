@@ -18,7 +18,6 @@ import (
 
 func TestDomainProvider(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 
 	nodeCount := 3
 	peeringURLs, nodeIdentities := testpeers.SetupKeys(uint16(nodeCount))
@@ -66,7 +65,6 @@ func TestDomainProvider(t *testing.T) {
 
 func TestRandom(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 
 	nodeCount := 5
 	peeringURLs, nodeIdentities := testpeers.SetupKeys(uint16(nodeCount))
@@ -126,7 +124,6 @@ func TestRandom(t *testing.T) {
 
 func TestGetRandomOtherPeers(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 
 	nodeCount := 8 // 7 excluding self
 	peersToGet := 5

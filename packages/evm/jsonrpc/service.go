@@ -55,7 +55,7 @@ func NewEthService(
 }
 
 func (e *EthService) ProtocolVersion() hexutil.Uint {
-	return hexutil.Uint(eth.ETH66)
+	return hexutil.Uint(eth.ETH68)
 }
 
 func (e *EthService) resolveError(err error) error {

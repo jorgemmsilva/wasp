@@ -4,16 +4,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
 
 	"github.com/spf13/pflag"
 
-	"github.com/iotaledger/hive.go/app/configuration"
-	appLogger "github.com/iotaledger/hive.go/app/logger"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/util/l1starter"
 	"github.com/iotaledger/wasp/tools/cluster"
@@ -63,14 +60,7 @@ func main() {
 		check(err)
 	}
 
-	cfg := configuration.New()
-	if err := cfg.Set("logger.disableStacktrace", true); err != nil {
-		panic(err)
-	}
-
-	if err := appLogger.InitGlobalLogger(cfg); err != nil {
-		panic(err)
-	}
+	clusterLogger := log.NewLogger(log.WithName(cmdName))
 
 	switch os.Args[1] {
 	case "init":
@@ -90,15 +80,14 @@ func main() {
 			os.Exit(1)
 		}
 
-		l1.StartPrivtangleIfNecessary(log.Printf)
-		defer l1.Cleanup(log.Printf)
+		l1.StartPrivtangleIfNecessary(clusterLogger.LogInfof)
+		defer l1.Cleanup(clusterLogger.LogInfof)
 
 		dataPath := flags.Arg(0)
 		clusterConfig := cluster.NewConfig(
 			waspConfig,
 			l1.Config,
 		)
-		clusterLogger := logger.NewLogger(cmdName)
 		l1connection.NewClient(clusterConfig.L1, clusterLogger) // indirectly initializes parameters.L1
 		err := cluster.New(cmdName, clusterConfig, dataPath, nil, clusterLogger).InitDataPath(*templatesPath, *forceRemove)
 		check(err)
@@ -148,15 +137,14 @@ func main() {
 			clusterConfig, err2 = cluster.LoadConfig(dataPath)
 			check(err2)
 		} else {
-			l1.StartPrivtangleIfNecessary(log.Printf)
-			defer l1.Cleanup(log.Printf)
+			l1.StartPrivtangleIfNecessary(clusterLogger.LogInfof)
+			defer l1.Cleanup(clusterLogger.LogInfof)
 			clusterConfig = cluster.NewConfig(
 				waspConfig,
 				l1.Config,
 			)
 		}
 
-		clusterLogger := logger.NewLogger(cmdName)
 		l1connection.NewClient(clusterConfig.L1, clusterLogger) // indirectly initializes parameters.L1
 		clu := cluster.New(cmdName, clusterConfig, dataPath, nil, clusterLogger)
 

@@ -37,7 +37,7 @@ func TestPrivtangleStartup(t *testing.T) {
 	_, err = nc.Info(ctx)
 	require.NoError(t, err)
 
-	log := testlogger.NewSilentLogger(t.Name(), true)
+	log := testlogger.NewSilentLogger(true, t.Name())
 	client := l1connection.NewClient(l1.Config, log)
 
 	initialOutputCount := mustOutputCount(client, myAddress)

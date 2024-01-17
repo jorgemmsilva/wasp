@@ -13,12 +13,11 @@ import (
 
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/blake2b"
 
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -49,14 +48,13 @@ import (
 
 const (
 	MaxRequestsInBlock = 100
-	timeLayout         = "04:05.000000000"
 )
 
 // Solo is a structure which contains global parameters of the test: one per test instance
 type Solo struct {
 	// instance of the test
 	T                               Context
-	logger                          *logger.Logger
+	logger                          log.Logger
 	db                              kvstore.KVStore
 	utxoDB                          *utxodb.UtxoDB
 	chainsMutex                     sync.RWMutex
@@ -117,7 +115,7 @@ type Chain struct {
 	// Store is where the chain data (blocks, state) is stored
 	store indexedstore.IndexedStore
 	// Log is the named logger of the chain
-	log *logger.Logger
+	log log.Logger
 	// global processor cache
 	proc *processors.Cache
 	// related to asynchronous backlog processing
@@ -135,17 +133,15 @@ type Chain struct {
 type InitOptions struct {
 	AutoAdjustStorageDeposit bool
 	Debug                    bool
-	PrintStackTrace          bool
 	GasBurnLogEnabled        bool
 	Seed                     cryptolib.Seed
 	ExtraVMTypes             map[string]processors.VMConstructor
-	Log                      *logger.Logger
+	Log                      log.Logger
 }
 
 func DefaultInitOptions() *InitOptions {
 	return &InitOptions{
 		Debug:                    false,
-		PrintStackTrace:          false,
 		Seed:                     cryptolib.Seed{},
 		AutoAdjustStorageDeposit: false, // is OFF by default
 		GasBurnLogEnabled:        true,  // is ON by default
@@ -161,10 +157,7 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 		opt = initOptions[0]
 	}
 	if opt.Log == nil {
-		opt.Log = testlogger.NewNamedLogger(t.Name(), timeLayout)
-		if !opt.Debug {
-			opt.Log = testlogger.WithLevel(opt.Log, zapcore.InfoLevel, opt.PrintStackTrace)
-		}
+		opt.Log = testlogger.NewSimple(opt.Debug, log.WithName(t.Name()))
 	}
 	evmlogger.Init(opt.Log)
 
@@ -180,10 +173,10 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 		disableAutoAdjustStorageDeposit: !opt.AutoAdjustStorageDeposit,
 		enableGasBurnLogging:            opt.GasBurnLogEnabled,
 		seed:                            opt.Seed,
-		publisher:                       publisher.New(opt.Log.Named("publisher")),
+		publisher:                       publisher.New(opt.Log.NewChildLogger("publisher")),
 		ctx:                             ctx,
 	}
-	ret.logger.Infof("Solo environment has been created")
+	ret.logger.LogInfof("Solo environment has been created")
 
 	for vmType, constructor := range opt.ExtraVMTypes {
 		err := ret.processorConfig.RegisterVMType(vmType, constructor)
@@ -191,7 +184,7 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 	}
 
 	_ = ret.publisher.Events.Published.Hook(func(ev *publisher.ISCEvent[any]) {
-		ret.logger.Infof("solo publisher: %s %s %v", ev.Kind, ev.ChainID, ev.String())
+		ret.logger.LogInfof("solo publisher: %s %s %v", ev.Kind, ev.ChainID, ev.String())
 	})
 
 	go ret.publisher.Run(ctx)
@@ -242,10 +235,6 @@ func (env *Solo) GetDBHash() (ret hashing.HashValue) {
 	return
 }
 
-func (env *Solo) SyncLog() {
-	_ = env.logger.Sync()
-}
-
 func (env *Solo) Publisher() *publisher.Publisher {
 	return env.publisher
 }
@@ -285,7 +274,7 @@ func (env *Solo) deployChain(
 	name string,
 	originParams ...dict.Dict,
 ) (chainData, *iotago.SignedTransaction) {
-	env.logger.Debugf("deploying new chain '%s'", name)
+	env.logger.LogDebugf("deploying new chain '%s'", name)
 
 	if chainOriginator == nil {
 		chainOriginator = env.NewKeyPairFromIndex(-1000 + len(env.chains)) // making new originator for each new chain
@@ -336,10 +325,10 @@ func (env *Solo) deployChain(
 	require.NoError(env.T, err)
 	env.AssertL1BaseTokens(originatorAddr, initialL1Balance-anchor.Deposit)
 
-	env.logger.Infof("deploying new chain '%s'. ID: %s, state controller address: %s",
+	env.logger.LogInfof("deploying new chain '%s'. ID: %s, state controller address: %s",
 		name, chainID.String(), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
-	env.logger.Infof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
-	env.logger.Infof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	env.logger.LogInfof("     chain '%s'. state controller address: %s", chainID.String(), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	env.logger.LogInfof("     chain '%s'. originator address: %s", chainID.String(), originatorAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
 	chainDB := env.getDB(dbKindChainState, chainID)
 	require.NoError(env.T, err)
@@ -350,7 +339,7 @@ func (env *Solo) deployChain(
 	{
 		block, err2 := store.LatestBlock()
 		require.NoError(env.T, err2)
-		env.logger.Infof("     chain '%s'. origin trie root: %s", chainID, block.TrieRoot())
+		env.logger.LogInfof("     chain '%s'. origin trie root: %s", chainID, block.TrieRoot())
 	}
 
 	return chainData{
@@ -400,7 +389,7 @@ func (env *Solo) NewChainExt(
 	defer env.chainsMutex.Unlock()
 	ch := env.addChain(chData)
 
-	ch.log.Infof("chain '%s' deployed. Chain ID: %s", ch.Name, ch.ChainID.String())
+	ch.log.LogInfof("chain '%s' deployed. Chain ID: %s", ch.Name, ch.ChainID.String())
 	return ch, originTx
 }
 
@@ -413,7 +402,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 		Env:                    env,
 		store:                  indexedstore.New(state.NewStoreWithUniqueWriteMutex(chData.db)),
 		proc:                   processors.MustNew(env.processorConfig),
-		log:                    env.logger.Named(chData.Name),
+		log:                    env.logger.NewChildLogger(chData.Name),
 		metrics:                metrics.NewChainMetricsProvider().GetChainMetrics(chData.ChainID),
 		mempool:                newMempool(env.Timestamp, chData.ChainID),
 		migrationScheme:        chData.migrationScheme,
@@ -425,7 +414,7 @@ func (env *Solo) addChain(chData chainData) *Chain {
 // AddToLedger adds (synchronously confirms) transaction to the UTXODB ledger. Return error if it is
 // invalid or double spend
 func (env *Solo) AddToLedger(tx *iotago.SignedTransaction) error {
-	env.logger.Debugf("adding tx to L1 (ID: %s) %s",
+	env.logger.LogDebugf("adding tx to L1 (ID: %s) %s",
 		lo.Must(tx.Transaction.ID()).ToHex(),
 		string(lo.Must(testutil.L1API.JSONEncode(tx))),
 	)
@@ -467,11 +456,11 @@ func (env *Solo) EnqueueRequests(tx *iotago.SignedTransaction) {
 	for chainID, reqs := range requests {
 		ch, ok := env.chains[chainID]
 		if !ok {
-			env.logger.Infof("dispatching requests. Unknown chain: %s", chainID.String())
+			env.logger.LogInfof("dispatching requests. Unknown chain: %s", chainID.String())
 			continue
 		}
 		if len(reqs) > 0 {
-			env.logger.Infof("dispatching %d requests to chain %s", len(reqs), chainID)
+			env.logger.LogInfof("dispatching %d requests to chain %s", len(reqs), chainID)
 			ch.mempool.ReceiveRequests(reqs...)
 		}
 	}
@@ -529,7 +518,7 @@ func (ch *Chain) collateAndRunBatch() {
 		results := ch.runRequestsNolock(batch, "batchLoop")
 		for _, res := range results {
 			if res.Receipt.Error != nil {
-				ch.log.Errorf("runRequestsSync: %v", res.Receipt.Error)
+				ch.log.LogErrorf("runRequestsSync: %v", res.Receipt.Error)
 			}
 		}
 	}
@@ -555,7 +544,7 @@ func (ch *Chain) ID() isc.ChainID {
 	return ch.ChainID
 }
 
-func (ch *Chain) Log() *logger.Logger {
+func (ch *Chain) Log() log.Logger {
 	return ch.log
 }
 

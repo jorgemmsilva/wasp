@@ -171,16 +171,16 @@ func (vmctx *vmContext) stateAnchor() *isc.StateAnchor {
 
 // DeployContract deploys contract by its program hash with the name specific to the instance
 func (reqctx *requestContext) deployContract(programHash hashing.HashValue, name string, initParams dict.Dict) {
-	reqctx.Debugf("vmcontext.DeployContract: %s, name: %s", programHash.String(), name)
+	reqctx.LogDebugf("vmcontext.DeployContract: %s, name: %s", programHash.String(), name)
 	reqctx.Call(root.FuncDeployContract.Message(name, programHash, initParams), nil)
 }
 
 func (reqctx *requestContext) registerError(messageFormat string) *isc.VMErrorTemplate {
-	reqctx.Debugf("vmcontext.RegisterError: messageFormat: '%s'", messageFormat)
+	reqctx.LogDebugf("vmcontext.RegisterError: messageFormat: '%s'", messageFormat)
 	result := reqctx.Call(errors.FuncRegisterError.Message(messageFormat), nil)
 	errorCode := lo.Must(codec.VMErrorCode.Decode(result.Get(errors.ParamErrorCode)))
 
-	reqctx.Debugf("vmcontext.RegisterError: errorCode: '%s'", errorCode)
+	reqctx.LogDebugf("vmcontext.RegisterError: errorCode: '%s'", errorCode)
 
 	return isc.NewVMErrorTemplate(errorCode, messageFormat)
 }

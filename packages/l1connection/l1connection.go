@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/builder"
@@ -59,11 +59,11 @@ type l1client struct {
 	ctxCancel     context.CancelFunc
 	indexerClient nodeclient.IndexerClient
 	nodeAPIClient *nodeclient.Client
-	log           *logger.Logger
+	log           log.Logger
 	config        Config
 }
 
-func NewClient(config Config, log *logger.Logger, timeout ...time.Duration) Client {
+func NewClient(config Config, log log.Logger, timeout ...time.Duration) Client {
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	nodeAPIClient, err := nodeclient.New(config.APIAddress)
 	if err != nil {
@@ -83,7 +83,7 @@ func NewClient(config Config, log *logger.Logger, timeout ...time.Duration) Clie
 		ctxCancel:     ctxCancel,
 		indexerClient: indexerClient,
 		nodeAPIClient: nodeAPIClient,
-		log:           log.Named("nc"),
+		log:           log.NewChildLogger("nc"),
 		config:        config,
 	}
 }
@@ -147,7 +147,7 @@ func (c *l1client) postBlock(ctx context.Context, block *iotago.Block) (iotago.B
 		return iotago.EmptyBlockID, fmt.Errorf("failed to submit block: %w", err)
 	}
 
-	c.log.Infof("Posted blockID %v", blockID.ToHex())
+	c.log.LogInfof("Posted blockID %v", blockID.ToHex())
 
 	return blockID, nil
 }
@@ -169,7 +169,7 @@ func (c *l1client) postTx(ctx context.Context, tx *iotago.SignedTransaction) (io
 	if err != nil {
 		return iotago.EmptyBlockID, err
 	}
-	c.log.Infof("Posted transaction id %v", txID.ToHex())
+	c.log.LogInfof("Posted transaction id %v", txID.ToHex())
 
 	return blockID, nil
 }

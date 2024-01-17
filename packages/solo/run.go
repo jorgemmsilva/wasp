@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -61,7 +60,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 		Store:              ch.store,
 		Entropy:            hashing.PseudoRandomHash(nil),
 		ValidatorFeeTarget: ch.ValidatorFeeTarget,
-		Log:                ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
+		Log:                ch.Log(),
 		// state baseline is always valid in Solo
 		EnableGasBurnLogging: ch.Env.enableGasBurnLogging,
 		EstimateGasMode:      estimateGas,
@@ -76,7 +75,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 }
 
 func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []*vm.RequestResult) {
-	ch.Log().Debugf("runRequestsNolock ('%s')", trace)
+	ch.Log().LogDebugf("runRequestsNolock ('%s')", trace)
 
 	res := ch.runTaskNoLock(reqs, false)
 
@@ -105,7 +104,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 	if res.RotationAddress != nil {
 		anchor, _, err := transaction.GetAnchorFromTransaction(tx.Transaction)
 		require.NoError(ch.Env.T, err)
-		ch.Log().Infof("ROTATED STATE CONTROLLER to %s", anchor.StateController)
+		ch.Log().LogInfof("ROTATED STATE CONTROLLER to %s", anchor.StateController)
 	}
 
 	rootC := ch.GetRootCommitment()
@@ -139,13 +138,13 @@ func (ch *Chain) settleStateTransition(stateTx *iotago.SignedTransaction, stateD
 	for _, req := range unprocessableRequests {
 		ch.mempool.RemoveRequest(req.ID())
 	}
-	ch.Log().Infof("state transition --> #%d. Requests in the block: %d. Outputs: %d",
+	ch.Log().LogInfof("state transition --> #%d. Requests in the block: %d. Outputs: %d",
 		stateDraft.BlockIndex(), len(blockReceipts), len(stateTx.Transaction.Outputs))
 }
 
 func (ch *Chain) logRequestLastBlock() {
 	recs := ch.GetRequestReceiptsForBlock(ch.GetLatestBlockInfo().BlockIndex())
 	for _, rec := range recs {
-		ch.Log().Infof("REQ: '%s'", rec.Short())
+		ch.Log().LogInfof("REQ: '%s'", rec.Short())
 	}
 }

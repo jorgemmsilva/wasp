@@ -19,7 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/evm/evmerrors"
 	"github.com/iotaledger/wasp/packages/evm/evmtest"
 	"github.com/iotaledger/wasp/packages/evm/evmtypes"
@@ -39,15 +39,14 @@ type soloTestEnv struct {
 }
 
 func newSoloTestEnv(t testing.TB) *soloTestEnv {
-	var log *logger.Logger
+	var log log.Logger
 	if _, ok := t.(*testing.B); ok {
-		log = testlogger.NewSilentLogger(t.Name(), true)
+		log = testlogger.NewSilentLogger(true, t.Name())
 	}
 
 	s := solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
-		PrintStackTrace:          true,
 		Log:                      log,
 	})
 	chainOwner, _ := s.NewKeyPairWithFunds()

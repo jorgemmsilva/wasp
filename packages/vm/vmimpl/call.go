@@ -20,7 +20,7 @@ func (reqctx *requestContext) Call(msg isc.Message, allowance *isc.Assets) dict.
 	if allowance == nil {
 		allowance = isc.NewEmptyAssets()
 	}
-	reqctx.Debugf("Call: targetContract: %s entry point: %s", msg.Target.Contract, msg.Target.EntryPoint)
+	reqctx.LogDebugf("Call: targetContract: %s entry point: %s", msg.Target.Contract, msg.Target.EntryPoint)
 	return reqctx.callProgram(msg, allowance, reqctx.CurrentContractAgentID())
 }
 
@@ -66,14 +66,14 @@ func (reqctx *requestContext) pushCallContext(contract isc.Hname, params dict.Di
 		allowanceAvailable: allowance.Clone(), // we have to clone it because it will be mutated by TransferAllowedFunds
 	}
 	if traceStack {
-		reqctx.Debugf("+++++++++++ PUSH %d, stack depth = %d caller = %s", contract, len(reqctx.callStack), ctx.caller)
+		reqctx.LogDebugf("+++++++++++ PUSH %d, stack depth = %d caller = %s", contract, len(reqctx.callStack), ctx.caller)
 	}
 	reqctx.callStack = append(reqctx.callStack, ctx)
 }
 
 func (reqctx *requestContext) popCallContext() {
 	if traceStack {
-		reqctx.Debugf("+++++++++++ POP @ depth %d", len(reqctx.callStack))
+		reqctx.LogDebugf("+++++++++++ POP @ depth %d", len(reqctx.callStack))
 	}
 	reqctx.callStack[len(reqctx.callStack)-1] = nil // for GC
 	reqctx.callStack = reqctx.callStack[:len(reqctx.callStack)-1]

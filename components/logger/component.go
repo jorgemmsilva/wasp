@@ -15,6 +15,6 @@ func init() {
 var Component *app.Component
 
 func configure() error {
-	evmlogger.Init(Component.App().NewLogger("go-ethereum"))
+	evmlogger.Init(Component.NewChildLogger("go-ethereum"))
 	return nil
 }

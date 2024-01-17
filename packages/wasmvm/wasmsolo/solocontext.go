@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zapcore"
 
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -34,9 +34,8 @@ import (
 )
 
 const (
-	SoloDebug        = true
-	SoloHostTracing  = false
-	SoloStackTracing = false
+	SoloDebug       = true
+	SoloHostTracing = false
 )
 
 var (
@@ -239,13 +238,9 @@ func StartChain(t testing.TB, chainName string, env ...*solo.Solo) *solo.Chain {
 		soloEnv = env[0]
 	}
 	if soloEnv == nil {
-		log := testlogger.NewNamedLogger(t.Name(), "04:05.000000000")
-		if !SoloDebug {
-			log = testlogger.WithLevel(log, zapcore.InfoLevel, SoloStackTracing)
-		}
+		log := testlogger.NewSimple(SoloDebug, log.WithName(t.Name()))
 		soloEnv = solo.New(t, &solo.InitOptions{
 			Debug:                    SoloDebug,
-			PrintStackTrace:          SoloStackTracing,
 			AutoAdjustStorageDeposit: true,
 			Log:                      log,
 			ExtraVMTypes: map[string]processors.VMConstructor{

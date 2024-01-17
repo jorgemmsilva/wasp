@@ -23,7 +23,7 @@ func TestRootBasic(t *testing.T) {
 	chain := env.NewChain()
 
 	chain.CheckChain()
-	chain.Log().Infof("\n%s\n", chain.String())
+	chain.Log().LogInfof("\n%s\n", chain.String())
 }
 
 func TestRootRepeatInit(t *testing.T) {
@@ -130,10 +130,7 @@ func TestDeployDouble(t *testing.T) {
 }
 
 func TestChangeOwnerAuthorized(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{
-		Debug:           true,
-		PrintStackTrace: true,
-	})
+	env := solo.New(t, &solo.InitOptions{Debug: true})
 	chain := env.NewChain()
 
 	newOwner, ownerAddr := env.NewKeyPairWithFunds()

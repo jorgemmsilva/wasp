@@ -28,7 +28,7 @@ var errBlobAlreadyExists = coreerrors.Register("blob already exists").Create()
 // it stores it in the state in deterministic binary representation
 // Returns hash of the blob
 func storeBlob(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Debugf("blob.storeBlob.begin")
+	ctx.Log().LogDebugf("blob.storeBlob.begin")
 	state := ctx.State()
 	// calculate a deterministic hash of all blob fields
 	blobHash, fieldsSorted, valuesSorted := getBlobHash(ctx.Params().Dict)
@@ -61,7 +61,7 @@ func storeBlob(ctx isc.Sandbox) dict.Dict {
 
 // getBlobInfo return lengths of all fields in the blob
 func getBlobInfo(ctx isc.SandboxView, blobHash hashing.HashValue) map[string]uint32 {
-	ctx.Log().Debugf("blob.getBlobInfo.begin")
+	ctx.Log().LogDebugf("blob.getBlobInfo.begin")
 	blbSizes := GetBlobSizesR(ctx.StateR(), blobHash)
 	ret := map[string]uint32{}
 	blbSizes.Iterate(func(field []byte, value []byte) bool {
@@ -74,7 +74,7 @@ func getBlobInfo(ctx isc.SandboxView, blobHash hashing.HashValue) map[string]uin
 var errNotFound = coreerrors.Register("not found").Create()
 
 func getBlobField(ctx isc.SandboxView, blobHash hashing.HashValue, field []byte) []byte {
-	ctx.Log().Debugf("blob.getBlobField.begin")
+	ctx.Log().LogDebugf("blob.getBlobField.begin")
 	state := ctx.StateR()
 
 	blobValues := GetBlobValuesR(state, blobHash)
@@ -89,7 +89,7 @@ func getBlobField(ctx isc.SandboxView, blobHash hashing.HashValue, field []byte)
 }
 
 func listBlobs(ctx isc.SandboxView) map[hashing.HashValue]uint32 {
-	ctx.Log().Debugf("blob.listBlobs.begin")
+	ctx.Log().LogDebugf("blob.listBlobs.begin")
 	ret := map[hashing.HashValue]uint32{}
 	GetDirectoryR(ctx.StateR()).Iterate(func(hash []byte, totalSize []byte) bool {
 		ret[lo.Must(codec.HashValue.Decode(hash))] = lo.Must(DecodeSize(totalSize))

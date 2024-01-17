@@ -39,10 +39,10 @@ func configure() error {
 	err := deps.ProcessorsConfig.RegisterVMType(vmtypes.WasmTime, func(binary []byte) (isc.VMProcessor, error) {
 		// TODO (via config?) pass non-default timeout for WasmTime processor like this:
 		// WasmTimeout = 3 * time.Second
-		return wasmhost.GetProcessor(binary, Component.Logger())
+		return wasmhost.GetProcessor(binary, Component.Logger)
 	})
 	if err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 	Component.LogInfof("registered VM type: '%s'", vmtypes.WasmTime)
 

@@ -8,12 +8,13 @@ package dkg_test
 // TODO: Single node down for some time.
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/dkg"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/tcrypto"
@@ -24,8 +25,7 @@ import (
 
 // TestBasic checks if DKG procedure is executed successfully in a common case.
 func TestBasic(t *testing.T) {
-	log := testlogger.NewLogger(t)
-	defer log.Sync()
+	logger := testlogger.NewLogger(t)
 	//
 	// Create a fake network and keys for the tests.
 	timeout := 100 * time.Second
@@ -34,8 +34,8 @@ func TestBasic(t *testing.T) {
 	peeringURLs, peerIdentities := testpeers.SetupKeys(peerCount)
 	peeringNetwork := testutil.NewPeeringNetwork(
 		peeringURLs, peerIdentities, 10000,
-		testutil.NewPeeringNetReliable(log),
-		testlogger.WithLevel(log, logger.LevelWarn, false),
+		testutil.NewPeeringNetReliable(logger),
+		testlogger.WithLevel(logger, log.LevelWarning),
 	)
 	networkProviders := peeringNetwork.NetworkProviders()
 	//
@@ -46,7 +46,7 @@ func TestBasic(t *testing.T) {
 		dkShareRegistryProviders[i] = testutil.NewDkgRegistryProvider(peerIdentities[i].GetPrivateKey())
 		dkgNode, err := dkg.NewNode(
 			peerIdentities[i], networkProviders[i], dkShareRegistryProviders[i],
-			testlogger.WithLevel(log.With("PeeringURL", peeringURLs[i]), logger.LevelDebug, false),
+			testlogger.WithLevel(logger.NewChildLogger(fmt.Sprintf("%s:PeeringURL:%s", logger.LogName(), peeringURLs[i])), log.LevelDebug),
 		)
 		require.NoError(t, err)
 		dkgNodes[i] = dkgNode
@@ -101,8 +101,7 @@ func TestUnreliableNet(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
-	log := testlogger.NewLogger(t)
-	defer log.Sync()
+	logger := testlogger.NewLogger(t)
 	//
 	// Create a fake network and keys for the tests.
 	timeout := 100 * time.Second
@@ -115,9 +114,9 @@ func TestUnreliableNet(t *testing.T) {
 			80,                                         // Delivered %
 			20,                                         // Duplicated %
 			10*time.Millisecond, 1000*time.Millisecond, // Delays (from, till)
-			testlogger.WithLevel(log.Named("UnreliableNet"), logger.LevelDebug, false),
+			testlogger.WithLevel(logger.NewChildLogger("UnreliableNet"), log.LevelDebug),
 		),
-		testlogger.WithLevel(log, logger.LevelInfo, false),
+		testlogger.WithLevel(logger, log.LevelInfo),
 	)
 	networkProviders := peeringNetwork.NetworkProviders()
 	//
@@ -127,7 +126,7 @@ func TestUnreliableNet(t *testing.T) {
 		dksReg := testutil.NewDkgRegistryProvider(peerIdentities[i].GetPrivateKey())
 		dkgNode, err := dkg.NewNode(
 			peerIdentities[i], networkProviders[i], dksReg,
-			testlogger.WithLevel(log.With("PeeringURL", peerPeeringURLs[i]), logger.LevelDebug, false),
+			testlogger.WithLevel(logger.NewChildLogger(fmt.Sprintf("%s:PeeringURL:%s", logger.LogName(), peerPeeringURLs[i])), log.LevelDebug),
 		)
 		require.NoError(t, err)
 		dkgNodes[i] = dkgNode
@@ -148,8 +147,7 @@ func TestUnreliableNet(t *testing.T) {
 
 // TestLowN checks, if the DKG works with N=1 and other low values. N=1 is a special case.
 func TestLowN(t *testing.T) {
-	log := testlogger.NewLogger(t)
-	defer log.Sync()
+	logger := testlogger.NewLogger(t)
 	//
 	// Create a fake network and keys for the tests.
 	for n := uint16(1); n < 4; n++ {
@@ -160,8 +158,8 @@ func TestLowN(t *testing.T) {
 		peerPeeringURLs, peerIdentities := testpeers.SetupKeys(peerCount)
 		peeringNetwork := testutil.NewPeeringNetwork(
 			peerPeeringURLs, peerIdentities, 10000,
-			testutil.NewPeeringNetReliable(log),
-			testlogger.WithLevel(log, logger.LevelWarn, false),
+			testutil.NewPeeringNetReliable(logger),
+			testlogger.WithLevel(logger, log.LevelWarning),
 		)
 		networkProviders := peeringNetwork.NetworkProviders()
 		//
@@ -171,7 +169,7 @@ func TestLowN(t *testing.T) {
 			dksReg := testutil.NewDkgRegistryProvider(peerIdentities[i].GetPrivateKey())
 			dkgNode, err := dkg.NewNode(
 				peerIdentities[i], networkProviders[i], dksReg,
-				testlogger.WithLevel(log.With("PeeringURL", peerPeeringURLs[i]), logger.LevelDebug, false),
+				testlogger.WithLevel(logger.NewChildLogger(fmt.Sprintf("%s:PeeringURL:%s", logger.LogName(), peerPeeringURLs[i])), log.LevelDebug),
 			)
 			require.NoError(t, err)
 			dkgNodes[i] = dkgNode

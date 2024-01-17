@@ -16,7 +16,6 @@ const constTestFolder = "basicWALTest"
 
 func TestBlockWALBasic(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	defer cleanupAfterTest(t)
 
 	factory := NewBlockFactory(t)
@@ -52,7 +51,6 @@ func TestBlockWALBasic(t *testing.T) {
 // Check if block prior to version 1 is read (that has no version data)
 func TestBlockWALLegacy(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	defer cleanupAfterTest(t)
 
 	factory := NewBlockFactory(t)
@@ -70,7 +68,6 @@ func TestBlockWALLegacy(t *testing.T) {
 // Check if existing block in WAL is found even if it is not in a subfolder
 func TestBlockWALNoSubfolder(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	defer cleanupAfterTest(t)
 
 	factory := NewBlockFactory(t)
@@ -98,7 +95,6 @@ func TestBlockWALNoSubfolder(t *testing.T) {
 // Check if existing WAL record is overwritten
 func TestBlockWALOverwrite(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	defer cleanupAfterTest(t)
 
 	factory := NewBlockFactory(t)
@@ -136,7 +132,6 @@ func TestBlockWALOverwrite(t *testing.T) {
 // Check if after restart wal is functioning correctly
 func TestBlockWALRestart(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	defer cleanupAfterTest(t)
 
 	factory := NewBlockFactory(t)
@@ -161,7 +156,6 @@ func TestBlockWALRestart(t *testing.T) {
 
 func testReadAllByStateIndex(t *testing.T, addToWALFun func(isc.ChainID, BlockWAL, []state.Block)) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	defer cleanupAfterTest(t)
 
 	factory := NewBlockFactory(t)

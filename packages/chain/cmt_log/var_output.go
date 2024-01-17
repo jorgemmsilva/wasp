@@ -3,7 +3,7 @@ package cmt_log
 import (
 	"fmt"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -24,10 +24,10 @@ type varOutputImpl struct {
 	suspended   bool
 	outValue    *Output
 	persistUsed func(li LogIndex)
-	log         *logger.Logger
+	log         log.Logger
 }
 
-func NewVarOutput(persistUsed func(li LogIndex), log *logger.Logger) VarOutput {
+func NewVarOutput(persistUsed func(li LogIndex), log log.Logger) VarOutput {
 	return &varOutputImpl{
 		candidateLI: NilLogIndex(),
 		candidateAO: nil,
@@ -70,10 +70,10 @@ func (vo *varOutputImpl) CanPropose() {
 
 func (vo *varOutputImpl) Suspended(suspended bool) {
 	if vo.suspended && !suspended {
-		vo.log.Infof("Committee resumed.")
+		vo.log.LogInfof("Committee resumed.")
 	}
 	if !vo.suspended && suspended {
-		vo.log.Infof("Committee suspended.")
+		vo.log.LogInfof("Committee suspended.")
 	}
 	vo.suspended = suspended
 }
@@ -87,7 +87,7 @@ func (vo *varOutputImpl) tryOutput() {
 	// Output the new data.
 	vo.persistUsed(vo.candidateLI)
 	vo.outValue = makeOutput(vo.candidateLI, vo.candidateAO)
-	vo.log.Infof("⊪ Output %v", vo.outValue)
+	vo.log.LogInfof("⊪ Output %v", vo.outValue)
 	vo.canPropose = false
 	vo.candidateLI = NilLogIndex()
 }

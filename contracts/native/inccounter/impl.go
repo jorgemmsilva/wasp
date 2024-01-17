@@ -53,7 +53,7 @@ const (
 )
 
 func initialize(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Debugf("inccounter.init in %s", ctx.Contract().String())
+	ctx.Log().LogDebugf("inccounter.init in %s", ctx.Contract().String())
 	params := ctx.Params()
 	val := lo.Must(codec.Int64.Decode(params.Get(VarCounter), 0))
 	ctx.State().Set(VarCounter, codec.Int64.Encode(val))
@@ -63,27 +63,27 @@ func initialize(ctx isc.Sandbox) dict.Dict {
 
 func incCounter(ctx isc.Sandbox, incOpt *int64) dict.Dict {
 	inc := coreutil.FromOptional(incOpt, 1)
-	ctx.Log().Debugf("inccounter.incCounter in %s", ctx.Contract().String())
+	ctx.Log().LogDebugf("inccounter.incCounter in %s", ctx.Contract().String())
 	state := kvdecoder.New(ctx.State(), ctx.Log())
 	val := state.MustGetInt64(VarCounter, 0)
-	ctx.Log().Infof("incCounter: increasing counter value %d by %d, anchor index: #%d",
+	ctx.Log().LogInfof("incCounter: increasing counter value %d by %d, anchor index: #%d",
 		val, inc, ctx.StateAnchor().StateIndex)
 	tra := "(empty)"
 	if ctx.AllowanceAvailable() != nil {
 		tra = ctx.AllowanceAvailable().String()
 	}
-	ctx.Log().Infof("incCounter: allowance available: %s", tra)
+	ctx.Log().LogInfof("incCounter: allowance available: %s", tra)
 	ctx.State().Set(VarCounter, codec.Int64.Encode(val+inc))
 	eventCounter(ctx, val+inc)
 	return nil
 }
 
 func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Debugf("inccounter.incCounterAndRepeatOnce")
+	ctx.Log().LogDebugf("inccounter.incCounterAndRepeatOnce")
 	state := ctx.State()
 	val := lo.Must(codec.Int64.Decode(state.Get(VarCounter), 0))
 
-	ctx.Log().Debugf(fmt.Sprintf("incCounterAndRepeatOnce: increasing counter value: %d", val))
+	ctx.Log().LogDebugf(fmt.Sprintf("incCounterAndRepeatOnce: increasing counter value: %d", val))
 	state.Set(VarCounter, codec.Int64.Encode(val+1))
 	eventCounter(ctx, val+1)
 	allowance := ctx.AllowanceAvailable()
@@ -102,27 +102,27 @@ func incCounterAndRepeatOnce(ctx isc.Sandbox) dict.Dict {
 			},
 		},
 	})
-	ctx.Log().Debugf("incCounterAndRepeatOnce: PostRequestToSelfWithDelay RequestInc 2 sec")
+	ctx.Log().LogDebugf("incCounterAndRepeatOnce: PostRequestToSelfWithDelay RequestInc 2 sec")
 	return nil
 }
 
 func incCounterAndRepeatMany(ctx isc.Sandbox, valOpt, numRepeatsOpt *int64) dict.Dict {
 	val := coreutil.FromOptional(valOpt, 0)
 	numRepeats := coreutil.FromOptional(valOpt, lo.Must(codec.Int64.Decode(ctx.State().Get(VarNumRepeats), 0)))
-	ctx.Log().Debugf("inccounter.incCounterAndRepeatMany")
+	ctx.Log().LogDebugf("inccounter.incCounterAndRepeatMany")
 
 	state := ctx.State()
 
 	state.Set(VarCounter, codec.Int64.Encode(val+1))
 	eventCounter(ctx, val+1)
-	ctx.Log().Debugf("inccounter.incCounterAndRepeatMany: increasing counter value: %d", val)
+	ctx.Log().LogDebugf("inccounter.incCounterAndRepeatMany: increasing counter value: %d", val)
 
 	if numRepeats == 0 {
-		ctx.Log().Debugf("inccounter.incCounterAndRepeatMany: finished chain of requests. counter value: %d", val)
+		ctx.Log().LogDebugf("inccounter.incCounterAndRepeatMany: finished chain of requests. counter value: %d", val)
 		return nil
 	}
 
-	ctx.Log().Debugf("chain of %d requests ahead", numRepeats)
+	ctx.Log().LogDebugf("chain of %d requests ahead", numRepeats)
 
 	state.Set(VarNumRepeats, codec.Int64.Encode(numRepeats-1))
 	ctx.TransferAllowedFunds(ctx.AccountID())
@@ -142,13 +142,13 @@ func incCounterAndRepeatMany(ctx isc.Sandbox, valOpt, numRepeatsOpt *int64) dict
 		},
 	})
 
-	ctx.Log().Debugf("incCounterAndRepeatMany. remaining repeats = %d", numRepeats-1)
+	ctx.Log().LogDebugf("incCounterAndRepeatMany. remaining repeats = %d", numRepeats-1)
 	return nil
 }
 
 // spawn deploys new contract and calls it
 func spawn(ctx isc.Sandbox, name string) dict.Dict {
-	ctx.Log().Debugf("inccounter.spawn")
+	ctx.Log().LogDebugf("inccounter.spawn")
 
 	state := kvdecoder.New(ctx.State(), ctx.Log())
 	val := state.MustGetInt64(VarCounter)

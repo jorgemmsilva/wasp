@@ -37,11 +37,11 @@ func provide(c *dig.Container) error {
 	if err := c.Provide(func() publisherResult {
 		return publisherResult{
 			Publisher: publisher.New(
-				Component.Logger(),
+				Component,
 			),
 		}
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	return nil

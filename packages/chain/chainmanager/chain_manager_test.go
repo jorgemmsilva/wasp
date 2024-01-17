@@ -52,7 +52,6 @@ func TestChainMgrBasic(t *testing.T) {
 
 func testChainMgrBasic(t *testing.T, n, f int) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	//
 	// Create ledger accounts.
 	utxoDB := utxodb.New(testutil.L1API)
@@ -98,7 +97,7 @@ func testChainMgrBasic(t *testing.T, n, f int) {
 		cm, err := chainmanager.New(
 			nid, chainID, stores[nid], consensusStateRegistry, dkRegs[i], gpa.NodeIDFromPublicKey,
 			activeAccessNodesCB, trackActiveStateCB, savePreliminaryBlockCB, updateCommitteeNodesCB, true, -1, nil,
-			log.Named(nid.ShortString()),
+			log.NewChildLogger(nid.ShortString()),
 		)
 		require.NoError(t, err)
 		nodes[nid] = cm.AsGPA()

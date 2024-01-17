@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/runtime/event"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -27,7 +27,7 @@ type Events struct {
 type Publisher struct {
 	blockAppliedPipe pipe.Pipe[*blockApplied]
 	mutex            *sync.RWMutex
-	log              *logger.Logger
+	log              log.Logger
 	Events           *Events
 }
 
@@ -38,7 +38,7 @@ type blockApplied struct {
 	block   state.Block
 }
 
-func New(log *logger.Logger) *Publisher {
+func New(log log.Logger) *Publisher {
 	p := &Publisher{
 		blockAppliedPipe: pipe.NewInfinitePipe[*blockApplied](),
 		mutex:            &sync.RWMutex{},

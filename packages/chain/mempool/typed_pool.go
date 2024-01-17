@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -20,7 +20,7 @@ type typedPool[V isc.Request] struct {
 	requests      *shrinkingmap.ShrinkingMap[isc.RequestRefKey, *typedPoolEntry[V]]
 	sizeMetric    func(int)
 	timeMetric    func(time.Duration)
-	log           *logger.Logger
+	log           log.Logger
 	l1APIProvider iotago.APIProvider
 }
 
@@ -31,7 +31,7 @@ type typedPoolEntry[V isc.Request] struct {
 
 var _ RequestPool[isc.OffLedgerRequest] = &typedPool[isc.OffLedgerRequest]{}
 
-func NewTypedPool[V isc.Request](waitReq WaitReq, l1APIProvider iotago.APIProvider, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger) RequestPool[V] {
+func NewTypedPool[V isc.Request](waitReq WaitReq, l1APIProvider iotago.APIProvider, sizeMetric func(int), timeMetric func(time.Duration), log log.Logger) RequestPool[V] {
 	return &typedPool[V]{
 		waitReq:       waitReq,
 		l1APIProvider: l1APIProvider,
@@ -57,7 +57,7 @@ func (olp *typedPool[V]) Get(reqRef *isc.RequestRef) V {
 func (olp *typedPool[V]) Add(request V) {
 	refKey := isc.RequestRefFromRequest(request).AsKey()
 	if olp.requests.Set(refKey, &typedPoolEntry[V]{req: request, ts: time.Now()}) {
-		olp.log.Debugf("ADD %v as key=%v", request.ID(), refKey)
+		olp.log.LogDebugf("ADD %v as key=%v", request.ID(), refKey)
 		olp.sizeMetric(olp.requests.Size())
 	}
 	olp.waitReq.MarkAvailable(request)
@@ -67,7 +67,7 @@ func (olp *typedPool[V]) Remove(request V) {
 	refKey := isc.RequestRefFromRequest(request).AsKey()
 	if entry, ok := olp.requests.Get(refKey); ok {
 		if olp.requests.Delete(refKey) {
-			olp.log.Debugf("DEL %v as key=%v", request.ID(), refKey)
+			olp.log.LogDebugf("DEL %v as key=%v", request.ID(), refKey)
 		}
 		olp.sizeMetric(olp.requests.Size())
 		olp.timeMetric(time.Since(entry.ts))
@@ -78,7 +78,7 @@ func (olp *typedPool[V]) Filter(predicate func(request V, ts time.Time) bool) {
 	olp.requests.ForEach(func(refKey isc.RequestRefKey, entry *typedPoolEntry[V]) bool {
 		if !predicate(entry.req, entry.ts) {
 			if olp.requests.Delete(refKey) {
-				olp.log.Debugf("DEL %v as key=%v", entry.req.ID(), refKey)
+				olp.log.LogDebugf("DEL %v as key=%v", entry.req.ID(), refKey)
 				olp.timeMetric(time.Since(entry.ts))
 			}
 		}

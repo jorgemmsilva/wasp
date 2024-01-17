@@ -15,7 +15,6 @@ import (
 
 func TestFakeNetwork(t *testing.T) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	doneCh := make(chan bool)
 	chain1 := peering.RandomPeeringID()
 	chain2 := peering.RandomPeeringID()

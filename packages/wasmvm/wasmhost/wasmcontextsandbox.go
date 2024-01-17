@@ -192,15 +192,15 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 }
 
 func (s *WasmContextSandbox) Logf(format string, args ...interface{}) {
-	s.common.Log().Infof(format, args...)
+	s.common.Log().LogInfof(format, args...)
 }
 
 func (s *WasmContextSandbox) Panicf(format string, args ...interface{}) {
-	s.common.Log().Panicf(format, args...)
+	s.common.Log().LogPanicf(format, args...)
 }
 
 func (s *WasmContextSandbox) Tracef(format string, args ...interface{}) {
-	s.common.Log().Debugf(format, args...)
+	s.common.Log().LogDebugf(format, args...)
 }
 
 //////////////////// sandbox functions \\\\\\\\\\\\\\\\\\\\

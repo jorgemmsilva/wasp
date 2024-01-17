@@ -18,7 +18,7 @@ func SetInitialState(state kv.KVStore) {
 }
 
 func funcRegisterError(ctx isc.Sandbox, errorMessageFormat string) dict.Dict {
-	ctx.Log().Debugf("Registering error")
+	ctx.Log().LogDebugf("Registering error")
 	if errorMessageFormat == "" {
 		panic(coreerrors.ErrMessageFormatEmpty)
 	}

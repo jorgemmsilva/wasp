@@ -39,7 +39,7 @@ import (
 
 	"github.com/samber/lo"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/metrics"
 )
@@ -143,7 +143,7 @@ type varLogIndexImpl struct {
 	qcStarted *QuorumCounter
 	outputCB  func(li LogIndex)
 	metrics   *metrics.ChainCmtLogMetrics
-	log       *logger.Logger
+	log       log.Logger
 }
 
 func NewVarLogIndex(
@@ -153,7 +153,7 @@ func NewVarLogIndex(
 	persistedLI LogIndex,
 	outputCB func(li LogIndex),
 	metrics *metrics.ChainCmtLogMetrics,
-	log *logger.Logger,
+	log log.Logger,
 ) VarLogIndex {
 	vli := &varLogIndexImpl{
 		nodeIDs:   nodeIDs,
@@ -194,7 +194,7 @@ func (vli *varLogIndexImpl) LogIndexUsed(li LogIndex) { // TODO: Call it. Or rem
 }
 
 func (vli *varLogIndexImpl) ConsensusOutputReceived(consensusLI LogIndex) gpa.OutMessages {
-	vli.log.Debugf("ConsensusOutputReceived: consensusLI=%v", consensusLI)
+	vli.log.LogDebugf("ConsensusOutputReceived: consensusLI=%v", consensusLI)
 	msgs := gpa.NoMessages()
 	msgs.AddAll(vli.qcConsOut.MaybeSendVote(consensusLI.Next()))
 	msgs.AddAll(vli.tryOutputOnConsOut())
@@ -202,7 +202,7 @@ func (vli *varLogIndexImpl) ConsensusOutputReceived(consensusLI LogIndex) gpa.Ou
 }
 
 func (vli *varLogIndexImpl) ConsensusRecoverReceived(consensusLI LogIndex) gpa.OutMessages {
-	vli.log.Debugf("ConsensusRecoverReceived: consensusLI=%v", consensusLI)
+	vli.log.LogDebugf("ConsensusRecoverReceived: consensusLI=%v", consensusLI)
 	msgs := gpa.NoMessages()
 	msgs.AddAll(vli.qcRecover.MaybeSendVote(consensusLI.Next()))
 	msgs.AddAll(vli.tryOutputOnRecover())
@@ -210,7 +210,7 @@ func (vli *varLogIndexImpl) ConsensusRecoverReceived(consensusLI LogIndex) gpa.O
 }
 
 func (vli *varLogIndexImpl) L1ReplacedBaseAnchorOutput() gpa.OutMessages {
-	vli.log.Debugf("L1ReplacedBaseAnchorOutput")
+	vli.log.LogDebugf("L1ReplacedBaseAnchorOutput")
 	msgs := gpa.NoMessages()
 	//
 	// Send the boot time recovery, if it was not sent yet.
@@ -231,7 +231,7 @@ func (vli *varLogIndexImpl) L1ReplacedBaseAnchorOutput() gpa.OutMessages {
 }
 
 func (vli *varLogIndexImpl) L1ConfirmedAnchorOutput(li LogIndex) gpa.OutMessages {
-	vli.log.Debugf("L1ConfirmedAnchorOutput")
+	vli.log.LogDebugf("L1ConfirmedAnchorOutput")
 	//
 	// Vote for this LI, if have not voted for any higher.
 	msgs := gpa.NoMessages()
@@ -243,10 +243,10 @@ func (vli *varLogIndexImpl) L1ConfirmedAnchorOutput(li LogIndex) gpa.OutMessages
 }
 
 func (vli *varLogIndexImpl) MsgNextLogIndexReceived(msg *MsgNextLogIndex) gpa.OutMessages {
-	vli.log.Debugf("MsgNextLogIndexReceived, %v", msg)
+	vli.log.LogDebugf("MsgNextLogIndexReceived, %v", msg)
 	sender := msg.Sender()
 	if !vli.knownNodeID(sender) {
-		vli.log.Warnf("⊢ MsgNextLogIndex from unknown sender: %+v", msg)
+		vli.log.LogWarnf("⊢ MsgNextLogIndex from unknown sender: %+v", msg)
 		return nil
 	}
 
@@ -260,7 +260,7 @@ func (vli *varLogIndexImpl) MsgNextLogIndexReceived(msg *MsgNextLogIndex) gpa.Ou
 	case MsgNextLogIndexCauseStarted:
 		return vli.msgNextLogIndexOnStarted(msg)
 	default:
-		vli.log.Warnf("⊢ MsgNextLogIndex with unexpected cause: %+v", msg)
+		vli.log.LogWarnf("⊢ MsgNextLogIndex with unexpected cause: %+v", msg)
 		return nil
 	}
 }
@@ -325,7 +325,7 @@ func (vli *varLogIndexImpl) tryOutput(li LogIndex, cause MsgNextLogIndexCause) g
 	}
 	msgs := vli.qcStarted.MaybeSendVote(li)
 	vli.agreedLI = li
-	vli.log.Debugf("⊢ Output, li=%v", vli.agreedLI)
+	vli.log.LogDebugf("⊢ Output, li=%v", vli.agreedLI)
 	vli.outputCB(vli.agreedLI)
 	if vli.metrics != nil {
 		switch cause {

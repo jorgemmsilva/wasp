@@ -9,7 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chains"
@@ -44,7 +44,7 @@ type EVMService struct {
 	l1API           iotago.API
 	metrics         *metrics.ChainMetricsProvider
 	jsonrpcParams   *jsonrpc.Parameters
-	log             *logger.Logger
+	log             log.Logger
 }
 
 func NewEVMService(
@@ -57,7 +57,7 @@ func NewEVMService(
 	indexDbPath string,
 	metrics *metrics.ChainMetricsProvider,
 	jsonrpcParams *jsonrpc.Parameters,
-	log *logger.Logger,
+	log log.Logger,
 ) interfaces.EVMService {
 	return &EVMService{
 		baseTokenInfo:         baseTokenInfo,
@@ -100,7 +100,7 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 
 	// TODO: <lmoe> Validate if this DB approach is correct.
 	srv, err := jsonrpc.NewServer(
-		jsonrpc.NewEVMChain(backend, e.publisher, e.chainsProvider().IsArchiveNode(), db.KVStore(), e.log.Named("EVMChain")),
+		jsonrpc.NewEVMChain(backend, e.publisher, e.chainsProvider().IsArchiveNode(), db.KVStore(), e.log.NewChildLogger("EVMChain")),
 		jsonrpc.NewAccountManager(nil),
 		e.metrics.GetChainMetrics(chainID).WebAPI,
 		e.jsonrpcParams,

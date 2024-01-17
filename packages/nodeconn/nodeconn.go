@@ -22,7 +22,7 @@ import (
 	"github.com/iotaledger/hive.go/app/shutdown"
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/lo"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/runtime/timeutil"
 	"github.com/iotaledger/inx-app/pkg/nodebridge"
 	inx "github.com/iotaledger/inx/go"
@@ -63,7 +63,7 @@ type LedgerUpdateHandler func(*nodebridge.LedgerUpdate)
 // Single Wasp node is expected to connect to a single L1 node, thus
 // we expect to have a single instance of this structure.
 type nodeConnection struct {
-	*logger.WrappedLogger
+	log.Logger
 
 	ctx             context.Context
 	syncedCtx       context.Context
@@ -87,7 +87,7 @@ type nodeConnection struct {
 
 func New(
 	ctx context.Context,
-	log *logger.Logger,
+	log log.Logger,
 	nodeBridge nodebridge.NodeBridge,
 	shutdownHandler *shutdown.ShutdownHandler,
 ) (chain.NodeConnection, error) {
@@ -107,7 +107,7 @@ func New(
 	syncedCtx, syncedCtxCancel := context.WithCancel(ctx)
 
 	nc := &nodeConnection{
-		WrappedLogger:   logger.NewWrappedLogger(log),
+		Logger:          log,
 		ctx:             nil,
 		syncedCtx:       syncedCtx,
 		syncedCtxCancel: syncedCtxCancel,
@@ -142,7 +142,7 @@ func newCtxWithTimeout(ctx context.Context, defaultTimeout time.Duration, timeou
 	return context.WithTimeout(ctx, t)
 }
 
-func waitForL1ToBeConnected(ctx context.Context, log *logger.Logger, nodeClient *nodeclient.Client) error {
+func waitForL1ToBeConnected(ctx context.Context, log log.Logger, nodeClient *nodeclient.Client) error {
 	inxGetPeers := func(ctx context.Context) ([]*api.PeerInfo, error) {
 		ctx, cancel := context.WithTimeout(ctx, inxTimeoutGetPeers)
 		defer cancel()
@@ -170,7 +170,7 @@ func waitForL1ToBeConnected(ctx context.Context, log *logger.Logger, nodeClient 
 			}
 		}
 
-		log.Info("waiting for L1 to be connected to other peers...")
+		log.LogInfo("waiting for L1 to be connected to other peers...")
 		return false, nil
 	}
 
@@ -197,7 +197,7 @@ func waitForL1ToBeConnected(ctx context.Context, log *logger.Logger, nodeClient 
 	}
 }
 
-func waitForL1ToBeSynced(ctx context.Context, log *logger.Logger, nodeClient *nodeclient.Client) error {
+func waitForL1ToBeSynced(ctx context.Context, log log.Logger, nodeClient *nodeclient.Client) error {
 	ticker := time.NewTicker(1 * time.Second)
 	defer timeutil.CleanupTicker(ticker)
 
@@ -261,11 +261,11 @@ func (nc *nodeConnection) Run(ctx context.Context) error {
 
 		// make sure the node is connected to at least one other peer
 		// otherwise the node status may not reflect the network status
-		if err := waitForL1ToBeConnected(ctxWaitNodeSynced, nc.WrappedLogger.Logger(), nc.nodeClient); err != nil {
+		if err := waitForL1ToBeConnected(ctxWaitNodeSynced, nc.Logger, nc.nodeClient); err != nil {
 			return err
 		}
 
-		if err := waitForL1ToBeSynced(ctxWaitNodeSynced, nc.WrappedLogger.Logger(), nc.nodeClient); err != nil {
+		if err := waitForL1ToBeSynced(ctxWaitNodeSynced, nc.Logger, nc.nodeClient); err != nil {
 			return err
 		}
 		return nil
@@ -319,7 +319,7 @@ func (nc *nodeConnection) GetL1ProtocolParams() iotago.ProtocolParameters {
 
 func (nc *nodeConnection) subscribeToLedgerUpdates() {
 	if err := nc.nodeBridge.ListenToAcceptedTransactions(nc.ctx, nc.handleAcceptedTransactions); err != nil && !errors.Is(err, io.EOF) {
-		nc.LogError(err)
+		nc.LogError(err.Error())
 		nc.shutdownHandler.SelfShutdown(
 			fmt.Sprintf("INX connection unexpected error: %s", err.Error()),
 			true)
@@ -333,7 +333,7 @@ func (nc *nodeConnection) subscribeToLedgerUpdates() {
 
 func (nc *nodeConnection) subscribeToBlocks() {
 	if err := nc.nodeBridge.ListenToBlocks(nc.ctx, nc.handleBlock); err != nil && !errors.Is(err, io.EOF) {
-		nc.LogError(err)
+		nc.LogError(err.Error())
 		nc.shutdownHandler.SelfShutdown(
 			fmt.Sprintf("INX connection unexpected error: %s", err.Error()),
 			true)

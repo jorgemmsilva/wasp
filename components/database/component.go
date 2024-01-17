@@ -44,14 +44,14 @@ func initConfigParams(c *dig.Container) error {
 	if err := c.Provide(func() cfgResult {
 		dbEngine, err := hivedb.EngineFromStringAllowed(ParamsDatabase.Engine, database.AllowedEnginesDefault)
 		if err != nil {
-			Component.LogPanic(err)
+			Component.LogPanic(err.Error())
 		}
 
 		return cfgResult{
 			DatabaseEngine: dbEngine,
 		}
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	return nil
@@ -83,14 +83,14 @@ func provide(c *dig.Container) error {
 			database.WithPath(ParamsDatabase.ChainState.Path),
 		)
 		if err != nil {
-			Component.LogPanic(err)
+			Component.LogPanic(err.Error())
 		}
 
 		return chainStateDatabaseManagerResult{
 			ChainStateDatabaseManager: manager,
 		}
 	}); err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	return nil
@@ -103,7 +103,7 @@ func configure() error {
 	// and the database will never be marked as corrupted.
 	if err := Component.Daemon().BackgroundWorker("Database Health", func(_ context.Context) {
 		if err := deps.ChainStateDatabaseManager.MarkStoresCorrupted(); err != nil {
-			Component.LogPanic(err)
+			Component.LogPanic(err.Error())
 		}
 	}, daemon.PriorityDatabaseHealth); err != nil {
 		Component.LogPanicf("failed to start worker: %s", err)
@@ -111,7 +111,7 @@ func configure() error {
 
 	storesCorrupted, err := deps.ChainStateDatabaseManager.AreStoresCorrupted()
 	if err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	if storesCorrupted && !ParamsDatabase.DebugSkipHealthCheck {
@@ -123,13 +123,13 @@ You need to resolve this situation manually.
 
 	correctStoresVersion, err := deps.ChainStateDatabaseManager.CheckCorrectStoresVersion()
 	if err != nil {
-		Component.LogPanic(err)
+		Component.LogPanic(err.Error())
 	}
 
 	if !correctStoresVersion {
 		storesVersionUpdated, err2 := deps.ChainStateDatabaseManager.UpdateStoresVersion()
 		if err2 != nil {
-			Component.LogPanic(err2)
+			Component.LogPanic(err2.Error())
 		}
 
 		if !storesVersionUpdated {
@@ -141,7 +141,7 @@ You need to resolve this situation manually.
 		<-ctx.Done()
 
 		if err = deps.ChainStateDatabaseManager.MarkStoresHealthy(); err != nil {
-			Component.LogPanic(err)
+			Component.LogPanic(err.Error())
 		}
 
 		Component.LogInfo("Syncing databases to disk ...")

@@ -5,7 +5,7 @@ import (
 
 	"github.com/pangpanglabs/echoswagger/v2"
 
-	loggerpkg "github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/authentication"
@@ -18,7 +18,7 @@ import (
 )
 
 type Controller struct {
-	log              *loggerpkg.Logger
+	logger           log.Logger
 	l1API            iotago.API
 	baseTokenInfo    *api.InfoResBaseToken
 	chainService     interfaces.ChainService
@@ -29,7 +29,8 @@ type Controller struct {
 	registryService  interfaces.RegistryService
 }
 
-func NewChainController(log *loggerpkg.Logger,
+func NewChainController(
+	logger log.Logger,
 	l1API iotago.API,
 	baseTokenInfo *api.InfoResBaseToken,
 	chainService interfaces.ChainService,
@@ -40,7 +41,7 @@ func NewChainController(log *loggerpkg.Logger,
 	registryService interfaces.RegistryService,
 ) interfaces.APIController {
 	return &Controller{
-		log:              log,
+		logger:           logger,
 		l1API:            l1API,
 		baseTokenInfo:    baseTokenInfo,
 		chainService:     chainService,

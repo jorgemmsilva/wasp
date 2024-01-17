@@ -596,7 +596,7 @@ func TestL1Metadata(t *testing.T) {
 }
 
 func TestGovernanceGasFee(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	ch := env.NewChain()
 	fp := ch.GetGasFeePolicy()
 	fp.GasPerToken.A *= 1000000
@@ -606,7 +606,7 @@ func TestGovernanceGasFee(t *testing.T) {
 }
 
 func TestGovernanceZeroGasFee(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	ch := env.NewChain()
 
 	user, userAddr := env.NewKeyPairWithFunds()
@@ -637,7 +637,7 @@ func TestGovernanceZeroGasFee(t *testing.T) {
 }
 
 func TestGovernanceSetMustGetPayoutAgentID(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	ch := env.NewChain()
 
 	user, userAddr := env.NewKeyPairWithFunds()
@@ -665,7 +665,7 @@ func TestGovernanceSetMustGetPayoutAgentID(t *testing.T) {
 }
 
 func TestGovernanceSetGetMinCommonAccountBalance(t *testing.T) {
-	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true, PrintStackTrace: true})
+	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true, Debug: true})
 	ch := env.NewChain()
 
 	initRetDict, err := ch.CallView(governance.ViewGetMinCommonAccountBalance.Message())
@@ -710,7 +710,6 @@ func TestGasPayout(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
-		PrintStackTrace:          true,
 	})
 	ch := env.NewChain(false)
 	user1, user1Addr := env.NewKeyPairWithFunds()

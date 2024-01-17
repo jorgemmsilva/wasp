@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
@@ -27,7 +27,7 @@ type timePoolImpl struct {
 	requests   *shrinkingmap.ShrinkingMap[isc.RequestRefKey, isc.Request] // All the requests in this pool.
 	slots      *timeSlot                                                  // Structure to fetch them fast by their time.
 	sizeMetric func(int)
-	log        *logger.Logger
+	log        log.Logger
 }
 
 type timeSlot struct {
@@ -41,7 +41,7 @@ const slotPrecision = time.Minute
 
 var _ TimePool = &timePoolImpl{}
 
-func NewTimePool(sizeMetric func(int), log *logger.Logger) TimePool {
+func NewTimePool(sizeMetric func(int), log log.Logger) TimePool {
 	return &timePoolImpl{
 		requests:   shrinkingmap.New[isc.RequestRefKey, isc.Request](),
 		slots:      nil,
@@ -58,7 +58,7 @@ func (tpi *timePoolImpl) AddRequest(timestamp time.Time, request isc.Request) {
 	}
 
 	if tpi.requests.Set(reqRefKey, request) {
-		tpi.log.Debugf("ADD %v as key=%v", request.ID(), reqRefKey)
+		tpi.log.LogDebugf("ADD %v as key=%v", request.ID(), reqRefKey)
 	}
 	tpi.sizeMetric(tpi.requests.Size())
 
@@ -100,7 +100,7 @@ func (tpi *timePoolImpl) TakeTill(timestamp time.Time) []isc.Request {
 				for _, req := range tsReqs {
 					reqRefKey := isc.RequestRefFromRequest(req).AsKey()
 					if tpi.requests.Delete(reqRefKey) {
-						tpi.log.Debugf("DEL %v as key=%v", req.ID(), reqRefKey)
+						tpi.log.LogDebugf("DEL %v as key=%v", req.ID(), reqRefKey)
 					}
 				}
 				tpi.sizeMetric(tpi.requests.Size())
@@ -131,7 +131,7 @@ func (tpi *timePoolImpl) Filter(predicate func(request isc.Request, ts time.Time
 					requests = slices.Delete(requests, i, i+1)
 					reqRefKey := isc.RequestRefFromRequest(req).AsKey()
 					if tpi.requests.Delete(reqRefKey) {
-						tpi.log.Debugf("DEL %v as key=%v", req.ID(), reqRefKey)
+						tpi.log.LogDebugf("DEL %v as key=%v", req.ID(), reqRefKey)
 					}
 				}
 			}

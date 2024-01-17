@@ -47,7 +47,6 @@ func InitEVM(t testing.TB, nativeContracts ...*coreutil.ContractProcessor) *Solo
 	env := solo.New(t, &solo.InitOptions{
 		AutoAdjustStorageDeposit: true,
 		Debug:                    true,
-		PrintStackTrace:          true,
 		GasBurnLogEnabled:        false,
 	})
 	for _, c := range nativeContracts {

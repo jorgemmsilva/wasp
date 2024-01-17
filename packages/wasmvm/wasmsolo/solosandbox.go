@@ -68,15 +68,15 @@ func (s *SoloSandbox) checkErr(err error) {
 }
 
 func (s *SoloSandbox) Logf(format string, args ...interface{}) {
-	s.ctx.Chain.Log().Infof(format, args...)
+	s.ctx.Chain.Log().LogInfof(format, args...)
 }
 
 func (s *SoloSandbox) Panicf(format string, args ...interface{}) {
-	s.ctx.Chain.Log().Panicf(format, args...)
+	s.ctx.Chain.Log().LogPanicf(format, args...)
 }
 
 func (s *SoloSandbox) Tracef(format string, args ...interface{}) {
-	s.ctx.Chain.Log().Debugf(format, args...)
+	s.ctx.Chain.Log().LogDebugf(format, args...)
 }
 
 func (s *SoloSandbox) postSync(contract, function string, params dict.Dict, allowance, transfer *isc.Assets) []byte {

@@ -52,7 +52,7 @@ func (s *contractSandbox) Event(topic string, payload []byte) {
 	if len(hex) > 80 {
 		hex = hex[:40] + "..."
 	}
-	s.Log().Infof("event::%s -> %s(%s)", hContract.String(), topic, hex)
+	s.Log().LogInfof("event::%s -> %s(%s)", hContract.String(), topic, hex)
 	s.reqctx.mustSaveEvent(hContract, topic, payload)
 }
 

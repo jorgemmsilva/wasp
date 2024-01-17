@@ -1,6 +1,7 @@
 package webapi_test
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"net/http"
@@ -9,9 +10,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/iotaledger/hive.go/log"
 
 	"github.com/iotaledger/wasp/components/webapi"
 	"github.com/iotaledger/wasp/packages/authentication"
@@ -19,8 +19,10 @@ import (
 
 func TestInternalServerErrors(t *testing.T) {
 	// start a webserver with a test log
-	logCore, logObserver := observer.New(zapcore.DebugLevel)
-	log := zap.New(logCore)
+	logOutput := bytes.NewBuffer(nil)
+	log := log.NewLogger(
+		log.WithOutput(logOutput),
+	)
 
 	e := webapi.NewEcho(&webapi.ParametersWebAPI{
 		Enabled:     true,
@@ -38,7 +40,7 @@ func TestInternalServerErrors(t *testing.T) {
 		DebugRequestLoggerEnabled: true,
 	},
 		nil,
-		log.Sugar(),
+		log,
 	)
 
 	// Add an endpoint that just panics with "foobar" and start the server
@@ -66,7 +68,7 @@ func TestInternalServerErrors(t *testing.T) {
 	require.NotContains(t, string(resBody), exceptionText)
 
 	// assert the exception is logged
-	logEntries := logObserver.All()
-	require.Len(t, logEntries, 1)
-	require.Contains(t, logEntries[0].Message, exceptionText)
+	logEntries := bytes.Split(logOutput.Bytes(), []byte("\n"))
+	require.Len(t, logEntries, 2) // "" after last newline
+	require.Contains(t, string(logEntries[0]), exceptionText)
 }

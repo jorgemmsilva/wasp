@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
@@ -47,7 +47,7 @@ func shouldBeProcessed(out iotago.Output) bool {
 
 // ncChain is responsible for maintaining the information related to a single chain.
 type ncChain struct {
-	*logger.WrappedLogger
+	log.Logger
 
 	// ctx is the context given by a backgroundworker with PriorityChains,
 	// it might get canceled by shutdown signal or "Chains.Deactivate".
@@ -77,7 +77,7 @@ func newNCChain(
 	milestoneHandler chain.MilestoneHandler,
 ) *ncChain {
 	chain := &ncChain{
-		WrappedLogger:            logger.NewWrappedLogger(nodeConn.Logger()),
+		Logger:                   nodeConn.Logger,
 		ctx:                      ctx,
 		nodeConn:                 nodeConn,
 		chainID:                  chainID,

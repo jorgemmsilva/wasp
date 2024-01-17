@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	consGR "github.com/iotaledger/wasp/packages/chain/cons/cons_gr"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -25,11 +25,11 @@ type TypedPoolByNonce[V isc.OffLedgerRequest] struct {
 	reqsByAcountOrdered *shrinkingmap.ShrinkingMap[string, []*OrderedPoolEntry[V]] // string is isc.AgentID.String()
 	sizeMetric          func(int)
 	timeMetric          func(time.Duration)
-	log                 *logger.Logger
+	log                 log.Logger
 	l1APIProvider       iotago.APIProvider
 }
 
-func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log *logger.Logger, l1APIProvider iotago.APIProvider) *TypedPoolByNonce[V] {
+func NewTypedPoolByNonce[V isc.OffLedgerRequest](waitReq WaitReq, sizeMetric func(int), timeMetric func(time.Duration), log log.Logger, l1APIProvider iotago.APIProvider) *TypedPoolByNonce[V] {
 	return &TypedPoolByNonce[V]{
 		waitReq:             waitReq,
 		reqsByAcountOrdered: shrinkingmap.New[string, []*OrderedPoolEntry[V]](),
@@ -66,12 +66,12 @@ func (p *TypedPoolByNonce[V]) Add(request V) {
 	account := request.SenderAccount().String()
 
 	if !p.refLUT.Set(ref.AsKey(), entry) {
-		p.log.Debugf("NOT ADDED, already exists. reqID: %v as key=%v, senderAccount: ", request.ID(), ref, account)
+		p.log.LogDebugf("NOT ADDED, already exists. reqID: %v as key=%v, senderAccount: ", request.ID(), ref, account)
 		return // not added already exists
 	}
 
 	defer func() {
-		p.log.Debugf("ADD %v as key=%v, senderAccount: %s", request.ID(), ref, account)
+		p.log.LogDebugf("ADD %v as key=%v, senderAccount: %s", request.ID(), ref, account)
 		p.sizeMetric(p.refLUT.Size())
 		p.waitReq.MarkAvailable(request)
 	}()
@@ -126,12 +126,12 @@ func (p *TypedPoolByNonce[V]) Remove(request V) {
 		p.timeMetric(time.Since(entry.ts))
 	}()
 	if p.refLUT.Delete(refKey) {
-		p.log.Debugf("DEL %v as key=%v", request.ID(), refKey)
+		p.log.LogDebugf("DEL %v as key=%v", request.ID(), refKey)
 	}
 	account := entry.req.SenderAccount().String()
 	reqsByAccount, exists := p.reqsByAcountOrdered.Get(account)
 	if !exists {
-		p.log.Error("inconsistency trying to DEL %v as key=%v, no request list for account %s", request.ID(), refKey, account)
+		p.log.LogError("inconsistency trying to DEL %v as key=%v, no request list for account %s", request.ID(), refKey, account)
 		return
 	}
 	// find the request in the accounts map
@@ -139,7 +139,7 @@ func (p *TypedPoolByNonce[V]) Remove(request V) {
 		return refKey == isc.RequestRefFromRequest(e.req).AsKey()
 	})
 	if indexToDel == -1 {
-		p.log.Error("inconsistency trying to DEL %v as key=%v, request not found in list for account %s", request.ID(), refKey, account)
+		p.log.LogError("inconsistency trying to DEL %v as key=%v, request not found in list for account %s", request.ID(), refKey, account)
 		return
 	}
 	if len(reqsByAccount) == 1 { // just remove the entire array for the account

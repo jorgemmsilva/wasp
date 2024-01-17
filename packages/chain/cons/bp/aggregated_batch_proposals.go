@@ -8,7 +8,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/gpa"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -25,7 +25,7 @@ type AggregatedBatchProposals struct {
 	aggregatedTime          time.Time
 }
 
-func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID, f int, log *logger.Logger) *AggregatedBatchProposals {
+func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID, f int, log log.Logger) *AggregatedBatchProposals {
 	bps := batchProposalSet{}
 	//
 	// Parse and validate the batch proposals. Skip the invalid ones.
@@ -33,11 +33,11 @@ func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID,
 		var batchProposal *BatchProposal
 		batchProposal, err := rwutil.ReadFromBytes(inputs[nid], new(BatchProposal))
 		if err != nil {
-			log.Warnf("cannot decode BatchProposal from %v: %v", nid, err)
+			log.LogWarnf("cannot decode BatchProposal from %v: %v", nid, err)
 			continue
 		}
 		if int(batchProposal.nodeIndex) >= len(nodeIDs) || nodeIDs[batchProposal.nodeIndex] != nid {
-			log.Warnf("invalid nodeIndex=%v in batchProposal from %v", batchProposal.nodeIndex, nid)
+			log.LogWarnf("invalid nodeIndex=%v in batchProposal from %v", batchProposal.nodeIndex, nid)
 			continue
 		}
 		bps[nid] = batchProposal
@@ -45,7 +45,7 @@ func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID,
 	//
 	// Store the aggregated values.
 	if len(bps) == 0 {
-		log.Debugf("Cant' aggregate batch proposal: have 0 batch proposals.")
+		log.LogDebugf("Cant' aggregate batch proposal: have 0 batch proposals.")
 		return &AggregatedBatchProposals{shouldBeSkipped: true}
 	}
 	aggregatedTime := bps.aggregatedTime(f)
@@ -58,7 +58,7 @@ func AggregateBatchProposals(inputs map[gpa.NodeID][]byte, nodeIDs []gpa.NodeID,
 		aggregatedTime:          aggregatedTime,
 	}
 	if abp.decidedBaseAnchorOutput == nil || len(abp.decidedRequestRefs) == 0 || abp.aggregatedTime.IsZero() {
-		log.Debugf(
+		log.LogDebugf(
 			"Cant' aggregate batch proposal: decidedBaseAnchorOutput=%v, |decidedRequestRefs|=%v, aggregatedTime=%v",
 			abp.decidedBaseAnchorOutput, len(abp.decidedRequestRefs), abp.aggregatedTime,
 		)

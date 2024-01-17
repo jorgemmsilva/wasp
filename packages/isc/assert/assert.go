@@ -24,7 +24,7 @@ func (a Assert) Requiref(cond bool, format string, args ...interface{}) {
 	if a.log == nil {
 		panic(fmt.Sprintf(format, args...))
 	}
-	a.log.Panicf(format, args...)
+	a.log.LogPanicf(format, args...)
 }
 
 func (a Assert) RequireNoError(err error, str ...string) {
@@ -45,8 +45,8 @@ func (a Assert) RequireCaller(ctx isc.Sandbox, agentID isc.AgentID, name ...stri
 		return
 	}
 	if len(name) > 0 {
-		a.log.Panicf("%s: unauthorized access", name[0])
+		a.log.LogPanicf("%s: unauthorized access", name[0])
 	} else {
-		a.log.Panicf("unauthorized access")
+		a.log.LogPanicf("unauthorized access")
 	}
 }

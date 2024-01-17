@@ -40,7 +40,6 @@ func TestCmtLogBasic(t *testing.T) {
 
 func testCmtLogBasic(t *testing.T, n, f int) {
 	log := testlogger.NewLogger(t)
-	defer log.Sync()
 	//
 	// Chain identifiers.
 	anchorID := testiotago.RandAnchorID()
@@ -61,7 +60,7 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 		dkShare, err := committeeKeyShares[i].LoadDKShare(committeeAddress)
 		require.NoError(t, err)
 		consensusStateRegistry := testutil.NewConsensusStateRegistry() // Empty store in this case.
-		cmtLogInst, err := cmt_log.New(gpaNodeIDs[i], chainID, dkShare, consensusStateRegistry, gpa.NodeIDFromPublicKey, true, -1, nil, log.Named(fmt.Sprintf("N%v", i)))
+		cmtLogInst, err := cmt_log.New(gpaNodeIDs[i], chainID, dkShare, consensusStateRegistry, gpa.NodeIDFromPublicKey, true, -1, nil, log.NewChildLogger(fmt.Sprintf("N%v", i)))
 		require.NoError(t, err)
 		gpaNodes[gpaNodeIDs[i]] = cmtLogInst.AsGPA()
 	}

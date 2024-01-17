@@ -63,7 +63,7 @@ func SetInitialState(state kv.KVStore, baseTokensOnAnchor iotago.BaseToken, toke
 // It does nothing because assets are already on the sender's account
 // Allowance is ignored
 func deposit(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().Debugf("accounts.deposit")
+	ctx.Log().LogDebugf("accounts.deposit")
 	return nil
 }
 
@@ -88,7 +88,7 @@ func transferAllowanceTo(ctx isc.Sandbox, targetAccount isc.AgentID) dict.Dict {
 		}),
 		nil,
 	)
-	ctx.Log().Debugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount, ctx.AllowanceAvailable())
+	ctx.Log().LogDebugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount, ctx.AllowanceAvailable())
 	return nil
 }
 
@@ -97,7 +97,7 @@ var errCallerMustHaveL1Address = coreerrors.Register("caller must have L1 addres
 // withdraw sends the allowed funds to the caller's L1 address,
 func withdraw(ctx isc.Sandbox) dict.Dict {
 	allowance := ctx.AllowanceAvailable()
-	ctx.Log().Debugf("accounts.withdraw.begin -- %s", allowance)
+	ctx.Log().LogDebugf("accounts.withdraw.begin -- %s", allowance)
 	if allowance.IsEmpty() {
 		panic(ErrNotEnoughAllowance)
 	}
@@ -122,7 +122,7 @@ func withdraw(ctx isc.Sandbox) dict.Dict {
 		TargetAddress: callerAddress,
 		Assets:        allowance,
 	})
-	ctx.Log().Debugf("accounts.withdraw.success. Sent to address %s: %s",
+	ctx.Log().LogDebugf("accounts.withdraw.success. Sent to address %s: %s",
 		callerAddress.String(),
 		allowance.String(),
 	)
@@ -170,7 +170,7 @@ func withdraw(ctx isc.Sandbox) dict.Dict {
 // GAS2 or even SD, with potential failure and locked up assets as a result.
 func transferAccountToChain(ctx isc.Sandbox, gasReserveOpt *uint64) dict.Dict {
 	allowance := ctx.AllowanceAvailable()
-	ctx.Log().Debugf("accounts.transferAccountToChain.begin -- %s", allowance)
+	ctx.Log().LogDebugf("accounts.transferAccountToChain.begin -- %s", allowance)
 	if allowance.IsEmpty() {
 		panic(ErrNotEnoughAllowance)
 	}
@@ -221,7 +221,7 @@ func transferAccountToChain(ctx isc.Sandbox, gasReserveOpt *uint64) dict.Dict {
 			GasBudget: gas.GasUnits(coreutil.FromOptional(gasReserveOpt, uint64(gas.LimitsDefault.MinGasPerRequest))),
 		},
 	})
-	ctx.Log().Debugf("accounts.transferAccountToChain.success. Sent to contract %s: %s",
+	ctx.Log().LogDebugf("accounts.transferAccountToChain.success. Sent to contract %s: %s",
 		callerContract.String(),
 		allowance.String(),
 	)
@@ -230,7 +230,7 @@ func transferAccountToChain(ctx isc.Sandbox, gasReserveOpt *uint64) dict.Dict {
 
 // - must be enough allowance for the storage deposit
 func foundryCreateNew(ctx isc.Sandbox, tokenSchemeOpt *iotago.TokenScheme) dict.Dict {
-	ctx.Log().Debugf("accounts.foundryCreateNew")
+	ctx.Log().LogDebugf("accounts.foundryCreateNew")
 
 	ts := util.MustTokenScheme(coreutil.FromOptional[iotago.TokenScheme](tokenSchemeOpt, &iotago.SimpleTokenScheme{}))
 	ts.MeltedTokens = util.Big0
@@ -255,7 +255,7 @@ var errFoundryWithCirculatingSupply = coreerrors.Register("foundry must have zer
 
 // foundryDestroy destroys foundry if that is possible
 func foundryDestroy(ctx isc.Sandbox, sn uint32) dict.Dict {
-	ctx.Log().Debugf("accounts.foundryDestroy")
+	ctx.Log().LogDebugf("accounts.foundryDestroy")
 	// check if foundry is controlled by the caller
 	state := ctx.State()
 	caller := ctx.Caller()

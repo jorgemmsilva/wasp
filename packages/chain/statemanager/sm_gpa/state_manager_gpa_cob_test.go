@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
@@ -17,7 +17,7 @@ import (
 )
 
 func initTestChainOfBlocks(t *testing.T) (
-	*logger.Logger,
+	log.Logger,
 	*sm_gpa_utils.BlockFactory,
 	state.Store,
 	*stateManagerGPA,
@@ -49,7 +49,7 @@ func blocksToBlockInfos(blocks []state.Block) []*blockInfo {
 
 func runTestChainOfBlocks(
 	t *testing.T,
-	log *logger.Logger,
+	log log.Logger,
 	bf *sm_gpa_utils.BlockFactory,
 	store state.Store,
 	sm *stateManagerGPA,
@@ -58,18 +58,16 @@ func runTestChainOfBlocks(
 	blocksInChain []state.Block,
 	blocksExpected []state.Block,
 ) {
-	defer log.Sync()
-
 	for _, block := range blocksToCommit {
 		sd := bf.GetStateDraft(block)
 		block2 := store.Commit(sd)
 		sm_gpa_utils.CheckBlocksEqual(t, block, block2)
-		log.Debugf("Committed block: %v %s", block.StateIndex(), block.L1Commitment())
+		log.LogDebugf("Committed block: %v %s", block.StateIndex(), block.L1Commitment())
 	}
 	for _, block := range blocksToPrune {
 		_, err := store.Prune(block.TrieRoot())
 		require.NoError(t, err)
-		log.Debugf("Pruned block: %v %s", block.StateIndex(), block.L1Commitment())
+		log.LogDebugf("Pruned block: %v %s", block.StateIndex(), block.L1Commitment())
 	}
 	if blocksInChain == nil {
 		require.Nil(t, sm.chainOfBlocks)
@@ -77,7 +75,7 @@ func runTestChainOfBlocks(
 		sm.chainOfBlocks = pipe.NewDeque[*blockInfo]()
 		for _, bi := range blocksToBlockInfos(blocksInChain) {
 			sm.chainOfBlocks.AddEnd(bi)
-			log.Debugf("Added block to currently known blocks chain: %v %s", bi.blockIndex, bi.trieRoot)
+			log.LogDebugf("Added block to currently known blocks chain: %v %s", bi.blockIndex, bi.trieRoot)
 		}
 	}
 
@@ -87,7 +85,7 @@ func runTestChainOfBlocks(
 	bisActual := sm.chainOfBlocks.PeekAll()
 	require.Equal(t, len(bisExpected), len(bisActual))
 	for i := range bisExpected {
-		log.Debugf("Expecting block: %v %s", bisExpected[i].blockIndex, bisExpected[i].trieRoot)
+		log.LogDebugf("Expecting block: %v %s", bisExpected[i].blockIndex, bisExpected[i].trieRoot)
 		require.True(t, bisExpected[i].trieRoot.Equals(bisActual[i].trieRoot))
 		require.Equal(t, bisExpected[i].blockIndex, bisActual[i].blockIndex)
 	}

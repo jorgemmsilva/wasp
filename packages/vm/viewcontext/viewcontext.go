@@ -4,11 +4,9 @@ import (
 	"math/big"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/samber/lo"
 
-	"github.com/iotaledger/hive.go/logger"
+	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -38,7 +36,7 @@ type ViewContext struct {
 	processors            *processors.Cache
 	stateReader           state.State
 	chainID               isc.ChainID
-	log                   *logger.Logger
+	log                   log.Logger
 	chainInfo             *isc.ChainInfo
 	gasBurnLog            *gas.BurnLog
 	gasBudget             gas.GasUnits
@@ -57,7 +55,7 @@ func New(ch chaintypes.ChainCore, stateReader state.State, gasBurnLoggingEnabled
 		processors:            ch.Processors(),
 		stateReader:           stateReader,
 		chainID:               chainID,
-		log:                   ch.Log().Desugar().WithOptions(zap.AddCallerSkip(1)).Sugar(),
+		log:                   ch.Log(),
 		gasBurnLoggingEnabled: gasBurnLoggingEnabled,
 		l1API:                 ch.L1APIProvider().APIForTime(stateReader.Timestamp()),
 		tokenInfo:             ch.TokenInfo(),
@@ -145,7 +143,7 @@ func (ctx *ViewContext) GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID
 }
 
 func (ctx *ViewContext) Call(msg isc.Message, _ *isc.Assets) dict.Dict {
-	ctx.log.Debugf("Call. TargetContract: %s entry point: %s", msg.Target.Contract, msg.Target.EntryPoint)
+	ctx.log.LogDebugf("Call. TargetContract: %s entry point: %s", msg.Target.Contract, msg.Target.EntryPoint)
 	return ctx.callView(msg)
 }
 
@@ -191,16 +189,16 @@ func (ctx *ViewContext) GasEstimateMode() bool {
 	return false
 }
 
-func (ctx *ViewContext) Infof(format string, params ...interface{}) {
-	ctx.log.Infof(format, params...)
+func (ctx *ViewContext) LogInfof(format string, params ...interface{}) {
+	ctx.log.LogInfof(format, params...)
 }
 
-func (ctx *ViewContext) Debugf(format string, params ...interface{}) {
-	ctx.log.Debugf(format, params...)
+func (ctx *ViewContext) LogDebugf(format string, params ...interface{}) {
+	ctx.log.LogDebugf(format, params...)
 }
 
-func (ctx *ViewContext) Panicf(format string, params ...interface{}) {
-	ctx.log.Panicf(format, params...)
+func (ctx *ViewContext) LogPanicf(format string, params ...interface{}) {
+	ctx.log.LogPanicf(format, params...)
 }
 
 // only for debugging

@@ -34,7 +34,7 @@ func (p *kvdecoder) check(err error) {
 	if p.log == nil {
 		panic(err)
 	}
-	p.log.Panicf("%v", err)
+	p.log.LogPanicf("%v", err)
 }
 
 func (p *kvdecoder) wrapError(key kv.Key, err error) error {

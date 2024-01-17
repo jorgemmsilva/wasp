@@ -9,13 +9,9 @@ import (
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
 	"github.com/iotaledger/wasp/packages/chain/statemanager/sm_gpa/sm_gpa_utils"
 	"github.com/iotaledger/wasp/packages/state"
-	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 )
 
 func TestWriteReadDifferentStores(t *testing.T) {
-	log := testlogger.NewLogger(t)
-	defer log.Sync()
-
 	var err error
 	numberOfBlocks := 10
 	factory := sm_gpa_utils.NewBlockFactory(t)

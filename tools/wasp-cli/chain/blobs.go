@@ -37,7 +37,7 @@ func initStoreBlobCmd() *cobra.Command {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
 
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			uploadBlob(cliclients.WaspClient(node), chainID, util.EncodeParams(args, chainID))
 		},
 	}
@@ -74,7 +74,7 @@ func initShowBlobCmd() *cobra.Command {
 
 			blobInfo, _, err := client.
 				CorecontractsApi.
-				BlobsGetBlobInfo(context.Background(), config.GetChain(chain).String(), hash.Hex()).
+				BlobsGetBlobInfo(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), hash.Hex()).
 				Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 
@@ -82,7 +82,7 @@ func initShowBlobCmd() *cobra.Command {
 			for field := range blobInfo.Fields {
 				value, _, err := client.
 					CorecontractsApi.
-					BlobsGetBlobValue(context.Background(), config.GetChain(chain).String(), hash.Hex(), field).
+					BlobsGetBlobValue(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), hash.Hex(), field).
 					Execute() //nolint:bodyclose // false positive
 
 				log.Check(err)
@@ -114,12 +114,12 @@ func initListBlobsCmd() *cobra.Command {
 
 			blobsResponse, _, err := client.
 				CorecontractsApi.
-				BlobsGetAllBlobs(context.Background(), config.GetChain(chain).String()).
+				BlobsGetAllBlobs(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute() //nolint:bodyclose // false positive
 
 			log.Check(err)
 
-			log.Printf("Total %d blob(s) in chain %s\n", len(blobsResponse.Blobs), config.GetChain(chain))
+			log.Printf("Total %d blob(s) in chain %s\n", len(blobsResponse.Blobs), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()))
 
 			header := []string{"hash", "size"}
 			rows := make([][]string, len(blobsResponse.Blobs))

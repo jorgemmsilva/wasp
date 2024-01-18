@@ -12,7 +12,7 @@ import (
 
 func (c *Controller) getContracts(e echo.Context) error {
 	controllerutils.SetOperation(e, "get_contracts")
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}

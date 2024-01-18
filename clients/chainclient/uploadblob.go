@@ -16,6 +16,6 @@ func (c *Client) UploadBlob(ctx context.Context, fields dict.Dict) (hashing.Hash
 	if err != nil {
 		return hashing.NilHash, nil, nil, err
 	}
-	receipt, _, err := c.WaspClient.ChainsApi.WaitForRequest(ctx, c.ChainID.String(), req.ID().String()).Execute()
+	receipt, _, err := c.WaspClient.ChainsApi.WaitForRequest(ctx, c.ChainID.Bech32(c.Layer1Client.Bech32HRP()), req.ID().String()).Execute()
 	return blob.GetBlobHash(fields), req, receipt, err
 }

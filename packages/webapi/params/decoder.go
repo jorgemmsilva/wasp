@@ -13,8 +13,8 @@ import (
 	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 )
 
-func DecodeChainID(e echo.Context) (isc.ChainID, error) {
-	chainID, err := isc.ChainIDFromString(e.Param(ParamChainID))
+func DecodeChainID(e echo.Context, l1API iotago.API) (isc.ChainID, error) {
+	chainID, err := isc.ChainIDFromBech32(e.Param(ParamChainID), l1API.ProtocolParameters().Bech32HRP())
 	if err != nil {
 		return isc.ChainID{}, apierrors.InvalidPropertyError(ParamChainID, err)
 	}
@@ -47,8 +47,8 @@ func DecodeHNameFromHNameHexString(e echo.Context, key string) (isc.Hname, error
 	return hname, nil
 }
 
-func DecodeAgentID(e echo.Context) (isc.AgentID, error) {
-	agentID, err := isc.AgentIDFromString(e.Param(ParamAgentID))
+func DecodeAgentID(e echo.Context, l1API iotago.API) (isc.AgentID, error) {
+	agentID, err := isc.AgentIDFromBech32(e.Param(ParamAgentID), l1API.ProtocolParameters().Bech32HRP())
 	if err != nil {
 		return nil, apierrors.InvalidPropertyError(ParamAgentID, err)
 	}

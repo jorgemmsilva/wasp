@@ -9,6 +9,7 @@ import (
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/lo"
 	"github.com/iotaledger/hive.go/runtime/options"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/registry"
 )
@@ -23,8 +24,9 @@ type ChainStateDatabaseManager struct {
 	mutex sync.RWMutex
 
 	// options
-	engine       hivedb.Engine
-	databasePath string
+	engine        hivedb.Engine
+	databasePath  string
+	networkPrefix iotago.NetworkPrefix
 
 	// databases
 	databases map[isc.ChainID]*databaseWithHealthTracker
@@ -42,11 +44,16 @@ func WithPath(databasePath string) options.Option[ChainStateDatabaseManager] {
 	}
 }
 
-func NewChainStateDatabaseManager(chainRecordRegistryProvider registry.ChainRecordRegistryProvider, opts ...options.Option[ChainStateDatabaseManager]) (*ChainStateDatabaseManager, error) {
+func NewChainStateDatabaseManager(
+	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
+	networkPrefix iotago.NetworkPrefix,
+	opts ...options.Option[ChainStateDatabaseManager],
+) (*ChainStateDatabaseManager, error) {
 	m := options.Apply(&ChainStateDatabaseManager{
-		engine:       hivedb.EngineAuto,
-		databasePath: "waspdb/chains/data",
-		databases:    make(map[isc.ChainID]*databaseWithHealthTracker),
+		networkPrefix: networkPrefix,
+		engine:        hivedb.EngineAuto,
+		databasePath:  "waspdb/chains/data",
+		databases:     make(map[isc.ChainID]*databaseWithHealthTracker),
 	}, opts)
 
 	// load all active chain state databases
@@ -89,7 +96,7 @@ func (m *ChainStateDatabaseManager) createDatabase(chainID isc.ChainID) (*databa
 		return databaseChainState, nil
 	}
 
-	databaseChainState, err := newDatabaseWithHealthTracker(path.Join(m.databasePath, chainID.String()), m.engine, false, StoreVersionChainState, nil)
+	databaseChainState, err := newDatabaseWithHealthTracker(path.Join(m.databasePath, chainID.Bech32(m.networkPrefix)), m.engine, false, StoreVersionChainState, nil)
 	if err != nil {
 		return nil, fmt.Errorf("chain state database initialization failed: %w", err)
 	}

@@ -148,7 +148,7 @@ func (c *Client) post1RequestWithOutputs(
 }
 
 func (c *Client) ISCNonce(ctx context.Context) (uint64, error) {
-	result, _, err := c.WaspClient.ChainsApi.CallView(ctx, c.ChainID.String()).
+	result, _, err := c.WaspClient.ChainsApi.CallView(ctx, c.ChainID.Bech32(c.Layer1Client.Bech32HRP())).
 		ContractCallViewRequest(apiclient.ContractCallViewRequest{
 			ContractHName: accounts.Contract.Hname().String(),
 			FunctionHName: accounts.ViewGetAccountNonce.Hname().String(),
@@ -188,7 +188,7 @@ func (c *Client) PostOffLedgerRequest(
 	request := hexutil.EncodeHex(signed.Bytes())
 
 	offLedgerRequest := apiclient.OffLedgerRequest{
-		ChainId: c.ChainID.String(),
+		ChainId: c.ChainID.Bech32(c.Layer1Client.Bech32HRP()),
 		Request: request,
 	}
 	_, err := c.WaspClient.RequestsApi.

@@ -263,7 +263,7 @@ func (ctx *SoloContext) Account() *SoloAgent {
 	return &SoloAgent{
 		agentID: agentID,
 		Env:     ctx.Chain.Env,
-		ID:      agentID.String(),
+		ID:      agentID.Bech32(ctx.Tx.API.ProtocolParameters().Bech32HRP()),
 		Name:    ctx.Chain.Name + "." + ctx.scName,
 		Pair:    nil,
 	}
@@ -310,7 +310,7 @@ func (ctx *SoloContext) CommonAccount() *SoloAgent {
 	return &SoloAgent{
 		agentID: agentID,
 		Env:     ctx.Chain.Env,
-		ID:      agentID.String(),
+		ID:      agentID.Bech32(ctx.Tx.API.ProtocolParameters().Bech32HRP()),
 		Name:    ctx.Chain.Name + ".Common",
 		Pair:    nil,
 	}
@@ -458,7 +458,7 @@ func (ctx *SoloContext) Originator() *SoloAgent {
 	return &SoloAgent{
 		agentID: agentID,
 		Env:     ctx.Chain.Env,
-		ID:      agentID.String(),
+		ID:      agentID.Bech32(ctx.Tx.API.ProtocolParameters().Bech32HRP()),
 		Name:    ctx.Chain.Name + ".Originator",
 		Pair:    ctx.Chain.OriginatorPrivateKey,
 	}

@@ -85,7 +85,7 @@ func TestCreateOrigin(t *testing.T) {
 		require.NoError(t, err2)
 		require.EqualValues(t, originTxID, txidBack)
 
-		t.Logf("New chain ID: %s", chainID.String())
+		t.Logf("New chain ID: %s", chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	}
 
 	t.Run("create origin", func(t *testing.T) {

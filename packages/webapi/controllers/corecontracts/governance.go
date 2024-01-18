@@ -5,16 +5,17 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/webapi/corecontracts"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 	"github.com/iotaledger/wasp/packages/webapi/params"
 )
 
-func MapGovChainInfoResponse(chainInfo *isc.ChainInfo) models.GovChainInfoResponse {
+func MapGovChainInfoResponse(chainInfo *isc.ChainInfo, l1API iotago.API) models.GovChainInfoResponse {
 	return models.GovChainInfoResponse{
-		ChainID:      chainInfo.ChainID.String(),
-		ChainOwnerID: chainInfo.ChainOwnerID.String(),
+		ChainID:      chainInfo.ChainID.Bech32(l1API.ProtocolParameters().Bech32HRP()),
+		ChainOwnerID: chainInfo.ChainOwnerID.Bech32(l1API.ProtocolParameters().Bech32HRP()),
 		GasFeePolicy: chainInfo.GasFeePolicy,
 		GasLimits:    chainInfo.GasLimits,
 		PublicURL:    chainInfo.PublicURL,
@@ -39,7 +40,7 @@ func (c *Controller) getChainInfo(e echo.Context) error {
 		return c.handleViewCallError(err, ch.ID())
 	}
 
-	chainInfoResponse := MapGovChainInfoResponse(chainInfo)
+	chainInfoResponse := MapGovChainInfoResponse(chainInfo, c.l1Api)
 
 	return e.JSON(http.StatusOK, chainInfoResponse)
 }
@@ -56,7 +57,7 @@ func (c *Controller) getChainOwner(e echo.Context) error {
 	}
 
 	chainOwnerResponse := models.GovChainOwnerResponse{
-		ChainOwner: chainOwner.String(),
+		ChainOwner: chainOwner.Bech32(c.l1Api.ProtocolParameters().Bech32HRP()),
 	}
 
 	return e.JSON(http.StatusOK, chainOwnerResponse)

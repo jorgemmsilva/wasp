@@ -44,10 +44,13 @@ func ChainIDFromBytes(data []byte) (ret ChainID, err error) {
 	return ret, err
 }
 
-func ChainIDFromBech32(bech32 string) (ChainID, error) {
-	_, addr, err := iotago.ParseBech32(bech32)
+func ChainIDFromBech32(bech32 string, expectedPrefix iotago.NetworkPrefix) (ChainID, error) {
+	prefix, addr, err := iotago.ParseBech32(bech32)
 	if err != nil {
 		return ChainID{}, err
+	}
+	if prefix != expectedPrefix {
+		return ChainID{}, fmt.Errorf("expected network prefix %s, got %s", expectedPrefix, prefix)
 	}
 	if addr.Type() != iotago.AddressAnchor {
 		return ChainID{}, fmt.Errorf("chainID must be an anchor address (%s)", bech32)
@@ -55,13 +58,13 @@ func ChainIDFromBech32(bech32 string) (ChainID, error) {
 	return ChainIDFromAddress(addr.(*iotago.AnchorAddress)), nil
 }
 
-func ChainIDFromString(s string) (ChainID, error) {
+func ChainIDFromHexString(s string) (ChainID, error) {
 	chID, err := iotago.AnchorIDFromHexString(s)
 	return ChainID(chID), err
 }
 
 func ChainIDFromKey(key ChainIDKey) ChainID {
-	chainID, err := ChainIDFromString(string(key))
+	chainID, err := ChainIDFromHexString(string(key))
 	if err != nil {
 		panic(err)
 	}
@@ -129,7 +132,7 @@ func (id ChainID) Bech32(bech32HRP iotago.NetworkPrefix) string {
 	return id.AsAddress().Bech32(bech32HRP)
 }
 
-func (id ChainID) String() string {
+func (id ChainID) Hex() string {
 	return id.AsAnchorID().ToHex()
 }
 

@@ -26,7 +26,7 @@ func NewSoloAgent(env *solo.Solo, name string) *SoloAgent {
 	return &SoloAgent{
 		agentID: agentID,
 		Env:     env,
-		ID:      agentID.String(),
+		ID:      agentID.Bech32(env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP()),
 		Name:    name,
 		Pair:    pair,
 	}

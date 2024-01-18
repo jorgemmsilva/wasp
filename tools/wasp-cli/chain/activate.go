@@ -24,7 +24,7 @@ func initActivateCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chainName = defaultChainFallback(chainName)
-			chainID := config.GetChain(chainName)
+			chainID := config.GetChain(chainName, cliclients.API().ProtocolParameters().Bech32HRP())
 			activateChain(node, chainName, chainID)
 		},
 	}
@@ -37,7 +37,7 @@ func initActivateCmd() *cobra.Command {
 
 func activateChain(node string, chainName string, chainID isc.ChainID) {
 	client := cliclients.WaspClient(node)
-	r, httpStatus, err := client.ChainsApi.GetChainInfo(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+	r, httpStatus, err := client.ChainsApi.GetChainInfo(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 
 	if err != nil && httpStatus.StatusCode != http.StatusNotFound {
 		log.Check(err)
@@ -48,14 +48,14 @@ func activateChain(node string, chainName string, chainID isc.ChainID) {
 	}
 
 	if r == nil {
-		_, err2 := client.ChainsApi.SetChainRecord(context.Background(), chainID.String()).ChainRecord(apiclient.ChainRecord{
+		_, err2 := client.ChainsApi.SetChainRecord(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).ChainRecord(apiclient.ChainRecord{
 			IsActive:    true,
 			AccessNodes: []string{},
 		}).Execute() //nolint:bodyclose // false positive
 
 		log.Check(err2)
 	} else {
-		_, err = client.ChainsApi.ActivateChain(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+		_, err = client.ChainsApi.ActivateChain(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 		log.Check(err)
 	}
 
@@ -73,10 +73,10 @@ func initDeactivateCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			chainName = defaultChainFallback(chainName)
 
-			chainID := config.GetChain(chainName)
+			chainID := config.GetChain(chainName, cliclients.API().ProtocolParameters().Bech32HRP())
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			client := cliclients.WaspClient(node)
-			_, err := client.ChainsApi.DeactivateChain(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+			_, err := client.ChainsApi.DeactivateChain(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 			log.Printf("Chain: %v (%v)\nDeactivated.\n", chainID, chainName)
 		},

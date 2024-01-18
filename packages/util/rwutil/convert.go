@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 type Kind byte
@@ -189,6 +191,23 @@ func StringTest[T interface{ String() string }](t *testing.T, obj1 T, fromString
 	require.NoError(t, err)
 	require.Equal(t, obj1, obj2)
 	require.Equal(t, obj1.String(), obj2.String())
+	return obj2
+}
+
+func Bech32Test[
+	T interface {
+		Bech32(iotago.NetworkPrefix) string
+	},
+](
+	t *testing.T,
+	obj1 T,
+	fromString func(string, iotago.NetworkPrefix) (T, error),
+	prefix iotago.NetworkPrefix,
+) T {
+	obj2, err := fromString(obj1.Bech32(prefix), prefix)
+	require.NoError(t, err)
+	require.Equal(t, obj1, obj2)
+	require.Equal(t, obj1.Bech32(prefix), obj2.Bech32(prefix))
 	return obj2
 }
 

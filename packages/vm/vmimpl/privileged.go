@@ -61,7 +61,7 @@ func (reqctx *requestContext) RetryUnprocessable(req isc.Request, outputID iotag
 }
 
 func (reqctx *requestContext) CallOnBehalfOf(caller isc.AgentID, msg isc.Message, allowance *isc.Assets) dict.Dict {
-	reqctx.LogDebugf("CallOnBehalfOf: caller = %s, msg = %s", caller.String(), msg)
+	reqctx.LogDebugf("CallOnBehalfOf: caller = %s, msg = %s", caller.Bech32(reqctx.L1API().ProtocolParameters().Bech32HRP()), msg)
 	return reqctx.callProgram(msg, allowance, caller)
 }
 

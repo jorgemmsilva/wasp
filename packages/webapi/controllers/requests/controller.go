@@ -5,6 +5,7 @@ import (
 
 	"github.com/pangpanglabs/echoswagger/v2"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
 	"github.com/iotaledger/wasp/packages/webapi/models"
 )
@@ -13,13 +14,20 @@ type Controller struct {
 	chainService     interfaces.ChainService
 	offLedgerService interfaces.OffLedgerService
 	peeringService   interfaces.PeeringService
+	l1API            iotago.API
 }
 
-func NewRequestsController(chainService interfaces.ChainService, offLedgerService interfaces.OffLedgerService, peeringService interfaces.PeeringService) interfaces.APIController {
+func NewRequestsController(
+	chainService interfaces.ChainService,
+	offLedgerService interfaces.OffLedgerService,
+	peeringService interfaces.PeeringService,
+	l1API iotago.API,
+) interfaces.APIController {
 	return &Controller{
 		chainService:     chainService,
 		offLedgerService: offLedgerService,
 		peeringService:   peeringService,
+		l1API:            l1API,
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	"math"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 )
 
@@ -68,12 +67,4 @@ func AddressToBytes(address iotago.Address) []byte {
 	ww := rwutil.NewBytesWriter()
 	AddressToWriter(ww, address)
 	return ww.Bytes()
-}
-
-func AddressFromString(s string) (iotago.Address, error) {
-	b, err := hexutil.DecodeHex(s)
-	if err != nil {
-		return nil, err
-	}
-	return AddressFromBytes(b)
 }

@@ -48,7 +48,7 @@ func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 	)
 
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOnledger(context.Background(),
-		env.Chain.ChainID.String(),
+		env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()),
 	).Request(apiclient.EstimateGasRequestOnledger{
 		OutputBytes: hexutil.EncodeHex(lo.Must(testutil.L1API.Encode(output))),
 	}).Execute()
@@ -121,7 +121,7 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 	)
 
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOnledger(context.Background(),
-		env.Chain.ChainID.String(),
+		env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()),
 	).Request(apiclient.EstimateGasRequestOnledger{
 		OutputBytes: hexutil.EncodeHex(lo.Must(testutil.L1API.Encode(output))),
 	}).Execute()
@@ -162,7 +162,7 @@ func testEstimateGasOffLedger(t *testing.T, env *ChainEnv) {
 		WithSender(keyPair.GetPublicKey())
 
 	estimatedReceipt, _, err := env.Chain.Cluster.WaspClient(0).ChainsApi.EstimateGasOffledger(context.Background(),
-		env.Chain.ChainID.String(),
+		env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()),
 	).Request(apiclient.EstimateGasRequestOffledger{
 		RequestBytes: hexutil.EncodeHex(estimationReq.Bytes()),
 	}).Execute()

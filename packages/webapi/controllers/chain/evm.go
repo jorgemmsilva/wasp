@@ -8,7 +8,7 @@ import (
 
 func (c *Controller) handleJSONRPC(e echo.Context) error {
 	controllerutils.SetOperation(e, "evm_json_rpc")
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}
@@ -18,7 +18,7 @@ func (c *Controller) handleJSONRPC(e echo.Context) error {
 
 func (c *Controller) handleWebsocket(e echo.Context) error {
 	controllerutils.SetOperation(e, "evm_websocket")
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}

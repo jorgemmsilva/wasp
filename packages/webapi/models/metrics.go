@@ -74,11 +74,11 @@ func MapMetricItem[T any, G any](metrics *dto.MetricItem[G], value T) MetricItem
 	}
 }
 
-func MapRegisteredChainIDs(registered []isc.ChainID) []string {
+func MapRegisteredChainIDs(registered []isc.ChainID, l1API iotago.API) []string {
 	chainIDs := make([]string, len(registered))
 
 	for k, v := range registered {
-		chainIDs[k] = v.String()
+		chainIDs[k] = v.Bech32(l1API.ProtocolParameters().Bech32HRP())
 	}
 
 	return chainIDs
@@ -102,7 +102,7 @@ func MapChainMessageMetrics(l1Api iotago.API, metrics *dto.ChainMessageMetrics) 
 
 func MapNodeMessageMetrics(l1Api iotago.API, metrics *dto.NodeMessageMetrics) *NodeMessageMetrics {
 	return &NodeMessageMetrics{
-		RegisteredChainIDs: MapRegisteredChainIDs(metrics.RegisteredChainIDs),
+		RegisteredChainIDs: MapRegisteredChainIDs(metrics.RegisteredChainIDs, l1Api),
 
 		InStateOutput:      InStateOutputMetricItem(MapMetricItem(metrics.InStateOutput, InStateOutputFromISCInStateOutput(l1Api, metrics.InStateOutput.LastMessage))),
 		InAnchorOutput:     AnchorOutputMetricItem(MapMetricItem(metrics.InAnchorOutput, OutputFromIotaGoOutput(l1Api, metrics.InAnchorOutput.LastMessage))),

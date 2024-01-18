@@ -18,7 +18,7 @@ import (
 )
 
 func postRequest(nodeName, chain string, msg isc.Message, params chainclient.PostRequestParams, offLedger, adjustStorageDeposit bool) {
-	chainID := config.GetChain(chain)
+	chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 
 	apiClient := cliclients.WaspClient(nodeName)
 	chainClient := wallet.ChainClient(apiClient, chainID)
@@ -48,7 +48,7 @@ func postRequest(nodeName, chain string, msg isc.Message, params chainclient.Pos
 		util.SDAdjustmentPrompt(output)
 	}
 
-	util.WithSCTransaction(config.GetChain(chain), nodeName, func() (*iotago.SignedTransaction, error) {
+	util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), nodeName, func() (*iotago.SignedTransaction, error) {
 		return chainClient.PostRequest(msg, params)
 	})
 }
@@ -68,7 +68,7 @@ func initPostRequestCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			cname := args[0]
 			fname := args[1]
 			params := util.EncodeParams(args[2:], chainID)

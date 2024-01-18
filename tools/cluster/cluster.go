@@ -291,11 +291,11 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 	}
 
 	// activate chain on nodes
-	err = apilib.ActivateChainOnNodes(clu.WaspClientFromHostName, chain.CommitteeAPIHosts(), chainID)
+	err = apilib.ActivateChainOnNodes(clu.WaspClientFromHostName, chain.CommitteeAPIHosts(), chainID, clu.l1.APIProvider().LatestAPI())
 	if err != nil {
-		clu.t.Fatalf("activating chain %s.. FAILED: %v\n", chainID.String(), err)
+		clu.t.Fatalf("activating chain %s.. FAILED: %v\n", chainID.Bech32(clu.l1.Bech32HRP()), err)
 	}
-	fmt.Printf("activating chain %s.. OK.\n", chainID.String())
+	fmt.Printf("activating chain %s.. OK.\n", chainID.Bech32(clu.l1.Bech32HRP()))
 
 	// ---------- wait until the request is processed at least in all committee nodes
 	{
@@ -304,9 +304,9 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 		retries := 10
 		for {
 			time.Sleep(200 * time.Millisecond)
-			err = multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts()).Do(
+			err = multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts(), clu.l1.APIProvider().LatestAPI()).Do(
 				func(_ int, a *apiclient.APIClient) error {
-					_, _, err2 := a.ChainsApi.GetChainInfo(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+					_, _, err2 := a.ChainsApi.GetChainInfo(context.Background(), chainID.Bech32(clu.l1.Bech32HRP())).Execute() //nolint:bodyclose // false positive
 					return err2
 				})
 			if err != nil {
@@ -343,7 +343,7 @@ func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 		time.Sleep(100 * time.Millisecond) // give some time for the indexer to catch up, otherwise it might not find the user outputs...
 	}
 
-	peers := multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts())
+	peers := multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts(), clu.l1.APIProvider().LatestAPI())
 
 	for _, tx := range addAccessNodesTxs {
 		// ---------- wait until the requests are processed in all committee nodes
@@ -389,7 +389,7 @@ func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 // to consider it as an access node.
 func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.SignedTransaction, error) {
 	waspClient := clu.WaspClient(accessNodeIndex)
-	if err := apilib.ActivateChainOnNodes(clu.WaspClientFromHostName, clu.Config.APIHosts([]int{accessNodeIndex}), chain.ChainID); err != nil {
+	if err := apilib.ActivateChainOnNodes(clu.WaspClientFromHostName, clu.Config.APIHosts([]int{accessNodeIndex}), chain.ChainID, clu.l1.APIProvider().LatestAPI()); err != nil {
 		return nil, err
 	}
 
@@ -450,7 +450,7 @@ func (clu *Cluster) IsNodeUp(i int) bool {
 }
 
 func (clu *Cluster) MultiClient() *multiclient.MultiClient {
-	return multiclient.New(clu.WaspClientFromHostName, clu.Config.APIHosts()) //.WithLogFunc(clu.t.Logf)
+	return multiclient.New(clu.WaspClientFromHostName, clu.Config.APIHosts(), clu.l1.APIProvider().LatestAPI()) //.WithLogFunc(clu.t.Logf)
 }
 
 func (clu *Cluster) WaspClientFromHostName(hostName string) *apiclient.APIClient {

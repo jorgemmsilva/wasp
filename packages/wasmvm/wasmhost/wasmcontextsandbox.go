@@ -169,7 +169,7 @@ func (s *WasmContextSandbox) makeRequest(args []byte) isc.RequestParameters {
 		transfer.BaseTokens = iotago.BaseToken(wasmlib.StorageDeposit)
 	}
 
-	s.Tracef("POST %s.%s, chain %s", contract.String(), function.String(), chainID.String())
+	s.Tracef("POST %s.%s, chain %s", contract.String(), function.String(), chainID.Bech32(s.common.L1API().ProtocolParameters().Bech32HRP()))
 	sendReq := isc.RequestParameters{
 		AdjustToMinimumStorageDeposit: true,
 		TargetAddress:                 chainID.AsAddress(),

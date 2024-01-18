@@ -12,7 +12,6 @@ import (
 
 	"github.com/iotaledger/hive.go/runtime/event"
 	"github.com/iotaledger/hive.go/runtime/ioutils"
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/onchangemap"
@@ -91,7 +90,7 @@ func (r *ChainRecord) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(&jsonChainRecord{
-		ChainID:     r.ID().String(),
+		ChainID:     r.ID().Hex(),
 		Active:      r.Active,
 		AccessNodes: accessNodesPubKeysHex,
 	})
@@ -107,18 +106,9 @@ func (r *ChainRecord) UnmarshalJSON(bytes []byte) error {
 		return errors.New("missing chainID")
 	}
 
-	_, address, err := iotago.ParseBech32(j.ChainID)
+	chainID, err := isc.ChainIDFromHexString(j.ChainID)
 	if err != nil {
 		return err
-	}
-
-	if address.Type() != iotago.AddressAccount {
-		return errors.New("chainID is not an account address")
-	}
-
-	anchorAddress, ok := address.(*iotago.AnchorAddress)
-	if !ok {
-		return errors.New("chainID is not an account address")
 	}
 
 	accessNodesPubKeys := make([]*cryptolib.PublicKey, len(j.AccessNodes))
@@ -132,7 +122,7 @@ func (r *ChainRecord) UnmarshalJSON(bytes []byte) error {
 	}
 
 	*r = ChainRecord{
-		id:          isc.ChainID(anchorAddress.AnchorID()),
+		id:          chainID,
 		Active:      j.Active,
 		AccessNodes: accessNodesPubKeys,
 	}

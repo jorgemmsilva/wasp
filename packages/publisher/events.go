@@ -5,6 +5,7 @@ import (
 
 	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/runtime/event"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
@@ -31,10 +32,10 @@ type ISCEvent[T any] struct {
 }
 
 // kind is not printed right now, because it is added when calling p.publish
-func (e *ISCEvent[T]) String() string {
+func (e *ISCEvent[T]) String(networkPrefix iotago.NetworkPrefix) string {
 	issuerStr := "vm"
 	if e.Issuer != nil {
-		issuerStr = e.Issuer.String()
+		issuerStr = e.Issuer.Bech32(networkPrefix)
 	}
 
 	return fmt.Sprintf("%s | %s (%s)", e.ChainID, issuerStr, e.Kind)

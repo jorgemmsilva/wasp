@@ -30,12 +30,12 @@ func initConsensusMetricsCmd() *cobra.Command {
 
 			chainID := isc.ChainIDFromAddress(chainAddress.(*iotago.AnchorAddress))
 			workflowStatus, _, err := client.MetricsApi.
-				GetChainWorkflowMetrics(context.Background(), chainID.String()).
+				GetChainWorkflowMetrics(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute()
 			log.Check(err)
 
 			pipeMetrics, _, err := client.MetricsApi.
-				GetChainPipeMetrics(context.Background(), chainID.String()).
+				GetChainPipeMetrics(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute()
 			log.Check(err)
 

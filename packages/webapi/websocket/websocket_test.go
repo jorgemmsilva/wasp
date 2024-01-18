@@ -60,7 +60,7 @@ func TestWebsocketEvents(t *testing.T) {
 	// It's the last step before the events get send via the websocket to the client.
 	// It's also the last step to validate the events without actually connecting with a websocket client.
 	ws.publisherEvent.Hook(func(iscEvent *ISCEvent) {
-		require.Exactly(t, iscEvent.ChainID, chain.ChainID.String())
+		require.Exactly(t, iscEvent.ChainID, chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
 		if iscEvent.Kind == publisher.ISCEventKindNewBlock {
 			cancel()

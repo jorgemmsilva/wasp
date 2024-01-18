@@ -193,7 +193,7 @@ func (e *ChainEnv) GetGasPriceEVM() *big.Int {
 }
 
 func (e *ChainEnv) EVMJSONRPClient(nodeIndex int) *ethclient.Client {
-	return NewEVMJSONRPClient(e.t, e.Chain.ChainID.String(), e.Clu, nodeIndex)
+	return NewEVMJSONRPClient(e.t, e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()), e.Clu, nodeIndex)
 }
 
 func NewEVMJSONRPClient(t *testing.T, chainID string, clu *cluster.Cluster, nodeIndex int) *ethclient.Client {

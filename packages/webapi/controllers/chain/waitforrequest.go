@@ -19,7 +19,7 @@ func (c *Controller) waitForRequestToFinish(e echo.Context) error {
 	const maximumTimeoutSeconds = 60
 	const defaultTimeoutSeconds = 30
 
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}

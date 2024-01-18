@@ -18,7 +18,7 @@ import (
 
 func (e *ChainEnv) getBlobInfo(hash hashing.HashValue) map[string]uint32 {
 	blobInfo, _, err := e.Chain.Cluster.WaspClient().CorecontractsApi.
-		BlobsGetBlobInfo(context.Background(), e.Chain.ChainID.String(), hash.Hex()).
+		BlobsGetBlobInfo(context.Background(), e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()), hash.Hex()).
 		Execute()
 
 	require.NoError(e.t, err)
@@ -28,7 +28,7 @@ func (e *ChainEnv) getBlobInfo(hash hashing.HashValue) map[string]uint32 {
 
 func (e *ChainEnv) getBlobFieldValue(blobHash hashing.HashValue, field string) []byte {
 	blobField, _, err := e.Chain.Cluster.WaspClient().CorecontractsApi.
-		BlobsGetBlobValue(context.Background(), e.Chain.ChainID.String(), blobHash.Hex(), field).
+		BlobsGetBlobValue(context.Background(), e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()), blobHash.Hex(), field).
 		Execute()
 	require.NoError(e.t, err)
 

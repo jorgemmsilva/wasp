@@ -33,7 +33,7 @@ func initDeployContractCmd() *cobra.Command {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
 
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			client := cliclients.WaspClient(node)
 			vmtype := args[0]
 			name := args[1]

@@ -36,10 +36,6 @@ func (a *NilAgentID) Kind() AgentIDKind {
 	return AgentIDKindNil
 }
 
-func (a *NilAgentID) String() string {
-	return nilAgentIDString
-}
-
 func (*NilAgentID) Bech32(prefix iotago.NetworkPrefix) string {
 	return nilAgentIDString
 }

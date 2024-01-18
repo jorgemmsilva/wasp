@@ -4,20 +4,23 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iotaledger/hive.go/constraints"
 	"github.com/iotaledger/hive.go/ds/shrinkingmap"
 	"github.com/iotaledger/hive.go/runtime/options"
 )
 
+type keyable[K comparable] interface {
+	Key() K
+}
+
 // Item represents an item in the OnChangeMap.
-type Item[K comparable, C constraints.ComparableStringer[K]] interface {
+type Item[K comparable, C keyable[K]] interface {
 	ID() C
 	Clone() Item[K, C]
 }
 
 // OnChangeMap is a map that executes callbacks if the map or an item is modified,
 // in case callbackEnabled is true.
-type OnChangeMap[K comparable, C constraints.ComparableStringer[K], I Item[K, C]] struct {
+type OnChangeMap[K comparable, C keyable[K], I Item[K, C]] struct {
 	mutex sync.RWMutex
 
 	m                *shrinkingmap.ShrinkingMap[K, I]
@@ -30,35 +33,35 @@ type OnChangeMap[K comparable, C constraints.ComparableStringer[K], I Item[K, C]
 }
 
 // WithChangedCallback is triggered when something in the OnChangeMap is changed (added/modified/deleted).
-func WithChangedCallback[K comparable, C constraints.ComparableStringer[K], I Item[K, C]](changedCallback func([]I) error) options.Option[OnChangeMap[K, C, I]] {
+func WithChangedCallback[K comparable, C keyable[K], I Item[K, C]](changedCallback func([]I) error) options.Option[OnChangeMap[K, C, I]] {
 	return func(r *OnChangeMap[K, C, I]) {
 		r.changedCallback = changedCallback
 	}
 }
 
 // WithItemAddedCallback is triggered when a new item is added.
-func WithItemAddedCallback[K comparable, C constraints.ComparableStringer[K], I Item[K, C]](itemAddedCallback func(I) error) options.Option[OnChangeMap[K, C, I]] {
+func WithItemAddedCallback[K comparable, C keyable[K], I Item[K, C]](itemAddedCallback func(I) error) options.Option[OnChangeMap[K, C, I]] {
 	return func(r *OnChangeMap[K, C, I]) {
 		r.itemAddedCallback = itemAddedCallback
 	}
 }
 
 // WithItemModifiedCallback is triggered when an item is modified.
-func WithItemModifiedCallback[K comparable, C constraints.ComparableStringer[K], I Item[K, C]](itemModifiedCallback func(I) error) options.Option[OnChangeMap[K, C, I]] {
+func WithItemModifiedCallback[K comparable, C keyable[K], I Item[K, C]](itemModifiedCallback func(I) error) options.Option[OnChangeMap[K, C, I]] {
 	return func(r *OnChangeMap[K, C, I]) {
 		r.itemModifiedCallback = itemModifiedCallback
 	}
 }
 
 // WithItemDeletedCallback is triggered when an item is deleted.
-func WithItemDeletedCallback[K comparable, C constraints.ComparableStringer[K], I Item[K, C]](itemDeletedCallback func(I) error) options.Option[OnChangeMap[K, C, I]] {
+func WithItemDeletedCallback[K comparable, C keyable[K], I Item[K, C]](itemDeletedCallback func(I) error) options.Option[OnChangeMap[K, C, I]] {
 	return func(r *OnChangeMap[K, C, I]) {
 		r.itemDeletedCallback = itemDeletedCallback
 	}
 }
 
 // NewOnChangeMap creates a new OnChangeMap.
-func NewOnChangeMap[K comparable, C constraints.ComparableStringer[K], I Item[K, C]](opts ...options.Option[OnChangeMap[K, C, I]]) *OnChangeMap[K, C, I] {
+func NewOnChangeMap[K comparable, C keyable[K], I Item[K, C]](opts ...options.Option[OnChangeMap[K, C, I]]) *OnChangeMap[K, C, I] {
 	return options.Apply(&OnChangeMap[K, C, I]{
 		m:                    shrinkingmap.New[K, I](),
 		callbacksEnabled:     false,
@@ -137,7 +140,7 @@ func (r *OnChangeMap[K, C, I]) Get(id C) (I, error) {
 
 	item, exists := r.m.Get(id.Key())
 	if !exists {
-		return *new(I), fmt.Errorf("unable to get item: \"%s\" does not exist in map", id)
+		return *new(I), fmt.Errorf("unable to get item: %v does not exist in map", id)
 	}
 
 	return item.Clone().(I), nil
@@ -149,7 +152,7 @@ func (r *OnChangeMap[K, C, I]) Add(item I) error {
 	defer r.mutex.Unlock()
 
 	if r.m.Has(item.ID().Key()) {
-		return fmt.Errorf("unable to add item: \"%s\" already exists in map", item.ID())
+		return fmt.Errorf("unable to add item: %v already exists in map", item.ID())
 	}
 
 	r.m.Set(item.ID().Key(), item)
@@ -164,7 +167,7 @@ func (r *OnChangeMap[K, C, I]) Modify(id C, callback func(item I) bool) (I, erro
 
 	item, exists := r.m.Get(id.Key())
 	if !exists {
-		return *new(I), fmt.Errorf("unable to modify item: \"%s\" does not exist in map", id)
+		return *new(I), fmt.Errorf("unable to modify item: %v does not exist in map", id)
 	}
 
 	if !callback(item) {
@@ -181,7 +184,7 @@ func (r *OnChangeMap[K, C, I]) Delete(id C) error {
 
 	item, exists := r.m.Get(id.Key())
 	if !exists {
-		return fmt.Errorf("unable to remove item: \"%s\" does not exist in map", id)
+		return fmt.Errorf("unable to remove item: %v does not exist in map", id)
 	}
 
 	r.m.Delete(id.Key())

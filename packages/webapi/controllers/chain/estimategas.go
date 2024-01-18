@@ -18,7 +18,7 @@ import (
 
 func (c *Controller) estimateGasOnLedger(e echo.Context) error {
 	controllerutils.SetOperation(e, "estimate_gas_onledger")
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func (c *Controller) estimateGasOnLedger(e echo.Context) error {
 
 func (c *Controller) estimateGasOffLedger(e echo.Context) error {
 	controllerutils.SetOperation(e, "estimate_gas_offledger")
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}

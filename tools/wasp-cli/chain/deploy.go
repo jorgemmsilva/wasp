@@ -45,7 +45,7 @@ func controllerAddrDefaultFallback(addr string) iotago.Address {
 	prefix, govControllerAddr, err := iotago.ParseBech32(addr)
 	log.Check(err)
 
-	expectedPrefix := cliclients.L1Client().Bech32HRP()
+	expectedPrefix := cliclients.API().ProtocolParameters().Bech32HRP()
 	if expectedPrefix != prefix {
 		log.Fatalf("unexpected prefix. expected: %s, actual: %s", expectedPrefix, prefix)
 	}
@@ -108,7 +108,7 @@ func initDeployCmd() *cobra.Command {
 			)
 			log.Check(err)
 
-			config.AddChain(chainName, chainID.String())
+			config.AddChain(chainName, chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()))
 
 			activateChain(node, chainName, chainID)
 		},

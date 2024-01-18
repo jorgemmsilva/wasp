@@ -37,12 +37,12 @@ func initListAccountsCmd() *cobra.Command {
 			chain = defaultChainFallback(chain)
 
 			client := cliclients.WaspClient(node)
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 
-			accountList, _, err := client.CorecontractsApi.AccountsGetAccounts(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+			accountList, _, err := client.CorecontractsApi.AccountsGetAccounts(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 
-			log.Printf("Total %d account(s) in chain %s\n", len(accountList.Accounts), config.GetChain(chain).String())
+			log.Printf("Total %d account(s) in chain %s\n", len(accountList.Accounts), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()))
 
 			header := []string{"agentid"}
 			rows := make([][]string, len(accountList.Accounts))
@@ -68,11 +68,11 @@ func initBalanceCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			agentID := util.AgentIDFromArgs(args, chainID)
 			client := cliclients.WaspClient(node)
 
-			balance, _, err := client.CorecontractsApi.AccountsGetAccountBalance(context.Background(), chainID.String(), agentID.String()).Execute() //nolint:bodyclose // false positive
+			balance, _, err := client.CorecontractsApi.AccountsGetAccountBalance(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), agentID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 
 			header := []string{"token", "amount"}
@@ -102,12 +102,12 @@ func initAccountNFTsCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			agentID := util.AgentIDFromArgs(args, chainID)
 			client := cliclients.WaspClient(node)
 
 			nfts, _, err := client.CorecontractsApi.
-				AccountsGetAccountNFTIDs(context.Background(), chainID.String(), agentID.String()).
+				AccountsGetAccountNFTIDs(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), agentID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 
@@ -125,7 +125,7 @@ func initAccountNFTsCmd() *cobra.Command {
 // baseTokensForDepositFee calculates the amount of tokens needed to pay for a deposit
 func baseTokensForDepositFee(client *apiclient.APIClient, chain string) iotago.BaseToken {
 	callGovView := func(viewName string) dict.Dict {
-		result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain).String()).
+		result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 			ContractCallViewRequest(apiclient.ContractCallViewRequest{
 				ContractName: governance.Contract.Name,
 				FunctionName: viewName,
@@ -164,12 +164,12 @@ func initDepositCmd() *cobra.Command {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
 
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			if strings.Contains(args[0], ":") {
 				// deposit to own agentID
 				tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args))
 
-				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.SignedTransaction, error) {
+				util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), node, func() (*iotago.SignedTransaction, error) {
 					client := cliclients.WaspClient(node)
 
 					return wallet.ChainClient(client, chainID).PostRequest(
@@ -182,7 +182,7 @@ func initDepositCmd() *cobra.Command {
 				})
 			} else {
 				// deposit to some other agentID
-				agentID := util.AgentIDFromString(args[0], chainID)
+				agentID := util.AgentIDFromBech32(args[0], chainID)
 				tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args[1:]))
 
 				allowance := tokens.Clone()
@@ -192,7 +192,7 @@ func initDepositCmd() *cobra.Command {
 					client := cliclients.WaspClient(node)
 					feeNeeded := baseTokensForDepositFee(client, chain)
 					senderAgentID := isc.NewAgentID(wallet.Load().Address())
-					senderOnChainBalance, _, err := client.CorecontractsApi.AccountsGetAccountBalance(context.Background(), chainID.String(), senderAgentID.String()).Execute() //nolint:bodyclose // false positive
+					senderOnChainBalance, _, err := client.CorecontractsApi.AccountsGetAccountBalance(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), senderAgentID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 					log.Check(err)
 					senderOnChainBaseTokens, err := strconv.ParseUint(senderOnChainBalance.BaseTokens, 10, 64)
 					log.Check(err)
@@ -202,7 +202,7 @@ func initDepositCmd() *cobra.Command {
 					}
 				}
 
-				util.WithSCTransaction(config.GetChain(chain), node, func() (*iotago.SignedTransaction, error) {
+				util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), node, func() (*iotago.SignedTransaction, error) {
 					client := cliclients.WaspClient(node)
 
 					return wallet.ChainClient(client, chainID).PostRequest(

@@ -106,7 +106,7 @@ func doDKG(node string, peers []string, quorum int) iotago.Address {
 
 	fmt.Fprintf(os.Stdout,
 		"DKG successful\nAddress: %s\n* committee size = %v\n* quorum = %v\n* members: %s\n",
-		stateControllerAddr.Bech32(cliclients.L1Client().Bech32HRP()),
+		stateControllerAddr.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()),
 		len(committeePubKeys),
 		quorum,
 		committeeMembersStr,

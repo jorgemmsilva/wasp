@@ -52,7 +52,7 @@ func TestSuccessfulEventHandling(t *testing.T) {
 	chainID := isc.RandomChainID()
 
 	publisherEvent.Hook(func(iscEvent *ISCEvent) {
-		require.Exactly(t, iscEvent.ChainID, chainID.String())
+		require.Exactly(t, iscEvent.ChainID, chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 		cancel()
 	})
 

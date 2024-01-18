@@ -33,7 +33,7 @@ type clusterTestEnv struct {
 }
 
 func newClusterTestEnv(t *testing.T, env *ChainEnv, nodeIndex int) *clusterTestEnv {
-	evmJSONRPCPath := fmt.Sprintf("/v1/chains/%v/evm", env.Chain.ChainID.String())
+	evmJSONRPCPath := fmt.Sprintf("/v1/chains/%v/evm", env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()))
 	jsonRPCEndpoint := env.Clu.Config.APIHost(nodeIndex) + evmJSONRPCPath
 	rawClient, err := rpc.DialHTTP(jsonRPCEndpoint)
 	require.NoError(t, err)
@@ -44,7 +44,7 @@ func newClusterTestEnv(t *testing.T, env *ChainEnv, nodeIndex int) *clusterTestE
 		c := env.Chain.Client(nil, nodeIndex)
 		reqID := isc.RequestIDFromEVMTxHash(txHash)
 		receipt, _, err := c.WaspClient.ChainsApi.
-			WaitForRequest(context.Background(), env.Chain.ChainID.String(), reqID.String()).
+			WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), reqID.String()).
 			TimeoutSeconds(10).
 			Execute()
 		if err != nil {

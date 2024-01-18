@@ -21,7 +21,6 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/iancoleman/orderedmap v0.3.0
 	github.com/iotaledger/hive.go/app v0.0.0-20240115140343-94cb44b074ff
-	github.com/iotaledger/hive.go/constraints v0.0.0-20240115140343-94cb44b074ff
 	github.com/iotaledger/hive.go/crypto v0.0.0-20240115140343-94cb44b074ff
 	github.com/iotaledger/hive.go/ds v0.0.0-20240115140343-94cb44b074ff
 	github.com/iotaledger/hive.go/ierrors v0.0.0-20240115140343-94cb44b074ff
@@ -122,6 +121,7 @@ require (
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/iotaledger/grocksdb v1.7.5-0.20230220105546-5162e18885c7 // indirect
+	github.com/iotaledger/hive.go/constraints v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231219095137-dd4674b3226e // indirect
 	github.com/iotaledger/hive.go/stringify v0.0.0-20231223025425-91257fbacf8b // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect

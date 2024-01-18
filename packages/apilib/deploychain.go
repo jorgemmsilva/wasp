@@ -71,7 +71,7 @@ func DeployChain(
 	}
 	fmt.Fprint(textout, par.Prefix)
 	fmt.Fprintf(textout, "Chain has been created successfully on the Tangle.\n* ChainID: %s\n* State address: %s\n* committee size = %d\n* quorum = %d\n",
-		chainID.String(), stateControllerAddr.Bech32(par.Layer1Client.Bech32HRP()), par.N, par.T)
+		chainID.Bech32(par.Layer1Client.Bech32HRP()), stateControllerAddr.Bech32(par.Layer1Client.Bech32HRP()), par.N, par.T)
 
 	fmt.Fprintf(textout, "Make sure to activate the chain on all committee nodes\n")
 
@@ -137,8 +137,8 @@ func CreateChainOrigin(
 }
 
 // ActivateChainOnNodes puts chain records into nodes and activates its
-func ActivateChainOnNodes(clientResolver multiclient.ClientResolver, apiHosts []string, chainID isc.ChainID) error {
-	nodes := multiclient.New(clientResolver, apiHosts)
+func ActivateChainOnNodes(clientResolver multiclient.ClientResolver, apiHosts []string, chainID isc.ChainID, l1API iotago.API) error {
+	nodes := multiclient.New(clientResolver, apiHosts, l1API)
 	// ------------ put chain records to hosts
 	return nodes.PutChainRecord(registry.NewChainRecord(chainID, true, []*cryptolib.PublicKey{}))
 }

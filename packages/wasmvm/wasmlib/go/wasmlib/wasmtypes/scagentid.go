@@ -138,7 +138,7 @@ func AgentIDToBytes(value ScAgentID) []byte {
 	}
 }
 
-func AgentIDFromString(value string) ScAgentID {
+func AgentIDFromBech32(value string) ScAgentID {
 	if value == nilAgentIDString {
 		return ScAgentID{}
 	}

@@ -32,9 +32,9 @@ func initNodeconnMetricsCmd() *cobra.Command {
 				log.Check(err)
 				printNodeMessagesMetrics(msgsMetrics)
 			} else {
-				chainID, err := isc.ChainIDFromString(chainAlias)
+				chainID, err := isc.ChainIDFromBech32(chainAlias, cliclients.API().ProtocolParameters().Bech32HRP())
 				log.Check(err)
-				msgsMetrics, _, err := client.MetricsApi.GetChainMessageMetrics(context.Background(), chainID.String()).Execute()
+				msgsMetrics, _, err := client.MetricsApi.GetChainMessageMetrics(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute()
 				log.Check(err)
 				printChainMessagesMetrics(msgsMetrics)
 			}

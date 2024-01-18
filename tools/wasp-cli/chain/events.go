@@ -28,7 +28,7 @@ func initEventsCmd() *cobra.Command {
 			contractHName := isc.Hn(args[0]).String()
 
 			events, _, err := client.CorecontractsApi.
-				BlocklogGetEventsOfContract(context.Background(), config.GetChain(chain).String(), contractHName).
+				BlocklogGetEventsOfContract(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), contractHName).
 				Execute() //nolint:bodyclose // false positive
 
 			log.Check(err)

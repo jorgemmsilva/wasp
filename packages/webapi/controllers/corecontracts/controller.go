@@ -36,13 +36,13 @@ func (c *Controller) Name() string {
 
 func (c *Controller) handleViewCallError(err error, chainID isc.ChainID) error {
 	if errors.Is(err, interfaces.ErrChainNotFound) {
-		return apierrors.ChainNotFoundError(chainID.String())
+		return apierrors.ChainNotFoundError(chainID.Bech32(c.l1Api.ProtocolParameters().Bech32HRP()))
 	}
 	return apierrors.ContractExecutionError(err)
 }
 
 func (c *Controller) createCallViewInvoker(e echo.Context) (corecontracts.CallViewInvoker, chaintypes.Chain, error) {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService, c.l1Api)
 	if err != nil {
 		return nil, nil, c.handleViewCallError(err, chainID)
 	}

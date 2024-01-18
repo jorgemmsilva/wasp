@@ -650,7 +650,7 @@ func (nc *nodeConnection) GetChain(chainID isc.ChainID) (*ncChain, error) {
 
 	ncc, exists := nc.chainsMap.Get(chainID)
 	if !exists {
-		return nil, fmt.Errorf("chain %v is not connected", chainID.String())
+		return nil, fmt.Errorf("chain %v is not connected", chainID.Bech32(nc.Bech32HRP()))
 	}
 
 	return ncc, nil

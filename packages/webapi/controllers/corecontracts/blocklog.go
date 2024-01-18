@@ -20,7 +20,7 @@ import (
 )
 
 func (c *Controller) getControlAddresses(e echo.Context) error {
-	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService)
+	ch, chainID, err := controllerutils.ChainFromParams(e, c.chainService, c.l1Api)
 	if err != nil {
 		return c.handleViewCallError(err, chainID)
 	}
@@ -104,7 +104,7 @@ func (c *Controller) getRequestIDsForBlock(e echo.Context) error {
 }
 
 func GetRequestReceipt(e echo.Context, c interfaces.ChainService, l1API iotago.API) error {
-	ch, _, err := controllerutils.ChainFromParams(e, c)
+	ch, _, err := controllerutils.ChainFromParams(e, c, l1API)
 	if err != nil {
 		return err
 	}
@@ -195,7 +195,7 @@ func (c *Controller) getIsRequestProcessed(e echo.Context) error {
 	}
 
 	requestProcessedResponse := models.RequestProcessedResponse{
-		ChainID:     ch.ID().String(),
+		ChainID:     ch.ID().Bech32(c.l1Api.ProtocolParameters().Bech32HRP()),
 		RequestID:   requestID.String(),
 		IsProcessed: requestProcessed,
 	}

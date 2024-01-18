@@ -105,7 +105,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 
 	waitUntil(t, env.counterEquals(int64(numRequests)), []int{0}, 30*time.Second)
 
-	res, _, err := env.Chain.Cluster.WaspClient(0).CorecontractsApi.BlocklogGetEventsOfLatestBlock(context.Background(), env.Chain.ChainID.String()).Execute()
+	res, _, err := env.Chain.Cluster.WaspClient(0).CorecontractsApi.BlocklogGetEventsOfLatestBlock(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, err)
 
 	eventBytes, err := hexutil.DecodeHex(res.Events[len(res.Events)-1].Payload)
@@ -191,7 +191,7 @@ func testSpamOffLedger(t *testing.T, env *ChainEnv) {
 
 	waitUntil(t, env.counterEquals(int64(numRequests)), []int{0}, 5*time.Minute)
 
-	res, _, err := env.Chain.Cluster.WaspClient(0).CorecontractsApi.BlocklogGetEventsOfLatestBlock(context.Background(), env.Chain.ChainID.String()).Execute()
+	res, _, err := env.Chain.Cluster.WaspClient(0).CorecontractsApi.BlocklogGetEventsOfLatestBlock(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, err)
 
 	eventBytes, err := hexutil.DecodeHex(res.Events[len(res.Events)-1].Payload)

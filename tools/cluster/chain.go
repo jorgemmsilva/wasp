@@ -88,7 +88,7 @@ func (ch *Chain) CommitteeMultiClient() *multiclient.MultiClient {
 		return ch.Cluster.WaspClientFromHostName(apiHost)
 	}
 
-	return multiclient.New(resolver, ch.CommitteeAPIHosts()) //.WithLogFunc(ch.Cluster.t.Logf)
+	return multiclient.New(resolver, ch.CommitteeAPIHosts(), ch.Cluster.l1.APIProvider().LatestAPI()) //.WithLogFunc(ch.Cluster.t.Logf)
 }
 
 func (ch *Chain) AllNodesMultiClient() *multiclient.MultiClient {
@@ -96,7 +96,7 @@ func (ch *Chain) AllNodesMultiClient() *multiclient.MultiClient {
 		return ch.Cluster.WaspClientFromHostName(apiHost)
 	}
 
-	return multiclient.New(resolver, ch.AllAPIHosts()) //.WithLogFunc(ch.Cluster.t.Logf)
+	return multiclient.New(resolver, ch.AllAPIHosts(), ch.Cluster.l1.APIProvider().LatestAPI()) //.WithLogFunc(ch.Cluster.t.Logf)
 }
 
 func (ch *Chain) DeployContract(name, progHashStr string, initParams dict.Dict) (*iotago.SignedTransaction, error) {
@@ -154,7 +154,7 @@ func (ch *Chain) DeployWasmContract(name string, progBinary []byte, initParams d
 
 func (ch *Chain) GetBlobFieldValue(blobHash hashing.HashValue, field string) ([]byte, error) {
 	v, _, err := ch.Cluster.WaspClient(0).CorecontractsApi.
-		BlobsGetBlobValue(context.Background(), ch.ChainID.String(), blobHash.Hex(), field).
+		BlobsGetBlobValue(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP()), blobHash.Hex(), field).
 		Execute() //nolint:bodyclose // false positive
 	if err != nil {
 		return nil, err
@@ -170,7 +170,7 @@ func (ch *Chain) GetBlobFieldValue(blobHash hashing.HashValue, field string) ([]
 
 func (ch *Chain) BlockIndex(nodeIndex ...int) (uint32, error) {
 	blockInfo, _, err := ch.Cluster.
-		WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetLatestBlockInfo(context.Background(), ch.ChainID.String()).
+		WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetLatestBlockInfo(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP())).
 		Execute() //nolint:bodyclose // false positive
 	if err != nil {
 		return 0, err
@@ -187,7 +187,7 @@ func (ch *Chain) GetAllBlockInfoRecordsReverse(nodeIndex ...int) ([]*apiclient.B
 	ret := make([]*apiclient.BlockInfoResponse, 0, blockIndex+1)
 	for idx := int(blockIndex); idx >= 0; idx-- {
 		blockInfo, _, err := ch.Cluster.
-			WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetBlockInfo(context.Background(), ch.ChainID.String(), uint32(idx)).
+			WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetBlockInfo(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP()), uint32(idx)).
 			Execute() //nolint:bodyclose // false positive
 		if err != nil {
 			return nil, err
@@ -200,7 +200,7 @@ func (ch *Chain) GetAllBlockInfoRecordsReverse(nodeIndex ...int) ([]*apiclient.B
 
 func (ch *Chain) ContractRegistry(nodeIndex ...int) ([]apiclient.ContractInfoResponse, error) {
 	contracts, _, err := ch.Cluster.
-		WaspClient(nodeIndex...).ChainsApi.GetContracts(context.Background(), ch.ChainID.String()).
+		WaspClient(nodeIndex...).ChainsApi.GetContracts(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP())).
 		Execute() //nolint:bodyclose // false positive
 	if err != nil {
 		return nil, err
@@ -211,7 +211,7 @@ func (ch *Chain) ContractRegistry(nodeIndex ...int) ([]apiclient.ContractInfoRes
 
 func (ch *Chain) GetCounterValue(nodeIndex ...int) (int64, error) {
 	result, _, err := ch.Cluster.
-		WaspClient(nodeIndex...).ChainsApi.CallView(context.Background(), ch.ChainID.String()).
+		WaspClient(nodeIndex...).ChainsApi.CallView(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP())).
 		ContractCallViewRequest(apiclient.ContractCallViewRequest{
 			ContractHName: inccounter.Contract.Hname().String(),
 			FunctionHName: inccounter.ViewGetCounter.Hname().String(),
@@ -234,7 +234,7 @@ func (ch *Chain) GetStateVariable(contractHname isc.Hname, key string, nodeIndex
 }
 
 func (ch *Chain) GetRequestReceipt(reqID isc.RequestID, nodeIndex ...int) (*apiclient.ReceiptResponse, error) {
-	receipt, _, err := ch.Cluster.WaspClient(nodeIndex...).ChainsApi.GetReceipt(context.Background(), ch.ChainID.String(), reqID.String()).
+	receipt, _, err := ch.Cluster.WaspClient(nodeIndex...).ChainsApi.GetReceipt(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP()), reqID.String()).
 		Execute() //nolint:bodyclose // false positive
 
 	return receipt, err
@@ -245,10 +245,10 @@ func (ch *Chain) GetRequestReceiptsForBlock(blockIndex *uint32, nodeIndex ...int
 	var receipts []apiclient.ReceiptResponse
 
 	if blockIndex != nil {
-		receipts, _, err = ch.Cluster.WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetRequestReceiptsOfBlock(context.Background(), ch.ChainID.String(), *blockIndex).
+		receipts, _, err = ch.Cluster.WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetRequestReceiptsOfBlock(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP()), *blockIndex).
 			Execute() //nolint:bodyclose // false positive
 	} else {
-		receipts, _, err = ch.Cluster.WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetRequestReceiptsOfLatestBlock(context.Background(), ch.ChainID.String()).
+		receipts, _, err = ch.Cluster.WaspClient(nodeIndex...).CorecontractsApi.BlocklogGetRequestReceiptsOfLatestBlock(context.Background(), ch.ChainID.Bech32(ch.Cluster.l1.Bech32HRP())).
 			Execute() //nolint:bodyclose // false positive
 	}
 

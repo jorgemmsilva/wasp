@@ -234,7 +234,7 @@ func testIncViewCounter(t *testing.T, env *ChainEnv) {
 	ret, err := apiextensions.CallView(
 		context.Background(),
 		e.Chain.Cluster.WaspClient(0),
-		e.Chain.ChainID.String(),
+		e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()),
 		apiclient.ContractCallViewRequest{
 			ContractHName: inccounter.Contract.Hname().String(),
 			FunctionName:  "getCounter",

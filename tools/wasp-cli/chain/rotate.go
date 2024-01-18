@@ -33,7 +33,7 @@ func initRotateCmd() *cobra.Command {
 
 			prefix, newStateControllerAddr, err := iotago.ParseBech32(args[0])
 			log.Check(err)
-			expectedPrefix := cliclients.L1Client().Bech32HRP()
+			expectedPrefix := cliclients.API().ProtocolParameters().Bech32HRP()
 			if expectedPrefix != prefix {
 				log.Fatalf("unexpected prefix. expected: %s, actual: %s", expectedPrefix, prefix)
 			}
@@ -88,7 +88,7 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 	l1Client := cliclients.L1Client()
 
 	myWallet := wallet.Load()
-	anchorID := config.GetChain(chain).AsAnchorID()
+	anchorID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).AsAnchorID()
 
 	chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(anchorID)
 	log.Check(err)
@@ -122,7 +122,7 @@ func rotateTo(chain string, newStateControllerAddr iotago.Address) {
 
 		json, err2 := json.Marshal(tx)
 		log.Check(err2)
-		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(cliclients.L1Client().Bech32HRP()))
+		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(cliclients.API().ProtocolParameters().Bech32HRP()))
 		log.Printf("rotation tx: %s", string(json))
 	}
 
@@ -160,7 +160,7 @@ func initChangeGovControllerCmd() *cobra.Command {
 		Short: "Changes the governance controller for a given chain (WARNING: you will lose control over the chain)",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			chain := config.GetChain(defaultChainFallback(chain))
+			chain := config.GetChain(defaultChainFallback(chain), cliclients.API().ProtocolParameters().Bech32HRP())
 
 			_, newGovController, err := iotago.ParseBech32(args[0])
 			log.Check(err)

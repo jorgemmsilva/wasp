@@ -23,8 +23,8 @@ func testDeployChain(t *testing.T, env *ChainEnv) {
 	chainID, chainOwnerID := env.getChainInfo()
 	require.EqualValues(t, chainID, env.Chain.ChainID)
 	require.EqualValues(t, chainOwnerID, isc.NewAgentID(env.Chain.OriginatorAddress()))
-	t.Logf("--- chainID: %s", chainID.String())
-	t.Logf("--- chainOwnerID: %s", chainOwnerID.String())
+	t.Logf("--- chainID: %s", chainID.Bech32(env.Clu.L1Client().Bech32HRP()))
+	t.Logf("--- chainOwnerID: %s", chainOwnerID.Bech32(env.Clu.L1Client().Bech32HRP()))
 
 	env.checkCoreContracts()
 	env.checkRootsOutside()
@@ -47,7 +47,7 @@ func testDeployContractOnly(t *testing.T, env *ChainEnv) {
 	ret, err := apiextensions.CallView(
 		context.Background(),
 		env.Chain.Cluster.WaspClient(),
-		env.Chain.ChainID.String(),
+		env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()),
 		apiclient.ContractCallViewRequest{
 			ContractHName: root.Contract.Hname().String(),
 			FunctionHName: root.ViewFindContract.Hname().String(),

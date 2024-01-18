@@ -25,12 +25,12 @@ func initListContractsCmd() *cobra.Command {
 
 			client := cliclients.WaspClient(node)
 			contracts, _, err := client.ChainsApi.
-				GetContracts(context.Background(), config.GetChain(chain).String()).
+				GetContracts(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute() //nolint:bodyclose // false positive
 
 			log.Check(err)
 
-			log.Printf("Total %d contracts in chain %s\n", len(contracts), config.GetChain(chain))
+			log.Printf("Total %d contracts in chain %s\n", len(contracts), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()))
 
 			header := []string{
 				"hname",

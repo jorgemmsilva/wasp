@@ -505,7 +505,7 @@ func checkAgentID(t *testing.T, ctx *wasmsolo.SoloContext, scAgentID wasmtypes.S
 	require.EqualValues(t, scAgentID.Bytes(), agentBytes)
 	require.EqualValues(t, scAgentID.String(), agentString)
 	require.True(t, scAgentID == wasmtypes.AgentIDFromBytes(wasmtypes.AgentIDToBytes(scAgentID)))
-	require.True(t, scAgentID == wasmtypes.AgentIDFromString(wasmtypes.AgentIDToString(scAgentID)))
+	require.True(t, scAgentID == wasmtypes.AgentIDFromBech32(wasmtypes.AgentIDToString(scAgentID)))
 
 	checker := testwasmlib.ScFuncs.CheckAgentID(ctx)
 	checker.Params.ScAgentID().SetValue(scAgentID)

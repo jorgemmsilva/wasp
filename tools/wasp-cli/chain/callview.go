@@ -31,10 +31,10 @@ func initCallViewCmd() *cobra.Command {
 
 			contractName := args[0]
 			funcName := args[1]
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			params := util.EncodeParams(args[2:], chainID)
 
-			result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain).String()).
+			result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				ContractCallViewRequest(apiclient.ContractCallViewRequest{
 					ContractName: contractName,
 					FunctionName: funcName,

@@ -19,7 +19,7 @@ func (c *Controller) handleOffLedgerRequest(e echo.Context) error {
 		return apierrors.InvalidOffLedgerRequestError(err)
 	}
 
-	chainID, err := isc.ChainIDFromString(request.ChainID)
+	chainID, err := isc.ChainIDFromBech32(request.ChainID, c.l1API.ProtocolParameters().Bech32HRP())
 	if err != nil {
 		return apierrors.InvalidPropertyError("ChainID", err)
 	}
@@ -28,7 +28,7 @@ func (c *Controller) handleOffLedgerRequest(e echo.Context) error {
 	e.Set(controllerutils.EchoContextKeyChainID, chainID)
 
 	if !c.chainService.HasChain(chainID) {
-		return apierrors.ChainNotFoundError(chainID.String())
+		return apierrors.ChainNotFoundError(chainID.Bech32(c.l1API.ProtocolParameters().Bech32HRP()))
 	}
 
 	requestDecoded, err := hexutil.DecodeHex(request.Request)

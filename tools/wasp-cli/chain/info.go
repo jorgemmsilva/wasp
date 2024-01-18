@@ -28,16 +28,16 @@ func initInfoCmd() *cobra.Command {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
 
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 			client := cliclients.WaspClient(node)
 
 			chainInfo, _, err := client.ChainsApi.
-				GetChainInfo(context.Background(), chainID.String()).
+				GetChainInfo(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 
 			committeeInfo, _, err := client.ChainsApi.
-				GetCommitteeInfo(context.Background(), chainID.String()).
+				GetCommitteeInfo(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 				Execute() //nolint:bodyclose // false positive
 			log.Check(err)
 
@@ -79,7 +79,7 @@ func initInfoCmd() *cobra.Command {
 				printNodes("Candidate nodes", committeeInfo.CandidateNodes, false, false)
 				log.Printf("\n")
 
-				contracts, _, err := client.ChainsApi.GetContracts(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+				contracts, _, err := client.ChainsApi.GetContracts(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 				log.Check(err)
 				log.Printf("#Contracts: %d\n", len(contracts))
 

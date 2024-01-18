@@ -70,13 +70,13 @@ func (ch *Chain) String() string {
 func (ch *Chain) DumpAccounts() string {
 	_, chainOwnerID, _ := ch.GetInfo()
 	ret := fmt.Sprintf("ChainID: %s\nChain owner: %s\n",
-		ch.ChainID.String(),
-		chainOwnerID.String(),
+		ch.ChainID.Bech32(ch.Env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP()),
+		chainOwnerID.Bech32(ch.Env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP()),
 	)
 	acc := ch.L2Accounts()
 	for i := range acc {
 		aid := acc[i]
-		ret += fmt.Sprintf("  %s:\n", aid.String())
+		ret += fmt.Sprintf("  %s:\n", aid.Bech32(ch.Env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP()))
 		bals := ch.L2Assets(aid)
 		ret += fmt.Sprintf("%s\n", bals.String())
 	}

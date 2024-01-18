@@ -19,8 +19,8 @@ type ISCEvent struct {
 	Payload   any                    `json:"payload"`
 }
 
-func MapISCEvent[T any](iscEvent *publisher.ISCEvent[T], mappedPayload any) *ISCEvent {
-	issuer := iscEvent.Issuer.String()
+func MapISCEvent[T any](iscEvent *publisher.ISCEvent[T], mappedPayload any, l1API iotago.API) *ISCEvent {
+	issuer := iscEvent.Issuer.Bech32(l1API.ProtocolParameters().Bech32HRP())
 
 	if issuer == "-" {
 		// If the agentID is nil, it should be empty in the JSON result, not '-'
@@ -29,7 +29,7 @@ func MapISCEvent[T any](iscEvent *publisher.ISCEvent[T], mappedPayload any) *ISC
 
 	return &ISCEvent{
 		Kind:      iscEvent.Kind,
-		ChainID:   iscEvent.ChainID.String(),
+		ChainID:   iscEvent.ChainID.Bech32(l1API.ProtocolParameters().Bech32HRP()),
 		RequestID: iscEvent.RequestID.String(),
 		Issuer:    issuer,
 		Payload:   mappedPayload,
@@ -56,31 +56,31 @@ func (p *EventHandler) AttachToEvents() context.CancelFunc {
 	return lo.Batch(
 
 		p.publisher.Events.NewBlock.Hook(func(block *publisher.ISCEvent[*publisher.BlockWithTrieRoot]) {
-			if !p.subscriptionValidator.shouldProcessEvent(block.ChainID.String(), block.Kind) {
+			if !p.subscriptionValidator.shouldProcessEvent(block.ChainID.Bech32(p.l1Api.ProtocolParameters().Bech32HRP()), block.Kind) {
 				return
 			}
 
 			blockInfo := models.MapBlockInfoResponse(block.Payload.BlockInfo)
-			iscEvent := MapISCEvent(block, blockInfo)
+			iscEvent := MapISCEvent(block, blockInfo, p.l1Api)
 			p.publishEvent.Trigger(iscEvent)
 		}).Unhook,
 
 		p.publisher.Events.RequestReceipt.Hook(func(block *publisher.ISCEvent[*publisher.ReceiptWithError]) {
-			if !p.subscriptionValidator.shouldProcessEvent(block.ChainID.String(), block.Kind) {
+			if !p.subscriptionValidator.shouldProcessEvent(block.ChainID.Bech32(p.l1Api.ProtocolParameters().Bech32HRP()), block.Kind) {
 				return
 			}
 
 			receipt := models.MapReceiptResponse(p.l1Api, block.Payload.RequestReceipt)
-			iscEvent := MapISCEvent(block, receipt)
+			iscEvent := MapISCEvent(block, receipt, p.l1Api)
 			p.publishEvent.Trigger(iscEvent)
 		}).Unhook,
 
 		p.publisher.Events.BlockEvents.Hook(func(block *publisher.ISCEvent[[]*isc.Event]) {
-			if !p.subscriptionValidator.shouldProcessEvent(block.ChainID.String(), block.Kind) {
+			if !p.subscriptionValidator.shouldProcessEvent(block.ChainID.Bech32(p.l1Api.ProtocolParameters().Bech32HRP()), block.Kind) {
 				return
 			}
 
-			iscEvent := MapISCEvent(block, block.Payload)
+			iscEvent := MapISCEvent(block, block.Payload, p.l1Api)
 			p.publishEvent.Trigger(iscEvent)
 		}).Unhook,
 	)

@@ -222,7 +222,7 @@ func transferAccountToChain(ctx isc.Sandbox, gasReserveOpt *uint64) dict.Dict {
 		},
 	})
 	ctx.Log().LogDebugf("accounts.transferAccountToChain.success. Sent to contract %s: %s",
-		callerContract.String(),
+		callerContract.Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()),
 		allowance.String(),
 	)
 	return nil

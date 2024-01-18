@@ -20,15 +20,14 @@ func NewContractAgentID(chainID ChainID, hname Hname) *ContractAgentID {
 	return &ContractAgentID{chainID: chainID, hname: hname}
 }
 
-func contractAgentIDFromString(hnamePart, addrPart string) (AgentID, error) {
-	chainID, err := ChainIDFromString(addrPart)
+func contractAgentIDFromString(hnamePart, addrPart string, expectedPrefix iotago.NetworkPrefix) (AgentID, error) {
+	chainID, err := ChainIDFromBech32(addrPart, expectedPrefix)
 	if err != nil {
-		return nil, fmt.Errorf("AgentIDFromString: %w", err)
+		return nil, fmt.Errorf("AgentIDFromBech32: %w", err)
 	}
-
 	h, err := HnameFromString(hnamePart)
 	if err != nil {
-		return nil, fmt.Errorf("AgentIDFromString: %w", err)
+		return nil, fmt.Errorf("AgentIDFromBech32: %w", err)
 	}
 	return NewContractAgentID(chainID, h), nil
 }
@@ -72,10 +71,6 @@ func (a *ContractAgentID) Hname() Hname {
 
 func (a *ContractAgentID) Kind() AgentIDKind {
 	return AgentIDKindContract
-}
-
-func (a *ContractAgentID) String() string {
-	return a.hname.String() + AgentIDStringSeparator + a.chainID.String()
 }
 
 func (a *ContractAgentID) Bech32(prefix iotago.NetworkPrefix) string {

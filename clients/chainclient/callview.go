@@ -20,5 +20,5 @@ func (c *Client) CallView(ctx context.Context, msg isc.Message, blockNumberOrHas
 		viewCall.Block = &blockNumberOrHash[0]
 	}
 
-	return apiextensions.CallView(ctx, c.WaspClient, c.ChainID.String(), viewCall)
+	return apiextensions.CallView(ctx, c.WaspClient, c.ChainID.Bech32(c.Layer1Client.Bech32HRP()), viewCall)
 }

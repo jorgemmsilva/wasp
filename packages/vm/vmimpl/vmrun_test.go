@@ -60,7 +60,7 @@ func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.Output
 	// setup a test DB
 	chainRecordRegistryProvider, err := registry.NewChainRecordRegistryImpl("")
 	require.NoError(t, err)
-	chainStateDatabaseManager, err := database.NewChainStateDatabaseManager(chainRecordRegistryProvider, database.WithEngine(hivedb.EngineMapDB))
+	chainStateDatabaseManager, err := database.NewChainStateDatabaseManager(chainRecordRegistryProvider, testutil.L1API.ProtocolParameters().Bech32HRP(), database.WithEngine(hivedb.EngineMapDB))
 	require.NoError(t, err)
 	db, mu, err := chainStateDatabaseManager.ChainStateKVStore(isc.EmptyChainID())
 	require.NoError(t, err)

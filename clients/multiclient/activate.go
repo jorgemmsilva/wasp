@@ -10,7 +10,7 @@ import (
 // ActivateChain sends a request to activate a chain in all wasp nodes
 func (m *MultiClient) ActivateChain(chainID isc.ChainID) error {
 	return m.Do(func(i int, w *apiclient.APIClient) error {
-		_, err := w.ChainsApi.ActivateChain(context.Background(), chainID.String()).Execute()
+		_, err := w.ChainsApi.ActivateChain(context.Background(), chainID.Bech32(m.l1API.ProtocolParameters().Bech32HRP())).Execute()
 		return err
 	})
 }
@@ -18,7 +18,7 @@ func (m *MultiClient) ActivateChain(chainID isc.ChainID) error {
 // DeactivateChain sends a request to deactivate a chain in all wasp nodes
 func (m *MultiClient) DeactivateChain(chainID isc.ChainID) error {
 	return m.Do(func(i int, w *apiclient.APIClient) error {
-		_, err := w.ChainsApi.DeactivateChain(context.Background(), chainID.String()).Execute()
+		_, err := w.ChainsApi.DeactivateChain(context.Background(), chainID.Bech32(m.l1API.ProtocolParameters().Bech32HRP())).Execute()
 		return err
 	})
 }

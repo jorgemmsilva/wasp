@@ -1,6 +1,7 @@
 package isc
 
 import (
+	"fmt"
 	"io"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -19,10 +20,13 @@ func NewAddressAgentID(addr iotago.Address) *AddressAgentID {
 	return &AddressAgentID{a: addr}
 }
 
-func addressAgentIDFromString(s string) (*AddressAgentID, error) {
-	addr, err := AddressFromString(s)
+func addressAgentIDFromString(s string, expectedPrefix iotago.NetworkPrefix) (*AddressAgentID, error) {
+	prefix, addr, err := iotago.ParseBech32(s)
 	if err != nil {
 		return nil, err
+	}
+	if prefix != expectedPrefix {
+		return nil, fmt.Errorf("expected network prefix %s, got %s", expectedPrefix, prefix)
 	}
 	return &AddressAgentID{a: addr}, nil
 }
@@ -55,10 +59,6 @@ func (a *AddressAgentID) Equals(other AgentID) bool {
 
 func (a *AddressAgentID) Kind() AgentIDKind {
 	return AgentIDKindAddress
-}
-
-func (a *AddressAgentID) String() string {
-	return a.a.String()
 }
 
 func (a *AddressAgentID) Bech32(prefix iotago.NetworkPrefix) string {

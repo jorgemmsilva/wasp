@@ -13,6 +13,7 @@ import (
 
 	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/runtime/ioutils"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/shutdown"
@@ -22,10 +23,11 @@ import (
 type snapshotManagerImpl struct {
 	*snapshotManagerRunner
 
-	log     log.Logger
-	ctx     context.Context
-	chainID isc.ChainID
-	metrics *metrics.ChainSnapshotsMetrics
+	log           log.Logger
+	networkPrefix iotago.NetworkPrefix
+	ctx           context.Context
+	chainID       isc.ChainID
+	metrics       *metrics.ChainSnapshotsMetrics
 
 	snapshotter      snapshotter
 	localPath        string
@@ -61,9 +63,10 @@ func NewSnapshotManager(
 	baseNetworkPaths []string,
 	store state.Store,
 	metrics *metrics.ChainSnapshotsMetrics,
+	networkPrefix iotago.NetworkPrefix,
 	log log.Logger,
 ) (SnapshotManager, error) {
-	localPath := filepath.Join(baseLocalPath, chainID.String())
+	localPath := filepath.Join(baseLocalPath, chainID.Bech32(networkPrefix))
 	snapMLog := log.NewChildLogger("Snap")
 	result := &snapshotManagerImpl{
 		log:              snapMLog,
@@ -74,6 +77,7 @@ func NewSnapshotManager(
 		localPath:        localPath,
 		baseNetworkPaths: baseNetworkPaths,
 		snapshotToLoad:   snapshotToLoad,
+		networkPrefix:    networkPrefix,
 	}
 	if err := ioutils.CreateDirectory(localPath, 0o777); err != nil {
 		return nil, fmt.Errorf("cannot create folder %s: %v", localPath, err)
@@ -259,7 +263,7 @@ func (smiT *snapshotManagerImpl) searchLocalSnapshots(considerSnapshotFun func(S
 }
 
 func (smiT *snapshotManagerImpl) searchNetworkSnapshots(baseNetworkPaths []string, considerSnapshotFun func(SnapshotInfo, string)) {
-	chainIDString := smiT.chainID.String()
+	chainIDString := smiT.chainID.Bech32(smiT.networkPrefix)
 	for _, baseNetworkPath := range baseNetworkPaths {
 		func() { // Function to make the defers sooner
 			baseNetworkPathWithChainID, err := url.JoinPath(baseNetworkPath, chainIDString)

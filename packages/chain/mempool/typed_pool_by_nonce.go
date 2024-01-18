@@ -63,7 +63,7 @@ func (p *TypedPoolByNonce[V]) Get(reqRef *isc.RequestRef) V {
 func (p *TypedPoolByNonce[V]) Add(request V) {
 	ref := isc.RequestRefFromRequest(request)
 	entry := &OrderedPoolEntry[V]{req: request, ts: time.Now()}
-	account := request.SenderAccount().String()
+	account := request.SenderAccount().Bech32(p.l1APIProvider.CommittedAPI().ProtocolParameters().Bech32HRP())
 
 	if !p.refLUT.Set(ref.AsKey(), entry) {
 		p.log.LogDebugf("NOT ADDED, already exists. reqID: %v as key=%v, senderAccount: ", request.ID(), ref, account)
@@ -128,7 +128,7 @@ func (p *TypedPoolByNonce[V]) Remove(request V) {
 	if p.refLUT.Delete(refKey) {
 		p.log.LogDebugf("DEL %v as key=%v", request.ID(), refKey)
 	}
-	account := entry.req.SenderAccount().String()
+	account := entry.req.SenderAccount().Bech32(p.l1APIProvider.CommittedAPI().ProtocolParameters().Bech32HRP())
 	reqsByAccount, exists := p.reqsByAcountOrdered.Get(account)
 	if !exists {
 		p.log.LogError("inconsistency trying to DEL %v as key=%v, no request list for account %s", request.ID(), refKey, account)

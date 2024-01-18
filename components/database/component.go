@@ -79,6 +79,7 @@ func provide(c *dig.Container) error {
 	if err := c.Provide(func(deps databaseManagerDeps) chainStateDatabaseManagerResult {
 		manager, err := database.NewChainStateDatabaseManager(
 			deps.ChainRecordRegistryProvider,
+			deps.NodeConnection.Bech32HRP(),
 			database.WithEngine(deps.DatabaseEngine),
 			database.WithPath(ParamsDatabase.ChainState.Path),
 		)

@@ -89,7 +89,7 @@ func initMetadataCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chainAliasName = defaultChainFallback(chainAliasName)
-			chainID := config.GetChain(chainAliasName)
+			chainID := config.GetChain(chainAliasName, cliclients.API().ProtocolParameters().Bech32HRP())
 
 			updateMetadata(node, chainAliasName, chainID, withOffLedger, useCliURL, metadataArgs)
 		},
@@ -146,7 +146,7 @@ func validateAndPushURL(target *string, urlValue nilableString) {
 func updateMetadata(node string, chainAliasName string, chainID isc.ChainID, withOffLedger bool, useCliURL bool, metadataArgs MetadataArgs) {
 	client := cliclients.WaspClient(node)
 
-	chainInfo, _, err := client.CorecontractsApi.GovernanceGetChainInfo(context.Background(), chainID.String()).Execute() //nolint:bodyclose // false positive
+	chainInfo, _, err := client.CorecontractsApi.GovernanceGetChainInfo(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).Execute() //nolint:bodyclose // false positive
 	if err != nil {
 		log.Fatal("Chain not found")
 	}
@@ -155,7 +155,7 @@ func updateMetadata(node string, chainAliasName string, chainID isc.ChainID, wit
 
 	if useCliURL {
 		apiURL := config.WaspAPIURL(node)
-		chainPath, err := url.JoinPath(apiURL, "/v1/chains/", chainID.String())
+		chainPath, err := url.JoinPath(apiURL, "/v1/chains/", chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()))
 		log.Check(err)
 
 		publicURL = chainPath

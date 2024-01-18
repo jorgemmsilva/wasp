@@ -49,7 +49,7 @@ func deployInccounter42(e *ChainEnv) *isc.ContractAgentID {
 	result, err := apiextensions.CallView(
 		context.Background(),
 		e.Chain.Cluster.WaspClient(),
-		e.Chain.ChainID.String(),
+		e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()),
 		apiclient.ContractCallViewRequest{
 			ContractHName: root.Contract.Hname().String(),
 			FunctionHName: root.ViewFindContract.Hname().String(),
@@ -71,13 +71,13 @@ func deployInccounter42(e *ChainEnv) *isc.ContractAgentID {
 // executed in cluster_test.go
 func testPostDeployInccounter(t *testing.T, e *ChainEnv) {
 	contractID := deployInccounter42(e)
-	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.String())
+	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.Bech32(e.Clu.L1Client().Bech32HRP()))
 }
 
 // executed in cluster_test.go
 func testPost1Request(t *testing.T, e *ChainEnv) {
 	contractID := deployInccounter42(e)
-	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.String())
+	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.Bech32(e.Clu.L1Client().Bech32HRP()))
 
 	myWallet, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
@@ -96,7 +96,7 @@ func testPost1Request(t *testing.T, e *ChainEnv) {
 // executed in cluster_test.go
 func testPost3Recursive(t *testing.T, e *ChainEnv) {
 	contractID := deployInccounter42(e)
-	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.String())
+	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.Bech32(e.Clu.L1Client().Bech32HRP()))
 
 	myWallet, _, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
@@ -119,7 +119,7 @@ func testPost3Recursive(t *testing.T, e *ChainEnv) {
 // executed in cluster_test.go
 func testPost5Requests(t *testing.T, e *ChainEnv) {
 	contractID := deployInccounter42(e)
-	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.String())
+	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.Bech32(e.Clu.L1Client().Bech32HRP()))
 
 	myWallet, myAddress, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)
@@ -152,7 +152,7 @@ func testPost5Requests(t *testing.T, e *ChainEnv) {
 // executed in cluster_test.go
 func testPost5AsyncRequests(t *testing.T, e *ChainEnv) {
 	contractID := deployInccounter42(e)
-	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.String())
+	t.Logf("-------------- deployed contract. Name: '%s' id: %s", inccounter.Contract.Name, contractID.Bech32(e.Clu.L1Client().Bech32HRP()))
 
 	myWallet, myAddress, err := e.Clu.NewKeyPairWithFunds()
 	require.NoError(t, err)

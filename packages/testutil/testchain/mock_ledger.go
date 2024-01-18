@@ -60,7 +60,7 @@ func NewMockedLedger(stateAddress iotago.Address, log log.Logger) (*MockedLedger
 		stateOutputHandlerFuns: make(map[string]func(iotago.OutputID, iotago.Output)),
 		outputHandlerFuns:      make(map[string]func(iotago.OutputID, iotago.Output)),
 		inclusionStateEvents:   make(map[string]*event.Event2[iotago.TransactionID, string]),
-		log:                    log.NewChildLogger("ml-" + chainID.String()[2:8]),
+		log:                    log.NewChildLogger("ml-" + chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())[2:8]),
 	}
 	ret.SetPublishStateTransactionAllowed(true)
 	ret.SetPublishGovernanceTransactionAllowed(true)

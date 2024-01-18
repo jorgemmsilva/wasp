@@ -24,8 +24,9 @@ func TestTutorialFirst(t *testing.T) {
 	// assert that all core contracts are deployed
 	require.EqualValues(t, len(corecontracts.All), len(coreContracts))
 
-	t.Logf("chain ID: %s", chainID.String())
-	t.Logf("chain owner ID: %s", chainOwnerID.String())
+	hrp := env.L1APIProvider().LatestAPI().ProtocolParameters().Bech32HRP()
+	t.Logf("chain ID: %s", chainID.Bech32(hrp))
+	t.Logf("chain owner ID: %s", chainOwnerID.Bech32(hrp))
 	for hname, rec := range coreContracts {
 		t.Logf("    Core contract %q: %s", rec.Name, hname)
 	}

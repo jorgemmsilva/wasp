@@ -26,14 +26,14 @@ func TestReboot(t *testing.T) {
 	client := env.createNewClient()
 
 	// ------ TODO why does this make the test fail?
-	_, er := env.Clu.WaspClient(0).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er := env.Clu.WaspClient(0).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
-	_, er = env.Clu.WaspClient(0).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er = env.Clu.WaspClient(0).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
 
-	_, er = env.Clu.WaspClient(1).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er = env.Clu.WaspClient(1).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
-	_, er = env.Clu.WaspClient(1).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er = env.Clu.WaspClient(1).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
 	//-------
 
@@ -49,7 +49,7 @@ func TestReboot(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), req.ID().String()).
 		TimeoutSeconds(10).
 		Execute()
 	require.NoError(t, err)
@@ -91,7 +91,7 @@ func TestReboot(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), req.ID().String()).
 		TimeoutSeconds(10).
 		Execute()
 	require.NoError(t, err)
@@ -114,7 +114,7 @@ func TestReboot2(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), req.ID().String()).
 		WaitForL1Confirmation(true).
 		TimeoutSeconds(10).
 		Execute()
@@ -123,15 +123,15 @@ func TestReboot2(t *testing.T) {
 	env.expectCounter(2)
 
 	// ------ TODO why does this make the test fail?
-	_, er := env.Clu.WaspClient(0).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er := env.Clu.WaspClient(0).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
 
-	_, er = env.Clu.WaspClient(0).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er = env.Clu.WaspClient(0).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
 
-	_, er = env.Clu.WaspClient(1).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er = env.Clu.WaspClient(1).ChainsApi.DeactivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
-	_, er = env.Clu.WaspClient(1).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.String()).Execute()
+	_, er = env.Clu.WaspClient(1).ChainsApi.ActivateChain(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP())).Execute()
 	require.NoError(t, er)
 	//-------
 
@@ -170,7 +170,7 @@ func TestReboot2(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), req.ID().String()).
 		TimeoutSeconds(10).
 		Execute()
 	require.NoError(t, err)
@@ -205,7 +205,7 @@ func (icc *incCounterClient) MustIncOffLedger() {
 	require.NoError(icc.t, err)
 
 	_, _, err = icc.env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), icc.env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), icc.env.Chain.ChainID.Bech32(icc.client.Layer1Client.Bech32HRP()), req.ID().String()).
 		TimeoutSeconds(10).
 		Execute()
 	require.NoError(icc.t, err)
@@ -335,7 +335,7 @@ func TestRebootDuringTasks(t *testing.T) {
 		ret, err := apiextensions.CallView(
 			context.Background(),
 			env.Clu.WaspClient(0),
-			env.Chain.ChainID.String(),
+			env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()),
 			apiclient.ContractCallViewRequest{
 				ContractHName: inccounter.Contract.Hname().String(),
 				FunctionHName: inccounter.ViewGetCounter.Hname().String(),
@@ -386,7 +386,7 @@ func TestRebootRecoverFromWAL(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), req.ID().String()).
 		TimeoutSeconds(10).
 		Execute()
 	require.NoError(t, err)
@@ -410,7 +410,7 @@ func TestRebootRecoverFromWAL(t *testing.T) {
 	require.NoError(t, err)
 
 	_, _, err = env.Clu.WaspClient(0).ChainsApi.
-		WaitForRequest(context.Background(), env.Chain.ChainID.String(), req.ID().String()).
+		WaitForRequest(context.Background(), env.Chain.ChainID.Bech32(env.Clu.L1Client().Bech32HRP()), req.ID().String()).
 		TimeoutSeconds(10).
 		Execute()
 	require.NoError(t, err)

@@ -54,7 +54,7 @@ func TestOffledgerRequestAccessNode(t *testing.T) {
 	ret, err := apiextensions.CallView(
 		context.Background(),
 		clu.WaspClient(6),
-		e.Chain.ChainID.String(),
+		e.Chain.ChainID.Bech32(clu.L1Client().Bech32HRP()),
 		apiclient.ContractCallViewRequest{
 			ContractHName: inccounter.Contract.Hname().String(),
 			FunctionHName: inccounter.ViewGetCounter.Hname().String(),
@@ -80,7 +80,7 @@ func testOffledgerRequest(t *testing.T, e *ChainEnv) {
 	ret, err := apiextensions.CallView(
 		context.Background(),
 		e.Chain.Cluster.WaspClient(0),
-		e.Chain.ChainID.String(),
+		e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()),
 		apiclient.ContractCallViewRequest{
 			ContractHName: inccounter.Contract.Hname().String(),
 			FunctionHName: inccounter.ViewGetCounter.Hname().String(),
@@ -114,7 +114,7 @@ func testOffledgerRequest900KB(t *testing.T, e *ChainEnv) {
 		)
 		require.NoError(t, err1)
 		_, _, err = e.Clu.WaspClient(0).ChainsApi.
-			WaitForRequest(context.Background(), e.Chain.ChainID.String(), gasLimitsReq.ID().String()).
+			WaitForRequest(context.Background(), e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()), gasLimitsReq.ID().String()).
 			TimeoutSeconds(10).
 			Execute()
 		require.NoError(t, err)
@@ -142,7 +142,7 @@ func testOffledgerRequest900KB(t *testing.T, e *ChainEnv) {
 
 	// ensure blob was stored by the cluster
 	res, _, err := e.Chain.Cluster.WaspClient(2).CorecontractsApi.
-		BlobsGetBlobValue(context.Background(), e.Chain.ChainID.String(), expectedHash.Hex(), "data").
+		BlobsGetBlobValue(context.Background(), e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP()), expectedHash.Hex(), "data").
 		Execute()
 	require.NoError(t, err)
 

@@ -20,6 +20,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 )
 
@@ -81,6 +82,7 @@ func getLocalFuns(t *testing.T) (createNewNodeFun, snapshotsAvailableFun) {
 				[]string{},
 				store,
 				mockSnapshotsMetrics(),
+				testutil.L1API.ProtocolParameters().Bech32HRP(),
 				log,
 			)
 			require.NoError(t, err)
@@ -116,13 +118,14 @@ func getNetworkFuns(t *testing.T, networkPaths []string) (createNewNodeFun, snap
 				networkPaths,
 				store,
 				mockSnapshotsMetrics(),
+				testutil.L1API.ProtocolParameters().Bech32HRP(),
 				log,
 			)
 			require.NoError(t, err)
 			return snapshotManager
 		},
 		func(chainID isc.ChainID, snapshotInfos []SnapshotInfo) {
-			indexFilePath := filepath.Join(localSnapshotsCreatePathConst, chainID.String(), constIndexFileName)
+			indexFilePath := filepath.Join(localSnapshotsCreatePathConst, chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), constIndexFileName)
 			f, err := os.OpenFile(indexFilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o666)
 			require.NoError(t, err)
 			defer f.Close()
@@ -179,6 +182,7 @@ func testSnapshotManagerAny(
 		[]string{},
 		storeOrig,
 		mockSnapshotsMetrics(),
+		testutil.L1API.ProtocolParameters().Bech32HRP(),
 		log,
 	)
 	require.NoError(t, err)
@@ -228,7 +232,7 @@ func testSnapshotManagerAny(
 }
 
 func snapshotExists(t *testing.T, chainID isc.ChainID, stateIndex uint32, commitment *state.L1Commitment) bool {
-	path := filepath.Join(localSnapshotsCreatePathConst, chainID.String(), snapshotFileName(stateIndex, commitment.BlockHash()))
+	path := filepath.Join(localSnapshotsCreatePathConst, chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), snapshotFileName(stateIndex, commitment.BlockHash()))
 	exists, isDir, err := ioutils.PathExists(path)
 	require.False(t, isDir)
 	require.NoError(t, err)

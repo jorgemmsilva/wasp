@@ -94,7 +94,7 @@ func (c *consensusState) MarshalJSON() ([]byte, error) {
 	}
 
 	return json.Marshal(&jsonConsensusState{
-		ChainID:          c.identifier.chainID.String(),
+		ChainID:          c.identifier.chainID.Hex(),
 		CommitteeAddress: jAddressRaw,
 		LogIndex:         c.LogIndex.AsUint32(),
 	})
@@ -106,7 +106,7 @@ func (c *consensusState) UnmarshalJSON(bytes []byte) error {
 		return err
 	}
 
-	chainID, err := isc.ChainIDFromString(j.ChainID)
+	chainID, err := isc.ChainIDFromHexString(j.ChainID)
 	if err != nil {
 		return err
 	}

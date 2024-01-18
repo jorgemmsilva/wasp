@@ -54,7 +54,7 @@ func fetchBlockInfo(args []string, node, chain string) *apiclient.BlockInfoRespo
 	if len(args) == 0 {
 		blockInfo, _, err := client.
 			CorecontractsApi.
-			BlocklogGetLatestBlockInfo(context.Background(), config.GetChain(chain).String()).
+			BlocklogGetLatestBlockInfo(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 			Execute() //nolint:bodyclose // false positive
 
 		log.Check(err)
@@ -67,7 +67,7 @@ func fetchBlockInfo(args []string, node, chain string) *apiclient.BlockInfoRespo
 
 	blockInfo, _, err := client.
 		CorecontractsApi.
-		BlocklogGetBlockInfo(context.Background(), config.GetChain(chain).String(), uint32(index)).
+		BlocklogGetBlockInfo(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), uint32(index)).
 		Block(blockIndexStr).
 		Execute() //nolint:bodyclose // false positive
 
@@ -78,7 +78,7 @@ func fetchBlockInfo(args []string, node, chain string) *apiclient.BlockInfoRespo
 func logRequestsInBlock(index uint32, node, chain string) {
 	client := cliclients.WaspClient(node)
 	receipts, _, err := client.CorecontractsApi.
-		BlocklogGetRequestReceiptsOfBlock(context.Background(), config.GetChain(chain).String(), index).
+		BlocklogGetRequestReceiptsOfBlock(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), index).
 		Block(fmt.Sprintf("%d", index)).
 		Execute() //nolint:bodyclose // false positive
 
@@ -93,7 +93,7 @@ func logRequestsInBlock(index uint32, node, chain string) {
 func logEventsInBlock(index uint32, node, chain string) {
 	client := cliclients.WaspClient(node)
 	events, _, err := client.CorecontractsApi.
-		BlocklogGetEventsOfBlock(context.Background(), config.GetChain(chain).String(), index).
+		BlocklogGetEventsOfBlock(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), index).
 		Block(fmt.Sprintf("%d", index)).
 		Execute() //nolint:bodyclose // false positive
 
@@ -134,14 +134,14 @@ func initRequestCmd() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			node = waspcmd.DefaultWaspNodeFallback(node)
 			chain = defaultChainFallback(chain)
-			chainID := config.GetChain(chain)
+			chainID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP())
 
 			client := cliclients.WaspClient(node)
 			reqID := reqIDFromString(args[0])
 
 			// TODO add optional block param?
 			receipt, _, err := client.ChainsApi.
-				GetReceipt(context.Background(), chainID.String(), reqID.String()).
+				GetReceipt(context.Background(), chainID.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), reqID.String()).
 				Execute() //nolint:bodyclose // false positive
 
 			log.Check(err)
@@ -162,7 +162,7 @@ func initRequestCmd() *cobra.Command {
 func logEventsInRequest(reqID isc.RequestID, node, chain string) {
 	client := cliclients.WaspClient(node)
 	events, _, err := client.CorecontractsApi.
-		BlocklogGetEventsOfRequest(context.Background(), config.GetChain(chain).String(), reqID.String()).
+		BlocklogGetEventsOfRequest(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP()), reqID.String()).
 		Execute() //nolint:bodyclose // false positive
 
 	log.Check(err)

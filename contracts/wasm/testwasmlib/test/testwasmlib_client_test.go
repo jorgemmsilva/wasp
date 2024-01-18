@@ -109,7 +109,7 @@ func setupClientCluster(t *testing.T) *wasmclient.WasmClientContext {
 	require.NoError(t, err)
 
 	svc := wasmclient.NewWasmClientService("http://localhost:19090")
-	err = svc.SetCurrentChainID(env.Chain.ChainID.String())
+	err = svc.SetCurrentChainID(env.Chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	require.NoError(t, err)
 	return newClient(t, svc, keyPair)
 }

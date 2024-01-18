@@ -17,7 +17,7 @@ func (c *Controller) getNodeMessageMetrics(e echo.Context) error {
 }
 
 func (c *Controller) getChainMessageMetrics(e echo.Context) error {
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}
@@ -29,7 +29,7 @@ func (c *Controller) getChainMessageMetrics(e echo.Context) error {
 }
 
 func (c *Controller) getChainWorkflowMetrics(e echo.Context) error {
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (c *Controller) getChainWorkflowMetrics(e echo.Context) error {
 }
 
 func (c *Controller) getChainPipeMetrics(e echo.Context) error {
-	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService)
+	chainID, err := controllerutils.ChainIDFromParams(e, c.chainService, c.l1API)
 	if err != nil {
 		return err
 	}

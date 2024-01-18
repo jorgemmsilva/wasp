@@ -85,7 +85,7 @@ func initDisableFeePolicyCmd() *cobra.Command {
 			client := cliclients.WaspClient(node)
 
 			callGovView := func(viewName string) dict.Dict {
-				result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain).String()).
+				result, _, err := client.ChainsApi.CallView(context.Background(), config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).Bech32(cliclients.API().ProtocolParameters().Bech32HRP())).
 					ContractCallViewRequest(apiclient.ContractCallViewRequest{
 						ContractName: governance.Contract.Name,
 						FunctionName: viewName,

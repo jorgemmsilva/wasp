@@ -24,7 +24,7 @@ func NewEthereumAddressAgentID(chainID ChainID, eth common.Address) *EthereumAdd
 	return &EthereumAddressAgentID{chainID: chainID, eth: eth}
 }
 
-func ethAgentIDFromString(contractPart, chainIDPart string) (*EthereumAddressAgentID, error) {
+func ethAgentIDFromString(contractPart, chainIDPart string, expectedPrefix iotago.NetworkPrefix) (*EthereumAddressAgentID, error) {
 	data, err := hexutil.DecodeHex(contractPart)
 	if err != nil {
 		return nil, err
@@ -33,7 +33,7 @@ func ethAgentIDFromString(contractPart, chainIDPart string) (*EthereumAddressAge
 		return nil, errors.New("invalid ETH address string")
 	}
 
-	chainID, err := ChainIDFromString(chainIDPart)
+	chainID, err := ChainIDFromBech32(chainIDPart, expectedPrefix)
 	if err != nil {
 		return nil, fmt.Errorf("invalid chainID: %w", err)
 	}
@@ -74,11 +74,6 @@ func (a *EthereumAddressAgentID) BytesWithoutChainID() []byte {
 
 func (a *EthereumAddressAgentID) Kind() AgentIDKind {
 	return AgentIDKindEthereumAddress
-}
-
-func (a *EthereumAddressAgentID) String() string {
-	// eth.String() includes 0x prefix
-	return a.eth.String() + AgentIDStringSeparator + a.chainID.String()
 }
 
 func (a *EthereumAddressAgentID) Bech32(prefix iotago.NetworkPrefix) string {

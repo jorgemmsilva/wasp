@@ -3,6 +3,7 @@ package multiclient
 import (
 	"time"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/util/multicall"
 )
@@ -12,14 +13,16 @@ type ClientResolver func(apiHost string) *apiclient.APIClient
 // MultiClient allows to send webapi requests in parallel to multiple wasp nodes
 type MultiClient struct {
 	nodes []*apiclient.APIClient
+	l1API iotago.API
 
 	Timeout time.Duration
 }
 
 // New creates a new instance of MultiClient
-func New(resolver ClientResolver, hosts []string) *MultiClient {
+func New(resolver ClientResolver, hosts []string, l1API iotago.API) *MultiClient {
 	m := &MultiClient{
 		nodes: make([]*apiclient.APIClient, len(hosts)),
+		l1API: l1API,
 	}
 
 	for i, host := range hosts {

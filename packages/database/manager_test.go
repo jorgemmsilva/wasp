@@ -18,13 +18,14 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/state"
+	"github.com/iotaledger/wasp/packages/testutil"
 )
 
 func TestNewChainStateDatabaseManager(t *testing.T) {
 	chainRecordRegistry, err := registry.NewChainRecordRegistryImpl("")
 	require.NoError(t, err)
 
-	chainStateDatabaseManager, err := NewChainStateDatabaseManager(chainRecordRegistry, WithEngine(hivedb.EngineMapDB))
+	chainStateDatabaseManager, err := NewChainStateDatabaseManager(chainRecordRegistry, testutil.L1API.ProtocolParameters().Bech32HRP(), WithEngine(hivedb.EngineMapDB))
 	require.NoError(t, err)
 
 	require.Empty(t, chainStateDatabaseManager.databases)
@@ -34,7 +35,7 @@ func TestCreateChainStateDatabase(t *testing.T) {
 	chainRecordRegistry, err := registry.NewChainRecordRegistryImpl("")
 	require.NoError(t, err)
 
-	chainStateDatabaseManager, err := NewChainStateDatabaseManager(chainRecordRegistry, WithEngine(hivedb.EngineMapDB))
+	chainStateDatabaseManager, err := NewChainStateDatabaseManager(chainRecordRegistry, testutil.L1API.ProtocolParameters().Bech32HRP(), WithEngine(hivedb.EngineMapDB))
 	require.NoError(t, err)
 
 	chainID := isc.RandomChainID()
@@ -64,6 +65,7 @@ func TestWriteAmplification(t *testing.T) {
 
 	chainStateDatabaseManager, err := NewChainStateDatabaseManager(
 		chainRecordRegistry,
+		testutil.L1API.ProtocolParameters().Bech32HRP(),
 		WithEngine(hivedb.EngineRocksDB),
 		WithPath(tempDir),
 	)

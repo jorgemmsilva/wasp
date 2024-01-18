@@ -3,6 +3,7 @@ package models
 import (
 	"net/url"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 	"github.com/iotaledger/wasp/packages/webapi/dto"
 	"github.com/iotaledger/wasp/packages/webapi/routes"
@@ -99,10 +100,10 @@ func mapMetadataUrls(response *ChainInfoResponse) {
 	}
 }
 
-func MapChainInfoResponse(chainInfo *dto.ChainInfo, evmChainID uint16) ChainInfoResponse {
+func MapChainInfoResponse(chainInfo *dto.ChainInfo, evmChainID uint16, l1API iotago.API) ChainInfoResponse {
 	chainInfoResponse := ChainInfoResponse{
 		IsActive:   chainInfo.IsActive,
-		ChainID:    chainInfo.ChainID.String(),
+		ChainID:    chainInfo.ChainID.Bech32(l1API.ProtocolParameters().Bech32HRP()),
 		EVMChainID: evmChainID,
 		PublicURL:  chainInfo.PublicURL,
 		Metadata: PublicChainMetadata{
@@ -115,7 +116,7 @@ func MapChainInfoResponse(chainInfo *dto.ChainInfo, evmChainID uint16) ChainInfo
 	}
 
 	if chainInfo.ChainOwnerID != nil {
-		chainInfoResponse.ChainOwnerID = chainInfo.ChainOwnerID.String()
+		chainInfoResponse.ChainOwnerID = chainInfo.ChainOwnerID.Bech32(l1API.ProtocolParameters().Bech32HRP())
 	}
 
 	if chainInfo.GasFeePolicy != nil {

@@ -1,18 +1,18 @@
 package services
 
 import (
-	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
 )
 
 type RegistryService struct {
-	chainsProvider              chains.Provider
+	chainsProvider              chaintypes.ChainsProvider
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider
 }
 
-func NewRegistryService(chainsProvider chains.Provider, chainRecordRegistryProvider registry.ChainRecordRegistryProvider) interfaces.RegistryService {
+func NewRegistryService(chainsProvider chaintypes.ChainsProvider, chainRecordRegistryProvider registry.ChainRecordRegistryProvider) interfaces.RegistryService {
 	return &RegistryService{
 		chainsProvider:              chainsProvider,
 		chainRecordRegistryProvider: chainRecordRegistryProvider,

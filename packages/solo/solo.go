@@ -6,6 +6,7 @@ package solo
 import (
 	"context"
 	"fmt"
+	"maps"
 	"math/big"
 	"math/rand"
 	"sync"
@@ -128,6 +129,9 @@ type Chain struct {
 	metrics *metrics.ChainMetrics
 
 	migrationScheme *migrations.MigrationScheme
+
+	FakeChainNodes    func() []peering.PeerStatusProvider
+	FakeCommitteeInfo func() *chaintypes.CommitteeInfo
 }
 
 type InitOptions struct {
@@ -194,6 +198,10 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 	return ret
 }
 
+func (env *Solo) Log() log.Logger {
+	return env.logger
+}
+
 func (env *Solo) batchLoop() {
 	for {
 		time.Sleep(50 * time.Millisecond)
@@ -237,6 +245,12 @@ func (env *Solo) GetDBHash() (ret hashing.HashValue) {
 
 func (env *Solo) Publisher() *publisher.Publisher {
 	return env.publisher
+}
+
+func (env *Solo) GetChains() map[isc.ChainID]*Chain {
+	env.chainsMutex.Lock()
+	defer env.chainsMutex.Unlock()
+	return maps.Clone(env.chains)
 }
 
 func (env *Solo) GetChainByName(name string) *Chain {
@@ -529,15 +543,15 @@ func (ch *Chain) AddMigration(m migrations.Migration) {
 }
 
 func (ch *Chain) GetCandidateNodes() []*governance.AccessNodeInfo {
-	panic("unimplemented")
+	return nil
 }
 
 func (ch *Chain) GetChainNodes() []peering.PeerStatusProvider {
-	panic("unimplemented")
+	return ch.FakeChainNodes()
 }
 
 func (ch *Chain) GetCommitteeInfo() *chaintypes.CommitteeInfo {
-	panic("unimplemented")
+	return ch.FakeCommitteeInfo()
 }
 
 func (ch *Chain) ID() isc.ChainID {

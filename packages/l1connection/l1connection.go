@@ -273,11 +273,12 @@ func (c *l1client) RequestFunds(addr iotago.Address, timeout ...time.Duration) e
 		return fmt.Errorf("faucet call failed, response status=%v, body=%v", res.Status, string(resBody))
 	}
 	// wait until funds are available
+	delay := 10 * time.Millisecond // in case the network is REALLY fast
 	for {
 		select {
 		case <-ctxWithTimeout.Done():
 			return errors.New("faucet request timed-out while waiting for funds to be available")
-		case <-time.After(1 * time.Second):
+		case <-time.After(delay):
 			newOutputs, err := c.OutputMap(addr)
 			if err != nil {
 				return err
@@ -285,6 +286,7 @@ func (c *l1client) RequestFunds(addr iotago.Address, timeout ...time.Duration) e
 			if len(newOutputs) > len(initialAddrOutputs) {
 				return nil // success
 			}
+			delay = 1 * time.Second
 		}
 	}
 }

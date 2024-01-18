@@ -4,14 +4,15 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**Assets** | [**AssetsResponse**](AssetsResponse.md) |  | 
+**BaseTokens** | **string** | The base tokens (uint64 as string) | 
 **FoundryId** | **string** |  | 
+**NativeTokenId** | **string** | The native token id | 
 
 ## Methods
 
 ### NewFoundryOutputResponse
 
-`func NewFoundryOutputResponse(assets AssetsResponse, foundryId string, ) *FoundryOutputResponse`
+`func NewFoundryOutputResponse(baseTokens string, foundryId string, nativeTokenId string, ) *FoundryOutputResponse`
 
 NewFoundryOutputResponse instantiates a new FoundryOutputResponse object
 This constructor will assign default values to properties that have it defined,
@@ -26,24 +27,24 @@ NewFoundryOutputResponseWithDefaults instantiates a new FoundryOutputResponse ob
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetAssets
+### GetBaseTokens
 
-`func (o *FoundryOutputResponse) GetAssets() AssetsResponse`
+`func (o *FoundryOutputResponse) GetBaseTokens() string`
 
-GetAssets returns the Assets field if non-nil, zero value otherwise.
+GetBaseTokens returns the BaseTokens field if non-nil, zero value otherwise.
 
-### GetAssetsOk
+### GetBaseTokensOk
 
-`func (o *FoundryOutputResponse) GetAssetsOk() (*AssetsResponse, bool)`
+`func (o *FoundryOutputResponse) GetBaseTokensOk() (*string, bool)`
 
-GetAssetsOk returns a tuple with the Assets field if it's non-nil, zero value otherwise
+GetBaseTokensOk returns a tuple with the BaseTokens field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetAssets
+### SetBaseTokens
 
-`func (o *FoundryOutputResponse) SetAssets(v AssetsResponse)`
+`func (o *FoundryOutputResponse) SetBaseTokens(v string)`
 
-SetAssets sets Assets field to given value.
+SetBaseTokens sets BaseTokens field to given value.
 
 
 ### GetFoundryId
@@ -64,6 +65,26 @@ and a boolean to check if the value has been set.
 `func (o *FoundryOutputResponse) SetFoundryId(v string)`
 
 SetFoundryId sets FoundryId field to given value.
+
+
+### GetNativeTokenId
+
+`func (o *FoundryOutputResponse) GetNativeTokenId() string`
+
+GetNativeTokenId returns the NativeTokenId field if non-nil, zero value otherwise.
+
+### GetNativeTokenIdOk
+
+`func (o *FoundryOutputResponse) GetNativeTokenIdOk() (*string, bool)`
+
+GetNativeTokenIdOk returns a tuple with the NativeTokenId field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetNativeTokenId
+
+`func (o *FoundryOutputResponse) SetNativeTokenId(v string)`
+
+SetNativeTokenId sets NativeTokenId field to given value.
 
 
 

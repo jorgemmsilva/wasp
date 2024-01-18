@@ -8,11 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/labstack/echo/v4"
 
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
-	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -36,11 +35,11 @@ type EVMService struct {
 	websocketContexts     map[isc.ChainID]*websocketContext
 
 	baseTokenInfo   *api.InfoResBaseToken
-	chainsProvider  chains.Provider
+	chainsProvider  chaintypes.ChainsProvider
 	chainService    interfaces.ChainService
 	networkProvider peering.NetworkProvider
 	publisher       *publisher.Publisher
-	indexDbPath     string
+	indexDbProvider database.Provider
 	l1API           iotago.API
 	metrics         *metrics.ChainMetricsProvider
 	jsonrpcParams   *jsonrpc.Parameters
@@ -49,12 +48,12 @@ type EVMService struct {
 
 func NewEVMService(
 	baseTokenInfo *api.InfoResBaseToken,
-	chainsProvider chains.Provider,
+	chainsProvider chaintypes.ChainsProvider,
 	chainService interfaces.ChainService,
 	l1API iotago.API,
 	networkProvider peering.NetworkProvider,
 	pub *publisher.Publisher,
-	indexDbPath string,
+	indexDbProvider database.Provider,
 	metrics *metrics.ChainMetricsProvider,
 	jsonrpcParams *jsonrpc.Parameters,
 	log log.Logger,
@@ -70,7 +69,7 @@ func NewEVMService(
 		l1API:                 l1API,
 		networkProvider:       networkProvider,
 		publisher:             pub,
-		indexDbPath:           indexDbPath,
+		indexDbProvider:       indexDbProvider,
 		metrics:               metrics,
 		jsonrpcParams:         jsonrpcParams,
 		log:                   log,
@@ -93,7 +92,7 @@ func (e *EVMService) getEVMBackend(chainID isc.ChainID) (*chainServer, error) {
 	nodePubKey := e.networkProvider.Self().PubKey()
 	backend := jsonrpc.NewWaspEVMBackend(chain, nodePubKey)
 
-	db, err := database.DatabaseWithDefaultSettings(e.indexDbPath, true, hivedb.EngineRocksDB, false)
+	db, err := e.indexDbProvider()
 	if err != nil {
 		panic(err)
 	}

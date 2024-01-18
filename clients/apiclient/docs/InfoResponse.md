@@ -4,7 +4,6 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**L1Params** | [**L1Params**](L1Params.md) |  | 
 **PeeringURL** | **string** | The net id of the node | 
 **PublicKey** | **string** | The public key of the node (Hex) | 
 **Version** | **string** | The version of the node | 
@@ -13,7 +12,7 @@ Name | Type | Description | Notes
 
 ### NewInfoResponse
 
-`func NewInfoResponse(l1Params L1Params, peeringURL string, publicKey string, version string, ) *InfoResponse`
+`func NewInfoResponse(peeringURL string, publicKey string, version string, ) *InfoResponse`
 
 NewInfoResponse instantiates a new InfoResponse object
 This constructor will assign default values to properties that have it defined,
@@ -27,26 +26,6 @@ will change when the set of required properties is changed
 NewInfoResponseWithDefaults instantiates a new InfoResponse object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
-
-### GetL1Params
-
-`func (o *InfoResponse) GetL1Params() L1Params`
-
-GetL1Params returns the L1Params field if non-nil, zero value otherwise.
-
-### GetL1ParamsOk
-
-`func (o *InfoResponse) GetL1ParamsOk() (*L1Params, bool)`
-
-GetL1ParamsOk returns a tuple with the L1Params field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetL1Params
-
-`func (o *InfoResponse) SetL1Params(v L1Params)`
-
-SetL1Params sets L1Params field to given value.
-
 
 ### GetPeeringURL
 

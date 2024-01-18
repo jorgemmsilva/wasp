@@ -3,7 +3,7 @@ package services
 import (
 	"errors"
 
-	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/peering"
@@ -17,12 +17,12 @@ import (
 var ErrNotInCommittee = errors.New("this node is not in the committee for the chain")
 
 type CommitteeService struct {
-	chainsProvider          chains.Provider
+	chainsProvider          chaintypes.ChainsProvider
 	networkProvider         peering.NetworkProvider
 	dkShareRegistryProvider registry.DKShareRegistryProvider
 }
 
-func NewCommitteeService(chainsProvider chains.Provider, networkProvider peering.NetworkProvider, dkShareRegistryProvider registry.DKShareRegistryProvider) interfaces.CommitteeService {
+func NewCommitteeService(chainsProvider chaintypes.ChainsProvider, networkProvider peering.NetworkProvider, dkShareRegistryProvider registry.DKShareRegistryProvider) interfaces.CommitteeService {
 	return &CommitteeService{
 		chainsProvider:          chainsProvider,
 		networkProvider:         networkProvider,

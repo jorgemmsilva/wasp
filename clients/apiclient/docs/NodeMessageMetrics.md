@@ -4,8 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**InAliasOutput** | [**AliasOutputMetricItem**](AliasOutputMetricItem.md) |  | 
-**InMilestone** | [**MilestoneMetricItem**](MilestoneMetricItem.md) |  | 
+**InAnchorOutput** | [**AnchorOutputMetricItem**](AnchorOutputMetricItem.md) |  | 
 **InOnLedgerRequest** | [**OnLedgerRequestMetricItem**](OnLedgerRequestMetricItem.md) |  | 
 **InOutput** | [**InOutputMetricItem**](InOutputMetricItem.md) |  | 
 **InStateOutput** | [**InStateOutputMetricItem**](InStateOutputMetricItem.md) |  | 
@@ -21,7 +20,7 @@ Name | Type | Description | Notes
 
 ### NewNodeMessageMetrics
 
-`func NewNodeMessageMetrics(inAliasOutput AliasOutputMetricItem, inMilestone MilestoneMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem, registeredChainIDs []string, ) *NodeMessageMetrics`
+`func NewNodeMessageMetrics(inAnchorOutput AnchorOutputMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem, registeredChainIDs []string, ) *NodeMessageMetrics`
 
 NewNodeMessageMetrics instantiates a new NodeMessageMetrics object
 This constructor will assign default values to properties that have it defined,
@@ -36,44 +35,24 @@ NewNodeMessageMetricsWithDefaults instantiates a new NodeMessageMetrics object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetInAliasOutput
+### GetInAnchorOutput
 
-`func (o *NodeMessageMetrics) GetInAliasOutput() AliasOutputMetricItem`
+`func (o *NodeMessageMetrics) GetInAnchorOutput() AnchorOutputMetricItem`
 
-GetInAliasOutput returns the InAliasOutput field if non-nil, zero value otherwise.
+GetInAnchorOutput returns the InAnchorOutput field if non-nil, zero value otherwise.
 
-### GetInAliasOutputOk
+### GetInAnchorOutputOk
 
-`func (o *NodeMessageMetrics) GetInAliasOutputOk() (*AliasOutputMetricItem, bool)`
+`func (o *NodeMessageMetrics) GetInAnchorOutputOk() (*AnchorOutputMetricItem, bool)`
 
-GetInAliasOutputOk returns a tuple with the InAliasOutput field if it's non-nil, zero value otherwise
+GetInAnchorOutputOk returns a tuple with the InAnchorOutput field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetInAliasOutput
+### SetInAnchorOutput
 
-`func (o *NodeMessageMetrics) SetInAliasOutput(v AliasOutputMetricItem)`
+`func (o *NodeMessageMetrics) SetInAnchorOutput(v AnchorOutputMetricItem)`
 
-SetInAliasOutput sets InAliasOutput field to given value.
-
-
-### GetInMilestone
-
-`func (o *NodeMessageMetrics) GetInMilestone() MilestoneMetricItem`
-
-GetInMilestone returns the InMilestone field if non-nil, zero value otherwise.
-
-### GetInMilestoneOk
-
-`func (o *NodeMessageMetrics) GetInMilestoneOk() (*MilestoneMetricItem, bool)`
-
-GetInMilestoneOk returns a tuple with the InMilestone field if it's non-nil, zero value otherwise
-and a boolean to check if the value has been set.
-
-### SetInMilestone
-
-`func (o *NodeMessageMetrics) SetInMilestone(v MilestoneMetricItem)`
-
-SetInMilestone sets InMilestone field to given value.
+SetInAnchorOutput sets InAnchorOutput field to given value.
 
 
 ### GetInOnLedgerRequest

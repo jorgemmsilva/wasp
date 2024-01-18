@@ -37,6 +37,8 @@ type Database struct {
 	writeMutex            sync.Mutex
 }
 
+type Provider func() (*Database, error)
+
 // New creates a new Database instance.
 func New(databaseDirectory string, kvStore kvstore.KVStore, engine hivedb.Engine, compactionSupported bool, compactionRunningFunc func() bool) *Database {
 	return &Database{

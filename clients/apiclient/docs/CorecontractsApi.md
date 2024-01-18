@@ -38,7 +38,7 @@ Method | HTTP request | Description
 
 ## AccountsGetAccountBalance
 
-> AssetsResponse AccountsGetAccountBalance(ctx, chainID, agentID).Block(block).Execute()
+> FungibleTokensResponse AccountsGetAccountBalance(ctx, chainID, agentID).Block(block).Execute()
 
 Get all assets belonging to an account
 
@@ -66,7 +66,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error when calling `CorecontractsApi.AccountsGetAccountBalance``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `AccountsGetAccountBalance`: AssetsResponse
+    // response from `AccountsGetAccountBalance`: FungibleTokensResponse
     fmt.Fprintf(os.Stdout, "Response from `CorecontractsApi.AccountsGetAccountBalance`: %v\n", resp)
 }
 ```
@@ -93,7 +93,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**AssetsResponse**](AssetsResponse.md)
+[**FungibleTokensResponse**](FungibleTokensResponse.md)
 
 ### Authorization
 
@@ -473,7 +473,7 @@ No authorization required
 
 ## AccountsGetNFTData
 
-> NFTDataResponse AccountsGetNFTData(ctx, chainID, nftID).Block(block).Execute()
+> NFTJSON AccountsGetNFTData(ctx, chainID, nftID).Block(block).Execute()
 
 Get the NFT data by an ID
 
@@ -501,7 +501,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error when calling `CorecontractsApi.AccountsGetNFTData``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `AccountsGetNFTData`: NFTDataResponse
+    // response from `AccountsGetNFTData`: NFTJSON
     fmt.Fprintf(os.Stdout, "Response from `CorecontractsApi.AccountsGetNFTData`: %v\n", resp)
 }
 ```
@@ -528,7 +528,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**NFTDataResponse**](NFTDataResponse.md)
+[**NFTJSON**](NFTJSON.md)
 
 ### Authorization
 
@@ -616,7 +616,7 @@ No authorization required
 
 ## AccountsGetTotalAssets
 
-> AssetsResponse AccountsGetTotalAssets(ctx, chainID).Block(block).Execute()
+> FungibleTokensResponse AccountsGetTotalAssets(ctx, chainID).Block(block).Execute()
 
 Get all stored assets
 
@@ -643,7 +643,7 @@ func main() {
         fmt.Fprintf(os.Stderr, "Error when calling `CorecontractsApi.AccountsGetTotalAssets``: %v\n", err)
         fmt.Fprintf(os.Stderr, "Full HTTP response: %v\n", r)
     }
-    // response from `AccountsGetTotalAssets`: AssetsResponse
+    // response from `AccountsGetTotalAssets`: FungibleTokensResponse
     fmt.Fprintf(os.Stdout, "Response from `CorecontractsApi.AccountsGetTotalAssets`: %v\n", resp)
 }
 ```
@@ -668,7 +668,7 @@ Name | Type | Description  | Notes
 
 ### Return type
 
-[**AssetsResponse**](AssetsResponse.md)
+[**FungibleTokensResponse**](FungibleTokensResponse.md)
 
 ### Authorization
 

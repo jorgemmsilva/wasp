@@ -5,7 +5,6 @@ import (
 	"errors"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -18,13 +17,16 @@ import (
 	"github.com/iotaledger/hive.go/app"
 	"github.com/iotaledger/hive.go/app/configuration"
 	"github.com/iotaledger/hive.go/app/shutdown"
+	hivedb "github.com/iotaledger/hive.go/kvstore/database"
 	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/web/websockethub"
 	"github.com/iotaledger/inx-app/pkg/httpserver"
 	"github.com/iotaledger/wasp/packages/authentication"
 	"github.com/iotaledger/wasp/packages/chain"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/daemon"
+	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/dkg"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -154,28 +156,7 @@ func NewEcho(params *ParametersWebAPI, metrics *metrics.ChainMetricsProvider, lo
 		}
 	})
 
-	// Middleware to unescape any supplied path (/path/foo%40bar/) parameter
-	// Query parameters (?name=foo%40bar) get unescaped by default.
-	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			escapedPathParams := c.ParamValues()
-			unescapedPathParams := make([]string, len(escapedPathParams))
-
-			for i, param := range escapedPathParams {
-				unescapedParam, err := url.PathUnescape(param)
-
-				if err != nil {
-					unescapedPathParams[i] = param
-				} else {
-					unescapedPathParams[i] = unescapedParam
-				}
-			}
-
-			c.SetParamValues(unescapedPathParams...)
-
-			return next(c)
-		}
-	})
+	e.Use(webapi.MiddlewareUnescapePath)
 
 	e.Use(middleware.BodyLimit(params.Limits.MaxBodyLength))
 
@@ -269,6 +250,10 @@ func provide(c *dig.Container) error {
 			}))
 		}
 
+		evmIndexDBProvider := func() (*database.Database, error) {
+			return database.DatabaseWithDefaultSettings(ParamsWebAPI.IndexDbPath, true, hivedb.EngineRocksDB, false)
+		}
+
 		webapi.Init(
 			logger,
 			echoSwagger,
@@ -280,7 +265,7 @@ func provide(c *dig.Container) error {
 			deps.ChainRecordRegistryProvider,
 			deps.DKShareRegistryProvider,
 			deps.NodeIdentityProvider,
-			func() *chains.Chains {
+			func() chaintypes.Chains {
 				return deps.Chains
 			},
 			func() *dkg.Node {
@@ -291,7 +276,7 @@ func provide(c *dig.Container) error {
 			ParamsWebAPI.Auth,
 			deps.APICacheTTL,
 			websocketService,
-			ParamsWebAPI.IndexDbPath,
+			evmIndexDBProvider,
 			deps.Publisher,
 			jsonrpc.NewParameters(
 				ParamsWebAPI.Limits.Jsonrpc.MaxBlocksInLogsFilterRange,

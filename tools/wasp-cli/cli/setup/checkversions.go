@@ -27,11 +27,11 @@ func initCheckVersionsCmd() *cobra.Command {
 				log.Fatalf("no wasp node configured, you can add a node with `wasp-cli wasp add <name> <api url>`")
 			}
 			for nodeName := range waspSettings {
-				nodeVersion, _, err := cliclients.WaspClient(nodeName).NodeApi.
+				nodeVersion, _, err := cliclients.WaspClientForHostName(nodeName).NodeApi.
 					GetVersion(context.Background()).
 					Execute()
 				log.Check(err)
-				if app.Version == "v"+nodeVersion.Version {
+				if cliclients.VersionsMatch(app.Version, nodeVersion.Version) {
 					log.Printf("Wasp-cli version matches Wasp {%s}\n", nodeName)
 				} else {
 					log.Printf("! -> Version mismatch with Wasp {%s}. cli version: %s, wasp version: %s\n", nodeName, app.Version, nodeVersion.Version)

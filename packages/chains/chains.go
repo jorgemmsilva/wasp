@@ -37,10 +37,6 @@ import (
 	"github.com/iotaledger/wasp/packages/webapi/interfaces"
 )
 
-type Provider func() *Chains // TODO: Use DI instead of that.
-
-type ChainProvider func(chainID isc.ChainID) chaintypes.Chain
-
 type Chains struct {
 	ctx                        context.Context
 	log                        log.Logger

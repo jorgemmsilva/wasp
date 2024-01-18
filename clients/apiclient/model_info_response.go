@@ -19,7 +19,6 @@ var _ MappedNullable = &InfoResponse{}
 
 // InfoResponse struct for InfoResponse
 type InfoResponse struct {
-	L1Params L1Params `json:"l1Params"`
 	// The net id of the node
 	PeeringURL string `json:"peeringURL"`
 	// The public key of the node (Hex)
@@ -32,9 +31,8 @@ type InfoResponse struct {
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewInfoResponse(l1Params L1Params, peeringURL string, publicKey string, version string) *InfoResponse {
+func NewInfoResponse(peeringURL string, publicKey string, version string) *InfoResponse {
 	this := InfoResponse{}
-	this.L1Params = l1Params
 	this.PeeringURL = peeringURL
 	this.PublicKey = publicKey
 	this.Version = version
@@ -47,30 +45,6 @@ func NewInfoResponse(l1Params L1Params, peeringURL string, publicKey string, ver
 func NewInfoResponseWithDefaults() *InfoResponse {
 	this := InfoResponse{}
 	return &this
-}
-
-// GetL1Params returns the L1Params field value
-func (o *InfoResponse) GetL1Params() L1Params {
-	if o == nil {
-		var ret L1Params
-		return ret
-	}
-
-	return o.L1Params
-}
-
-// GetL1ParamsOk returns a tuple with the L1Params field value
-// and a boolean to check if the value has been set.
-func (o *InfoResponse) GetL1ParamsOk() (*L1Params, bool) {
-	if o == nil {
-		return nil, false
-	}
-	return &o.L1Params, true
-}
-
-// SetL1Params sets field value
-func (o *InfoResponse) SetL1Params(v L1Params) {
-	o.L1Params = v
 }
 
 // GetPeeringURL returns the PeeringURL field value
@@ -155,7 +129,6 @@ func (o InfoResponse) MarshalJSON() ([]byte, error) {
 
 func (o InfoResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["l1Params"] = o.L1Params
 	toSerialize["peeringURL"] = o.PeeringURL
 	toSerialize["publicKey"] = o.PublicKey
 	toSerialize["version"] = o.Version

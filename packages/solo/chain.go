@@ -611,13 +611,21 @@ func (ch *Chain) Nonce(agentID isc.AgentID) uint64 {
 }
 
 // ReceiveOffLedgerRequest implements chain.Chain
-func (*Chain) ReceiveOffLedgerRequest(request isc.OffLedgerRequest, sender *cryptolib.PublicKey) error {
-	panic("unimplemented")
+func (ch *Chain) ReceiveOffLedgerRequest(request isc.OffLedgerRequest, sender *cryptolib.PublicKey) error {
+	_, err := ch.RunOffLedgerRequest(request)
+	return err
 }
 
 // AwaitRequestProcessed implements chain.Chain
-func (*Chain) AwaitRequestProcessed(ctx context.Context, requestID isc.RequestID, confirmed bool) <-chan *blocklog.RequestReceipt {
-	panic("unimplemented")
+func (ch *Chain) AwaitRequestProcessed(ctx context.Context, requestID isc.RequestID, confirmed bool) <-chan *blocklog.RequestReceipt {
+	receiptCh := make(chan *blocklog.RequestReceipt, 1)
+	ch.WaitUntil(func() bool {
+		return ch.IsRequestProcessed(requestID)
+	})
+	rec, ok := ch.GetRequestReceipt(requestID)
+	require.True(ch.Env.T, ok)
+	receiptCh <- rec
+	return receiptCh
 }
 
 func (ch *Chain) LatestBlockIndex() uint32 {

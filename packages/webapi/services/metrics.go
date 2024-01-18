@@ -1,7 +1,7 @@
 package services
 
 import (
-	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/webapi/dto"
@@ -10,11 +10,11 @@ import (
 )
 
 type MetricsService struct {
-	chainProvider        chains.Provider
+	chainProvider        chaintypes.ChainsProvider
 	chainMetricsProvider *metrics.ChainMetricsProvider
 }
 
-func NewMetricsService(chainProvider chains.Provider, chainMetricsProvider *metrics.ChainMetricsProvider) interfaces.MetricsService {
+func NewMetricsService(chainProvider chaintypes.ChainsProvider, chainMetricsProvider *metrics.ChainMetricsProvider) interfaces.MetricsService {
 	return &MetricsService{
 		chainProvider:        chainProvider,
 		chainMetricsProvider: chainMetricsProvider,

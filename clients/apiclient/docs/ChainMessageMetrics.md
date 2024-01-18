@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**InAliasOutput** | [**AliasOutputMetricItem**](AliasOutputMetricItem.md) |  | 
+**InAnchorOutput** | [**AnchorOutputMetricItem**](AnchorOutputMetricItem.md) |  | 
 **InOnLedgerRequest** | [**OnLedgerRequestMetricItem**](OnLedgerRequestMetricItem.md) |  | 
 **InOutput** | [**InOutputMetricItem**](InOutputMetricItem.md) |  | 
 **InStateOutput** | [**InStateOutputMetricItem**](InStateOutputMetricItem.md) |  | 
@@ -19,7 +19,7 @@ Name | Type | Description | Notes
 
 ### NewChainMessageMetrics
 
-`func NewChainMessageMetrics(inAliasOutput AliasOutputMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem, ) *ChainMessageMetrics`
+`func NewChainMessageMetrics(inAnchorOutput AnchorOutputMetricItem, inOnLedgerRequest OnLedgerRequestMetricItem, inOutput InOutputMetricItem, inStateOutput InStateOutputMetricItem, inTxInclusionState TxInclusionStateMsgMetricItem, outPublishGovernanceTransaction TransactionMetricItem, outPublisherStateTransaction PublisherStateTransactionItem, outPullLatestOutput InterfaceMetricItem, outPullOutputByID UTXOInputMetricItem, outPullTxInclusionState TransactionIDMetricItem, ) *ChainMessageMetrics`
 
 NewChainMessageMetrics instantiates a new ChainMessageMetrics object
 This constructor will assign default values to properties that have it defined,
@@ -34,24 +34,24 @@ NewChainMessageMetricsWithDefaults instantiates a new ChainMessageMetrics object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
 
-### GetInAliasOutput
+### GetInAnchorOutput
 
-`func (o *ChainMessageMetrics) GetInAliasOutput() AliasOutputMetricItem`
+`func (o *ChainMessageMetrics) GetInAnchorOutput() AnchorOutputMetricItem`
 
-GetInAliasOutput returns the InAliasOutput field if non-nil, zero value otherwise.
+GetInAnchorOutput returns the InAnchorOutput field if non-nil, zero value otherwise.
 
-### GetInAliasOutputOk
+### GetInAnchorOutputOk
 
-`func (o *ChainMessageMetrics) GetInAliasOutputOk() (*AliasOutputMetricItem, bool)`
+`func (o *ChainMessageMetrics) GetInAnchorOutputOk() (*AnchorOutputMetricItem, bool)`
 
-GetInAliasOutputOk returns a tuple with the InAliasOutput field if it's non-nil, zero value otherwise
+GetInAnchorOutputOk returns a tuple with the InAnchorOutput field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetInAliasOutput
+### SetInAnchorOutput
 
-`func (o *ChainMessageMetrics) SetInAliasOutput(v AliasOutputMetricItem)`
+`func (o *ChainMessageMetrics) SetInAnchorOutput(v AnchorOutputMetricItem)`
 
-SetInAliasOutput sets InAliasOutput field to given value.
+SetInAnchorOutput sets InAnchorOutput field to given value.
 
 
 ### GetInOnLedgerRequest

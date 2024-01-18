@@ -4,6 +4,7 @@
 package jsonrpc
 
 import (
+	"crypto/ecdsa"
 	"time"
 
 	"github.com/ethereum/go-ethereum/rpc"
@@ -17,6 +18,7 @@ type Parameters struct {
 	WebsocketRateLimitBurst             int
 	WebsocketConnectionCleanupDuration  time.Duration
 	WebsocketClientBlockDuration        time.Duration
+	Accounts                            []*ecdsa.PrivateKey
 }
 
 func NewParameters(
@@ -60,6 +62,10 @@ func NewServer(
 ) (*rpc.Server, error) {
 	chainID := evmChain.ChainID()
 	rpcsrv := rpc.NewServer()
+
+	for _, acc := range params.Accounts {
+		accountManager.Add(acc)
+	}
 
 	for _, srv := range []struct {
 		namespace string

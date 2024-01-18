@@ -7,8 +7,8 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
-func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Assets, error) {
-	assets := isc.NewEmptyAssets()
+func FungibleTokensFromAPIResponse(assetsResponse *apiclient.FungibleTokensResponse) (*isc.FungibleTokens, error) {
+	assets := isc.NewEmptyFungibleTokens()
 
 	baseTokens, err := hexutil.DecodeUint64(assetsResponse.BaseTokens)
 	if err != nil {
@@ -17,8 +17,8 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 
 	assets.BaseTokens = iotago.BaseToken(baseTokens)
 
-	for _, nativeToken := range assetsResponse.NativeTokens {
-		nativeTokenIDHex, err2 := hexutil.DecodeHex(nativeToken.Id)
+	for idHex, amountHex := range assetsResponse.NativeTokens {
+		nativeTokenIDHex, err2 := hexutil.DecodeHex(idHex)
 		if err2 != nil {
 			return nil, err2
 		}
@@ -28,7 +28,7 @@ func AssetsFromAPIResponse(assetsResponse *apiclient.AssetsResponse) (*isc.Asset
 			return nil, err2
 		}
 
-		amount, err2 := hexutil.DecodeUint256(nativeToken.Amount)
+		amount, err2 := hexutil.DecodeUint256(amountHex)
 		if err2 != nil {
 			return nil, err2
 		}

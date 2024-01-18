@@ -14,7 +14,8 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/authentication"
-	"github.com/iotaledger/wasp/packages/chains"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
+	"github.com/iotaledger/wasp/packages/database"
 	"github.com/iotaledger/wasp/packages/dkg"
 	"github.com/iotaledger/wasp/packages/evm/jsonrpc"
 	"github.com/iotaledger/wasp/packages/metrics"
@@ -87,14 +88,14 @@ func Init(
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
 	dkShareRegistryProvider registry.DKShareRegistryProvider,
 	nodeIdentityProvider registry.NodeIdentityProvider,
-	chainsProvider chains.Provider,
+	chainsProvider chaintypes.ChainsProvider,
 	dkgNodeProvider dkg.NodeProvider,
 	shutdownHandler *shutdown.ShutdownHandler,
 	chainMetricsProvider *metrics.ChainMetricsProvider,
 	authConfig authentication.AuthConfiguration,
 	requestCacheTTL time.Duration,
 	websocketService *websocket.Service,
-	indexDbPath string,
+	indexDbProvider database.Provider,
 	pub *publisher.Publisher,
 	jsonrpcParams *jsonrpc.Parameters,
 	l1API iotago.API,
@@ -110,7 +111,7 @@ func Init(
 	offLedgerService := services.NewOffLedgerService(chainService, networkProvider, requestCacheTTL)
 	metricsService := services.NewMetricsService(chainsProvider, chainMetricsProvider)
 	peeringService := services.NewPeeringService(chainsProvider, networkProvider, trustedNetworkManager)
-	evmService := services.NewEVMService(baseTokenInfo, chainsProvider, chainService, l1API, networkProvider, pub, indexDbPath, chainMetricsProvider, jsonrpcParams, logger.NewChildLogger("EVMService"))
+	evmService := services.NewEVMService(baseTokenInfo, chainsProvider, chainService, l1API, networkProvider, pub, indexDbProvider, chainMetricsProvider, jsonrpcParams, logger.NewChildLogger("EVMService"))
 	nodeService := services.NewNodeService(chainRecordRegistryProvider, nodeIdentityProvider, chainsProvider, shutdownHandler, trustedNetworkManager)
 	dkgService := services.NewDKGService(dkShareRegistryProvider, dkgNodeProvider, l1API, trustedNetworkManager)
 	userService := services.NewUserService(userManager)

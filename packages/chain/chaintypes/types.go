@@ -22,6 +22,16 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/processors"
 )
 
+type ChainsProvider func() Chains // TODO: use DI instead of this
+
+type Chains interface {
+	Get(isc.ChainID) (Chain, error)
+	Activate(isc.ChainID) error
+	Deactivate(isc.ChainID) error
+	IsArchiveNode() bool
+	ValidatorAddress() iotago.Address
+}
+
 type Chain interface {
 	ChainCore
 	ChainRequests

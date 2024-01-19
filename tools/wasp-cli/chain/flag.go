@@ -28,8 +28,11 @@ func getDefaultChain() string {
 	case 0:
 		log.Fatalf("no chains configured, you can add a new chain with `wasp-cli chain add <name> <chain id>`")
 	case 1:
-		for nodeName := range chainSettings {
-			return nodeName
+		for chainName, chainID := range chainSettings {
+			if log.VerboseFlag {
+				log.Printf("Using default chain %q: %s\n", chainName, chainID)
+			}
+			return chainName
 		}
 	default:
 		log.Fatalf("more than 1 chain in the configuration, you can specify the target chain with `--chain=<name>`")

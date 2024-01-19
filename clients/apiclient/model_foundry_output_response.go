@@ -19,18 +19,22 @@ var _ MappedNullable = &FoundryOutputResponse{}
 
 // FoundryOutputResponse struct for FoundryOutputResponse
 type FoundryOutputResponse struct {
-	Assets AssetsResponse `json:"assets"`
+	// The base tokens (uint64 as string)
+	BaseTokens string `json:"baseTokens"`
 	FoundryId string `json:"foundryId"`
+	// The native token id
+	NativeTokenId string `json:"nativeTokenId"`
 }
 
 // NewFoundryOutputResponse instantiates a new FoundryOutputResponse object
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewFoundryOutputResponse(assets AssetsResponse, foundryId string) *FoundryOutputResponse {
+func NewFoundryOutputResponse(baseTokens string, foundryId string, nativeTokenId string) *FoundryOutputResponse {
 	this := FoundryOutputResponse{}
-	this.Assets = assets
+	this.BaseTokens = baseTokens
 	this.FoundryId = foundryId
+	this.NativeTokenId = nativeTokenId
 	return &this
 }
 
@@ -42,28 +46,28 @@ func NewFoundryOutputResponseWithDefaults() *FoundryOutputResponse {
 	return &this
 }
 
-// GetAssets returns the Assets field value
-func (o *FoundryOutputResponse) GetAssets() AssetsResponse {
+// GetBaseTokens returns the BaseTokens field value
+func (o *FoundryOutputResponse) GetBaseTokens() string {
 	if o == nil {
-		var ret AssetsResponse
+		var ret string
 		return ret
 	}
 
-	return o.Assets
+	return o.BaseTokens
 }
 
-// GetAssetsOk returns a tuple with the Assets field value
+// GetBaseTokensOk returns a tuple with the BaseTokens field value
 // and a boolean to check if the value has been set.
-func (o *FoundryOutputResponse) GetAssetsOk() (*AssetsResponse, bool) {
+func (o *FoundryOutputResponse) GetBaseTokensOk() (*string, bool) {
 	if o == nil {
 		return nil, false
 	}
-	return &o.Assets, true
+	return &o.BaseTokens, true
 }
 
-// SetAssets sets field value
-func (o *FoundryOutputResponse) SetAssets(v AssetsResponse) {
-	o.Assets = v
+// SetBaseTokens sets field value
+func (o *FoundryOutputResponse) SetBaseTokens(v string) {
+	o.BaseTokens = v
 }
 
 // GetFoundryId returns the FoundryId field value
@@ -90,6 +94,30 @@ func (o *FoundryOutputResponse) SetFoundryId(v string) {
 	o.FoundryId = v
 }
 
+// GetNativeTokenId returns the NativeTokenId field value
+func (o *FoundryOutputResponse) GetNativeTokenId() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.NativeTokenId
+}
+
+// GetNativeTokenIdOk returns a tuple with the NativeTokenId field value
+// and a boolean to check if the value has been set.
+func (o *FoundryOutputResponse) GetNativeTokenIdOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.NativeTokenId, true
+}
+
+// SetNativeTokenId sets field value
+func (o *FoundryOutputResponse) SetNativeTokenId(v string) {
+	o.NativeTokenId = v
+}
+
 func (o FoundryOutputResponse) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -100,8 +128,9 @@ func (o FoundryOutputResponse) MarshalJSON() ([]byte, error) {
 
 func (o FoundryOutputResponse) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
-	toSerialize["assets"] = o.Assets
+	toSerialize["baseTokens"] = o.BaseTokens
 	toSerialize["foundryId"] = o.FoundryId
+	toSerialize["nativeTokenId"] = o.NativeTokenId
 	return toSerialize, nil
 }
 

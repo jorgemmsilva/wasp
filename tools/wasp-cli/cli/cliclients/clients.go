@@ -33,6 +33,23 @@ func WaspClient(name string) *apiclient.APIClient {
 	return client
 }
 
+func VersionsMatch(v1, v2 string) bool {
+	if v1 == "" || v2 == "" {
+		return false
+	}
+	if v1 == v2 {
+		return true
+	}
+	// sometimes one of the versions comes without the initial "v"
+	if v1[0] == 'v' && v1[1:] == v2 {
+		return true
+	}
+	if v2[0] == 'v' && v1 == v2[1:] {
+		return true
+	}
+	return false
+}
+
 func assertMatchingNodeVersion(name string, client *apiclient.APIClient) {
 	if SkipCheckVersions {
 		return
@@ -41,7 +58,7 @@ func assertMatchingNodeVersion(name string, client *apiclient.APIClient) {
 		GetVersion(context.Background()).
 		Execute()
 	log.Check(err)
-	if app.Version != "v"+nodeVersion.Version {
+	if !VersionsMatch(app.Version, nodeVersion.Version) {
 		log.Fatalf("node [%s] version: %s, does not match wasp-cli version: %s. You can skip this check by re-running with command with --skip-version-check",
 			name, nodeVersion.Version, app.Version)
 	}

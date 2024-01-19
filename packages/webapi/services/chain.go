@@ -9,7 +9,6 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
-	"github.com/iotaledger/wasp/packages/chains"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/metrics"
@@ -26,7 +25,7 @@ type ChainService struct {
 	log                         log.Logger
 	l1API                       iotago.API
 	baseTokenInfo               *api.InfoResBaseToken
-	chainsProvider              chains.Provider
+	chainsProvider              chaintypes.ChainsProvider
 	chainMetricsProvider        *metrics.ChainMetricsProvider
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider
 }
@@ -35,7 +34,7 @@ func NewChainService(
 	logger log.Logger,
 	l1API iotago.API,
 	baseTokenInfo *api.InfoResBaseToken,
-	chainsProvider chains.Provider,
+	chainsProvider chaintypes.ChainsProvider,
 	chainMetricsProvider *metrics.ChainMetricsProvider,
 	chainRecordRegistryProvider registry.ChainRecordRegistryProvider,
 ) interfaces.ChainService {

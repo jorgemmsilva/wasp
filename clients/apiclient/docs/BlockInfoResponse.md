@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **GasFeeCharged** | **string** | The charged gas fee (uint64 as string) | 
 **NumOffLedgerRequests** | **uint32** |  | 
 **NumSuccessfulRequests** | **uint32** |  | 
-**PreviousAliasOutput** | **string** |  | 
+**PreviousAnchorOutput** | **string** |  | 
 **Timestamp** | **time.Time** |  | 
 **TotalRequests** | **uint32** |  | 
 
@@ -17,7 +17,7 @@ Name | Type | Description | Notes
 
 ### NewBlockInfoResponse
 
-`func NewBlockInfoResponse(blockIndex uint32, gasBurned string, gasFeeCharged string, numOffLedgerRequests uint32, numSuccessfulRequests uint32, previousAliasOutput string, timestamp time.Time, totalRequests uint32, ) *BlockInfoResponse`
+`func NewBlockInfoResponse(blockIndex uint32, gasBurned string, gasFeeCharged string, numOffLedgerRequests uint32, numSuccessfulRequests uint32, previousAnchorOutput string, timestamp time.Time, totalRequests uint32, ) *BlockInfoResponse`
 
 NewBlockInfoResponse instantiates a new BlockInfoResponse object
 This constructor will assign default values to properties that have it defined,
@@ -132,24 +132,24 @@ and a boolean to check if the value has been set.
 SetNumSuccessfulRequests sets NumSuccessfulRequests field to given value.
 
 
-### GetPreviousAliasOutput
+### GetPreviousAnchorOutput
 
-`func (o *BlockInfoResponse) GetPreviousAliasOutput() string`
+`func (o *BlockInfoResponse) GetPreviousAnchorOutput() string`
 
-GetPreviousAliasOutput returns the PreviousAliasOutput field if non-nil, zero value otherwise.
+GetPreviousAnchorOutput returns the PreviousAnchorOutput field if non-nil, zero value otherwise.
 
-### GetPreviousAliasOutputOk
+### GetPreviousAnchorOutputOk
 
-`func (o *BlockInfoResponse) GetPreviousAliasOutputOk() (*string, bool)`
+`func (o *BlockInfoResponse) GetPreviousAnchorOutputOk() (*string, bool)`
 
-GetPreviousAliasOutputOk returns a tuple with the PreviousAliasOutput field if it's non-nil, zero value otherwise
+GetPreviousAnchorOutputOk returns a tuple with the PreviousAnchorOutput field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
-### SetPreviousAliasOutput
+### SetPreviousAnchorOutput
 
-`func (o *BlockInfoResponse) SetPreviousAliasOutput(v string)`
+`func (o *BlockInfoResponse) SetPreviousAnchorOutput(v string)`
 
-SetPreviousAliasOutput sets PreviousAliasOutput field to given value.
+SetPreviousAnchorOutput sets PreviousAnchorOutput field to given value.
 
 
 ### GetTimestamp

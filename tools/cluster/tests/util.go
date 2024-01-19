@@ -70,7 +70,7 @@ func (e *ChainEnv) getBalanceOnChain(agentID isc.AgentID, assetID []byte, nodeIn
 		Execute()
 	require.NoError(e.t, err)
 
-	assets, err := apiextensions.AssetsFromAPIResponse(balance)
+	assets, err := apiextensions.FungibleTokensFromAPIResponse(balance)
 	require.NoError(e.t, err)
 
 	if bytes.Equal(assetID, isc.BaseTokenID) {
@@ -113,8 +113,8 @@ func (e *ChainEnv) getAccountsOnChain() []isc.AgentID {
 	return ret
 }
 
-func (e *ChainEnv) getBalancesOnChain() map[string]*isc.Assets {
-	ret := make(map[string]*isc.Assets)
+func (e *ChainEnv) getBalancesOnChain() map[string]*isc.FungibleTokens {
+	ret := make(map[string]*isc.FungibleTokens)
 	acc := e.getAccountsOnChain()
 
 	for _, agentID := range acc {
@@ -123,7 +123,7 @@ func (e *ChainEnv) getBalancesOnChain() map[string]*isc.Assets {
 			Execute()
 		require.NoError(e.t, err)
 
-		assets, err := apiextensions.AssetsFromAPIResponse(balance)
+		assets, err := apiextensions.FungibleTokensFromAPIResponse(balance)
 		require.NoError(e.t, err)
 
 		ret[agentID.Bech32(e.Clu.L1Client().Bech32HRP())] = assets
@@ -148,13 +148,13 @@ func (e *ChainEnv) getAccountNFTs(agentID isc.AgentID) []iotago.NFTID {
 	return ret
 }
 
-func (e *ChainEnv) getTotalBalance() *isc.Assets {
+func (e *ChainEnv) getTotalBalance() *isc.FungibleTokens {
 	totalAssets, _, err := e.Chain.Cluster.WaspClient().CorecontractsApi.
 		AccountsGetTotalAssets(context.Background(), e.Chain.ChainID.Bech32(e.Clu.L1Client().Bech32HRP())).
 		Execute()
 	require.NoError(e.t, err)
 
-	assets, err := apiextensions.AssetsFromAPIResponse(totalAssets)
+	assets, err := apiextensions.FungibleTokensFromAPIResponse(totalAssets)
 	require.NoError(e.t, err)
 
 	return assets
@@ -174,7 +174,7 @@ func (e *ChainEnv) printAccounts(title string) {
 
 func (e *ChainEnv) checkLedger() {
 	balances := e.getBalancesOnChain()
-	sum := isc.NewEmptyAssets()
+	sum := isc.NewEmptyFungibleTokens()
 	for _, bal := range balances {
 		sum.Add(bal)
 	}

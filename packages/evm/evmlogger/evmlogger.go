@@ -36,11 +36,13 @@ func (h *hiveLogHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 // WithAttrs implements slog.Handler.
-func (*hiveLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	panic("unimplemented")
+func (h *hiveLogHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	// TODO: unimplemented in hive logger?
+	return h
 }
 
 // WithGroup implements slog.Handler.
-func (*hiveLogHandler) WithGroup(name string) slog.Handler {
-	panic("unimplemented")
+func (h *hiveLogHandler) WithGroup(name string) slog.Handler {
+	// TODO: unimplemented in hive logger?
+	return h
 }

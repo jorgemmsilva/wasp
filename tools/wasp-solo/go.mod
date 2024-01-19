@@ -1,19 +1,28 @@
-module github.com/iotaledger/wasp/tools/evm/evmemulator
+module github.com/iotaledger/wasp/tools/wasp-solo
 
 go 1.21
 
 replace (
 	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.13.10-wasp
-	github.com/iotaledger/tools/wasp-cli => ../../wasp-cli/
-	github.com/iotaledger/wasp => ../../../
+	github.com/iotaledger/tools/wasp-cli => ../wasp-cli/
+	github.com/iotaledger/wasp => ../../
 	go.dedis.ch/kyber/v3 => github.com/kape1395/kyber/v3 v3.0.14-0.20230124095845-ec682ff08c93 // branch: dkg-2suites
 )
 
 require (
 	github.com/ethereum/go-ethereum v1.13.10
+	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff
+	github.com/iotaledger/hive.go/log v0.0.0-20231223025425-91257fbacf8b
+	github.com/iotaledger/hive.go/web v0.0.0-20240115140343-94cb44b074ff
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20240116142027-23db001cf27d
+	github.com/iotaledger/iota.go/v4 v4.0.0-20240116140157-9e8010cb282d
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000
 	github.com/iotaledger/wasp/tools/wasp-cli v0.0.0-20230923193348-da186f5602e0
+	github.com/labstack/echo/v4 v4.11.4
+	github.com/pangpanglabs/echoswagger/v2 v2.4.1
+	github.com/samber/lo v1.38.1
 	github.com/spf13/cobra v1.8.0
+	nhooyr.io/websocket v1.8.10
 )
 
 require (
@@ -87,20 +96,15 @@ require (
 	github.com/iotaledger/hive.go/crypto v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/ds v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/ierrors v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/lo v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/log v0.0.0-20231223025425-91257fbacf8b // indirect
 	github.com/iotaledger/hive.go/logger v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/objectstorage v0.0.0-20231010133617-cdbd5387e2af // indirect
 	github.com/iotaledger/hive.go/runtime v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/stringify v0.0.0-20231223025425-91257fbacf8b // indirect
-	github.com/iotaledger/hive.go/web v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20240116142027-23db001cf27d // indirect
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20240116140821-25bc7acc397d // indirect
 	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/iotaledger/iota.go/v3 v3.0.0-rc.3 // indirect
-	github.com/iotaledger/iota.go/v4 v4.0.0-20240116140157-9e8010cb282d // indirect
 	github.com/ipfs/go-cid v0.4.1 // indirect
 	github.com/ipfs/go-log/v2 v2.5.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
@@ -113,7 +117,6 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo-contrib v0.15.0 // indirect
 	github.com/labstack/echo-jwt/v4 v4.2.0 // indirect
-	github.com/labstack/echo/v4 v4.11.4 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/libp2p/go-cidranger v1.1.0 // indirect
@@ -153,7 +156,6 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
-	github.com/pangpanglabs/echoswagger/v2 v2.4.1 // indirect
 	github.com/pasztorpisti/qs v0.0.0-20171216220353-8d6c33ee906c // indirect
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.1 // indirect
@@ -171,7 +173,6 @@ require (
 	github.com/raulk/go-watchdog v1.3.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/samber/lo v1.38.1 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/second-state/WasmEdge-go v0.13.4 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
@@ -215,6 +216,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
-	nhooyr.io/websocket v1.8.10 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )

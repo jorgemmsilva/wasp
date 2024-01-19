@@ -408,7 +408,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AssetsResponse'
+                $ref: '#/components/schemas/FungibleTokensResponse'
           description: All assets belonging to an account
         "401":
           content:
@@ -609,7 +609,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NFTDataResponse'
+                $ref: '#/components/schemas/NFTJSON'
           description: The NFT data
         "401":
           content:
@@ -675,7 +675,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AssetsResponse'
+                $ref: '#/components/schemas/FungibleTokensResponse'
           description: All stored assets
         "401":
           content:
@@ -1584,11 +1584,17 @@ paths:
           type: string
       responses:
         "200":
-          content: {}
-          description: binary data of request in the mempool
+          content:
+            application/octet-stream:
+              schema:
+                items:
+                  format: int32
+                  type: integer
+                type: array
+          description: stream of JSON representation of the requests in the mempool
         "401":
           content:
-            application/json:
+            application/octet-stream:
               schema:
                 $ref: '#/components/schemas/ValidationError'
           description: "Unauthorized (Wrong permissions, missing token)"
@@ -2422,7 +2428,7 @@ components:
       type: object
       xml:
         name: AddUserRequest
-    AliasOutputMetricItem:
+    AnchorOutputMetricItem:
       example:
         lastMessage:
           outputType: 0
@@ -2449,18 +2455,15 @@ components:
       - timestamp
       type: object
       xml:
-        name: AliasOutputMetricItem
-    Assets:
+        name: AnchorOutputMetricItem
+    AssetsJSON:
       example:
         nfts:
         - nfts
         - nfts
         baseTokens: baseTokens
         nativeTokens:
-        - amount: amount
-          id: id
-        - amount: amount
-          id: id
+          key: nativeTokens
       properties:
         baseTokens:
           description: The base tokens (uint64 as string)
@@ -2469,12 +2472,12 @@ components:
           xml:
             name: BaseTokens
         nativeTokens:
-          items:
-            $ref: '#/components/schemas/NativeToken'
-          type: array
+          additionalProperties:
+            format: string
+            type: string
+          type: object
           xml:
             name: NativeTokens
-            wrapped: true
         nfts:
           items:
             format: string
@@ -2489,35 +2492,7 @@ components:
       - nfts
       type: object
       xml:
-        name: Assets
-    AssetsResponse:
-      example:
-        baseTokens: baseTokens
-        nativeTokens:
-        - amount: amount
-          id: id
-        - amount: amount
-          id: id
-      properties:
-        baseTokens:
-          description: The base tokens (uint64 as string)
-          format: string
-          type: string
-          xml:
-            name: BaseTokens
-        nativeTokens:
-          items:
-            $ref: '#/components/schemas/NativeToken'
-          type: array
-          xml:
-            name: NativeTokens
-            wrapped: true
-      required:
-      - baseTokens
-      - nativeTokens
-      type: object
-      xml:
-        name: AssetsResponse
+        name: AssetsJSON
     AuthInfoModel:
       example:
         authURL: /auth
@@ -2542,66 +2517,6 @@ components:
       type: object
       xml:
         name: AuthInfoModel
-    BaseToken:
-      example:
-        unit: TEST
-        decimals: 6
-        name: TestCoin
-        tickerSymbol: TEST
-        subunit: testies
-        useMetricPrefix: true
-      properties:
-        decimals:
-          description: The token decimals
-          example: 6
-          format: int32
-          type: integer
-          xml:
-            name: Decimals
-        name:
-          description: The base token name
-          example: TestCoin
-          format: string
-          type: string
-          xml:
-            name: Name
-        subunit:
-          description: The token subunit
-          example: testies
-          format: string
-          type: string
-          xml:
-            name: Subunit
-        tickerSymbol:
-          description: The ticker symbol
-          example: TEST
-          format: string
-          type: string
-          xml:
-            name: TickerSymbol
-        unit:
-          description: The token unit
-          example: TEST
-          format: string
-          type: string
-          xml:
-            name: Unit
-        useMetricPrefix:
-          description: Whether or not the token uses a metric prefix
-          format: boolean
-          type: boolean
-          xml:
-            name: UseMetricPrefix
-      required:
-      - decimals
-      - name
-      - subunit
-      - tickerSymbol
-      - unit
-      - useMetricPrefix
-      type: object
-      xml:
-        name: BaseToken
     Blob:
       example:
         size: 1
@@ -2679,7 +2594,7 @@ components:
         blockIndex: 1
         numSuccessfulRequests: 1
         gasFeeCharged: gasFeeCharged
-        previousAliasOutput: previousAliasOutput
+        previousAnchorOutput: previousAnchorOutput
         gasBurned: gasBurned
         totalRequests: 1
         numOffLedgerRequests: 1
@@ -2715,11 +2630,11 @@ components:
           type: integer
           xml:
             name: NumSuccessfulRequests
-        previousAliasOutput:
+        previousAnchorOutput:
           format: string
           type: string
           xml:
-            name: PreviousAliasOutput
+            name: PreviousAnchorOutput
         timestamp:
           format: date-time
           type: string
@@ -2737,7 +2652,7 @@ components:
       - gasFeeCharged
       - numOffLedgerRequests
       - numSuccessfulRequests
-      - previousAliasOutput
+      - previousAnchorOutput
       - timestamp
       - totalRequests
       type: object
@@ -2764,7 +2679,7 @@ components:
       type: object
       xml:
         name: BurnRecord
-    CallTarget:
+    CallTargetJSON:
       example:
         contractHName: contractHName
         functionHName: functionHName
@@ -2786,7 +2701,7 @@ components:
       - functionHName
       type: object
       xml:
-        name: CallTarget
+        name: CallTargetJSON
     ChainInfoResponse:
       example:
         chainOwnerId: tst1qzjsxstc0k850jevpqu08tj0suql9u7hvh3vq3eaaem3gkx7r646zqpdn6e
@@ -2797,18 +2712,18 @@ components:
           description: description
           evmJsonRpcURL: evmJsonRpcURL
         gasLimits:
-          maxGasExternalViewCall: 6
-          minGasPerRequest: 5
-          maxGasPerBlock: 1
-          maxGasPerRequest: 5
+          maxGasExternalViewCall: 5
+          minGasPerRequest: 7
+          maxGasPerBlock: 5
+          maxGasPerRequest: 2
         chainID: tst1prcw42l5u4g24tqg628d7qzh7n6m4k4ktvgayh44dyt68y930qzy2lr054v
         evmChainId: 1074
         publicURL: publicURL
         gasFeePolicy:
           gasPerToken:
-            a: 1
-            b: 100
-          validatorFeeShare: 0
+            a: 0
+            b: 0
+          validatorFeeShare: 1
           evmGasRatio:
             a: 1
             b: 1
@@ -2903,12 +2818,6 @@ components:
             outputId: outputId
           messages: 1
           timestamp: 2000-01-23T04:56:07.000+00:00
-        inAliasOutput:
-          lastMessage:
-            outputType: 0
-            raw: raw
-          messages: 1
-          timestamp: 2000-01-23T04:56:07.000+00:00
         inStateOutput:
           lastMessage:
             output:
@@ -2922,6 +2831,12 @@ components:
             txId: txId
           messages: 1
           timestamp: 2000-01-23T04:56:07.000+00:00
+        inAnchorOutput:
+          lastMessage:
+            outputType: 0
+            raw: raw
+          messages: 1
+          timestamp: 2000-01-23T04:56:07.000+00:00
         outPullLatestOutput:
           lastMessage: lastMessage
           messages: 1
@@ -2932,8 +2847,8 @@ components:
           messages: 1
           timestamp: 2000-01-23T04:56:07.000+00:00
       properties:
-        inAliasOutput:
-          $ref: '#/components/schemas/AliasOutputMetricItem'
+        inAnchorOutput:
+          $ref: '#/components/schemas/AnchorOutputMetricItem'
         inOnLedgerRequest:
           $ref: '#/components/schemas/OnLedgerRequestMetricItem'
         inOutput:
@@ -2953,7 +2868,7 @@ components:
         outPullTxInclusionState:
           $ref: '#/components/schemas/TransactionIDMetricItem'
       required:
-      - inAliasOutput
+      - inAnchorOutput
       - inOnLedgerRequest
       - inOutput
       - inStateOutput
@@ -3692,9 +3607,9 @@ components:
     FeePolicy:
       example:
         gasPerToken:
-          a: 1
-          b: 100
-        validatorFeeShare: 0
+          a: 0
+          b: 0
+        validatorFeeShare: 1
         evmGasRatio:
           a: 1
           b: 1
@@ -3721,15 +3636,15 @@ components:
         gasPerToken:
           a: 0
           b: 0
-        validatorFeeShare: 1
+        validatorFeeShare: 0
         evmGasRatio:
           a: 0
           b: 0
       properties:
         evmGasRatio:
-          $ref: '#/components/schemas/Ratio32__'
+          $ref: '#/components/schemas/Ratio32_'
         gasPerToken:
-          $ref: '#/components/schemas/Ratio32__'
+          $ref: '#/components/schemas/Ratio32_'
         validatorFeeShare:
           description: The validator fee share.
           format: int32
@@ -3745,28 +3660,59 @@ components:
         name: FeePolicy
     FoundryOutputResponse:
       example:
-        assets:
-          baseTokens: baseTokens
-          nativeTokens:
-          - amount: amount
-            id: id
-          - amount: amount
-            id: id
+        baseTokens: baseTokens
+        nativeTokenId: nativeTokenId
         foundryId: foundryId
       properties:
-        assets:
-          $ref: '#/components/schemas/AssetsResponse'
+        baseTokens:
+          description: The base tokens (uint64 as string)
+          format: string
+          type: string
+          xml:
+            name: BaseTokens
         foundryId:
           format: string
           type: string
           xml:
             name: FoundryID
+        nativeTokenId:
+          description: The native token id
+          format: string
+          type: string
+          xml:
+            name: NativeTokenID
       required:
-      - assets
+      - baseTokens
       - foundryId
+      - nativeTokenId
       type: object
       xml:
         name: FoundryOutputResponse
+    FungibleTokensResponse:
+      example:
+        baseTokens: baseTokens
+        nativeTokens:
+          key: nativeTokens
+      properties:
+        baseTokens:
+          description: The base tokens (uint64 as string)
+          format: string
+          type: string
+          xml:
+            name: BaseTokens
+        nativeTokens:
+          additionalProperties:
+            format: string
+            type: string
+          type: object
+          xml:
+            name: NativeTokens
+      required:
+      - baseTokens
+      - nativeTokens
+      type: object
+      xml:
+        name: FungibleTokensResponse
     GovAllowedStateControllerAddressesResponse:
       example:
         addresses:
@@ -3795,17 +3741,17 @@ components:
           description: description
           evmJsonRpcURL: evmJsonRpcURL
         gasLimits:
-          maxGasExternalViewCall: 6
-          minGasPerRequest: 5
-          maxGasPerBlock: 1
-          maxGasPerRequest: 5
+          maxGasExternalViewCall: 5
+          minGasPerRequest: 7
+          maxGasPerBlock: 5
+          maxGasPerRequest: 2
         chainID: chainID
         publicURL: publicURL
         gasFeePolicy:
           gasPerToken:
             a: 0
             b: 0
-          validatorFeeShare: 1
+          validatorFeeShare: 0
           evmGasRatio:
             a: 0
             b: 0
@@ -4009,31 +3955,9 @@ components:
     InfoResponse:
       example:
         peeringURL: 0.0.0.0:4000
-        l1Params:
-          protocol:
-            rentStructure:
-              vByteFactorData: 1
-              vByteCost: 500
-              vByteFactorKey: 10
-            minPowScore: 1
-            tokenSupply: "2779530283277761"
-            networkName: private_tangle1
-            belowMaxDepth: 15
-            version: 2
-            bech32Hrp: tst
-          maxPayloadSize: 32498
-          baseToken:
-            unit: TEST
-            decimals: 6
-            name: TestCoin
-            tickerSymbol: TEST
-            subunit: testies
-            useMetricPrefix: true
         publicKey: 0x8fb9555a17393f0e01aadd90f8b6bc8a64b1c5c37c99915942e40b2af99e72d6
         version: 0.4.0-alpha.2-390-g5470f1925
       properties:
-        l1Params:
-          $ref: '#/components/schemas/L1Params'
         peeringURL:
           description: The net id of the node
           example: 0.0.0.0:4000
@@ -4056,7 +3980,6 @@ components:
           xml:
             name: Version
       required:
-      - l1Params
       - peeringURL
       - publicKey
       - version
@@ -4176,52 +4099,12 @@ components:
       type: object
       xml:
         name: JSONDict
-    L1Params:
-      example:
-        protocol:
-          rentStructure:
-            vByteFactorData: 1
-            vByteCost: 500
-            vByteFactorKey: 10
-          minPowScore: 1
-          tokenSupply: "2779530283277761"
-          networkName: private_tangle1
-          belowMaxDepth: 15
-          version: 2
-          bech32Hrp: tst
-        maxPayloadSize: 32498
-        baseToken:
-          unit: TEST
-          decimals: 6
-          name: TestCoin
-          tickerSymbol: TEST
-          subunit: testies
-          useMetricPrefix: true
-      properties:
-        baseToken:
-          $ref: '#/components/schemas/BaseToken'
-        maxPayloadSize:
-          description: The max payload size
-          example: 32498
-          format: int32
-          type: integer
-          xml:
-            name: MaxPayloadSize
-        protocol:
-          $ref: '#/components/schemas/ProtocolParameters'
-      required:
-      - baseToken
-      - maxPayloadSize
-      - protocol
-      type: object
-      xml:
-        name: L1Params
     Limits:
       example:
-        maxGasExternalViewCall: 6
-        minGasPerRequest: 5
-        maxGasPerBlock: 1
-        maxGasPerRequest: 5
+        maxGasExternalViewCall: 5
+        minGasPerRequest: 7
+        maxGasPerBlock: 5
+        maxGasPerRequest: 2
       properties:
         maxGasExternalViewCall:
           description: The maximum gas per external view call
@@ -4300,65 +4183,11 @@ components:
       type: object
       xml:
         name: LoginResponse
-    MilestoneInfo:
-      example:
-        milestoneId: milestoneId
-        index: 0
-        timestamp: 0
-      properties:
-        index:
-          format: int32
-          minimum: 0
-          type: integer
-          xml:
-            name: Index
-        milestoneId:
-          format: string
-          type: string
-          xml:
-            name: MilestoneID
-        timestamp:
-          format: int32
-          minimum: 0
-          type: integer
-          xml:
-            name: Timestamp
-      type: object
-      xml:
-        name: MilestoneInfo
-    MilestoneMetricItem:
-      example:
-        lastMessage:
-          milestoneId: milestoneId
-          index: 0
-          timestamp: 0
-        messages: 1
-        timestamp: 2000-01-23T04:56:07.000+00:00
-      properties:
-        lastMessage:
-          $ref: '#/components/schemas/MilestoneInfo'
-        messages:
-          format: int32
-          minimum: 1
-          type: integer
-          xml:
-            name: Messages
-        timestamp:
-          format: date-time
-          type: string
-          xml:
-            name: Timestamp
-      required:
-      - lastMessage
-      - messages
-      - timestamp
-      type: object
-      xml:
-        name: MilestoneMetricItem
-    NFTDataResponse:
+    NFTJSON:
       example:
         owner: owner
-        metadata: metadata
+        metadata:
+          key: metadata
         id: id
         issuer: issuer
       properties:
@@ -4373,8 +4202,10 @@ components:
           xml:
             name: Issuer
         metadata:
-          format: string
-          type: string
+          additionalProperties:
+            format: string
+            type: string
+          type: object
           xml:
             name: Metadata
         owner:
@@ -4389,28 +4220,7 @@ components:
       - owner
       type: object
       xml:
-        name: NFTDataResponse
-    NativeToken:
-      example:
-        amount: amount
-        id: id
-      properties:
-        amount:
-          format: string
-          type: string
-          xml:
-            name: Amount
-        id:
-          format: string
-          type: string
-          xml:
-            name: ID
-      required:
-      - amount
-      - id
-      type: object
-      xml:
-        name: NativeToken
+        name: NFTJSON
     NativeTokenIDRegistryResponse:
       example:
         nativeTokenRegistryIds:
@@ -4467,19 +4277,6 @@ components:
             outputId: outputId
           messages: 1
           timestamp: 2000-01-23T04:56:07.000+00:00
-        inMilestone:
-          lastMessage:
-            milestoneId: milestoneId
-            index: 0
-            timestamp: 0
-          messages: 1
-          timestamp: 2000-01-23T04:56:07.000+00:00
-        inAliasOutput:
-          lastMessage:
-            outputType: 0
-            raw: raw
-          messages: 1
-          timestamp: 2000-01-23T04:56:07.000+00:00
         inStateOutput:
           lastMessage:
             output:
@@ -4496,6 +4293,12 @@ components:
         registeredChainIDs:
         - registeredChainIDs
         - registeredChainIDs
+        inAnchorOutput:
+          lastMessage:
+            outputType: 0
+            raw: raw
+          messages: 1
+          timestamp: 2000-01-23T04:56:07.000+00:00
         outPullLatestOutput:
           lastMessage: lastMessage
           messages: 1
@@ -4506,10 +4309,8 @@ components:
           messages: 1
           timestamp: 2000-01-23T04:56:07.000+00:00
       properties:
-        inAliasOutput:
-          $ref: '#/components/schemas/AliasOutputMetricItem'
-        inMilestone:
-          $ref: '#/components/schemas/MilestoneMetricItem'
+        inAnchorOutput:
+          $ref: '#/components/schemas/AnchorOutputMetricItem'
         inOnLedgerRequest:
           $ref: '#/components/schemas/OnLedgerRequestMetricItem'
         inOutput:
@@ -4537,8 +4338,7 @@ components:
             name: RegisteredChainIDs
             wrapped: true
       required:
-      - inAliasOutput
-      - inMilestone
+      - inAnchorOutput
       - inOnLedgerRequest
       - inOutput
       - inStateOutput
@@ -4935,75 +4735,6 @@ components:
       type: object
       xml:
         name: PeeringTrustRequest
-    ProtocolParameters:
-      example:
-        rentStructure:
-          vByteFactorData: 1
-          vByteCost: 500
-          vByteFactorKey: 10
-        minPowScore: 1
-        tokenSupply: "2779530283277761"
-        networkName: private_tangle1
-        belowMaxDepth: 15
-        version: 2
-        bech32Hrp: tst
-      properties:
-        bech32Hrp:
-          description: The human readable network prefix
-          example: tst
-          format: string
-          type: string
-          xml:
-            name: Bech32HRP
-        belowMaxDepth:
-          description: The networks max depth
-          example: 15
-          format: int32
-          minimum: 1
-          type: integer
-          xml:
-            name: BelowMaxDepth
-        minPowScore:
-          description: The minimal PoW score
-          format: int32
-          minimum: 1
-          type: integer
-          xml:
-            name: MinPoWScore
-        networkName:
-          description: The network name
-          example: private_tangle1
-          format: string
-          type: string
-          xml:
-            name: NetworkName
-        rentStructure:
-          $ref: '#/components/schemas/RentStructure'
-        tokenSupply:
-          description: The token supply
-          example: "2779530283277761"
-          format: string
-          type: string
-          xml:
-            name: TokenSupply
-        version:
-          description: The protocol version
-          example: 2
-          format: int32
-          type: integer
-          xml:
-            name: Version
-      required:
-      - bech32Hrp
-      - belowMaxDepth
-      - minPowScore
-      - networkName
-      - rentStructure
-      - tokenSupply
-      - version
-      type: object
-      xml:
-        name: ProtocolParameters
     PublicChainMetadata:
       example:
         website: website
@@ -5106,31 +4837,6 @@ components:
         name: Ratio32
     Ratio32_:
       example:
-        a: 1
-        b: 100
-      properties:
-        a:
-          example: 1
-          format: int32
-          minimum: 0
-          type: integer
-          xml:
-            name: A
-        b:
-          example: 100
-          format: int32
-          minimum: 0
-          type: integer
-          xml:
-            name: B
-      required:
-      - a
-      - b
-      type: object
-      xml:
-        name: Ratio32
-    Ratio32__:
-      example:
         a: 0
         b: 0
       properties:
@@ -5166,10 +4872,7 @@ components:
             - nfts
             baseTokens: baseTokens
             nativeTokens:
-            - amount: amount
-              id: id
-            - amount: amount
-              id: id
+              key: nativeTokens
           senderAccount: senderAccount
           isOffLedger: true
           requestId: requestId
@@ -5184,10 +4887,7 @@ components:
             - nfts
             baseTokens: baseTokens
             nativeTokens:
-            - amount: amount
-              id: id
-            - amount: amount
-              id: id
+              key: nativeTokens
           params:
             Items:
             - value: value
@@ -5196,7 +4896,8 @@ components:
               key: key
           nft:
             owner: owner
-            metadata: metadata
+            metadata:
+              key: metadata
             id: id
             issuer: issuer
           isEVM: true
@@ -5252,7 +4953,7 @@ components:
         rawError:
           $ref: '#/components/schemas/UnresolvedVMErrorJSON'
         request:
-          $ref: '#/components/schemas/RequestDetail'
+          $ref: '#/components/schemas/RequestJSON'
         requestIndex:
           format: int32
           minimum: 1
@@ -5277,42 +4978,26 @@ components:
       type: object
       xml:
         name: ReceiptResponse
-    RentStructure:
+    RequestIDsResponse:
       example:
-        vByteFactorData: 1
-        vByteCost: 500
-        vByteFactorKey: 10
+        requestIds:
+        - requestIds
+        - requestIds
       properties:
-        vByteCost:
-          description: The virtual byte cost
-          example: 500
-          format: int32
-          minimum: 1
-          type: integer
+        requestIds:
+          items:
+            format: string
+            type: string
+          type: array
           xml:
-            name: VByteCost
-        vByteFactorData:
-          description: The virtual byte factor for data fields
-          example: 1
-          format: int32
-          type: integer
-          xml:
-            name: VBFactorData
-        vByteFactorKey:
-          description: The virtual byte factor for key/lookup generating fields
-          example: 10
-          format: int32
-          type: integer
-          xml:
-            name: VBFactorKey
+            name: RequestIDs
+            wrapped: true
       required:
-      - vByteCost
-      - vByteFactorData
-      - vByteFactorKey
+      - requestIds
       type: object
       xml:
-        name: RentStructure
-    RequestDetail:
+        name: RequestIDsResponse
+    RequestJSON:
       example:
         fungibleTokens:
           nfts:
@@ -5320,10 +5005,7 @@ components:
           - nfts
           baseTokens: baseTokens
           nativeTokens:
-          - amount: amount
-            id: id
-          - amount: amount
-            id: id
+            key: nativeTokens
         senderAccount: senderAccount
         isOffLedger: true
         requestId: requestId
@@ -5338,10 +5020,7 @@ components:
           - nfts
           baseTokens: baseTokens
           nativeTokens:
-          - amount: amount
-            id: id
-          - amount: amount
-            id: id
+            key: nativeTokens
         params:
           Items:
           - value: value
@@ -5350,17 +5029,18 @@ components:
             key: key
         nft:
           owner: owner
-          metadata: metadata
+          metadata:
+            key: metadata
           id: id
           issuer: issuer
         isEVM: true
       properties:
         allowance:
-          $ref: '#/components/schemas/Assets'
+          $ref: '#/components/schemas/AssetsJSON'
         callTarget:
-          $ref: '#/components/schemas/CallTarget'
+          $ref: '#/components/schemas/CallTargetJSON'
         fungibleTokens:
-          $ref: '#/components/schemas/Assets'
+          $ref: '#/components/schemas/AssetsJSON'
         gasBudget:
           description: The gas budget (uint64 as string)
           format: string
@@ -5378,7 +5058,7 @@ components:
           xml:
             name: IsOffLedger
         nft:
-          $ref: '#/components/schemas/NFTDataResponse'
+          $ref: '#/components/schemas/NFTJSON'
         params:
           $ref: '#/components/schemas/JSONDict'
         requestId:
@@ -5410,26 +5090,7 @@ components:
       - targetAddress
       type: object
       xml:
-        name: RequestDetail
-    RequestIDsResponse:
-      example:
-        requestIds:
-        - requestIds
-        - requestIds
-      properties:
-        requestIds:
-          items:
-            format: string
-            type: string
-          type: array
-          xml:
-            name: RequestIDs
-            wrapped: true
-      required:
-      - requestIds
-      type: object
-      xml:
-        name: RequestIDsResponse
+        name: RequestJSON
     RequestProcessedResponse:
       example:
         chainId: chainId

@@ -21,12 +21,18 @@ func Read() {
 }
 
 func L1APIAddress() string {
-	host := viper.GetString("l1.apiAddress")
+	host := viper.GetString("l1.apiaddress")
+	if host == "" {
+		log.Fatalf("l1.apiaddress not defined")
+	}
 	return host
 }
 
 func L1FaucetAddress() string {
-	address := viper.GetString("l1.faucetAddress")
+	address := viper.GetString("l1.faucetaddress")
+	if address == "" {
+		log.Fatalf("l1.faucetaddress not defined")
+	}
 	return address
 }
 

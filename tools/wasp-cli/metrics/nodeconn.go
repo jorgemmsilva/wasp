@@ -58,14 +58,8 @@ func printNodeMessagesMetrics(msgsMetrics *apiclient.NodeMessageMetrics) {
 		log.Printf("\t%s\n", s)
 	}
 
-	milestoneMsg := ""
-	if msgsMetrics.InMilestone.LastMessage.MilestoneId != nil {
-		milestoneMsg = *msgsMetrics.InMilestone.LastMessage.MilestoneId
-	}
-
 	header := []string{"Message name", "", "Total", "Last time", "Last message"}
 
-	inMilestone := mapMetricItem(msgsMetrics.InMilestone.Messages, msgsMetrics.InMilestone.Timestamp, milestoneMsg)
 	inStateOutput := mapMetricItem(msgsMetrics.InStateOutput.Messages, msgsMetrics.InStateOutput.Timestamp, msgsMetrics.InStateOutput.LastMessage.OutputId)
 	inAnchorOutput := mapMetricItem(msgsMetrics.InAnchorOutput.Messages, msgsMetrics.InAnchorOutput.Timestamp, msgsMetrics.InAnchorOutput.LastMessage.Raw)
 	inOutput := mapMetricItem(msgsMetrics.InOutput.Messages, msgsMetrics.InOutput.Timestamp, msgsMetrics.InOutput.LastMessage.OutputId)
@@ -78,7 +72,6 @@ func printNodeMessagesMetrics(msgsMetrics *apiclient.NodeMessageMetrics) {
 	outPullOutputByID := mapMetricItem(msgsMetrics.OutPullOutputByID.Messages, msgsMetrics.OutPullOutputByID.Timestamp, msgsMetrics.OutPullOutputByID.LastMessage.OutputId)
 
 	table := [][]string{
-		makeMessagesMetricsTableRow("Milestone", true, inMilestone),
 		makeMessagesMetricsTableRow("State output", true, inStateOutput),
 		makeMessagesMetricsTableRow("Alias output", true, inAnchorOutput),
 		makeMessagesMetricsTableRow("Output", true, inOutput),

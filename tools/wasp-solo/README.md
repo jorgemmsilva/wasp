@@ -1,16 +1,17 @@
-# evmemulator
+# wasp-solo
 
-The `evmemulator` tool provides a JSONRPC server with Solo as a backend, allowing
-to test Ethereum contracts.
+The `wasp-solo` tool emulates a Wasp node with Solo as in-memory L1 ledger,
+replacing local-setup as a more lightweight alternative to test ISC and EVM
+contracts.
 
 ## Example: Uniswap test suite
 
 The following commands will clone and run the Uniswap contract tests against ISC's EVM.
 
-Start the `evmemulator`:
+Start the `wasp-solo` tool:
 
 ```
-evmemulator
+wasp-solo
 ```
 
 In another terminal, clone uniswap:
@@ -26,7 +27,7 @@ Edit `hardhat.config.ts`, section `networks`:
 ```
 wasp: {
     chainId: 1074,
-    url: 'http://localhost:8545',
+    url: 'http://localhost:9090/v1/chains/test1rr0vuvh0e5yhwfe0rtz6kzrhvfz3lntzyt2xtpc98372nz9kcljp5dzs5p5/evm',
 },
 ```
 

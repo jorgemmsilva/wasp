@@ -68,5 +68,5 @@ func (reqctx *requestContext) sendOutput(o iotago.Output) {
 	reqctx.adjustL2BaseTokensIfNeeded(baseTokenAdjustmentL2, reqctx.CurrentContractAccountID())
 	// debit the assets from the on-chain account
 	// It panics with accounts.ErrNotEnoughFunds if sender's account balances are exceeded
-	debitFromAccount(reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), fts, reqctx.ChainID(), reqctx.TokenInfo())
+	debitFromAccount(reqctx.SchemaVersion(), reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), fts, reqctx.ChainID(), reqctx.TokenInfo())
 }

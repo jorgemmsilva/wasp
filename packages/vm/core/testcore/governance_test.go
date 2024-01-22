@@ -621,7 +621,7 @@ func TestGovernanceZeroGasFee(t *testing.T) {
 		ValidatorFeeShare: 1,
 	})
 
-	_, estimate, err := ch.EstimateGasOnLedger(solo.NewCallParams(accounts.FuncDeposit.Message()), user, true)
+	_, estimate, err := ch.EstimateGasOnLedger(solo.NewCallParams(accounts.FuncDeposit.Message()), user)
 	require.NoError(t, err)
 	require.Zero(t, estimate.GasFeeCharged)
 

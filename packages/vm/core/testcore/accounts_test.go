@@ -87,9 +87,9 @@ func TestWithdrawEverything(t *testing.T) {
 	// construct the request to estimate an withdrawal (leave a few tokens to pay for gas)
 	req := solo.NewCallParams(accounts.FuncWithdraw.Message()).
 		AddAllowance(isc.NewAssetsBaseTokens(l2balance - 1000)).
-		WithMaxAffordableGasBudget() // SET A GAS BUDGET, otherwise user max balance will be simulated
+		WithMaxAffordableGasBudget()
 
-	_, estimate, err := ch.EstimateGasOffLedger(req, sender, false)
+	_, estimate, err := ch.EstimateGasOffLedger(req, sender)
 	require.NoError(t, err)
 
 	// set the allowance to the maximum possible value
@@ -97,7 +97,7 @@ func TestWithdrawEverything(t *testing.T) {
 		WithGasBudget(estimate.GasBurned)
 
 	// retry the estimation (fee will be lower when writing "0" to the user account, instead of some positive number)
-	_, estimate2, err := ch.EstimateGasOffLedger(req, sender, false)
+	_, estimate2, err := ch.EstimateGasOffLedger(req, sender)
 	require.NoError(t, err)
 
 	// set the allowance to the maximum possible value

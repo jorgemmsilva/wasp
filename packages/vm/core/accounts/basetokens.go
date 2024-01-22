@@ -13,32 +13,78 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 )
 
+type (
+	getBaseTokensFn             func(state kv.KVStoreReader, accountKey kv.Key, baseTokentokenInfo *api.InfoResBaseToken) iotago.BaseToken
+	setBaseTokensFn             func(state kv.KVStore, accountKey kv.Key, amount iotago.BaseToken, baseTokentokenInfo *api.InfoResBaseToken)
+	GetBaseTokensFullDecimalsFn func(state kv.KVStoreReader, accountKey kv.Key) *big.Int
+	setBaseTokensFullDecimalsFn func(state kv.KVStore, accountKey kv.Key, amount *big.Int)
+)
+
+func getBaseTokens(v isc.SchemaVersion) getBaseTokensFn {
+	switch v {
+	case 0:
+		return getBaseTokensDEPRECATED
+	default:
+		return getBaseTokensNEW
+	}
+}
+
+func setBaseTokens(v isc.SchemaVersion) setBaseTokensFn {
+	switch v {
+	case 0:
+		return setBaseTokensDEPRECATED
+	default:
+		return setBaseTokensNEW
+	}
+}
+
+func GetBaseTokensFullDecimals(v isc.SchemaVersion) GetBaseTokensFullDecimalsFn {
+	switch v {
+	case 0:
+		return getBaseTokensFullDecimalsDEPRECATED
+	default:
+		return getBaseTokensFullDecimalsNEW
+	}
+}
+
+func setBaseTokensFullDecimals(v isc.SchemaVersion) setBaseTokensFullDecimalsFn {
+	switch v {
+	case 0:
+		return setBaseTokensFullDecimalsDEPRECATED
+	default:
+		return setBaseTokensFullDecimalsNEW
+	}
+}
+
+// -------------------------------------------------------------------------------
+
 func BaseTokensKey(accountKey kv.Key) kv.Key {
 	return prefixBaseTokens + accountKey
 }
 
-func getBaseTokensFullDecimals(state kv.KVStoreReader, accountKey kv.Key) *big.Int {
+func getBaseTokensFullDecimalsNEW(state kv.KVStoreReader, accountKey kv.Key) *big.Int {
 	return lo.Must(codec.BigIntAbs.Decode(state.Get(BaseTokensKey(accountKey)), big.NewInt(0)))
 }
 
-func setBaseTokensFullDecimals(state kv.KVStore, accountKey kv.Key, n *big.Int) {
-	state.Set(BaseTokensKey(accountKey), codec.BigIntAbs.Encode(n))
-}
-
-func getBaseTokens(state kv.KVStoreReader, accountKey kv.Key, baseToken *api.InfoResBaseToken) iotago.BaseToken {
-	amount := getBaseTokensFullDecimals(state, accountKey)
-	// convert from 18 decimals, discard the remainder
-	convertedAmount, _ := util.EthereumDecimalsToBaseTokenDecimals(amount, baseToken.Decimals)
-	return convertedAmount
-}
-
-func setBaseTokens(state kv.KVStore, accountKey kv.Key, n iotago.BaseToken, baseToken *api.InfoResBaseToken) {
-	// convert to 18 decimals
-	amount := util.MustBaseTokensDecimalsToEthereumDecimalsExact(n, baseToken.Decimals)
+func setBaseTokensFullDecimalsNEW(state kv.KVStore, accountKey kv.Key, amount *big.Int) {
 	state.Set(BaseTokensKey(accountKey), codec.BigIntAbs.Encode(amount))
 }
 
+func getBaseTokensNEW(state kv.KVStoreReader, accountKey kv.Key, baseTokentokenInfo *api.InfoResBaseToken) iotago.BaseToken {
+	amount := getBaseTokensFullDecimalsNEW(state, accountKey)
+	// convert from 18 decimals, discard the remainder
+	convertedAmount, _ := util.EthereumDecimalsToBaseTokenDecimals(amount, baseTokentokenInfo.Decimals)
+	return convertedAmount
+}
+
+func setBaseTokensNEW(state kv.KVStore, accountKey kv.Key, amount iotago.BaseToken, baseTokentokenInfo *api.InfoResBaseToken) {
+	// convert to 18 decimals
+	amountConverted := util.MustBaseTokensDecimalsToEthereumDecimalsExact(amount, baseTokentokenInfo.Decimals)
+	state.Set(BaseTokensKey(accountKey), codec.BigIntAbs.Encode(amountConverted))
+}
+
 func AdjustAccountBaseTokens(
+	v isc.SchemaVersion,
 	state kv.KVStore,
 	account isc.AgentID,
 	adjustment int64,
@@ -47,12 +93,12 @@ func AdjustAccountBaseTokens(
 ) {
 	switch {
 	case adjustment > 0:
-		CreditToAccount(state, account, isc.NewFungibleTokens(iotago.BaseToken(adjustment), nil), chainID, baseToken)
+		CreditToAccount(v, state, account, isc.NewFungibleTokens(iotago.BaseToken(adjustment), nil), chainID, baseToken)
 	case adjustment < 0:
-		DebitFromAccount(state, account, isc.NewFungibleTokens(iotago.BaseToken(-adjustment), nil), chainID, baseToken)
+		DebitFromAccount(v, state, account, isc.NewFungibleTokens(iotago.BaseToken(-adjustment), nil), chainID, baseToken)
 	}
 }
 
-func GetBaseTokensBalance(state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID, baseToken *api.InfoResBaseToken) iotago.BaseToken {
-	return getBaseTokens(state, accountKey(agentID, chainID), baseToken)
+func GetBaseTokensBalance(v isc.SchemaVersion, state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID, baseToken *api.InfoResBaseToken) iotago.BaseToken {
+	return getBaseTokens(v)(state, accountKey(agentID, chainID), baseToken)
 }

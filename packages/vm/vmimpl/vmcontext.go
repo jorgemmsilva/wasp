@@ -31,6 +31,8 @@ type vmContext struct {
 	txbuilder  *vmtxbuilder.AnchorTransactionBuilder
 	chainInfo  *isc.ChainInfo
 	blockGas   blockGas
+
+	schemaVersion isc.SchemaVersion
 }
 
 type blockGas struct {
@@ -176,8 +178,8 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	if changeInSD != 0 {
 		vmctx.task.Log.LogDebugf("adjusting commonAccount because AO SD cost changed, change:%d", oldSD, newSD, changeInSD)
 		// update the commonAccount with the change in SD cost
-		withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-			accounts.AdjustAccountBaseTokens(s, accounts.CommonAccount(), changeInSD, vmctx.ChainID(), vmctx.task.TokenInfo)
+		withContractState(vmctx.stateDraft, accounts.Contract, func(state kv.KVStore) {
+			accounts.AdjustAccountBaseTokens(vmctx.schemaVersion, state, accounts.CommonAccount(), changeInSD, vmctx.ChainID(), vmctx.task.TokenInfo)
 		})
 	}
 

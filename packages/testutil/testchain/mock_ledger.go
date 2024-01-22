@@ -43,7 +43,7 @@ func NewMockedLedger(stateAddress iotago.Address, log log.Logger) (*MockedLedger
 			},
 			&iotago.StateMetadataFeature{
 				Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{
-					"": testutil.DummyStateMetadata(origin.L1Commitment(nil, 0, testutil.TokenInfo)).Bytes(),
+					"": testutil.DummyStateMetadata(origin.L1Commitment(0, nil, 0, testutil.TokenInfo)).Bytes(),
 				},
 			},
 		},

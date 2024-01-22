@@ -48,6 +48,7 @@ type WaspCallContext interface {
 	CurrentContractHname() isc.Hname
 	Params() *isc.Params
 	ContractStateReaderWithGasBurn() kv.KVStoreReader
+	SchemaVersion() isc.SchemaVersion
 	GasBurned() gas.GasUnits
 	GasBudgetLeft() gas.GasUnits
 	GetAccountNFTs(agentID isc.AgentID) []iotago.NFTID

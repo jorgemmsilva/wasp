@@ -326,7 +326,7 @@ func (env *Solo) deployChain(
 		initParams,
 		outs,
 		env.SlotIndex(),
-		0,
+		0, // TODO could be the latest instead ? :thinking:
 		testutil.L1APIProvider,
 		testutil.TokenInfo,
 	)
@@ -353,7 +353,7 @@ func (env *Solo) deployChain(
 	{
 		block, err2 := store.LatestBlock()
 		require.NoError(env.T, err2)
-		env.logger.LogInfof("     chain '%s'. origin trie root: %s", chainID, block.TrieRoot())
+		env.logger.LogInfof("     chain '%s'. origin trie root: %s", chainID.ShortString(), block.TrieRoot())
 	}
 
 	return chainData{

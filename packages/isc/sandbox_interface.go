@@ -56,7 +56,11 @@ type SandboxBase interface {
 	L1API() iotago.API
 	// TokenInfo returns information about the base token
 	TokenInfo() *api.InfoResBaseToken
+	// SchemaVersion returns the schema version of the current state
+	SchemaVersion() SchemaVersion
 }
+
+type SchemaVersion uint32
 
 type Params struct {
 	Dict dict.Dict

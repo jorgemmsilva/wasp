@@ -18,13 +18,13 @@ import (
 func viewBalance(ctx isc.SandboxView, agentIDOpt *isc.AgentID) *isc.FungibleTokens {
 	ctx.Log().LogDebugf("accounts.viewBalance")
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
-	return getFungibleTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
+	return getFungibleTokens(ctx.SchemaVersion(), ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
 }
 
 // viewBalanceBaseToken returns the base tokens balance of the account belonging to the AgentID
 func viewBalanceBaseToken(ctx isc.SandboxView, agentIDOpt *isc.AgentID) iotago.BaseToken {
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
-	return getBaseTokens(ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
+	return getBaseTokens(ctx.SchemaVersion())(ctx.StateR(), accountKey(agentID, ctx.ChainID()), ctx.TokenInfo())
 }
 
 // viewBalanceBaseTokenEVM returns the base tokens balance of the account belonging to the AgentID (in the EVM format with 18 decimals)
@@ -32,7 +32,7 @@ func viewBalanceBaseToken(ctx isc.SandboxView, agentIDOpt *isc.AgentID) iotago.B
 // - ParamAgentID (optional -- default: caller)
 func viewBalanceBaseTokenEVM(ctx isc.SandboxView, agentIDOpt *isc.AgentID) *big.Int {
 	agentID := coreutil.FromOptional(agentIDOpt, ctx.Caller())
-	return getBaseTokensFullDecimals(ctx.StateR(), accountKey(agentID, ctx.ChainID()))
+	return GetBaseTokensFullDecimals(ctx.SchemaVersion())(ctx.StateR(), accountKey(agentID, ctx.ChainID()))
 }
 
 // viewBalanceNativeToken returns the native token balance of the account belonging to the AgentID
@@ -44,12 +44,12 @@ func viewBalanceNativeToken(ctx isc.SandboxView, agentIDOpt *isc.AgentID, ntID i
 // viewTotalAssets returns total balances controlled by the chain
 func viewTotalAssets(ctx isc.SandboxView) *isc.FungibleTokens {
 	ctx.Log().LogDebugf("accounts.viewTotalAssets")
-	return getFungibleTokens(ctx.StateR(), L2TotalsAccount, ctx.TokenInfo())
+	return getFungibleTokens(ctx.SchemaVersion(), ctx.StateR(), L2TotalsAccount, ctx.TokenInfo())
 }
 
 // viewAccounts returns list of all accounts
 func viewAccounts(ctx isc.SandboxView) dict.Dict {
-	return allAccountsAsDict(ctx.StateR())
+	return AllAccountsAsDict(ctx.StateR())
 }
 
 // nonces are only sent with off-ledger requests

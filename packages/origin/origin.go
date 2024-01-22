@@ -34,8 +34,8 @@ import (
 
 // L1Commitment calculates the L1 commitment for the origin state
 // originDeposit must exclude the minSD for the AnchorOutput
-func L1Commitment(initParams dict.Dict, originDeposit iotago.BaseToken, tokenInfo *api.InfoResBaseToken) *state.L1Commitment {
-	block := InitChain(state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()), initParams, originDeposit, tokenInfo)
+func L1Commitment(v isc.SchemaVersion, initParams dict.Dict, originDeposit iotago.BaseToken, tokenInfo *api.InfoResBaseToken) *state.L1Commitment {
+	block := InitChain(v, state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB()), initParams, originDeposit, tokenInfo)
 	return block.L1Commitment()
 }
 
@@ -46,7 +46,7 @@ const (
 	ParamWaspVersion     = "d"
 )
 
-func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.BaseToken, tokenInfo *api.InfoResBaseToken) state.Block {
+func InitChain(v isc.SchemaVersion, store state.Store, initParams dict.Dict, originDeposit iotago.BaseToken, tokenInfo *api.InfoResBaseToken) state.Block {
 	if initParams == nil {
 		initParams = dict.New()
 	}
@@ -63,9 +63,9 @@ func InitChain(store state.Store, initParams dict.Dict, originDeposit iotago.Bas
 	chainOwner := lo.Must(codec.AgentID.Decode(initParams.Get(ParamChainOwner), &isc.NilAgentID{}))
 
 	// init the state of each core contract
-	rootimpl.SetInitialState(contractState(root.Contract))
+	rootimpl.SetInitialState(v, contractState(root.Contract))
 	blob.SetInitialState(contractState(blob.Contract))
-	accounts.SetInitialState(contractState(accounts.Contract), originDeposit, tokenInfo)
+	accounts.SetInitialState(v, contractState(accounts.Contract), originDeposit, tokenInfo)
 	blocklog.SetInitialState(contractState(blocklog.Contract))
 	errors.SetInitialState(contractState(errors.Contract))
 	governanceimpl.SetInitialState(contractState(governance.Contract), chainOwner, blockKeepAmount)
@@ -89,9 +89,9 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 	}
 	anchorSD := lo.Must(chainOutputs.L1API(l1).StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
 	commonAccountAmount := chainOutputs.AnchorOutput.Amount - anchorSD
-	originBlock := InitChain(chainStore, initParams, commonAccountAmount, tokenInfo)
-
 	originAOStateMetadata, err := transaction.StateMetadataFromAnchorOutput(chainOutputs.AnchorOutput)
+	originBlock := InitChain(originAOStateMetadata.SchemaVersion, chainStore, initParams, commonAccountAmount, tokenInfo)
+
 	if err != nil {
 		return nil, fmt.Errorf("invalid state metadata on origin AO: %w", err)
 	}
@@ -108,9 +108,9 @@ func InitChainByAnchorOutput(chainStore state.Store, chainOutputs *isc.ChainOutp
 	return originBlock, nil
 }
 
-func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToken, schemaVersion uint32, tokenInfo *api.InfoResBaseToken) []byte {
+func calcStateMetadata(initParams dict.Dict, commonAccountAmount iotago.BaseToken, schemaVersion isc.SchemaVersion, tokenInfo *api.InfoResBaseToken) []byte {
 	s := transaction.NewStateMetadata(
-		L1Commitment(initParams, commonAccountAmount, tokenInfo),
+		L1Commitment(schemaVersion, initParams, commonAccountAmount, tokenInfo),
 		gas.DefaultFeePolicy(),
 		schemaVersion,
 		"",
@@ -143,7 +143,7 @@ func NewChainOriginTransaction(
 	initParams dict.Dict,
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
-	schemaVersion uint32,
+	schemaVersion isc.SchemaVersion,
 	l1APIProvider iotago.APIProvider,
 	tokenInfo *api.InfoResBaseToken,
 ) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID, error) {

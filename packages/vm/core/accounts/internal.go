@@ -27,9 +27,9 @@ var (
 )
 
 const (
-	// KeyAllAccounts stores a map of <agentID> => true
+	// keyAllAccounts stores a map of <agentID> => true
 	// where sum = baseTokens + native tokens + nfts
-	KeyAllAccounts = "a"
+	keyAllAccounts = "a"
 
 	// prefixBaseTokens | <accountID> stores the amount of base tokens (big.Int)
 	prefixBaseTokens = "b"
@@ -83,21 +83,21 @@ func accountKey(agentID isc.AgentID, chainID isc.ChainID) kv.Key {
 }
 
 func allAccountsMap(state kv.KVStore) *collections.Map {
-	return collections.NewMap(state, KeyAllAccounts)
+	return collections.NewMap(state, keyAllAccounts)
 }
 
-func allAccountsMapR(state kv.KVStoreReader) *collections.ImmutableMap {
-	return collections.NewMapReadOnly(state, KeyAllAccounts)
+func AllAccountsMapR(state kv.KVStoreReader) *collections.ImmutableMap {
+	return collections.NewMapReadOnly(state, keyAllAccounts)
 }
 
 func accountExists(state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID) bool {
-	return allAccountsMapR(state).HasAt([]byte(accountKey(agentID, chainID)))
+	return AllAccountsMapR(state).HasAt([]byte(accountKey(agentID, chainID)))
 }
 
-func allAccountsAsDict(state kv.KVStoreReader) dict.Dict {
+func AllAccountsAsDict(state kv.KVStoreReader) dict.Dict {
 	ret := dict.New()
-	allAccountsMapR(state).IterateKeys(func(agentID []byte) bool {
-		ret.Set(kv.Key(agentID), []byte{0x01})
+	AllAccountsMapR(state).IterateKeys(func(accKey []byte) bool {
+		ret.Set(kv.Key(accKey), []byte{0x01})
 		return true
 	})
 	return ret
@@ -110,6 +110,7 @@ func touchAccount(state kv.KVStore, agentID isc.AgentID, chainID isc.ChainID) {
 
 // HasEnoughForAllowance checks whether an account has enough balance to cover for the allowance
 func HasEnoughForAllowance(
+	v isc.SchemaVersion,
 	state kv.KVStoreReader,
 	agentID isc.AgentID,
 	allowance *isc.Assets,
@@ -121,7 +122,7 @@ func HasEnoughForAllowance(
 	}
 	accountKey := accountKey(agentID, chainID)
 	if allowance != nil {
-		if getBaseTokens(state, accountKey, tokenInfo) < allowance.BaseTokens {
+		if getBaseTokens(v)(state, accountKey, tokenInfo) < allowance.BaseTokens {
 			return false
 		}
 		for id, amount := range allowance.NativeTokens {
@@ -140,6 +141,7 @@ func HasEnoughForAllowance(
 
 // MoveBetweenAccounts moves assets between on-chain accounts
 func MoveBetweenAccounts(
+	v isc.SchemaVersion,
 	state kv.KVStore,
 	fromAgentID, toAgentID isc.AgentID,
 	assets *isc.Assets,
@@ -154,10 +156,10 @@ func MoveBetweenAccounts(
 		return nil
 	}
 
-	if !debitFromAccount(state, accountKey(fromAgentID, chainID), &assets.FungibleTokens, tokenInfo) {
+	if !debitFromAccount(v, state, accountKey(fromAgentID, chainID), &assets.FungibleTokens, tokenInfo) {
 		return errors.New("MoveBetweenAccounts: not enough funds")
 	}
-	creditToAccount(state, accountKey(toAgentID, chainID), &assets.FungibleTokens, tokenInfo)
+	creditToAccount(v, state, accountKey(toAgentID, chainID), &assets.FungibleTokens, tokenInfo)
 
 	for _, nftID := range assets.NFTs {
 		nft := GetNFTData(state, nftID)
@@ -175,15 +177,22 @@ func MoveBetweenAccounts(
 	return nil
 }
 
+func MustMoveBetweenAccounts(v isc.SchemaVersion, state kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID, tokenInfo *api.InfoResBaseToken) {
+	err := MoveBetweenAccounts(v, state, fromAgentID, toAgentID, assets, chainID, tokenInfo)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // debitBaseTokensFromAllowance is used for adjustment of L2 when part of base tokens are taken for storage deposit
 // It takes base tokens from allowance to the common account and then removes them from the L2 ledger
 func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chainID isc.ChainID) {
 	if amount == 0 {
 		return
 	}
-	storageDepositAssets := isc.NewAssetsBaseTokens(amount)
-	ctx.TransferAllowedFunds(CommonAccount(), storageDepositAssets)
-	DebitFromAccount(ctx.State(), CommonAccount(), &storageDepositAssets.FungibleTokens, chainID, ctx.TokenInfo())
+	storageDepositAssets := isc.NewFungibleTokens(amount, nil)
+	ctx.TransferAllowedFunds(CommonAccount(), storageDepositAssets.ToAssets())
+	DebitFromAccount(ctx.SchemaVersion(), ctx.State(), CommonAccount(), storageDepositAssets, chainID, ctx.TokenInfo())
 }
 
 func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32) {

@@ -54,9 +54,9 @@ var Processor = Contract.Processor(nil,
 )
 
 // this expects the origin amount minus SD
-func SetInitialState(state kv.KVStore, baseTokensOnAnchor iotago.BaseToken, tokenInfo *api.InfoResBaseToken) {
+func SetInitialState(v isc.SchemaVersion, state kv.KVStore, baseTokensOnAnchor iotago.BaseToken, tokenInfo *api.InfoResBaseToken) {
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
-	CreditToAccount(state, CommonAccount(), isc.NewFungibleTokens(baseTokensOnAnchor, nil), isc.ChainID{}, tokenInfo)
+	CreditToAccount(v, state, CommonAccount(), isc.NewFungibleTokens(baseTokensOnAnchor, nil), isc.ChainID{}, tokenInfo)
 }
 
 // deposit is a function to deposit attached assets to the sender's chain account
@@ -276,7 +276,14 @@ func foundryDestroy(ctx isc.Sandbox, sn uint32) dict.Dict {
 	deleteFoundryFromAccount(state, caller, sn)
 	DeleteFoundryOutput(state, sn)
 	// the storage deposit goes to the caller's account
-	CreditToAccount(state, caller, isc.NewFungibleTokens(storageDepositReleased, nil), ctx.ChainID(), ctx.TokenInfo())
+	CreditToAccount(
+		ctx.SchemaVersion(),
+		state,
+		caller,
+		&isc.FungibleTokens{BaseTokens: storageDepositReleased},
+		ctx.ChainID(),
+		ctx.TokenInfo(),
+	)
 	eventFoundryDestroyed(ctx, sn)
 	return nil
 }
@@ -311,10 +318,10 @@ func foundryModifySupply(ctx isc.Sandbox, sn uint32, delta *big.Int, destroy boo
 		ctx.TransferAllowedFunds(accountID, isc.NewAssets(0, iotago.NativeTokenSum{
 			nativeTokenID: delta,
 		}))
-		DebitFromAccount(state, accountID, deltaAssets, ctx.ChainID(), ctx.TokenInfo())
+		DebitFromAccount(ctx.SchemaVersion(), state, accountID, deltaAssets, ctx.ChainID(), ctx.TokenInfo())
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta.Neg(delta))
 	} else {
-		CreditToAccount(state, caller, deltaAssets, ctx.ChainID(), ctx.TokenInfo())
+		CreditToAccount(ctx.SchemaVersion(), state, caller, deltaAssets, ctx.ChainID(), ctx.TokenInfo())
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta)
 	}
 
@@ -325,7 +332,7 @@ func foundryModifySupply(ctx isc.Sandbox, sn uint32, delta *big.Int, destroy boo
 		debitBaseTokensFromAllowance(ctx, iotago.BaseToken(-storageDepositAdjustment), ctx.ChainID())
 	case storageDepositAdjustment > 0:
 		// storage deposit is returned to the caller account
-		CreditToAccount(state, caller, isc.NewFungibleTokens(iotago.BaseToken(storageDepositAdjustment), nil), ctx.ChainID(), ctx.TokenInfo())
+		CreditToAccount(ctx.SchemaVersion(), state, caller, isc.NewFungibleTokens(iotago.BaseToken(storageDepositAdjustment), nil), ctx.ChainID(), ctx.TokenInfo())
 	}
 	eventFoundryModified(ctx, sn)
 	return nil

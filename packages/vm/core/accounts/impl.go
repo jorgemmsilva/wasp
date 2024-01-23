@@ -88,7 +88,7 @@ func transferAllowanceTo(ctx isc.Sandbox, targetAccount isc.AgentID) dict.Dict {
 		}),
 		nil,
 	)
-	ctx.Log().LogDebugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount, ctx.AllowanceAvailable())
+	ctx.Log().LogDebugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount.Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()), ctx.AllowanceAvailable())
 	return nil
 }
 

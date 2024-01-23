@@ -12,9 +12,6 @@ replace (
 require (
 	github.com/ethereum/go-ethereum v1.13.10
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff
-	github.com/iotaledger/hive.go/log v0.0.0-20231223025425-91257fbacf8b
-	github.com/iotaledger/hive.go/web v0.0.0-20240115140343-94cb44b074ff
-	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20240116142027-23db001cf27d
 	github.com/iotaledger/iota.go/v4 v4.0.0-20240116140157-9e8010cb282d
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000
 	github.com/iotaledger/wasp/tools/wasp-cli v0.0.0-20230923193348-da186f5602e0
@@ -22,7 +19,6 @@ require (
 	github.com/pangpanglabs/echoswagger/v2 v2.4.1
 	github.com/samber/lo v1.38.1
 	github.com/spf13/cobra v1.8.0
-	nhooyr.io/websocket v1.8.10
 )
 
 require (
@@ -97,11 +93,14 @@ require (
 	github.com/iotaledger/hive.go/ds v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/ierrors v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/lo v0.0.0-20240115140343-94cb44b074ff // indirect
+	github.com/iotaledger/hive.go/log v0.0.0-20231223025425-91257fbacf8b // indirect
 	github.com/iotaledger/hive.go/logger v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/objectstorage v0.0.0-20231010133617-cdbd5387e2af // indirect
 	github.com/iotaledger/hive.go/runtime v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/stringify v0.0.0-20231223025425-91257fbacf8b // indirect
+	github.com/iotaledger/hive.go/web v0.0.0-20240115140343-94cb44b074ff // indirect
+	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20240116142027-23db001cf27d // indirect
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20240116140821-25bc7acc397d // indirect
 	github.com/iotaledger/iota.go v1.0.0 // indirect
 	github.com/iotaledger/iota.go/v3 v3.0.0-rc.3 // indirect
@@ -209,12 +208,13 @@ require (
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.16.0 // indirect
+	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
 	google.golang.org/grpc v1.60.1 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
+	nhooyr.io/websocket v1.8.10 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )

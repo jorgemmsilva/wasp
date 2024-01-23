@@ -188,7 +188,8 @@ func New(t Context, initOptions ...*InitOptions) *Solo {
 	}
 
 	_ = ret.publisher.Events.Published.Hook(func(ev *publisher.ISCEvent[any]) {
-		ret.logger.LogInfof("solo publisher: %s %s %v", ev.Kind, ev.ChainID, ev.String(testutil.L1API.ProtocolParameters().Bech32HRP()))
+		hrp := testutil.L1API.ProtocolParameters().Bech32HRP()
+		ret.logger.LogInfof("solo publisher: %s", ev.String(hrp))
 	})
 
 	go ret.publisher.Run(ctx)

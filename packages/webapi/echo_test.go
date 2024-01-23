@@ -13,8 +13,7 @@ import (
 
 	"github.com/iotaledger/hive.go/log"
 
-	"github.com/iotaledger/wasp/components/webapi"
-	"github.com/iotaledger/wasp/packages/authentication"
+	"github.com/iotaledger/wasp/packages/webapi"
 )
 
 func TestInternalServerErrors(t *testing.T) {
@@ -24,11 +23,9 @@ func TestInternalServerErrors(t *testing.T) {
 		log.WithOutput(logOutput),
 	)
 
-	e := webapi.NewEcho(&webapi.ParametersWebAPI{
-		Enabled:     true,
-		BindAddress: ":9999",
-		Auth:        authentication.AuthConfiguration{},
-		Limits: webapi.ParametersWebAPILimits{
+	e := webapi.NewEcho(
+		true,
+		&webapi.ParametersWebAPILimits{
 			Timeout:                        time.Minute,
 			ReadTimeout:                    time.Minute,
 			WriteTimeout:                   time.Minute,
@@ -37,9 +34,9 @@ func TestInternalServerErrors(t *testing.T) {
 			ConfirmedStateLagThreshold:     2,
 			Jsonrpc:                        webapi.ParametersJSONRPC{},
 		},
-		DebugRequestLoggerEnabled: true,
-	},
+		24*time.Hour,
 		nil,
+		"",
 		log,
 	)
 
@@ -47,10 +44,10 @@ func TestInternalServerErrors(t *testing.T) {
 	exceptionText := "foobar"
 	e.GET("/test", func(c echo.Context) error { panic(exceptionText) })
 	go func() {
-		err := e.Start(":9999")
+		err := e.Echo().Start(":9999")
 		require.ErrorIs(t, http.ErrServerClosed, err)
 	}()
-	defer e.Shutdown(context.Background())
+	defer e.Echo().Shutdown(context.Background())
 
 	// query the endpoint
 	req, err := http.NewRequest(http.MethodGet, "http://localhost:9999/test", http.NoBody)

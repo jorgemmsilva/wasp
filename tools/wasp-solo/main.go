@@ -14,17 +14,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/pangpanglabs/echoswagger/v2"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
-	websocketserver "nhooyr.io/websocket"
 
 	hivedb "github.com/iotaledger/hive.go/kvstore/database"
-	hivelog "github.com/iotaledger/hive.go/log"
-	"github.com/iotaledger/hive.go/web/websockethub"
-	"github.com/iotaledger/inx-app/pkg/httpserver"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/components/app"
@@ -38,18 +32,18 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/users"
 	"github.com/iotaledger/wasp/packages/vm/core/evm/emulator"
 	"github.com/iotaledger/wasp/packages/webapi"
-	"github.com/iotaledger/wasp/packages/webapi/apierrors"
 	"github.com/iotaledger/wasp/packages/webapi/routes"
-	"github.com/iotaledger/wasp/packages/webapi/websocket"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
-var listenAddress string = ":9090"
+var (
+	listenAddress = ":9090"
+	seedHex       = "0xffa736fb5373da7bf8b8c97e73157300a529cb7e37c48f3b8ce0ec3cb556e509"
+)
 
 func main() {
 	cmd := &cobra.Command{
@@ -72,7 +66,8 @@ Note: chain data is stored in-memory and will be lost upon termination.
 	}
 
 	log.Init(cmd)
-	cmd.PersistentFlags().StringVarP(&listenAddress, "listen", "l", ":9090", "listen address")
+	cmd.PersistentFlags().StringVarP(&listenAddress, "listen", "l", listenAddress, "listen address")
+	cmd.PersistentFlags().StringVarP(&seedHex, "seed", "s", seedHex, "seed")
 
 	err := cmd.Execute()
 	log.Check(err)
@@ -82,7 +77,6 @@ func initChain(env *solo.Solo) *solo.Chain {
 	chainOwner, chainOwnerAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(0))
 	chain, _ := env.NewChainExt(chainOwner, 1*isc.Million, 0, "wasp-solo", dict.Dict{
 		origin.ParamChainOwner:      isc.NewAgentID(chainOwnerAddr).Bytes(),
-		origin.ParamEVMChainID:      codec.Uint16.Encode(1074),
 		origin.ParamBlockKeepAmount: codec.Int32.Encode(emulator.BlockKeepAll),
 		origin.ParamWaspVersion:     codec.String.Encode(app.Version),
 	})
@@ -135,82 +129,8 @@ func printEthereumAccounts(accounts []*ecdsa.PrivateKey) {
 	log.PrintTable(header, rows)
 }
 
-// TODO: duplicated code from components/webapi
-func newEcho(debug bool, log hivelog.Logger) *echo.Echo {
-	e := httpserver.NewEcho(log, nil, debug)
-	e.HTTPErrorHandler = apierrors.HTTPErrorHandler()
-	webapi.ConfirmedStateLagThreshold = 2
-	authentication.DefaultJWTDuration = 24 * time.Hour
-	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(webapi.MiddlewareUnescapePath)
-	e.Use(middleware.BodyLimit("2M"))
-	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: `${time_rfc3339_nano} ${remote_ip} ${method} ${uri} ${status} error="${error}"` + "\n",
-	}))
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins:     []string{"*"},
-		AllowHeaders:     []string{"*"},
-		AllowMethods:     []string{"*"},
-		AllowCredentials: true,
-	}))
-	return e
-}
-
-// TODO: duplicated code from components/webapi
-func createEchoSwagger(e *echo.Echo, version string) echoswagger.ApiRoot {
-	echoSwagger := echoswagger.New(e, "/doc", &echoswagger.Info{
-		Title:       "Wasp API",
-		Description: "REST API for the Wasp node",
-		Version:     version,
-	})
-	echoSwagger.SetRequestContentType(echo.MIMEApplicationJSON)
-	echoSwagger.SetResponseContentType(echo.MIMEApplicationJSON)
-	return echoSwagger
-}
-
-// TODO: duplicated code from components/webapi
-func initEcho(debug bool, logger hivelog.Logger) echoswagger.ApiRoot {
-	e := newEcho(debug, logger)
-	echoSwagger := createEchoSwagger(e, app.Version)
-	if debug {
-		echoSwagger.Echo().Use(middleware.BodyDump(func(c echo.Context, reqBody, resBody []byte) {
-			logger.LogDebugf("API Dump: Request=%q, Response=%q", reqBody, resBody)
-		}))
-	}
-	return echoSwagger
-}
-
-func initWsService(logger hivelog.Logger, pub *publisher.Publisher, l1 iotago.APIProvider) (*websocket.Service, *websockethub.Hub) {
-	const (
-		broadcastQueueSize            = 20000
-		clientSendChannelSize         = 1000
-		maxWebsocketMessageSize int64 = 510
-	)
-
-	websocketOptions := websocketserver.AcceptOptions{
-		InsecureSkipVerify: true,
-		// Disable compression due to incompatibilities with the latest Safari browsers:
-		// https://github.com/tilt-dev/tilt/issues/4746
-		CompressionMode: websocketserver.CompressionDisabled,
-	}
-
-	hub := websockethub.NewHub(logger, &websocketOptions, broadcastQueueSize, clientSendChannelSize, maxWebsocketMessageSize)
-
-	wsService := websocket.NewWebsocketService(logger, hub, []publisher.ISCEventType{
-		publisher.ISCEventKindNewBlock,
-		publisher.ISCEventKindReceipt,
-		publisher.ISCEventIssuerVM,
-		publisher.ISCEventKindBlockEvents,
-	}, pub, l1.LatestAPI())
-
-	return wsService, hub
-}
-
-func start(cmd *cobra.Command, args []string) {
-	seed := cryptolib.SeedFromBytes(lo.Must(hexutil.DecodeHex("0xffa736fb5373da7bf8b8c97e73157300a529cb7e37c48f3b8ce0ec3cb556e509")))
-
+func initSolo(seed cryptolib.Seed) (*soloContext, *solo.Chain) {
 	soloCtx := &soloContext{}
-	defer soloCtx.cleanupAll()
 
 	env := solo.New(soloCtx, &solo.InitOptions{
 		Debug: log.DebugFlag,
@@ -223,21 +143,41 @@ func start(cmd *cobra.Command, args []string) {
 	chain.FakeCommitteeInfo = getCommitteeInfo
 	chain.FakeChainNodes = getChainNodes
 
-	l1Accounts := createL1Accounts(chain)
-	ethAccounts := createEthereumAccounts(chain)
+	return soloCtx, chain
+}
 
+func initWebAPI(env *solo.Solo, ethAccounts []*ecdsa.PrivateKey) (echoswagger.ApiRoot, func()) {
 	jsonrpcParams := jsonrpc.ParametersDefault()
 	jsonrpcParams.Accounts = ethAccounts
 
-	echoSwagger := initEcho(
+	echoSwagger := webapi.NewEcho(
 		log.DebugFlag,
+		&webapi.ParametersWebAPILimits{
+			Timeout:                    30 * time.Second,
+			ReadTimeout:                10 * time.Second,
+			WriteTimeout:               60 * time.Second,
+			MaxBodyLength:              "2M",
+			ConfirmedStateLagThreshold: 2,
+			Jsonrpc: webapi.ParametersJSONRPC{
+				MaxBlocksInLogsFilterRange:          1000,
+				MaxLogsInResult:                     10000,
+				WebsocketRateLimitMessagesPerSecond: 20,
+				WebsocketRateLimitBurst:             5,
+				WebsocketConnectionCleanupDuration:  5 * time.Minute,
+				WebsocketClientBlockDuration:        5 * time.Minute,
+			},
+		},
+		24*time.Hour,
+		nil,
+		app.Version,
 		env.Log().NewChildLogger("webapi"),
 	)
 
-	wsService, wsHub := initWsService(
+	wsHub, wsService := webapi.InitWebsocket(
 		env.Log().NewChildLogger("websocket"),
 		env.Publisher(),
-		env.L1APIProvider(),
+		env.L1APIProvider().LatestAPI(),
+		1,
 	)
 
 	userManager := users.NewUserManager((func(users []*users.User) error {
@@ -294,7 +234,6 @@ func start(cmd *cobra.Command, args []string) {
 	l1FaucetInit(env, echoSwagger.Echo())
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 
 	go func() {
 		unhook := wsService.EventHandler().AttachToEvents()
@@ -302,10 +241,14 @@ func start(cmd *cobra.Command, args []string) {
 		wsHub.Run(ctx)
 	}()
 
-	hrp := env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP()
+	return echoSwagger, cancel
+}
+
+func printInfo(seed cryptolib.Seed, chain *solo.Chain, l1Accounts []iotago.Address, ethAccounts []*ecdsa.PrivateKey) {
+	hrp := chain.Env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP()
 	log.Printf("\n")
 	log.Printf("ChainID: %s\n", chain.ChainID.Bech32(hrp))
-	log.Printf("\nAccounts (first is chain owner):\n")
+	log.Printf("\nAccounts (index #0 is chain owner):\n")
 	printL1Accounts(l1Accounts, hrp)
 	log.Printf("\nEthereum accounts:\n")
 	printEthereumAccounts(ethAccounts)
@@ -329,6 +272,25 @@ func start(cmd *cobra.Command, args []string) {
 	log.Printf("RPC URL: %s/v%d/chains/%s/%s\n", addr, webapi.APIVersion, chain.ChainID.Bech32(hrp), routes.EVMJsonRPCPathSuffix)
 	log.Printf("Websocket: %s/v%d/chains/%s/%s\n", strings.Replace(addr, "http:", "ws:", 1), webapi.APIVersion, chain.ChainID.Bech32(hrp), routes.EVMJsonWebSocketPathSuffix)
 	log.Printf("\n")
+}
+
+func start(_ *cobra.Command, _ []string) {
+	seed := cryptolib.SeedFromBytes(lo.Must(hexutil.DecodeHex(seedHex)))
+
+	soloCtx, chain := initSolo(seed)
+	defer soloCtx.cleanupAll()
+	l1Accounts := createL1Accounts(chain)
+	ethAccounts := createEthereumAccounts(chain)
+
+	echoSwagger, stopWebAPI := initWebAPI(chain.Env, ethAccounts)
+	defer stopWebAPI()
+
+	printInfo(
+		seed,
+		chain,
+		l1Accounts,
+		ethAccounts,
+	)
 
 	if err := echoSwagger.Echo().Start(listenAddress); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Check(err)

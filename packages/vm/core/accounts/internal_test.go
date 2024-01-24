@@ -80,7 +80,7 @@ func testCreditDebit1(t *testing.T, v isc.SchemaVersion) {
 	require.Zero(t, userAssets.NativeTokens[dummyAssetID].Cmp(big.NewInt(4)))
 	checkLedgerT(t, v, state, "cp2")
 
-	accounts.DebitFromAccount(v, state, agentID1, expected, isc.ChainID{}, testutil.TokenInfo)
+	accounts.DebitFromAccount(v, state, agentID1, expected, isc.ChainID{}, testutil.TokenInfo, testutil.L1API.ProtocolParameters().Bech32HRP())
 	total = checkLedgerT(t, v, state, "cp3")
 	expected = isc.NewEmptyFungibleTokens()
 	require.True(t, expected.Equals(total))
@@ -101,7 +101,7 @@ func testCreditDebit2(t *testing.T, v isc.SchemaVersion) {
 	require.True(t, expected.Equals(total))
 
 	transfer = isc.NewEmptyFungibleTokens().AddNativeTokens(dummyAssetID, big.NewInt(2))
-	accounts.DebitFromAccount(v, state, agentID1, transfer, isc.ChainID{}, testutil.TokenInfo)
+	accounts.DebitFromAccount(v, state, agentID1, transfer, isc.ChainID{}, testutil.TokenInfo, testutil.L1API.ProtocolParameters().Bech32HRP())
 	total = checkLedgerT(t, v, state, "cp2")
 	require.EqualValues(t, 0, len(total.NativeTokens))
 	expected = isc.NewFungibleTokens(42, nil)
@@ -130,7 +130,7 @@ func testCreditDebit3(t *testing.T, v isc.SchemaVersion) {
 	transfer = isc.NewEmptyFungibleTokens().AddNativeTokens(dummyAssetID, big.NewInt(100))
 	require.Panics(t,
 		func() {
-			accounts.DebitFromAccount(v, state, agentID1, transfer, isc.ChainID{}, testutil.TokenInfo)
+			accounts.DebitFromAccount(v, state, agentID1, transfer, isc.ChainID{}, testutil.TokenInfo, testutil.L1API.ProtocolParameters().Bech32HRP())
 		},
 	)
 	total = checkLedgerT(t, v, state, "cp2")
@@ -259,7 +259,7 @@ func testCreditDebit7(t *testing.T, v isc.SchemaVersion) {
 	debitTransfer := isc.NewFungibleTokens(1, nil)
 	// debit must fail
 	require.Panics(t, func() {
-		accounts.DebitFromAccount(v, state, agentID1, debitTransfer, isc.ChainID{}, testutil.TokenInfo)
+		accounts.DebitFromAccount(v, state, agentID1, debitTransfer, isc.ChainID{}, testutil.TokenInfo, testutil.L1API.ProtocolParameters().Bech32HRP())
 	})
 
 	total = checkLedgerT(t, v, state, "cp1")
@@ -299,7 +299,7 @@ func testDebitAll(t *testing.T, v isc.SchemaVersion) {
 	_, ok := accs[kv.Key(agentID1.Bytes())]
 	require.True(t, ok)
 
-	accounts.DebitFromAccount(v, state, agentID1, transfer, isc.ChainID{}, testutil.TokenInfo)
+	accounts.DebitFromAccount(v, state, agentID1, transfer, isc.ChainID{}, testutil.TokenInfo, testutil.L1API.ProtocolParameters().Bech32HRP())
 	require.EqualValues(t, 1, accounts.AllAccountsMapR(state).Len())
 	accs = accounts.AllAccountsAsDict(state)
 	require.EqualValues(t, 1, len(accs))

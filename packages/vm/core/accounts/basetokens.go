@@ -90,12 +90,13 @@ func AdjustAccountBaseTokens(
 	adjustment int64,
 	chainID isc.ChainID,
 	baseToken *api.InfoResBaseToken,
+	hrp iotago.NetworkPrefix,
 ) {
 	switch {
 	case adjustment > 0:
 		CreditToAccount(v, state, account, isc.NewFungibleTokens(iotago.BaseToken(adjustment), nil), chainID, baseToken)
 	case adjustment < 0:
-		DebitFromAccount(v, state, account, isc.NewFungibleTokens(iotago.BaseToken(-adjustment), nil), chainID, baseToken)
+		DebitFromAccount(v, state, account, isc.NewFungibleTokens(iotago.BaseToken(-adjustment), nil), chainID, baseToken, hrp)
 	}
 }
 

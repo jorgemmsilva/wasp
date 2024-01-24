@@ -171,7 +171,7 @@ func (s *contractSandbox) MustMoveBetweenAccounts(fromAgentID, toAgentID isc.Age
 }
 
 func (s *contractSandbox) DebitFromAccount(agentID isc.AgentID, amount *big.Int) {
-	debitFromAccountFullDecimals(s.SchemaVersion(), s.reqctx.chainStateWithGasBurn(), agentID, amount, s.ChainID())
+	debitFromAccountFullDecimals(s.SchemaVersion(), s.reqctx.chainStateWithGasBurn(), agentID, amount, s.ChainID(), s.L1API().ProtocolParameters().Bech32HRP())
 	s.checkRemainingTokens(agentID)
 }
 

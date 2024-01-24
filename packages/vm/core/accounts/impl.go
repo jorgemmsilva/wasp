@@ -88,7 +88,7 @@ func transferAllowanceTo(ctx isc.Sandbox, targetAccount isc.AgentID) dict.Dict {
 		}),
 		nil,
 	)
-	ctx.Log().LogDebugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount, ctx.AllowanceAvailable())
+	ctx.Log().LogDebugf("accounts.transferAllowanceTo.success: target: %s\n%s", targetAccount.Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()), ctx.AllowanceAvailable())
 	return nil
 }
 
@@ -318,7 +318,7 @@ func foundryModifySupply(ctx isc.Sandbox, sn uint32, delta *big.Int, destroy boo
 		ctx.TransferAllowedFunds(accountID, isc.NewAssets(0, iotago.NativeTokenSum{
 			nativeTokenID: delta,
 		}))
-		DebitFromAccount(ctx.SchemaVersion(), state, accountID, deltaAssets, ctx.ChainID(), ctx.TokenInfo())
+		DebitFromAccount(ctx.SchemaVersion(), state, accountID, deltaAssets, ctx.ChainID(), ctx.TokenInfo(), ctx.L1API().ProtocolParameters().Bech32HRP())
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta.Neg(delta))
 	} else {
 		CreditToAccount(ctx.SchemaVersion(), state, caller, deltaAssets, ctx.ChainID(), ctx.TokenInfo())

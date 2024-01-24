@@ -192,7 +192,7 @@ func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chai
 	}
 	storageDepositAssets := isc.NewFungibleTokens(amount, nil)
 	ctx.TransferAllowedFunds(CommonAccount(), storageDepositAssets.ToAssets())
-	DebitFromAccount(ctx.SchemaVersion(), ctx.State(), CommonAccount(), storageDepositAssets, chainID, ctx.TokenInfo())
+	DebitFromAccount(ctx.SchemaVersion(), ctx.State(), CommonAccount(), storageDepositAssets, chainID, ctx.TokenInfo(), ctx.L1API().ProtocolParameters().Bech32HRP())
 }
 
 func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32) {

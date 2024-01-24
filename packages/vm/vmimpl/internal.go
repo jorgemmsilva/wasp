@@ -51,16 +51,31 @@ func creditNFTToAccount(chainState kv.KVStore, agentID isc.AgentID, req isc.OnLe
 }
 
 // debitFromAccount subtracts tokens from account if there are enough.
-func debitFromAccount(v isc.SchemaVersion, chainState kv.KVStore, agentID isc.AgentID, transfer *isc.FungibleTokens, chainID isc.ChainID, tokenInfo *api.InfoResBaseToken) {
+func debitFromAccount(
+	v isc.SchemaVersion,
+	chainState kv.KVStore,
+	agentID isc.AgentID,
+	transfer *isc.FungibleTokens,
+	chainID isc.ChainID,
+	tokenInfo *api.InfoResBaseToken,
+	hrp iotago.NetworkPrefix,
+) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		accounts.DebitFromAccount(v, s, agentID, transfer, chainID, tokenInfo)
+		accounts.DebitFromAccount(v, s, agentID, transfer, chainID, tokenInfo, hrp)
 	})
 }
 
 // debitFromAccountFullDecimals subtracts basetokens tokens from account if there are enough.
-func debitFromAccountFullDecimals(v isc.SchemaVersion, chainState kv.KVStore, agentID isc.AgentID, amount *big.Int, chainID isc.ChainID) {
+func debitFromAccountFullDecimals(
+	v isc.SchemaVersion,
+	chainState kv.KVStore,
+	agentID isc.AgentID,
+	amount *big.Int,
+	chainID isc.ChainID,
+	hrp iotago.NetworkPrefix,
+) {
 	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		accounts.DebitFromAccountFullDecimals(v, s, agentID, amount, chainID)
+		accounts.DebitFromAccountFullDecimals(v, s, agentID, amount, chainID, hrp)
 	})
 }
 
@@ -252,7 +267,7 @@ func (reqctx *requestContext) adjustL2BaseTokensIfNeeded(adjustment int64, accou
 	}
 	err := panicutil.CatchPanicReturnError(func() {
 		reqctx.callCore(accounts.Contract, func(s kv.KVStore) {
-			accounts.AdjustAccountBaseTokens(reqctx.SchemaVersion(), s, account, adjustment, reqctx.ChainID(), reqctx.TokenInfo())
+			accounts.AdjustAccountBaseTokens(reqctx.SchemaVersion(), s, account, adjustment, reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API().ProtocolParameters().Bech32HRP())
 		})
 	}, accounts.ErrNotEnoughFunds)
 	if err != nil {

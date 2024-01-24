@@ -110,7 +110,7 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		creditNFTToAccount(reqctx.uncommittedState, payoutAgentID, req, reqctx.ChainID())
 		creditToAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, payoutAgentID, &req.Assets().FungibleTokens, reqctx.ChainID(), reqctx.TokenInfo())
 		if storageDepositNeeded > 0 {
-			debitFromAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, payoutAgentID, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID(), reqctx.TokenInfo())
+			debitFromAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, payoutAgentID, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API().ProtocolParameters().Bech32HRP())
 		}
 		return
 	}
@@ -127,7 +127,7 @@ func (reqctx *requestContext) creditAssetsToChain() {
 	creditNFTToAccount(reqctx.uncommittedState, sender, req, reqctx.ChainID())
 	if storageDepositNeeded > 0 {
 		reqctx.sdCharged = storageDepositNeeded
-		debitFromAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, sender, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID(), reqctx.TokenInfo())
+		debitFromAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, sender, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API().ProtocolParameters().Bech32HRP())
 	}
 }
 

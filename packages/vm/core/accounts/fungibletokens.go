@@ -6,6 +6,7 @@ import (
 
 	"github.com/samber/lo"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -82,12 +83,13 @@ func DebitFromAccount(
 	fts *isc.FungibleTokens,
 	chainID isc.ChainID,
 	baseToken *api.InfoResBaseToken,
+	hrp iotago.NetworkPrefix,
 ) {
 	if fts.IsEmpty() {
 		return
 	}
 	if !debitFromAccount(v, state, accountKey(agentID, chainID), fts, baseToken) {
-		panic(fmt.Errorf("cannot debit (%s) from %s: %w", fts, agentID, ErrNotEnoughFunds))
+		panic(fmt.Errorf("cannot debit (%s) from %s: %w", fts, agentID.Bech32(hrp), ErrNotEnoughFunds))
 	}
 	if !debitFromAccount(v, state, L2TotalsAccount, fts, baseToken) {
 		panic("debitFromAccount: inconsistent ledger state")
@@ -140,12 +142,19 @@ func debitFromAccount(
 }
 
 // DebitFromAccountFullDecimals removes the amount from the chain ledger. If not enough it panics
-func DebitFromAccountFullDecimals(v isc.SchemaVersion, state kv.KVStore, agentID isc.AgentID, amount *big.Int, chainID isc.ChainID) {
+func DebitFromAccountFullDecimals(
+	v isc.SchemaVersion,
+	state kv.KVStore,
+	agentID isc.AgentID,
+	amount *big.Int,
+	chainID isc.ChainID,
+	hrp iotago.NetworkPrefix,
+) {
 	if !util.IsPositiveBigInt(amount) {
 		return
 	}
 	if !debitFromAccountFullDecimals(v, state, accountKey(agentID, chainID), amount) {
-		panic(fmt.Errorf("cannot debit (%s) from %s: %w", amount.String(), agentID, ErrNotEnoughFunds))
+		panic(fmt.Errorf("cannot debit (%s) from %s: %w", amount.String(), agentID.Bech32(hrp), ErrNotEnoughFunds))
 	}
 
 	if !debitFromAccountFullDecimals(v, state, L2TotalsAccount, amount) {

@@ -8,7 +8,7 @@ import (
 
 // Middleware to unescape any supplied path (/path/foo%40bar/) parameter
 // Query parameters (?name=foo%40bar) get unescaped by default.
-func MiddlewareUnescapePath(next echo.HandlerFunc) echo.HandlerFunc {
+func middlewareUnescapePath(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		escapedPathParams := c.ParamValues()
 		unescapedPathParams := make([]string, len(escapedPathParams))

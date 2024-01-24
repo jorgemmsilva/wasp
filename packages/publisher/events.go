@@ -38,7 +38,7 @@ func (e *ISCEvent[T]) String(networkPrefix iotago.NetworkPrefix) string {
 		issuerStr = e.Issuer.Bech32(networkPrefix)
 	}
 
-	return fmt.Sprintf("%s | %s (%s)", e.ChainID, issuerStr, e.Kind)
+	return fmt.Sprintf("%s | %s (%s)", e.ChainID.Bech32(networkPrefix), issuerStr, e.Kind)
 }
 
 type BlockWithTrieRoot struct {

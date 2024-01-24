@@ -66,28 +66,21 @@ var (
 		wasmtypes.ScUint32Length,
 		wasmtypes.ScUint64Length,
 	}
+	zeroHash      = make([]byte, wasmtypes.ScHashLength)
 	invalidValues = map[string][][]byte{
 		testwasmlib.ParamAddress: {
 			append([]byte{3}, zeroHash...),
 			append([]byte{4}, zeroHash...),
 			append([]byte{255}, zeroHash...),
 		},
-		testwasmlib.ParamChainID: {
-			append([]byte{0}, zeroHash...),
-			append([]byte{1}, zeroHash...),
-			append([]byte{3}, zeroHash...),
-			append([]byte{4}, zeroHash...),
-			append([]byte{255}, zeroHash...),
-		},
 		testwasmlib.ParamRequestID: {
-			append(zeroHash, []byte{128, 0}...),
-			append(zeroHash, []byte{127, 1}...),
-			append(zeroHash, []byte{0, 1}...),
-			append(zeroHash, []byte{255, 255}...),
-			append(zeroHash, []byte{4, 4}...),
+			append(zeroHash, []byte{0, 0, 0, 0, 128, 0}...),
+			append(zeroHash, []byte{0, 0, 0, 0, 127, 1}...),
+			append(zeroHash, []byte{0, 0, 0, 0, 0, 1}...),
+			append(zeroHash, []byte{0, 0, 0, 0, 255, 255}...),
+			append(zeroHash, []byte{0, 0, 0, 0, 4, 4}...),
 		},
 	}
-	zeroHash = make([]byte, wasmtypes.ScHashLength)
 )
 
 func setupTest(t *testing.T) *wasmsolo.SoloContext {
@@ -195,13 +188,13 @@ func TestInvalidTypeParams(t *testing.T) {
 	for param, values := range invalidValues {
 		for index, value := range values {
 			t.Run("InvalidType "+param+" "+strconv.Itoa(index), func(t *testing.T) {
-				invalidParam := fmt.Sprintf("invalid %s%s", strings.ToUpper(param[:1]), param[1:])
+				invalidParamMsg := fmt.Sprintf("invalid %s%s: ", strings.ToUpper(param[:1]), param[1:])
 				req := solo.NewCallParamsEx(testwasmlib.ScName, testwasmlib.FuncParamTypes,
 					param, value,
 				).AddBaseTokens(1).WithMaxAffordableGasBudget()
 				_, err := ctx.Chain.PostRequestSync(req, nil)
 				require.Error(t, err)
-				require.Contains(t, err.Error(), invalidParam)
+				require.Contains(t, err.Error(), invalidParamMsg)
 			})
 		}
 	}
@@ -505,7 +498,7 @@ func checkAgentID(t *testing.T, ctx *wasmsolo.SoloContext, scAgentID wasmtypes.S
 	require.EqualValues(t, scAgentID.Bytes(), agentBytes)
 	require.EqualValues(t, scAgentID.String(), agentString)
 	require.True(t, scAgentID == wasmtypes.AgentIDFromBytes(wasmtypes.AgentIDToBytes(scAgentID)))
-	require.True(t, scAgentID == wasmtypes.AgentIDFromBech32(wasmtypes.AgentIDToString(scAgentID)))
+	require.True(t, scAgentID == wasmtypes.AgentIDFromString(wasmtypes.AgentIDToString(scAgentID)))
 
 	checker := testwasmlib.ScFuncs.CheckAgentID(ctx)
 	checker.Params.ScAgentID().SetValue(scAgentID)

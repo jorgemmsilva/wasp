@@ -92,7 +92,7 @@ pub fn address_from_bytes(buf: &[u8]) -> ScAddress {
             }
             addr.id[..SC_LENGTH_NFT].copy_from_slice(&buf[..SC_LENGTH_NFT]);
         }
-        _ => panic("invalid Address type"),
+        _ => panic("invalid Address: type"),
     }
     addr
 }

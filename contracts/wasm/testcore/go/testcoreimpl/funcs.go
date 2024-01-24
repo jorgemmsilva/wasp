@@ -13,15 +13,14 @@ import (
 )
 
 const (
-	ContractNameDeployed = "exampleDeployTR"
-	MsgCoreOnlyPanic     = "========== core only ========="
-
-	MsgDoNothing     = "========== doing nothing"
-	MsgFailOnPurpose = "failing on purpose"
-	MsgFullPanic     = "========== panic FULL ENTRY POINT =========="
-	MsgJustView      = "calling empty view entry point"
-
-	MsgViewPanic = "========== panic VIEW =========="
+	ContractNameDeployed       = "exampleDeployTR"
+	msgCoreOnlyPanic           = "========== core only ========="
+	msgDoNothing               = "========== doing nothing"
+	msgFailOnPurpose           = "failing on purpose"
+	msgFullPanic               = "========== panic FULL ENTRY POINT =========="
+	msgJustView                = "calling empty view entry point"
+	msgViewPanic               = "========== panic VIEW =========="
+	msgWillBeCallingEntryPoint = "will be calling entry point '"
 )
 
 func funcCallOnChain(ctx wasmlib.ScFuncContext, f *CallOnChainContext) {
@@ -68,7 +67,7 @@ func funcClaimAllowance(ctx wasmlib.ScFuncContext, _ *ClaimAllowanceContext) {
 }
 
 func funcDoNothing(ctx wasmlib.ScFuncContext, _ *DoNothingContext) {
-	ctx.Log(MsgDoNothing)
+	ctx.Log(msgDoNothing)
 }
 
 func funcEstimateMinStorageDeposit(ctx wasmlib.ScFuncContext, _ *EstimateMinStorageDepositContext) {
@@ -92,7 +91,7 @@ func funcInfiniteLoop(_ wasmlib.ScFuncContext, _ *InfiniteLoopContext) {
 
 func funcInit(ctx wasmlib.ScFuncContext, f *InitContext) {
 	if f.Params.Fail().Exists() {
-		ctx.Panic(MsgFailOnPurpose)
+		ctx.Panic(msgFailOnPurpose)
 	}
 }
 
@@ -192,20 +191,20 @@ func funcSplitFundsNativeTokens(ctx wasmlib.ScFuncContext, _ *SplitFundsNativeTo
 }
 
 func funcTestBlockContext1(ctx wasmlib.ScFuncContext, _ *TestBlockContext1Context) {
-	ctx.Panic(MsgCoreOnlyPanic)
+	ctx.Panic(msgCoreOnlyPanic)
 }
 
 func funcTestBlockContext2(ctx wasmlib.ScFuncContext, _ *TestBlockContext2Context) {
-	ctx.Panic(MsgCoreOnlyPanic)
+	ctx.Panic(msgCoreOnlyPanic)
 }
 
 func funcTestCallPanicFullEP(ctx wasmlib.ScFuncContext, _ *TestCallPanicFullEPContext) {
-	ctx.Log("will be calling entry point '" + testcore.FuncTestPanicFullEP + "' from full EP")
+	ctx.Log(msgWillBeCallingEntryPoint + testcore.FuncTestPanicFullEP + "' from full EP")
 	testcore.ScFuncs.TestPanicFullEP(ctx).Func.Call()
 }
 
 func funcTestCallPanicViewEPFromFull(ctx wasmlib.ScFuncContext, _ *TestCallPanicViewEPFromFullContext) {
-	ctx.Log("will be calling entry point '" + testcore.ViewTestPanicViewEP + "' from full EP")
+	ctx.Log(msgWillBeCallingEntryPoint + testcore.ViewTestPanicViewEP + "' from full EP")
 	testcore.ScFuncs.TestPanicViewEP(ctx).Func.Call()
 }
 
@@ -228,7 +227,7 @@ func funcTestEventLogGenericData(ctx wasmlib.ScFuncContext, f *TestEventLogGener
 }
 
 func funcTestPanicFullEP(ctx wasmlib.ScFuncContext, _ *TestPanicFullEPContext) {
-	ctx.Panic(MsgFullPanic)
+	ctx.Panic(msgFullPanic)
 }
 
 func funcWithdrawFromChain(ctx wasmlib.ScFuncContext, f *WithdrawFromChainContext) {
@@ -313,7 +312,7 @@ func viewGetInt(ctx wasmlib.ScViewContext, f *GetIntContext) {
 }
 
 func viewGetStringValue(ctx wasmlib.ScViewContext, _ *GetStringValueContext) {
-	ctx.Panic(MsgCoreOnlyPanic)
+	ctx.Panic(msgCoreOnlyPanic)
 	// varName := f.Params.VarName().Value()
 	// value := f.State.Strings().GetString(varName).Value()
 	// f.Results.Vars().GetString(varName).SetValue(value)
@@ -327,7 +326,7 @@ func viewInfiniteLoopView(_ wasmlib.ScViewContext, _ *InfiniteLoopViewContext) {
 }
 
 func viewJustView(ctx wasmlib.ScViewContext, _ *JustViewContext) {
-	ctx.Log(MsgJustView)
+	ctx.Log(msgJustView)
 }
 
 func viewPassTypesView(ctx wasmlib.ScViewContext, f *PassTypesViewContext) {
@@ -343,7 +342,7 @@ func viewPassTypesView(ctx wasmlib.ScViewContext, f *PassTypesViewContext) {
 }
 
 func viewTestCallPanicViewEPFromView(ctx wasmlib.ScViewContext, _ *TestCallPanicViewEPFromViewContext) {
-	ctx.Log("will be calling entry point '" + testcore.ViewTestPanicViewEP + "' from view EP")
+	ctx.Log(msgWillBeCallingEntryPoint + testcore.ViewTestPanicViewEP + "' from view EP")
 	testcore.ScFuncs.TestPanicViewEP(ctx).Func.Call()
 }
 
@@ -352,7 +351,7 @@ func viewTestChainOwnerIDView(ctx wasmlib.ScViewContext, f *TestChainOwnerIDView
 }
 
 func viewTestPanicViewEP(ctx wasmlib.ScViewContext, _ *TestPanicViewEPContext) {
-	ctx.Panic(MsgViewPanic)
+	ctx.Panic(msgViewPanic)
 }
 
 func viewTestSandboxCall(ctx wasmlib.ScViewContext, f *TestSandboxCallContext) {

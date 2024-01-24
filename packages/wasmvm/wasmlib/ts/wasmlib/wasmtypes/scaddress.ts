@@ -94,7 +94,7 @@ export function addressFromBytes(buf: Uint8Array | null): ScAddress {
             }
             break;
         default:
-            panic('invalid Address type');
+            panic('invalid Address: type');
     }
     for (let i = 0; i < buf.length; i++) {
         addr.id[i] = buf[i];

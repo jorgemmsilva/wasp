@@ -82,7 +82,7 @@ func AddressFromBytes(buf []byte) ScAddress {
 			panic("invalid Address length: NFT")
 		}
 	default:
-		panic("invalid Address type")
+		panic("invalid Address: type")
 	}
 	copy(addr.id[:], buf)
 	return addr

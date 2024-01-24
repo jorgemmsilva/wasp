@@ -41,14 +41,14 @@ func NewSoloBalances(ctx *SoloContext, agents ...*SoloAgent) *SoloBalances {
 		accounts:   make(map[string]uint64),
 	}
 	for _, agent := range agents {
-		bal.accounts[agent.AgentID().Bech32(ctx.Tx.API.ProtocolParameters().Bech32HRP())] = ctx.Balance(agent)
+		bal.accounts[agent.AgentID().Bech32(ctx.API().ProtocolParameters().Bech32HRP())] = ctx.Balance(agent)
 	}
 	bal.DumpBalances()
 	return bal
 }
 
 func (bal *SoloBalances) Add(agent *SoloAgent, balance uint64) {
-	bal.accounts[agent.AgentID().Bech32(bal.ctx.Tx.API.ProtocolParameters().Bech32HRP())] += balance
+	bal.accounts[agent.AgentID().Bech32(bal.ctx.API().ProtocolParameters().Bech32HRP())] += balance
 }
 
 // DumpBalances prints all known accounts, both L2 and L1, in debug mode.
@@ -66,7 +66,7 @@ func (bal *SoloBalances) DumpBalances() {
 		}
 	}
 	sort.Slice(accs, func(i, j int) bool {
-		return bal.findName(accs[i].Bech32(bal.ctx.Tx.API.ProtocolParameters().Bech32HRP())) < bal.findName(accs[j].Bech32(bal.ctx.Tx.API.ProtocolParameters().Bech32HRP()))
+		return bal.findName(accs[i].Bech32(bal.ctx.API().ProtocolParameters().Bech32HRP())) < bal.findName(accs[j].Bech32(bal.ctx.API().ProtocolParameters().Bech32HRP()))
 	})
 	txt := "ACCOUNTS:"
 	for _, acc := range accs {
@@ -76,7 +76,7 @@ func (bal *SoloBalances) DumpBalances() {
 		if ok {
 			l1 = ctx.Chain.Env.L1Assets(addr)
 		}
-		id := acc.Bech32(bal.ctx.Tx.API.ProtocolParameters().Bech32HRP())
+		id := acc.Bech32(bal.ctx.API().ProtocolParameters().Bech32HRP())
 		txt += fmt.Sprintf("\n%-19s %s\n\tL2: %10d", bal.findName(id), id, l2.BaseTokens)
 		hname := isc.HnameFromAgentID(acc)
 		if hname.IsNil() {
@@ -146,7 +146,7 @@ func (bal *SoloBalances) VerifyBalances(t testing.TB) {
 	require.EqualValues(t, bal.Common, ctx.Balance(ctx.CommonAccount()))
 	require.EqualValues(t, bal.Originator, ctx.Balance(ctx.Originator()))
 	for _, agent := range bal.agents {
-		expected := bal.accounts[agent.AgentID().Bech32(bal.ctx.Tx.API.ProtocolParameters().Bech32HRP())]
+		expected := bal.accounts[agent.AgentID().Bech32(bal.ctx.API().ProtocolParameters().Bech32HRP())]
 		actual := ctx.Balance(agent)
 		require.EqualValues(t, expected, actual)
 	}

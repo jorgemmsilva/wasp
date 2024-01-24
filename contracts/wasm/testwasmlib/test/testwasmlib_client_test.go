@@ -29,9 +29,10 @@ import (
 )
 
 const (
+	msgError      = "Error: "
+	mySeed        = "0xa580555e5b84a4b72bbca829b4085a4725941f3b3702525f36862762d76c21f3"
 	useCluster    = false
 	useDisposable = false
-	mySeed        = "0xa580555e5b84a4b72bbca829b4085a4725941f3b3702525f36862762d76c21f3"
 	waspAPI       = "http://localhost:19090"
 )
 
@@ -407,12 +408,12 @@ func testAPIErrorHandling(t *testing.T, ctx *wasmclient.WasmClientContext) {
 	v := testwasmlib.ScFuncs.CheckString(ctx)
 	v.Func.Call()
 	require.Error(t, ctx.Err)
-	fmt.Println("Error: " + ctx.Err.Error())
+	fmt.Println(msgError + ctx.Err.Error())
 
 	// // wait for nonexisting request id (time out)
 	// ctx.WaitRequest(wasmtypes.RequestIDFromBytes(nil))
 	// require.Error(t, ctx.Err)
-	// fmt.Println("Error: " + ctx.Err.Error())
+	// fmt.Println(msgError + ctx.Err.Error())
 
 	fmt.Println("check sign with wrong key pair")
 	keyPair := subSeed(mySeed, 1)
@@ -420,7 +421,7 @@ func testAPIErrorHandling(t *testing.T, ctx *wasmclient.WasmClientContext) {
 	f := testwasmlib.ScFuncs.Random(ctx)
 	f.Func.Post()
 	require.Error(t, ctx.Err)
-	fmt.Println("Error: " + ctx.Err.Error())
+	fmt.Println(msgError + ctx.Err.Error())
 
 	fmt.Println("check wait for request on wrong chain")
 	chainBytes := wasmtypes.ChainIDToBytes(ctx.CurrentChainID())
@@ -436,7 +437,7 @@ func testAPIErrorHandling(t *testing.T, ctx *wasmclient.WasmClientContext) {
 	require.NoError(t, ctx.Err)
 	ctx.WaitRequest(wasmtypes.RequestIDFromBytes(nil))
 	require.Error(t, ctx.Err)
-	fmt.Println("Error: " + ctx.Err.Error())
+	fmt.Println(msgError + ctx.Err.Error())
 }
 
 func TestAPIAsyncInvoke(t *testing.T) {

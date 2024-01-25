@@ -43,7 +43,8 @@ func creditToAccount(
 	}
 
 	if fts.BaseTokens > 0 {
-		setBaseTokens(v)(state, accountKey, getBaseTokens(v)(state, accountKey, baseToken)+fts.BaseTokens, baseToken)
+		incomingTokensFullDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(fts.BaseTokens, baseToken.Decimals)
+		creditToAccountFullDecimals(v, state, accountKey, incomingTokensFullDecimals)
 	}
 	for id, amount := range fts.NativeTokens {
 		if amount.Sign() == 0 {
@@ -109,14 +110,16 @@ func debitFromAccount(
 		return true
 	}
 
+	var baseTokensToSet *big.Int
 	// first check, then mutate
 	balance := isc.NewEmptyFungibleTokens()
 	if debit.BaseTokens > 0 {
-		baseTokens := getBaseTokens(v)(state, accountKey, baseToken)
-		if debit.BaseTokens > baseTokens {
+		baseTokensToDebit := util.MustBaseTokensDecimalsToEthereumDecimalsExact(debit.BaseTokens, baseToken.Decimals)
+		balance := GetBaseTokensFullDecimals(v)(state, accountKey)
+		if baseTokensToDebit.Cmp(balance) > 0 {
 			return false
 		}
-		balance.BaseTokens = baseTokens
+		baseTokensToSet = new(big.Int).Sub(balance, baseTokensToDebit)
 	}
 	for id, amount := range debit.NativeTokens {
 		if amount.Sign() == 0 {
@@ -132,8 +135,8 @@ func debitFromAccount(
 		balance.AddNativeTokens(id, ntBalance)
 	}
 
-	if debit.BaseTokens > 0 {
-		setBaseTokens(v)(state, accountKey, balance.BaseTokens-debit.BaseTokens, baseToken)
+	if baseTokensToSet != nil {
+		setBaseTokensFullDecimals(v)(state, accountKey, baseTokensToSet)
 	}
 	for id, amount := range debit.NativeTokens {
 		setNativeTokenAmount(state, accountKey, id, new(big.Int).Sub(balance.NativeTokens.ValueOrBigInt0(id), amount))

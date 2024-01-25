@@ -15,7 +15,6 @@ import (
 
 type (
 	getBaseTokensFn             func(state kv.KVStoreReader, accountKey kv.Key, baseTokentokenInfo *api.InfoResBaseToken) iotago.BaseToken
-	setBaseTokensFn             func(state kv.KVStore, accountKey kv.Key, amount iotago.BaseToken, baseTokentokenInfo *api.InfoResBaseToken)
 	GetBaseTokensFullDecimalsFn func(state kv.KVStoreReader, accountKey kv.Key) *big.Int
 	setBaseTokensFullDecimalsFn func(state kv.KVStore, accountKey kv.Key, amount *big.Int)
 )
@@ -26,15 +25,6 @@ func getBaseTokens(v isc.SchemaVersion) getBaseTokensFn {
 		return getBaseTokensDEPRECATED
 	default:
 		return getBaseTokensNEW
-	}
-}
-
-func setBaseTokens(v isc.SchemaVersion) setBaseTokensFn {
-	switch v {
-	case 0:
-		return setBaseTokensDEPRECATED
-	default:
-		return setBaseTokensNEW
 	}
 }
 
@@ -102,4 +92,8 @@ func AdjustAccountBaseTokens(
 
 func GetBaseTokensBalance(v isc.SchemaVersion, state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID, baseToken *api.InfoResBaseToken) iotago.BaseToken {
 	return getBaseTokens(v)(state, accountKey(agentID, chainID), baseToken)
+}
+
+func GetBaseTokensBalanceFullDecimals(v isc.SchemaVersion, state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID) *big.Int {
+	return GetBaseTokensFullDecimals(v)(state, accountKey(agentID, chainID))
 }

@@ -52,7 +52,7 @@ func (f *FungibleTokens) AddBaseTokens(amount iotago.BaseToken) *FungibleTokens 
 
 func (f *FungibleTokens) AddNativeTokens(nativeTokenID iotago.NativeTokenID, amount *big.Int) *FungibleTokens {
 	if n, ok := f.NativeTokens[nativeTokenID]; ok {
-		n.Add(amount, amount)
+		f.NativeTokens[nativeTokenID] = new(big.Int).Add(n, amount)
 	} else {
 		f.NativeTokens[nativeTokenID] = new(big.Int).Set(amount)
 	}
@@ -67,12 +67,12 @@ func (f *FungibleTokens) Clone() *FungibleTokens {
 	return NewFungibleTokens(f.BaseTokens, f.NativeTokens)
 }
 
-func (a *FungibleTokens) String() string {
-	ret := fmt.Sprintf("base tokens: %d", a.BaseTokens)
-	if len(a.NativeTokens) > 0 {
-		ret += fmt.Sprintf(", tokens (%d):", len(a.NativeTokens))
+func (f *FungibleTokens) String() string {
+	ret := fmt.Sprintf("base tokens: %d", f.BaseTokens)
+	if len(f.NativeTokens) > 0 {
+		ret += fmt.Sprintf(", tokens (%d):", len(f.NativeTokens))
 	}
-	for id, n := range a.NativeTokens {
+	for id, n := range f.NativeTokens {
 		ret += fmt.Sprintf("\n       %s: %s", id.String(), n.Text(10))
 	}
 	return ret

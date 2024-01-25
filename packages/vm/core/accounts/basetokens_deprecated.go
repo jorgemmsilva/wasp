@@ -18,10 +18,6 @@ func getBaseTokensDEPRECATED(state kv.KVStoreReader, accountKey kv.Key, _ *api.I
 	return iotago.BaseToken(lo.Must(codec.Uint64.Decode(state.Get(BaseTokensKey(accountKey)), 0)))
 }
 
-func setBaseTokensDEPRECATED(state kv.KVStore, accountKey kv.Key, amount iotago.BaseToken, _ *api.InfoResBaseToken) {
-	state.Set(BaseTokensKey(accountKey), codec.Uint64.Encode(uint64(amount)))
-}
-
 const deprecatedBaseTokenDecimals = 6 // all deprecated state was saved with 6 decimals, so it's ok to hardcode this
 
 func getBaseTokensFullDecimalsDEPRECATED(state kv.KVStoreReader, accountKey kv.Key) *big.Int {

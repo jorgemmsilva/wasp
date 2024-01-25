@@ -32,7 +32,6 @@ import (
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
-	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/pipe"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
@@ -296,17 +295,13 @@ func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockN
 		return nil, err
 	}
 	accountsPartition := subrealm.NewReadOnly(chainState, kv.Key(accounts.Contract.Hname().Bytes()))
-	tokenInfo := e.backend.BaseTokenInfo()
-	baseTokens := accounts.GetBaseTokensBalance(
+	baseTokens := accounts.GetBaseTokensBalanceFullDecimals(
 		chainState.SchemaVersion(),
 		accountsPartition,
 		isc.NewEthereumAddressAgentID(*e.backend.ISCChainID(), address),
 		*e.backend.ISCChainID(),
-		tokenInfo,
 	)
-	ether, _ := util.BaseTokensDecimalsToEthereumDecimals(baseTokens, tokenInfo.Decimals)
-	// discard remainder
-	return ether, nil
+	return baseTokens, nil
 }
 
 func (e *EVMChain) Code(address common.Address, blockNumberOrHash *rpc.BlockNumberOrHash) ([]byte, error) {

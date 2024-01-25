@@ -513,8 +513,8 @@ func TestAccountBalances(t *testing.T) {
 		accountSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.MustAccountOutput()))
 
 		require.EqualValues(t,
-			chainOutputs.AnchorOutput.BaseTokenAmount(),
-			anchorSD+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(senderAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
+			chainOutputs.MustAccountOutput().BaseTokenAmount(),
+			accountSD+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(senderAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
 		)
 
 		totalGasFeeCharged += bi.GasFeeCharged

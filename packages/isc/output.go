@@ -94,6 +94,13 @@ func (c *ChainOutputs) AccountOutput() (iotago.OutputID, *iotago.AccountOutput, 
 	return c.accountOutputID, c.accountOutput, c.accountOutput != nil
 }
 
+func (c *ChainOutputs) Map(f func(iotago.TxEssenceOutput)) {
+	f(c.AnchorOutput)
+	if c.accountOutput != nil {
+		f(c.accountOutput)
+	}
+}
+
 func (c *ChainOutputs) MustAccountOutput() *iotago.AccountOutput {
 	if c.accountOutput == nil {
 		panic("expected account output != nil")
@@ -142,9 +149,10 @@ func (c *ChainOutputs) L1API(l1 iotago.APIProvider) iotago.API {
 }
 
 func (c *ChainOutputs) StorageDeposit(l1 iotago.APIProvider) iotago.BaseToken {
-	sd := lo.Must(c.L1API(l1).StorageScoreStructure().MinDeposit(c.AnchorOutput))
-	if c.HasAccountOutput() {
-		sd += c.accountOutput.Amount
+	api := c.L1API(l1)
+	sd := lo.Must(api.StorageScoreStructure().MinDeposit(c.AnchorOutput))
+	if c.accountOutput != nil {
+		sd += lo.Must(api.StorageScoreStructure().MinDeposit(c.accountOutput))
 	}
 	return sd
 }

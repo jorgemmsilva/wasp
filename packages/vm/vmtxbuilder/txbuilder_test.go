@@ -58,11 +58,15 @@ func (m *mockAccountContractRead) adjustSD(assets *isc.FungibleTokens) *isc.Fung
 	return assets
 }
 
-func newMockAccountsContractRead(anchor *iotago.AnchorOutput) *mockAccountContractRead {
-	sd := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(anchor))
-	assets := isc.NewFungibleTokens(anchor.BaseTokenAmount()-sd, nil)
+func newMockAccountsContractRead(anchor *iotago.AnchorOutput, account *iotago.AccountOutput) *mockAccountContractRead {
+	anchorSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(anchor))
+	l2 := anchor.BaseTokenAmount() - anchorSD
+	if account != nil {
+		accountSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(account))
+		l2 += account.BaseTokenAmount() - accountSD
+	}
 	return &mockAccountContractRead{
-		assets:             assets,
+		assets:             isc.NewFungibleTokens(l2, nil),
 		nativeTokenOutputs: make(map[iotago.FoundryID]*iotago.BasicOutput),
 	}
 }
@@ -80,7 +84,6 @@ func TestTxBuilderBasic(t *testing.T) {
 	addr := tpkg.RandEd25519Address()
 	anchorID := testiotago.RandAnchorID()
 	anchor := &iotago.AnchorOutput{
-		Amount:   initialTotalBaseTokens,
 		AnchorID: anchorID,
 		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
@@ -97,9 +100,11 @@ func TestTxBuilderBasic(t *testing.T) {
 		},
 	}
 	anchorOutputID := tpkg.RandOutputID(0)
+	anchor.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(anchor))
 
 	accountID := testiotago.RandAccountID()
 	account := &iotago.AccountOutput{
+		Amount:         initialTotalBaseTokens - anchor.Amount,
 		AccountID:      accountID,
 		FoundryCounter: 0,
 		UnlockConditions: iotago.AccountOutputUnlockConditions{
@@ -109,14 +114,10 @@ func TestTxBuilderBasic(t *testing.T) {
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	var err error
-	account.Amount, err = testutil.L1API.StorageScoreStructure().MinDeposit(account)
-	require.NoError(t, err)
-	anchor.Amount -= account.Amount
 	accountOutputID := tpkg.RandOutputID(1)
 
 	t.Run("deposits", func(t *testing.T) {
-		mockedAccounts := newMockAccountsContractRead(anchor)
+		mockedAccounts := newMockAccountsContractRead(anchor, account)
 		txb := NewAnchorTransactionBuilder(
 			isc.NewChainOutputs(
 				anchor,
@@ -150,7 +151,11 @@ func TestTxBuilderBasic(t *testing.T) {
 
 		essence = buildTxEssence(txb, mockedAccounts)
 		require.Len(t, essence.Outputs, 2)
-		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount())
+		require.EqualValues(t, lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(essence.Outputs[0])), essence.Outputs[0].BaseTokenAmount())
+		require.EqualValues(t,
+			initialTotalBaseTokens+req1.Output().BaseTokenAmount(),
+			essence.Outputs[0].BaseTokenAmount()+essence.Outputs[1].BaseTokenAmount(),
+		)
 
 		// consume a request that sends 1Mi, 1 NFT, and 4 native tokens
 		nftID := tpkg.RandNFTAddress().NFTID()
@@ -172,7 +177,10 @@ func TestTxBuilderBasic(t *testing.T) {
 
 		essence = buildTxEssence(txb, mockedAccounts)
 		require.Len(t, essence.Outputs, 4) // 1 anchor AO, 1 account AO, 1 NFT internal Output, 1 NativeTokens internal outputs
-		require.EqualValues(t, essence.Outputs[0].BaseTokenAmount(), anchor.BaseTokenAmount()+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount()-totalSDBaseTokensUsedToSplitAssets)
+		require.EqualValues(t,
+			initialTotalBaseTokens+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount(),
+			essence.Outputs[0].BaseTokenAmount()+essence.Outputs[1].BaseTokenAmount()+essence.Outputs[2].BaseTokenAmount()+essence.Outputs[3].BaseTokenAmount(),
+		)
 	})
 }
 
@@ -181,7 +189,6 @@ func TestTxBuilderConsistency(t *testing.T) {
 	addr := tpkg.RandEd25519Address()
 	anchorID := testiotago.RandAnchorID()
 	anchor := &iotago.AnchorOutput{
-		Amount:   initialTotalBaseTokens,
 		AnchorID: anchorID,
 		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
@@ -198,9 +205,11 @@ func TestTxBuilderConsistency(t *testing.T) {
 		},
 	}
 	anchorOutputID := tpkg.RandOutputID(0)
+	anchor.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(anchor))
 
 	accountID := testiotago.RandAccountID()
 	account := &iotago.AccountOutput{
+		Amount:         initialTotalBaseTokens - anchor.Amount,
 		AccountID:      accountID,
 		FoundryCounter: 0,
 		UnlockConditions: iotago.AccountOutputUnlockConditions{
@@ -210,12 +219,10 @@ func TestTxBuilderConsistency(t *testing.T) {
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	account.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(account))
-	anchor.Amount -= account.Amount
 	accountOutputID := tpkg.RandOutputID(1)
 
 	initTest := func(numTokenIDs int) (*AnchorTransactionBuilder, *mockAccountContractRead, []iotago.NativeTokenID) {
-		mockedAccounts := newMockAccountsContractRead(anchor)
+		mockedAccounts := newMockAccountsContractRead(anchor, account)
 		txb := NewAnchorTransactionBuilder(
 			isc.NewChainOutputs(
 				anchor,
@@ -403,7 +410,6 @@ func TestFoundries(t *testing.T) {
 	addr := tpkg.RandEd25519Address()
 	anchorID := testiotago.RandAnchorID()
 	anchor := &iotago.AnchorOutput{
-		Amount:   initialTotalBaseTokens,
 		AnchorID: anchorID,
 		UnlockConditions: iotago.AnchorOutputUnlockConditions{
 			&iotago.StateControllerAddressUnlockCondition{Address: addr},
@@ -420,9 +426,11 @@ func TestFoundries(t *testing.T) {
 		},
 	}
 	anchorOutputID := tpkg.RandOutputID(0)
+	anchor.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(anchor))
 
 	accountID := testiotago.RandAccountID()
 	account := &iotago.AccountOutput{
+		Amount:         initialTotalBaseTokens - anchor.Amount,
 		AccountID:      accountID,
 		FoundryCounter: 0,
 		UnlockConditions: iotago.AccountOutputUnlockConditions{
@@ -432,8 +440,6 @@ func TestFoundries(t *testing.T) {
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
 	}
-	account.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(account))
-	anchor.Amount -= account.Amount
 	accountOutputID := tpkg.RandOutputID(1)
 
 	var nativeTokenIDs []iotago.NativeTokenID
@@ -442,7 +448,7 @@ func TestFoundries(t *testing.T) {
 
 	var mockedAccounts *mockAccountContractRead
 	initTest := func() {
-		mockedAccounts = newMockAccountsContractRead(anchor)
+		mockedAccounts = newMockAccountsContractRead(anchor, account)
 		txb = NewAnchorTransactionBuilder(
 			isc.NewChainOutputs(
 				anchor,

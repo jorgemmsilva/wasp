@@ -175,6 +175,8 @@ func NewChainOriginTransaction(
 	l1API := l1APIProvider.APIForSlot(creationSlot)
 	anchorSD := lo.Must(l1API.StorageScoreStructure().MinDeposit(anchorOutput))
 
+	// the account output does not exist yet (will be created on the first VM run),
+	// but we still must consider its SD
 	accountSD := accountOutputSD(l1API)
 	minAmount := anchorSD + accountSD + governance.DefaultMinBaseTokensOnCommonAccount
 	if anchorOutput.Amount < minAmount {

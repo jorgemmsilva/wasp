@@ -30,23 +30,17 @@ type TransactionTotals struct {
 
 // sumInputs sums up all assets in inputs
 func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
-	sd := lo.Must(txb.L1APIForInputs().StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
-	totalL2 := txb.inputs.AnchorOutput.BaseTokenAmount() - sd
-
-	if _, out, ok := txb.inputs.AccountOutput(); ok {
-		accountSD := lo.Must(txb.L1APIForInputs().StorageScoreStructure().MinDeposit(out))
-		if out.BaseTokenAmount() != accountSD {
-			panic("excess base tokens in account output")
-		}
-		sd += accountSD
-	}
-
 	totals := &TransactionTotals{
-		NativeTokenBalances:             make(iotago.NativeTokenSum),
-		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     totalL2,
-		TotalBaseTokensInStorageDeposit: sd,
+		NativeTokenBalances:      make(iotago.NativeTokenSum),
+		TokenCirculatingSupplies: make(iotago.NativeTokenSum),
 	}
+
+	txb.inputs.Map(func(out iotago.TxEssenceOutput) {
+		sd := lo.Must(txb.L1APIForInputs().StorageScoreStructure().MinDeposit(out))
+		totals.TotalBaseTokensInStorageDeposit += sd
+		totals.TotalBaseTokensInL2Accounts += out.BaseTokenAmount() - sd
+	})
+
 	// sum over native tokens which require inputs
 	for id, ntb := range txb.balanceNativeTokens {
 		if !ntb.requiresExistingAccountingUTXOAsInput() {
@@ -94,20 +88,17 @@ func (txb *AnchorTransactionBuilder) sumInputs() *TransactionTotals {
 
 // sumOutputs sums all balances in outputs
 func (txb *AnchorTransactionBuilder) sumOutputs() *TransactionTotals {
-	sd := lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(txb.resultAnchorOutput))
-	totalL2 := txb.resultAnchorOutput.BaseTokenAmount() - sd
-
+	anchorSD := lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(txb.resultAnchorOutput))
 	accountSD := lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(txb.resultAccountOutput))
-	if txb.resultAccountOutput.BaseTokenAmount() != accountSD {
-		panic("excess base tokens in account output")
+	if txb.resultAnchorOutput.BaseTokenAmount() != anchorSD {
+		panic("excess base tokens in anchor output")
 	}
-	sd += accountSD
 
 	totals := &TransactionTotals{
 		NativeTokenBalances:             make(iotago.NativeTokenSum),
 		TokenCirculatingSupplies:        make(iotago.NativeTokenSum),
-		TotalBaseTokensInL2Accounts:     totalL2,
-		TotalBaseTokensInStorageDeposit: sd,
+		TotalBaseTokensInL2Accounts:     txb.resultAccountOutput.Amount - accountSD,
+		TotalBaseTokensInStorageDeposit: anchorSD + accountSD,
 		SentOutBaseTokens:               0,
 		SentOutTokenBalances:            make(iotago.NativeTokenSum),
 	}

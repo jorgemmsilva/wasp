@@ -98,9 +98,8 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	chainOutputs = ch.GetChainOutputsFromL1()
 	anchorSD = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.AnchorOutput))
 	accountSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(chainOutputs.MustAccountOutput()))
-	require.EqualValues(t, accountSD, chainOutputs.MustAccountOutput().BaseTokenAmount())
-
-	ch.AssertL2TotalBaseTokens(chainOutputs.AnchorOutput.Amount - anchorSD)
+	require.EqualValues(t, anchorSD, chainOutputs.AnchorOutput.BaseTokenAmount())
+	ch.AssertL2TotalBaseTokens(chainOutputs.MustAccountOutput().Amount - accountSD)
 	ch.AssertControlAddresses()
 }
 

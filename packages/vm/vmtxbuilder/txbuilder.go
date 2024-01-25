@@ -300,25 +300,19 @@ func (txb *AnchorTransactionBuilder) AccountID() iotago.AccountID {
 	return util.AccountIDFromAccountOutput(out, id)
 }
 
-func (txb *AnchorTransactionBuilder) getSDInChainOutputs() iotago.BaseToken {
-	ret := lo.Must(txb.L1APIForInputs().StorageScoreStructure().MinDeposit(txb.inputs.AnchorOutput))
-	if _, out, ok := txb.inputs.AccountOutput(); ok {
-		ret += out.Amount
-	}
-	return ret
-}
-
 func (txb *AnchorTransactionBuilder) ChangeInSD(
 	stateMetadata []byte,
 	creationSlot iotago.SlotIndex,
 ) (iotago.BaseToken, iotago.BaseToken, int64) {
+	oldSD := txb.inputs.StorageDeposit(txb.l1APIProvider)
+
 	mockAnchor, mockAccount := txb.CreateAnchorAndAccountOutputs(
 		stateMetadata,
 		creationSlot,
 		txb.inputs.AnchorOutput.Mana,
 	)
-	newSD := lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(mockAnchor)) + mockAccount.Amount
-	oldSD := txb.getSDInChainOutputs()
+	newSD := lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(mockAnchor)) + lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(mockAccount))
+
 	return oldSD, newSD, int64(oldSD) - int64(newSD)
 }
 
@@ -332,7 +326,6 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		anchorID = iotago.AnchorIDFromOutputID(txb.inputs.AnchorOutputID)
 	}
 	anchorOutput := &iotago.AnchorOutput{
-		Amount:     0,
 		AnchorID:   anchorID,
 		StateIndex: txb.inputs.AnchorOutput.StateIndex + 1,
 		UnlockConditions: iotago.AnchorOutputUnlockConditions{
@@ -348,7 +341,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		anchorOutput.Features.Upsert(&iotago.MetadataFeature{Entries: metadata.Entries})
 		anchorOutput.Features.Sort()
 	}
-	anchorOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(anchorOutput))
+	anchorOutput.Amount = lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(anchorOutput))
 
 	accountOutput := &iotago.AccountOutput{
 		FoundryCounter: txb.nextFoundryCounter(),
@@ -365,7 +358,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 			accountOutput.AccountID = iotago.AccountIDFromOutputID(id)
 		}
 	}
-	accountOutput.Amount = lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(accountOutput))
+	accountOutput.Amount = txb.accountsView.TotalFungibleTokens().BaseTokens + lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(accountOutput))
 
 	return anchorOutput, accountOutput
 }

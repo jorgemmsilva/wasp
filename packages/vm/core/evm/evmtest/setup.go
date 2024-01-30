@@ -262,50 +262,16 @@ func (e *SoloChainEnv) DeployContract(creator *ecdsa.PrivateKey, abiJSON string,
 	}
 }
 
-func (e *SoloChainEnv) registerERC20NativeToken(foundryOwner *cryptolib.KeyPair, token evm.ERC20NativeTokenParams) error {
+func (e *SoloChainEnv) registerERC20NativeToken(
+	foundryOwner *cryptolib.KeyPair,
+	params evm.ERC20NativeTokenParams,
+) error {
 	_, err := e.Chain.PostRequestOffLedger(
-		solo.NewCallParams(evm.FuncRegisterERC20NativeToken.Message(token)).
+		solo.NewCallParams(evm.FuncRegisterERC20NativeToken.Message(params)).
 			WithMaxAffordableGasBudget(),
 		foundryOwner,
 	)
 	return err
-}
-
-func (e *SoloChainEnv) registerERC20ExternalNativeToken(
-	fromChain *solo.Chain,
-	token evm.ERC20NativeTokenParams,
-) (ret common.Address, err error) {
-	_, err = fromChain.PostRequestOffLedger(
-		solo.NewCallParams(evm.FuncRegisterERC20NativeTokenOnRemoteChain.Message(evm.RegisterERC20NativeTokenOnRemoteChainRequest{
-			TargetChain: e.Chain.ChainID.AsAddress(),
-			Token:       token,
-		})).
-			// to cover sd and gas fee for the 'FuncRegisterERC20ExternalNativeToken' func call in 'FuncRegisterERC20NativeTokenOnRemoteChain'
-			WithAllowance(isc.NewAssetsBaseTokens(iotago.BaseToken(1000*gas.LimitsDefault.MinGasPerRequest))).
-			WithGasBudget(10*gas.LimitsDefault.MinGasPerRequest),
-		fromChain.OriginatorPrivateKey)
-	if err != nil {
-		return ret, err
-	}
-
-	foundryOutput, err := fromChain.GetFoundryOutput(token.FoundrySN)
-	require.NoError(e.t, err)
-	nativeTokenID := foundryOutput.MustFoundryID()
-
-	if !e.Chain.WaitUntil(func() bool {
-		res, err2 := e.Chain.CallView(evm.ViewGetERC20ExternalNativeTokenAddress.Message(nativeTokenID))
-		require.NoError(e.t, err2)
-		addr, err3 := evm.ViewGetERC20ExternalNativeTokenAddress.Output.Decode(res)
-		require.NoError(e.t, err3)
-		if addr == nil {
-			return false
-		}
-		ret = *addr
-		return true
-	}) {
-		require.FailNow(e.t, "could not get ERC20 address on target chain")
-	}
-	return ret, err
 }
 
 func (e *SoloChainEnv) registerERC721NFTCollection(collectionOwner *cryptolib.KeyPair, collectionID iotago.NFTID) error {

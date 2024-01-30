@@ -335,7 +335,6 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		Features: iotago.AnchorOutputFeatures{
 			&iotago.StateMetadataFeature{Entries: iotago.StateMetadataFeatureEntries{"": stateMetadata}},
 		},
-		Mana: totalManaInInputs,
 	}
 	if metadata := txb.inputs.AnchorOutput.FeatureSet().Metadata(); metadata != nil {
 		anchorOutput.Features.Upsert(&iotago.MetadataFeature{Entries: metadata.Entries})
@@ -351,6 +350,7 @@ func (txb *AnchorTransactionBuilder) CreateAnchorAndAccountOutputs(
 		Features: iotago.AccountOutputFeatures{
 			&iotago.SenderFeature{Address: anchorID.ToAddress()},
 		},
+		Mana: totalManaInInputs,
 	}
 	if id, out, ok := txb.inputs.AccountOutput(); ok {
 		accountOutput.AccountID = out.AccountID

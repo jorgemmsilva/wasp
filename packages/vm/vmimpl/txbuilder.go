@@ -8,6 +8,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
@@ -37,7 +38,15 @@ func (vmctx *vmContext) CreationSlot() iotago.SlotIndex {
 
 func (vmctx *vmContext) BuildTransactionEssence(stateCommitment *state.L1Commitment, assertTxbuilderBalanced bool) (*iotago.Transaction, iotago.Unlocks) {
 	stateMetadata := vmctx.stateMetadata(stateCommitment)
-	essence, unlocks := vmctx.txbuilder.BuildTransactionEssence(stateMetadata, vmctx.CreationSlot())
+	essence, unlocks, err := vmctx.txbuilder.BuildTransactionEssence(
+		stateMetadata,
+		vmctx.CreationSlot(),
+		vmctx.task.AllotMana,
+		vmctx.task.BlockIssuerKey,
+	)
+	if err != nil {
+		panic(vm.ErrInsufficientManaForAllotment)
+	}
 	if assertTxbuilderBalanced {
 		vmctx.txbuilder.MustBalanced()
 	}

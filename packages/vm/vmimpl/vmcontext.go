@@ -174,6 +174,7 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	oldSD, newSD, changeInSD := vmctx.txbuilder.ChangeInSD(
 		vmctx.stateMetadata(state.L1CommitmentNil),
 		vmctx.CreationSlot(),
+		vmctx.task.BlockIssuerKey,
 	)
 	if changeInSD != 0 {
 		vmctx.task.Log.LogDebugf("adjusting commonAccount because AO SD cost changed, change:%d", oldSD, newSD, changeInSD)

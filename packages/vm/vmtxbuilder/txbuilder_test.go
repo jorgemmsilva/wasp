@@ -72,9 +72,12 @@ func newMockAccountsContractRead(anchor *iotago.AnchorOutput, account *iotago.Ac
 }
 
 func buildTxEssence(txb *AnchorTransactionBuilder, mockedAccounts *mockAccountContractRead) *iotago.Transaction {
-	_, _, changeInSD := txb.ChangeInSD(dummyStateMetadata, 0)
+	_, _, changeInSD := txb.ChangeInSD(dummyStateMetadata, 0, nil)
 	mockedAccounts.changeInSD = changeInSD
-	essence, _ := txb.BuildTransactionEssence(dummyStateMetadata, 0)
+	essence, _, err := txb.BuildTransactionEssence(dummyStateMetadata, 0, 0, nil)
+	if err != nil {
+		panic(err)
+	}
 	txb.MustBalanced()
 	return essence
 }

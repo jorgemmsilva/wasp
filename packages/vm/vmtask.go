@@ -26,6 +26,10 @@ type VMTask struct {
 	Timestamp          time.Time
 	Entropy            hashing.HashValue
 	ValidatorFeeTarget isc.AgentID
+	// if AllotMana > 0, the resulting tx will include a BlockIssuanceCreditInput and mana allotment for the chain's AccountID.
+	AllotMana iotago.Mana
+	// if BlockIssuerKey != nil, the resulting account output will include a BlockIssuerFeature
+	BlockIssuerKey iotago.BlockIssuerKey
 	// If EstimateGasMode is enabled, signature and nonce checks will be skipped
 	EstimateGasMode bool
 	// If EVMTracer is set, all requests will be executed normally up until the EVM

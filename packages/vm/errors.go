@@ -15,6 +15,7 @@ var (
 	ErrCantModifySupplyOfTheToken           = coreerrors.Register("supply of the token is not controlled by the chain").Create()
 	ErrNativeTokenSupplyOutOffBounds        = coreerrors.Register("token supply is out of bounds").Create()
 	ErrFatalTxBuilderNotBalanced            = coreerrors.Register("fatal: tx builder is not balanced").Create()
+	ErrInsufficientManaForAllotment         = coreerrors.Register("fatal: insufficient mana for allotment").Create()
 	ErrInconsistentL2LedgerWithL1TxBuilder  = coreerrors.Register("fatal: L2 ledger is not consistent with the L1 tx builder").Create()
 	ErrCantDestroyFoundryBeingCreated       = coreerrors.Register("can't destroy foundry which is being created").Create()
 

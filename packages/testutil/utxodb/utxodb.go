@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/builder"
@@ -289,6 +291,10 @@ func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 			tpkg.RandUint64(math.MaxUint64),
 			tpkg.RandMana(iotago.MaxMana),
 		),
+		BlockIssuanceCreditInputSet: vm.BlockIssuanceCreditInputSet{},
+	}
+	for _, bic := range lo.Must(tx.Transaction.BICInputs()) {
+		resolvedInputs.BlockIssuanceCreditInputSet[bic.AccountID] = 0
 	}
 
 	unlockedIdentities, err := novaVM.ValidateUnlocks(tx, resolvedInputs)

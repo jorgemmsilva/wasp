@@ -309,7 +309,7 @@ func (txb *AnchorTransactionBuilder) ChangeInSD(
 	mockAnchor, mockAccount := txb.CreateAnchorAndAccountOutputs(
 		stateMetadata,
 		creationSlot,
-		txb.inputs.AnchorOutput.Mana,
+		0, // mana is not relevant here
 	)
 	newSD := lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(mockAnchor)) + lo.Must(txb.L1API().StorageScoreStructure().MinDeposit(mockAccount))
 

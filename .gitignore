@@ -35,6 +35,7 @@ wal/
 *.trie
 *.snapshot
 ./snapshot
+!packages/util/l1starter/docker-network.snapshot
 ./gascalibration
 tests_output.log
 *__debug_bin

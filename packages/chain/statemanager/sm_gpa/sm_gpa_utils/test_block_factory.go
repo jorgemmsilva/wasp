@@ -152,7 +152,7 @@ func (bfT *BlockFactory) GetNextBlock(
 
 	consumedAnchorOutput := bfT.GetChainOutputs(commitment).AnchorOutput
 
-	newFeatures := lo.Map(consumedAnchorOutput.Features, func(f iotago.Feature, i int) iotago.Feature {
+	newFeatures := lo.Map(consumedAnchorOutput.Features, func(f iotago.AnchorOutputFeature, i int) iotago.AnchorOutputFeature {
 		_, ok := f.(*iotago.StateMetadataFeature)
 		if ok {
 			return &iotago.StateMetadataFeature{

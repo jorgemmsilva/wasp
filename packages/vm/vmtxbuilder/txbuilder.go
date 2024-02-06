@@ -509,6 +509,19 @@ func (txb *AnchorTransactionBuilder) outputsAreFull() bool {
 	return txb.numOutputs() >= iotago.MaxOutputsCount
 }
 
+func specificFeaturesFromGenericFeatures[T iotago.Feature](feats []iotago.Feature) (iotago.Features[T], error) {
+	ret := make(iotago.Features[T], len(feats))
+	for i, f := range feats {
+		castedFeature, ok := f.(T)
+		if !ok {
+			return nil, fmt.Errorf("unable to cast feature on index %d to type T", i)
+		}
+		ret[i] = castedFeature
+	}
+
+	return ret, nil
+}
+
 func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAnchorID iotago.AnchorID) iotago.Output {
 	out := req.Output().Clone()
 
@@ -529,13 +542,13 @@ func retryOutputFromOnLedgerRequest(req isc.OnLedgerRequest, chainAnchorID iotag
 	// cleanup features and unlock conditions
 	switch o := out.(type) {
 	case *iotago.BasicOutput:
-		o.Features = features
+		o.Features = lo.Must(specificFeaturesFromGenericFeatures[iotago.BasicOutputFeature](features))
 		o.UnlockConditions = iotago.BasicOutputUnlockConditions{unlock}
 	case *iotago.NFTOutput:
-		o.Features = features
+		o.Features = lo.Must(specificFeaturesFromGenericFeatures[iotago.NFTOutputFeature](features))
 		o.UnlockConditions = iotago.NFTOutputUnlockConditions{unlock}
 	case *iotago.AnchorOutput:
-		o.Features = features
+		o.Features = lo.Must(specificFeaturesFromGenericFeatures[iotago.AnchorOutputFeature](features))
 		o.UnlockConditions = iotago.AnchorOutputUnlockConditions{unlock}
 	default:
 		panic("unexpected output type")

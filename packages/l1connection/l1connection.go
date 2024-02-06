@@ -10,21 +10,18 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/isc"
 )
 
 const (
 	pollConfirmedBlockInterval = 200 * time.Millisecond
-	promoteBlockCooldown       = 5 * time.Second
-
-	// fundsFromFaucetAmount is how many base tokens are returned from the faucet.
-	fundsFromFaucetAmount = 1000 * isc.Million
 )
 
 type Config struct {
@@ -36,7 +33,7 @@ type Config struct {
 type Client interface {
 	// requests funds from faucet, waits for confirmation
 	RequestFunds(addr iotago.Address, timeout ...time.Duration) error
-	// sends a tx (including tipselection and local PoW if necessary) and waits for confirmation
+	// sends a tx (does tipselection) and waits for confirmation
 	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, timeout ...time.Duration) (iotago.BlockID, error)
 	// returns the outputs owned by a given address
 	OutputMap(myAddress iotago.Address, timeout ...time.Duration) (iotago.OutputSet, error)
@@ -140,7 +137,7 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	return result, nil
 }
 
-// postBlock sends a block (including tipselection and local PoW if necessary).
+// postBlock sends a block to L1
 func (c *l1client) postBlock(ctx context.Context, block *iotago.Block) (iotago.BlockID, error) {
 	blockID, err := c.nodeAPIClient.SubmitBlock(ctx, block)
 	if err != nil {
@@ -152,18 +149,35 @@ func (c *l1client) postBlock(ctx context.Context, block *iotago.Block) (iotago.B
 	return blockID, nil
 }
 
-// PostTx sends a tx (including tipselection and local PoW if necessary).
+// PostTx sends a tx (including tipselection).
 func (c *l1client) postTx(ctx context.Context, tx *iotago.SignedTransaction) (iotago.BlockID, error) {
-	// Build a Block and post it.
-	block, err := builder.NewBasicBlockBuilder(c.nodeAPIClient.LatestAPI()).Payload(tx).Build()
+	bi, err := c.nodeAPIClient.BlockIssuance(ctx)
 	if err != nil {
-		return iotago.EmptyBlockID, fmt.Errorf("failed to build block: %w", err)
+		return iotago.EmptyBlockID, fmt.Errorf("failed to query block issuance info: %w", err)
 	}
 
-	blockID, err := c.postBlock(ctx, block)
+	// Build a Block and post it.
+	// l1API := c.nodeAPIClient.LatestAPI()
+	// block, err := builder.NewBasicBlockBuilder(l1API).
+	// 	Payload(tx).
+	// 	StrongParents(bi.StrongParents).
+	// 	WeakParents(bi.WeakParents).
+	// 	SlotCommitmentID(bi.LatestCommitment.MustID()).
+	// 	ProtocolVersion(l1API.Version()).
+	// 	Build()
+	// if err != nil {
+	// 	return iotago.EmptyBlockID, fmt.Errorf("failed to build block: %w", err)
+	// }
+
+	rsp, err := lo.Must(c.nodeAPIClient.BlockIssuer(ctx)).SendPayload(ctx, tx, bi.LatestCommitment.MustID())
 	if err != nil {
-		return iotago.EmptyBlockID, err
+		return iotago.EmptyBlockID, fmt.Errorf("failed to SendPayload: %w", err)
 	}
+
+	// blockID, err := c.postBlock(ctx, block)
+	// if err != nil {
+	// 	return iotago.EmptyBlockID, err
+	// }
 
 	txID, err := tx.ID()
 	if err != nil {
@@ -171,10 +185,10 @@ func (c *l1client) postTx(ctx context.Context, tx *iotago.SignedTransaction) (io
 	}
 	c.log.LogInfof("Posted transaction id %v", txID.ToHex())
 
-	return blockID, nil
+	return rsp.BlockID, nil
 }
 
-// PostTxAndWaitUntilConfirmation sends a tx (including tipselection and local PoW if necessary) and waits for confirmation.
+// PostTxAndWaitUntilConfirmation sends a tx (including tipselection if necessary) and waits for confirmation.
 func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, timeout ...time.Duration) (iotago.BlockID, error) {
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
@@ -189,7 +203,7 @@ func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, 
 
 // waitUntilBlockConfirmed waits until a given block is confirmed, it takes care of promotions/re-attachments for that block
 //
-//nolint:gocyclo,funlen
+
 func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.BlockID, payload iotago.Payload) (iotago.BlockID, error) {
 	_, isTransactionPayload := payload.(*iotago.SignedTransaction)
 
@@ -219,8 +233,8 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 		case api.BlockStateConfirmed, api.BlockStateFinalized:
 			return blockID, nil // success
 
-		case api.BlockStateRejected:
-			return iotago.EmptyBlockID, fmt.Errorf("block was not included in the ledger. IsTransaction: %t, LedgerInclusionState: %s, ConflictReason: %d",
+		case api.BlockStateRejected, api.BlockStateFailed:
+			return iotago.EmptyBlockID, fmt.Errorf("block was not included in the ledger. IsTransaction: %t, LedgerInclusionState: %s, FailureReason: %d",
 				isTransactionPayload, metadata.BlockState, metadata.BlockFailureReason)
 
 			// TODO: <lmoe> used to be  "pending", "conflicting".

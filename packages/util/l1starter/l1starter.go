@@ -3,9 +3,12 @@ package l1starter
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"flag"
 	"io"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/samber/lo"
@@ -14,10 +17,22 @@ import (
 	"github.com/iotaledger/wasp/packages/l1connection"
 )
 
+var (
+	//go:embed .env
+	configENV string
+	//go:embed config.json
+	configJSON string
+	//go:embed docker-compose.yml
+	configDockerCompose string
+	//go:embed docker-network.snapshot
+	configSnapshot string
+)
+
 // requires `docker` and `docker compose` installed
 type L1Starter struct {
-	Config  l1connection.Config
-	started bool
+	Config     l1connection.Config
+	started    bool
+	workingDir string
 }
 
 var defaultConfig = l1connection.Config{
@@ -41,7 +56,8 @@ func (s *L1Starter) PrivtangleEnabled() bool {
 
 type LogFunc func(format string, args ...any)
 
-func runCmd(cmd *exec.Cmd, log LogFunc) {
+func (s *L1Starter) runCmd(cmd *exec.Cmd, log LogFunc) {
+	cmd.Dir = s.workingDir
 	// combine output of stdout and stderr and print using the provided log func
 	stdOut := lo.Must(cmd.StdoutPipe())
 	stdErr := lo.Must(cmd.StderrPipe())
@@ -57,6 +73,24 @@ func runCmd(cmd *exec.Cmd, log LogFunc) {
 	}
 }
 
+func (s *L1Starter) setupWorkingDir() {
+	dir, err := os.MkdirTemp(os.TempDir(), "privtangle-*")
+	if err != nil {
+		panic(err)
+	}
+	s.workingDir = dir
+	writefile := func(filename, content string) {
+		err := os.WriteFile(filepath.Join(s.workingDir, filename), []byte(content), 0o644)
+		if err != nil {
+			panic(err)
+		}
+	}
+	writefile(".env", configENV)
+	writefile("config.json", configJSON)
+	writefile("docker-compose.yml", configDockerCompose)
+	writefile("docker-network.snapshot", configSnapshot)
+}
+
 // StartPrivtangleIfNecessary starts a private tangle, unless an L1 host was provided via cli flags
 func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 	if s.Config.APIAddress != "" || s.started {
@@ -65,12 +99,14 @@ func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 	s.started = true
 	s.Config = defaultConfig
 
+	s.setupWorkingDir()
+
 	s.Cleanup(log) // cleanup, just in case something is lingering from a previous execution
 	// TODO  image `docker-network-node-1-validator` is built using iota-core repo. will they release an image?
 	// anyway, for now to build the image, just pull iota-core repo, then `cd tools/docker-network && bash run.sh`, then kill the process and you should have the image ready
 
 	// start the l1 network using the pre-built snapshot
-	go runCmd(exec.Command("docker", "compose", "up"), log)
+	go s.runCmd(exec.Command("docker", "compose", "up"), log)
 
 	s.WaitReady(log)
 }
@@ -124,13 +160,13 @@ func (s *L1Starter) nodesReady(ctx context.Context, log LogFunc) <-chan bool {
 }
 
 func (s *L1Starter) Pause(log LogFunc) {
-	runCmd(exec.Command("docker", "compose", "pause"), log)
+	s.runCmd(exec.Command("docker", "compose", "pause"), log)
 }
 
 func (s *L1Starter) Resume(log LogFunc) {
-	runCmd(exec.Command("docker", "compose", "unpause"), log)
+	s.runCmd(exec.Command("docker", "compose", "unpause"), log)
 }
 
 func (s *L1Starter) Cleanup(log LogFunc) {
-	runCmd(exec.Command("docker", "compose", "down", "-v"), log)
+	s.runCmd(exec.Command("docker", "compose", "down", "-v"), log)
 }

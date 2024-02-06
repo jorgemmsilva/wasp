@@ -93,13 +93,12 @@ func l1ApiInit(env *solo.Solo, e *echo.Echo) {
 				Parameters: env.L1APIProvider().APIForEpoch(0).ProtocolParameters(),
 			}},
 			BaseToken: env.TokenInfo(),
-			Features:  nil,
 		})
 	})
 
 	g.GET("/api/routes", func(c echo.Context) error {
 		return response(env, c, &api.RoutesResponse{
-			Routes: []string{
+			Routes: []iotago.PrefixedStringUint8{
 				api.CorePluginName,
 				api.IndexerPluginName,
 			},
@@ -137,8 +136,8 @@ func l1ApiInit(env *solo.Solo, e *echo.Echo) {
 		return response(env, c, &api.IndexerResponse{
 			CommittedSlot: env.SlotIndex(),
 			PageSize:      uint32(len(outs)),
-			Items: lo.Map(filteredOuts, func(e lo.Entry[iotago.OutputID, iotago.Output], index int) string {
-				return e.Key.ToHex()
+			Items: lo.Map(filteredOuts, func(e lo.Entry[iotago.OutputID, iotago.Output], index int) iotago.HexOutputID {
+				return iotago.HexOutputID(e.Key.ToHex())
 			}),
 		})
 	})

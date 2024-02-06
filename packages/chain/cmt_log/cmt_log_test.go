@@ -134,7 +134,7 @@ func randomAnchorOutputWithID(anchorID iotago.AnchorID, governorAddress, stateAd
 			&iotago.StateControllerAddressUnlockCondition{Address: stateAddress},
 			&iotago.GovernorAddressUnlockCondition{Address: governorAddress},
 		},
-		ImmutableFeatures: []iotago.Feature{
+		ImmutableFeatures: iotago.AnchorOutputImmFeatures{
 			&iotago.StateMetadataFeature{Entries: map[iotago.StateMetadataFeatureEntriesKey]iotago.StateMetadataFeatureEntriesValue{}},
 		},
 	}

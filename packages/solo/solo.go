@@ -4,17 +4,18 @@
 package solo
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"maps"
 	"math/big"
 	"math/rand"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/crypto/blake2b"
 
 	"github.com/iotaledger/hive.go/kvstore"
 	"github.com/iotaledger/hive.go/kvstore/mapdb"
@@ -24,18 +25,17 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/evm/evmlogger"
-	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/metrics"
 	"github.com/iotaledger/wasp/packages/origin"
-	"github.com/iotaledger/wasp/packages/testutil"
-
 	"github.com/iotaledger/wasp/packages/peering"
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/state/indexedstore"
+	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
@@ -217,31 +217,44 @@ func (env *Solo) batchLoop() {
 	}
 }
 
-// GetDBHash computes a hash from the whole DB content.
-func (env *Solo) GetDBHash() (ret hashing.HashValue) {
-	h, err := blake2b.New256(nil)
-	if err != nil {
-		panic(err)
+func (env *Solo) IterateChainTrieDBs(
+	f func(chainID *isc.ChainID, k []byte, v []byte),
+) {
+	env.chainsMutex.Lock()
+	defer env.chainsMutex.Unlock()
+
+	chainIDs := lo.Keys(env.chains)
+	slices.SortFunc(chainIDs, func(a, b isc.ChainID) int { return bytes.Compare(a.Bytes(), b.Bytes()) })
+	for _, chID := range chainIDs {
+		chID := chID // prevent loop variable aliasing
+		ch := env.chains[chID]
+		lo.Must0(ch.db.Iterate(nil, func(k []byte, v []byte) bool {
+			f(&chID, k, v)
+			return true
+		}))
 	}
-	if h.Size() != hashing.HashSize {
-		panic("blake2b: hash size != 32")
+}
+
+func (env *Solo) IterateChainLatestStates(
+	prefix kv.Key,
+	f func(chainID *isc.ChainID, k []byte, v []byte),
+) {
+	env.chainsMutex.Lock()
+	defer env.chainsMutex.Unlock()
+
+	chainIDs := lo.Keys(env.chains)
+	slices.SortFunc(chainIDs, func(a, b isc.ChainID) int { return bytes.Compare(a.Bytes(), b.Bytes()) })
+	for _, chID := range chainIDs {
+		chID := chID // prevent loop variable aliasing
+		ch := env.chains[chID]
+		store := indexedstore.New(state.NewStoreWithUniqueWriteMutex(ch.db))
+		state, err := store.LatestState()
+		require.NoError(env.T, err)
+		state.IterateSorted(prefix, func(k kv.Key, v []byte) bool {
+			f(&chID, []byte(k), v)
+			return true
+		})
 	}
-	err = env.db.Iterate([]byte{}, func(k []byte, v []byte) bool {
-		_, werr := h.Write(k)
-		if werr != nil {
-			panic(werr)
-		}
-		_, werr = h.Write(v)
-		if werr != nil {
-			panic(werr)
-		}
-		return true
-	})
-	if err != nil {
-		panic(err)
-	}
-	copy(ret[:], h.Sum(nil))
-	return
 }
 
 func (env *Solo) Publisher() *publisher.Publisher {

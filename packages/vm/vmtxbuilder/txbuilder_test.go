@@ -160,15 +160,16 @@ func TestTxBuilderBasic(t *testing.T) {
 			essence.Outputs[0].BaseTokenAmount()+essence.Outputs[1].BaseTokenAmount(),
 		)
 
-		// consume a request that sends 1Mi, 1 NFT, and 4 native tokens
+		// consume a request that sends 1Mi and 1 NFT
 		nftID := tpkg.RandNFTAddress().NFTID()
-		nativeTokenID1 := testiotago.RandNativeTokenID()
 
 		req2, err := isc.OnLedgerFromUTXO(&iotago.NFTOutput{
 			Amount: 1 * isc.Million,
 			NFTID:  nftID,
 			Features: iotago.NFTOutputFeatures{
-				&iotago.NativeTokenFeature{ID: nativeTokenID1, Amount: big.NewInt(1)},
+				&iotago.MetadataFeature{
+					Entries: iotago.MetadataFeatureEntries{"": []byte("foobar")},
+				},
 			},
 		}, iotago.OutputID{})
 		require.NoError(t, err)
@@ -179,10 +180,10 @@ func TestTxBuilderBasic(t *testing.T) {
 		mockedAccounts.assets.Spend(isc.NewFungibleTokens(totalSDBaseTokensUsedToSplitAssets, nil))
 
 		essence = buildTxEssence(txb, mockedAccounts)
-		require.Len(t, essence.Outputs, 4) // 1 anchor AO, 1 account AO, 1 NFT internal Output, 1 NativeTokens internal outputs
+		require.Len(t, essence.Outputs, 3) // 1 anchor AO, 1 account AO, 1 NFT internal Output
 		require.EqualValues(t,
 			initialTotalBaseTokens+req1.Output().BaseTokenAmount()+req2.Output().BaseTokenAmount(),
-			essence.Outputs[0].BaseTokenAmount()+essence.Outputs[1].BaseTokenAmount()+essence.Outputs[2].BaseTokenAmount()+essence.Outputs[3].BaseTokenAmount(),
+			essence.Outputs[0].BaseTokenAmount()+essence.Outputs[1].BaseTokenAmount()+essence.Outputs[2].BaseTokenAmount(),
 		)
 	})
 }

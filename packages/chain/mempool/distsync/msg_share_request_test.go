@@ -42,7 +42,7 @@ func TestMsgShareRequestSerialization(t *testing.T) {
 		basicOutput := &iotago.BasicOutput{
 			Amount: 123,
 
-			Features: []iotago.Feature{
+			Features: iotago.BasicOutputFeatures{
 				&iotago.SenderFeature{Address: sender},
 				&iotago.MetadataFeature{Entries: map[iotago.MetadataFeatureEntriesKey]iotago.MetadataFeatureEntriesValue{
 					"": requestMetadata.Bytes(),

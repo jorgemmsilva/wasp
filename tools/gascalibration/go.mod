@@ -40,7 +40,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/ethereum/c-kzg-4844 v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.13.10 // indirect
+	github.com/ethereum/go-ethereum v1.13.11 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/gballet/go-verkle v0.1.1-0.20231031103413-a67434b50f46 // indirect
@@ -60,18 +60,18 @@ require (
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/iancoleman/orderedmap v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/iotaledger/hive.go/constraints v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20231219095137-dd4674b3226e // indirect
-	github.com/iotaledger/hive.go/crypto v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/ds v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20240115140343-94cb44b074ff // indirect
+	github.com/iotaledger/hive.go/constraints v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20240124161008-b987a3ca53b2 // indirect
+	github.com/iotaledger/hive.go/crypto v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/hive.go/ds v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20240126143305-9caf79103e85 // indirect
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/lo v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/log v0.0.0-20231223025425-91257fbacf8b // indirect
-	github.com/iotaledger/hive.go/runtime v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/stringify v0.0.0-20231223025425-91257fbacf8b // indirect
-	github.com/iotaledger/iota.go/v4 v4.0.0-20240116140157-9e8010cb282d // indirect
+	github.com/iotaledger/hive.go/lo v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/hive.go/log v0.0.0-20240124155714-a0713583cf95 // indirect
+	github.com/iotaledger/hive.go/runtime v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240124161008-b987a3ca53b2 // indirect
+	github.com/iotaledger/hive.go/stringify v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/iota.go/v4 v4.0.0-20240125151023-8623fbbce914 // indirect
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
@@ -96,7 +96,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
-	github.com/samber/lo v1.38.1 // indirect
+	github.com/samber/lo v1.39.0 // indirect
 	github.com/sasha-s/go-deadlock v0.3.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
@@ -112,7 +112,7 @@ require (
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.dedis.ch/kyber/v3 v3.1.0 // indirect
 	golang.org/x/crypto v0.18.0 // indirect
-	golang.org/x/exp v0.0.0-20240112132812-db7319d0e0e3 // indirect
+	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect

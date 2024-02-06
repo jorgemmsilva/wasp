@@ -193,7 +193,7 @@ func TestMismatchOriginCommitment(t *testing.T) {
 				&iotago.StateControllerAddressUnlockCondition{Address: stateController},
 				&iotago.GovernorAddressUnlockCondition{Address: govController},
 			},
-			Features: []iotago.Feature{
+			Features: iotago.AnchorOutputFeatures{
 				&iotago.SenderFeature{
 					Address: sender,
 				},

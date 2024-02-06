@@ -327,7 +327,7 @@ func testTransferNFTs(t *testing.T, v isc.SchemaVersion) {
 	accounts.CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
 		Amount: 0,
 		NFTID:  NFT1.ID,
-		ImmutableFeatures: []iotago.Feature{
+		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
 			&iotago.MetadataFeature{Entries: NFT1.Metadata},
 		},
@@ -341,7 +341,7 @@ func testTransferNFTs(t *testing.T, v isc.SchemaVersion) {
 	accounts.SaveNFTOutput(state, &iotago.NFTOutput{
 		Amount: 0,
 		NFTID:  NFT1.ID,
-		ImmutableFeatures: []iotago.Feature{
+		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.IssuerFeature{Address: NFT1.Issuer},
 			&iotago.MetadataFeature{Entries: NFT1.Metadata},
 		},
@@ -385,7 +385,7 @@ func testCreditDebitNFT1(t *testing.T, _ isc.SchemaVersion) {
 	accounts.CreditNFTToAccount(state, agentID1, &iotago.NFTOutput{
 		Amount: 0,
 		NFTID:  nft.ID,
-		ImmutableFeatures: []iotago.Feature{
+		ImmutableFeatures: iotago.NFTOutputImmFeatures{
 			&iotago.IssuerFeature{Address: nft.Issuer},
 			&iotago.MetadataFeature{Entries: nft.Metadata},
 		},

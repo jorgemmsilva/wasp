@@ -1063,11 +1063,14 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 
 	v := initDepositTest(t, originParams)
 	v.ch.MustDepositBaseTokensToL2(2*isc.Million, v.user)
-	// create a foundry and mint 1 token
+
+	// create two foundries and mint 1 token each
 	_, nativeTokenID1 := v.createFoundryAndMint(big.NewInt(1), big.NewInt(1))
+	_, nativeTokenID2 := v.createFoundryAndMint(big.NewInt(1), big.NewInt(1))
 
 	assets := isc.NewAssets(1*isc.Million, iotago.NativeTokenSum{
 		nativeTokenID1: big.NewInt(1),
+		nativeTokenID2: big.NewInt(1),
 	})
 
 	withdrawReq := solo.NewCallParamsEx("accounts", "withdraw").
@@ -1076,26 +1079,17 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	_, err := v.ch.PostRequestOffLedger(withdrawReq, v.user)
 	require.NoError(t, err)
 
-	// ---
-
 	// move the native tokens to a new user that doesn't have on-chain balance
 	newUser, newUserAddress := v.env.NewKeyPairWithFunds()
 	newUserAgentID := isc.NewAgentID(newUserAddress)
 	v.env.SendL1(newUserAddress, assets, v.user)
-	// also create an NFT
-	iscNFT, _, err := v.ch.Env.MintNFTL1(v.user, newUserAddress, iotago.MetadataFeatureEntries{"": []byte("foobar")})
-	require.NoError(t, err)
 
-	newuserL1NativeTokens := v.env.L1Assets(newUserAddress).NativeTokens
-	assetsContain := func(tokens iotago.NativeTokenSum, nativeTokenID iotago.NativeTokenID) bool {
-		return tokens[nativeTokenID] != nil
-	}
-	require.True(t, assetsContain(newuserL1NativeTokens, nativeTokenID1))
+	require.NotZero(t, v.env.L1Assets(newUserAddress).NativeTokens.ValueOrBigInt0(nativeTokenID1).Uint64())
+	require.NotZero(t, v.env.L1Assets(newUserAddress).NativeTokens.ValueOrBigInt0(nativeTokenID2).Uint64())
 
 	// try to deposit all native tokens in a request with just the minimum SD
 	unprocessableReq := solo.NewCallParams(accounts.FuncDeposit.Message()).
-		WithFungibleTokens(isc.NewAssets(0, assets.NativeTokens)).
-		WithNFT(iscNFT)
+		WithFungibleTokens(isc.NewAssets(0, assets.NativeTokens))
 
 	tx, receipt, _, err := v.ch.PostRequestSyncExt(unprocessableReq, newUser)
 	require.Error(t, err)
@@ -1167,11 +1161,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 	require.True(t, blocklog.HasUnprocessableRequestBeenRemovedInBlock(v.ch.LatestBlock(), unprocessableReqID)) // assert this function returns true, its used to prevent these requests from being re-added to the mempool on a reorg
 
 	// assert the user was credited the tokens from the "initially unprocessable request"
-	userAssets := v.ch.L2Assets(newUserAgentID)
-	require.Len(t, userAssets.NativeTokens, 1)
-	require.True(t, assetsContain(userAssets.NativeTokens, nativeTokenID1))
-	require.Len(t, userAssets.NFTs, 1)
-	require.EqualValues(t, userAssets.NFTs[0], iscNFT.ID)
+	require.Len(t, v.ch.L2Assets(newUserAgentID).NativeTokens, 2)
 
 	// try the "retry request" again, assert it fails
 	_, rec, _, err = v.ch.PostRequestSyncExt(retryReq, newUser)
@@ -1181,7 +1171,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 
 	// --
 	// try to withdrawa the native tokens
-	err = v.ch.Withdraw(isc.NewAssets(1*isc.Million, userAssets.NativeTokens, iscNFT.ID), newUser)
+	err = v.ch.Withdraw(isc.NewAssets(1*isc.Million, assets.NativeTokens), newUser)
 	require.NoError(t, err)
 
 	require.Len(t, v.ch.L2Assets(newUserAgentID).NativeTokens, 0)

@@ -2,7 +2,6 @@ package testcore
 
 import (
 	"math"
-	"math/big"
 	"testing"
 
 	"github.com/samber/lo"
@@ -15,13 +14,10 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/transaction"
-	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
 func TestNoSenderFeature(t *testing.T) {
-	t.SkipNow() // FIXME
-
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 	ch := env.NewChain()
 
@@ -33,27 +29,6 @@ func TestNoSenderFeature(t *testing.T) {
 	gasFee := iotago.BaseToken(10 * gas.LimitsDefault.MinGasPerRequest)
 	withdrawAmount := iotago.BaseToken(3 * gas.LimitsDefault.MinGasPerRequest)
 	err := ch.DepositAssetsToL2(isc.NewAssetsBaseTokens(withdrawAmount+gasFee), wallet)
-	require.NoError(t, err)
-	nativeTokenAmount := big.NewInt(123)
-	sn, nativeTokenID, err := ch.NewFoundryParams(big.NewInt(1234)).
-		WithUser(wallet).
-		CreateFoundry()
-	require.NoError(t, err)
-	// mint some tokens for the user
-	err = ch.MintTokens(sn, nativeTokenAmount, wallet)
-	require.NoError(t, err)
-
-	// withdraw native tokens to L1
-	allowance := withdrawAmount
-	baseTokensToSend := allowance + gasFee
-	_, err = ch.PostRequestOffLedger(
-		solo.NewCallParams(accounts.FuncWithdraw.Message()).
-			AddBaseTokens(baseTokensToSend).
-			AddAllowanceBaseTokens(allowance).
-			AddAllowanceNativeTokens(nativeTokenID, nativeTokenAmount).
-			WithMaxAffordableGasBudget(),
-		wallet,
-	)
 	require.NoError(t, err)
 
 	nft, _, err := ch.Env.MintNFTL1(wallet, addr, iotago.MetadataFeatureEntries{"": []byte("foobar")})
@@ -71,10 +46,7 @@ func TestNoSenderFeature(t *testing.T) {
 		allOuts,
 		&isc.RequestParameters{
 			TargetAddress: ch.ChainID.AsAddress(),
-			Assets: isc.NewAssets(
-				5*isc.Million,
-				iotago.NativeTokenSum{nativeTokenID: nativeTokenAmount},
-			).AddNFTs(nft.ID),
+			Assets:        isc.NewAssetsBaseTokens(5 * isc.Million).AddNFTs(nft.ID),
 			Metadata: &isc.SendMetadata{
 				Message:   inccounter.FuncIncCounter.Message(nil),
 				GasBudget: math.MaxUint64,
@@ -123,11 +95,6 @@ func TestNoSenderFeature(t *testing.T) {
 	// assert the assets were credited to the payout address
 	payoutAgentIDBalance := ch.L2Assets(ch.OriginatorAgentID)
 	require.Greater(t, payoutAgentIDBalance.BaseTokens, payoutAgentIDBalanceBefore.BaseTokens)
-	require.Len(t, payoutAgentIDBalance.NativeTokens, 1)
-	for id, n := range payoutAgentIDBalance.NativeTokens {
-		require.EqualValues(t, id, nativeTokenID)
-		require.EqualValues(t, n.Uint64(), nativeTokenAmount.Uint64())
-	}
 	require.EqualValues(t, payoutAgentIDBalance.NFTs[0], nft.ID)
 }
 

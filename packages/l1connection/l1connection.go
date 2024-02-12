@@ -9,6 +9,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/iotaledger/hive.go/log"
@@ -220,9 +221,6 @@ func (c *l1client) GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Dur
 // requests funds directly to the implicit account from a given pubkey
 func (c *l1client) RequestFunds(kp *cryptolib.KeyPair, timeout ...time.Duration) error {
 	implicitAccoutAddr := iotago.ImplicitAccountCreationAddressFromPubKey(kp.GetPublicKey().AsEd25519PubKey())
-	implicitAccoutAddrCasted := iotago.AccountAddress{}
-	copy(implicitAccoutAddrCasted[:], implicitAccoutAddr[:])
-
 	initialAddrOutputs, err := c.OutputMap(implicitAccoutAddr)
 	if err != nil {
 		return err
@@ -256,37 +254,18 @@ func (c *l1client) RequestFunds(kp *cryptolib.KeyPair, timeout ...time.Duration)
 	delay := 10 * time.Millisecond // in case the network is REALLY fast
 	var accountOutputs iotago.OutputSet
 
-	// Loop:
-	// 	for {
-	// 		select {
-	// 		case <-ctxWithTimeout.Done():
-	// 			return errors.New("faucet request timed-out while waiting for funds to be available")
-	// 		case <-time.After(delay):
-	// 			accountOutputs, err = c.OutputMap(implicitAccoutAddr)
-	// 			if err != nil {
-	// 				return err
-	// 			}
-	// 			if len(accountOutputs) > len(initialAddrOutputs) {
-	// 				break Loop // success
-	// 			}
-	// 			delay = 1 * time.Second
-	// 		}
-	// 	}
-
-	// wait until implicit account is available on the "accounts ledger"
-Loop:
+LoopWaitOutputs:
 	for {
 		select {
 		case <-ctxWithTimeout.Done():
-			return errors.New("faucet request timed-out while waiting for funds to be available")
+			return errors.New("faucet request timed-out while waiting for the issuerAccount to be present in the accounts ledger")
 		case <-time.After(delay):
-			x, err2 := c.nodeAPIClient.Congestion(ctxWithTimeout, &implicitAccoutAddrCasted)
-			if err2 != nil {
-				return err2
+			accountOutputs, err = c.OutputMap(implicitAccoutAddr)
+			if err != nil {
+				return err
 			}
-			println(x.Ready)
-			if x.Ready {
-				break Loop // success
+			if len(accountOutputs) > len(initialAddrOutputs) {
+				break LoopWaitOutputs // success
 			}
 			delay = 1 * time.Second
 		}
@@ -305,6 +284,27 @@ Loop:
 	}
 
 	blockIssuerAccountID := iotago.AccountIDFromOutputID(outputToConvertID)
+
+	// wait until  blockIssuerAccountID is available on the "accounts ledger"
+LoopWaitIssuerAccount:
+	for {
+		select {
+		case <-ctxWithTimeout.Done():
+			return errors.New("faucet request timed-out while waiting for funds to be available")
+		case <-time.After(delay):
+			congestion, err2 := c.nodeAPIClient.Congestion(ctxWithTimeout, blockIssuerAccountID.ToAddress().(*iotago.AccountAddress), c.nodeAPIClient.LatestAPI().MaxBlockWork())
+			if err2 != nil {
+				if strings.Contains(err2.Error(), "account not found") {
+					continue // keep waiting if "account not found"
+				}
+				return err2
+			}
+			if congestion.Ready {
+				break LoopWaitIssuerAccount // success
+			}
+			delay = 1 * time.Second
+		}
+	}
 
 	txBuilder := builder.NewTransactionBuilder(c.APIProvider().LatestAPI())
 	txBuilder.AddInput(&builder.TxInput{

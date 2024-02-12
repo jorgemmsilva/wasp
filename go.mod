@@ -15,7 +15,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/dgryski/go-clockpro v0.0.0-20140817124034-edc6d3eeb96e
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.13.11
+	github.com/ethereum/go-ethereum v1.13.12
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/gorilla/websocket v1.5.1
 	github.com/hashicorp/golang-lru/v2 v2.0.7
@@ -23,7 +23,7 @@ require (
 	github.com/iotaledger/hive.go/app v0.0.0-20240115140343-94cb44b074ff
 	github.com/iotaledger/hive.go/crypto v0.0.0-20240126143305-9caf79103e85
 	github.com/iotaledger/hive.go/ds v0.0.0-20240126143305-9caf79103e85
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20240126143305-9caf79103e85
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20240212120619-c0bb6cb3c1f8
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff
 	github.com/iotaledger/hive.go/lo v0.0.0-20240126143305-9caf79103e85
 	github.com/iotaledger/hive.go/log v0.0.0-20240124155714-a0713583cf95
@@ -33,7 +33,7 @@ require (
 	github.com/iotaledger/hive.go/web v0.0.0-20240115140343-94cb44b074ff
 	github.com/iotaledger/inx-app v1.0.0-rc.3.0.20240116142027-23db001cf27d
 	github.com/iotaledger/inx/go v1.0.0-rc.2.0.20240116140821-25bc7acc397d
-	github.com/iotaledger/iota.go/v4 v4.0.0-20240125151023-8623fbbce914
+	github.com/iotaledger/iota.go/v4 v4.0.0-20240206100820-fb02a26fc8eb
 	github.com/labstack/echo-contrib v0.15.0
 	github.com/labstack/echo-jwt/v4 v4.2.0
 	github.com/labstack/echo/v4 v4.11.4
@@ -54,7 +54,7 @@ require (
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/dig v1.17.1
-	golang.org/x/crypto v0.18.0
+	golang.org/x/crypto v0.19.0
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a
 	golang.org/x/net v0.20.0
 	golang.org/x/time v0.5.0
@@ -211,7 +211,7 @@ require (
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect

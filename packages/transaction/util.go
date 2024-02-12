@@ -91,6 +91,10 @@ func ComputeInputsAndRemainder(
 			// this is an UTXO that holds an foundry that is not relevant for this tx, should be skipped
 			continue
 		}
+		if _, ok := output.(*iotago.AccountOutput); ok {
+			// this is an UTXO that holds an account that is not relevant for this tx, should be skipped
+			continue
+		}
 		inputIDs = append(inputIDs, outputID)
 		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex, l1)
 		if err != nil {

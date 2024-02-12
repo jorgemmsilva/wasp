@@ -17,6 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -143,7 +144,13 @@ func (c *Client) post1RequestWithOutputs(
 	if err != nil {
 		return nil, err
 	}
-	_, err = c.Layer1Client.PostTxAndWaitUntilConfirmation(tx)
+
+	blockIssuerID, err := util.BlockIssuerFromOutputs(outputs)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.Layer1Client.PostTxAndWaitUntilConfirmation(tx, blockIssuerID, c.KeyPair)
 	return tx, err
 }
 

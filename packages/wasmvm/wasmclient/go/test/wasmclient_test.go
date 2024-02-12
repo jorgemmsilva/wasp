@@ -215,7 +215,7 @@ func TestDeploy(t *testing.T) {
 	wallet := cryptolib.NewKeyPair()
 
 	// request funds to the wallet that the wasmclient will use
-	err := e.Clu.RequestFunds(wallet.Address())
+	err := e.Clu.RequestFunds(wallet)
 	require.NoError(t, err)
 
 	// deposit funds to the on-chain account

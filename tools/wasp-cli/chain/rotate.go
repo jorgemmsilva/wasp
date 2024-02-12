@@ -4,20 +4,12 @@
 package chain
 
 import (
-	"encoding/json"
-	"fmt"
-	"os"
-	"time"
-
 	"github.com/spf13/cobra"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/chainclient"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
-	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
-	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 	"github.com/iotaledger/wasp/tools/wasp-cli/waspcmd"
 )
@@ -85,56 +77,58 @@ func initRotateWithDKGCmd() *cobra.Command {
 }
 
 func rotateTo(chain string, newStateControllerAddr iotago.Address) {
-	l1Client := cliclients.L1Client()
+	panic("TODO rewrite")
 
-	myWallet := wallet.Load()
-	anchorID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).AsAnchorID()
+	// l1Client := cliclients.L1Client()
 
-	chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(anchorID)
-	log.Check(err)
+	// myWallet := wallet.Load()
+	// anchorID := config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()).AsAnchorID()
 
-	tx, err := transaction.NewRotateChainStateControllerTx(
-		anchorID,
-		newStateControllerAddr,
-		chainOutputID,
-		chainOutput,
-		cliclients.API().TimeProvider().SlotFromTime(time.Now()),
-		cliclients.API(),
-		myWallet.KeyPair,
-	)
-	log.Check(err)
+	// chainOutputID, chainOutput, err := l1Client.GetAnchorOutput(anchorID)
+	// log.Check(err)
 
-	// debug logging
-	if log.DebugFlag {
-		s, err2 := json.Marshal(chainOutput)
-		log.Check(err2)
+	// tx, err := transaction.NewRotateChainStateControllerTx(
+	// 	anchorID,
+	// 	newStateControllerAddr,
+	// 	chainOutputID,
+	// 	chainOutput,
+	// 	cliclients.API().TimeProvider().SlotFromTime(time.Now()),
+	// 	cliclients.API(),
+	// 	myWallet.KeyPair,
+	// )
+	// log.Check(err)
 
-		minSD, err2 := cliclients.API().StorageScoreStructure().MinDeposit(chainOutput)
-		log.Check(err2)
-		log.Printf("original chain output: %s, minSD: %d\n", s, minSD)
+	// // debug logging
+	// if log.DebugFlag {
+	// 	s, err2 := json.Marshal(chainOutput)
+	// 	log.Check(err2)
 
-		rotOut := tx.Transaction.Outputs[0]
-		s, err2 = json.Marshal(rotOut)
-		log.Check(err2)
-		minSD, err2 = cliclients.API().StorageScoreStructure().MinDeposit(rotOut)
-		log.Check(err2)
-		log.Printf("new chain output: %s, minSD: %d\n", s, minSD)
+	// 	minSD, err2 := cliclients.API().StorageScoreStructure().MinDeposit(chainOutput)
+	// 	log.Check(err2)
+	// 	log.Printf("original chain output: %s, minSD: %d\n", s, minSD)
 
-		json, err2 := json.Marshal(tx)
-		log.Check(err2)
-		log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(cliclients.API().ProtocolParameters().Bech32HRP()))
-		log.Printf("rotation tx: %s", string(json))
-	}
+	// 	rotOut := tx.Transaction.Outputs[0]
+	// 	s, err2 = json.Marshal(rotOut)
+	// 	log.Check(err2)
+	// 	minSD, err2 = cliclients.API().StorageScoreStructure().MinDeposit(rotOut)
+	// 	log.Check(err2)
+	// 	log.Printf("new chain output: %s, minSD: %d\n", s, minSD)
 
-	_, err = l1Client.PostTxAndWaitUntilConfirmation(tx)
-	if err != nil {
-		panic(err)
-	}
-	log.Check(err)
+	// 	json, err2 := json.Marshal(tx)
+	// 	log.Check(err2)
+	// 	log.Printf("issuing rotation tx, signed for address: %s", myWallet.KeyPair.Address().Bech32(cliclients.API().ProtocolParameters().Bech32HRP()))
+	// 	log.Printf("rotation tx: %s", string(json))
+	// }
 
-	txID, err := tx.ID()
-	log.Check(err)
-	fmt.Fprintf(os.Stdout, "Chain rotation transaction issued successfully.\nTXID: %s\n", txID.ToHex())
+	// _, err = l1Client.PostTxAndWaitUntilConfirmation(tx)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// log.Check(err)
+
+	// txID, err := tx.ID()
+	// log.Check(err)
+	// fmt.Fprintf(os.Stdout, "Chain rotation transaction issued successfully.\nTXID: %s\n", txID.ToHex())
 }
 
 func setMaintenanceStatus(chain, node string, status bool, offledger bool) {
@@ -160,28 +154,29 @@ func initChangeGovControllerCmd() *cobra.Command {
 		Short: "Changes the governance controller for a given chain (WARNING: you will lose control over the chain)",
 		Args:  cobra.ExactArgs(1),
 		Run: func(cmd *cobra.Command, args []string) {
-			chain := config.GetChain(defaultChainFallback(chain), cliclients.API().ProtocolParameters().Bech32HRP())
+			panic("TODO rewrite")
+			// chain := config.GetChain(defaultChainFallback(chain), cliclients.API().ProtocolParameters().Bech32HRP())
 
-			_, newGovController, err := iotago.ParseBech32(args[0])
-			log.Check(err)
+			// _, newGovController, err := iotago.ParseBech32(args[0])
+			// log.Check(err)
 
-			client := cliclients.L1Client()
-			myWallet := wallet.Load()
-			outputSet, err := client.OutputMap(myWallet.Address())
-			log.Check(err)
+			// client := cliclients.L1Client()
+			// myWallet := wallet.Load()
+			// outputSet, err := client.OutputMap(myWallet.Address())
+			// log.Check(err)
 
-			tx, err := transaction.NewChangeGovControllerTx(
-				chain.AsAnchorID(),
-				newGovController,
-				outputSet,
-				cliclients.API().TimeProvider().SlotFromTime(time.Now()),
-				cliclients.API(),
-				myWallet.KeyPair,
-			)
-			log.Check(err)
+			// tx, err := transaction.NewChangeGovControllerTx(
+			// 	chain.AsAnchorID(),
+			// 	newGovController,
+			// 	outputSet,
+			// 	cliclients.API().TimeProvider().SlotFromTime(time.Now()),
+			// 	cliclients.API(),
+			// 	myWallet.KeyPair,
+			// )
+			// log.Check(err)
 
-			_, err = client.PostTxAndWaitUntilConfirmation(tx)
-			log.Check(err)
+			// _, err = client.PostTxAndWaitUntilConfirmation(tx)
+			// log.Check(err)
 		},
 	}
 

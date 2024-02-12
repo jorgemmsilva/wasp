@@ -71,39 +71,40 @@ func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptoli
 
 // executed in cluster_test.go
 func testSDRUC(t *testing.T, env *ChainEnv) {
-	env.deployNativeIncCounterSC(0)
-	keyPair, addr, err := env.Clu.NewKeyPairWithFunds()
-	require.NoError(t, err)
+	panic("TODO rewrite")
+	// env.deployNativeIncCounterSC(0)
+	// keyPair, addr, err := env.Clu.NewKeyPairWithFunds()
+	// require.NoError(t, err)
 
-	initialBlockIdx, err := env.Chain.BlockIndex()
-	require.NoError(t, err)
+	// initialBlockIdx, err := env.Chain.BlockIndex()
+	// require.NoError(t, err)
 
-	// // send a request with Storage Deposit Return Unlock
-	txSDRC := buildTX(t, env, addr, keyPair, true)
-	_, err = env.Clu.L1Client().PostTxAndWaitUntilConfirmation(txSDRC)
-	require.NoError(t, err)
+	// // // send a request with Storage Deposit Return Unlock
+	// txSDRC := buildTX(t, env, addr, keyPair, true)
+	// _, err = env.Clu.L1Client().PostTxAndWaitUntilConfirmation(txSDRC)
+	// require.NoError(t, err)
 
-	// wait some time and assert that the chain has not processed the request
-	time.Sleep(10 * time.Second) // don't like the sleep here, but not sure there is a better way to do this
+	// // wait some time and assert that the chain has not processed the request
+	// time.Sleep(10 * time.Second) // don't like the sleep here, but not sure there is a better way to do this
 
-	// make sure the request is not picked up and the chain does not process it
-	currentBlockIndex, err := env.Chain.BlockIndex()
-	require.NoError(t, err)
-	require.EqualValues(t, initialBlockIdx, currentBlockIndex)
+	// // make sure the request is not picked up and the chain does not process it
+	// currentBlockIndex, err := env.Chain.BlockIndex()
+	// require.NoError(t, err)
+	// require.EqualValues(t, initialBlockIdx, currentBlockIndex)
 
-	require.EqualValues(t, 0, env.getNativeContractCounter())
+	// require.EqualValues(t, 0, env.getNativeContractCounter())
 
-	// send an equivalent request without StorageDepositReturnUnlockCondition
-	txNormal := buildTX(t, env, addr, keyPair, false)
-	_, err = env.Clu.L1Client().PostTxAndWaitUntilConfirmation(txNormal)
-	require.NoError(t, err)
+	// // send an equivalent request without StorageDepositReturnUnlockCondition
+	// txNormal := buildTX(t, env, addr, keyPair, false)
+	// _, err = env.Clu.L1Client().PostTxAndWaitUntilConfirmation(txNormal)
+	// require.NoError(t, err)
 
-	_, err = env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, txNormal, false, 1*time.Minute)
-	require.NoError(t, err)
+	// _, err = env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, txNormal, false, 1*time.Minute)
+	// require.NoError(t, err)
 
-	require.EqualValues(t, 1, env.getNativeContractCounter())
+	// require.EqualValues(t, 1, env.getNativeContractCounter())
 
-	currentBlockIndex2, err := env.Chain.BlockIndex()
-	require.NoError(t, err)
-	require.EqualValues(t, initialBlockIdx+1, currentBlockIndex2)
+	// currentBlockIndex2, err := env.Chain.BlockIndex()
+	// require.NoError(t, err)
+	// require.EqualValues(t, initialBlockIdx+1, currentBlockIndex2)
 }

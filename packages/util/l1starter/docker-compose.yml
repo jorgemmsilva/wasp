@@ -93,84 +93,84 @@ services:
       --prometheus.goMetrics=false
       --prometheus.processMetrics=false
 
-  node-4-validator:
-    image: docker-network-node-1-validator:latest
-    stop_grace_period: 1m
-    restart: unless-stopped
-    ulimits:
-      nofile:
-        soft: 16384
-        hard: 16384
-    networks:
-      - iota-core
-    ports:
-      - "8040:14265/tcp" # REST-API
-      - "8041:8081/tcp" # Dashboard
-      - "6041:6061/tcp" # pprof
-      - "9049:9029/tcp" # INX
-    volumes:
-      - ./docker-network.snapshot:/app/data/snapshot.bin
-      - ./config.json:/app/config.json:ro
-    command: >
-      ${COMMON_CONFIG}
-      ${MANUALPEERING_CONFIG}
-      --p2p.identityPrivateKey=f205f6c4525069f71f9c7e987d72421a16c7900056b494a2b85fdf7942cf906aefbdc580f5d1ce4ae3f86ccfe109c6cd76df9b0e710a437b2aa964358c7b9449
-      --inx.enabled=true
-      --inx.bindAddress=0.0.0.0:9029
+  # node-4-validator:
+  #   image: docker-network-node-1-validator:latest
+  #   stop_grace_period: 1m
+  #   restart: unless-stopped
+  #   ulimits:
+  #     nofile:
+  #       soft: 16384
+  #       hard: 16384
+  #   networks:
+  #     - iota-core
+  #   ports:
+  #     - "8040:14265/tcp" # REST-API
+  #     - "8041:8081/tcp" # Dashboard
+  #     - "6041:6061/tcp" # pprof
+  #     - "9049:9029/tcp" # INX
+  #   volumes:
+  #     - ./docker-network.snapshot:/app/data/snapshot.bin
+  #     - ./config.json:/app/config.json:ro
+  #   command: >
+  #     ${COMMON_CONFIG}
+  #     ${MANUALPEERING_CONFIG}
+  #     --p2p.identityPrivateKey=f205f6c4525069f71f9c7e987d72421a16c7900056b494a2b85fdf7942cf906aefbdc580f5d1ce4ae3f86ccfe109c6cd76df9b0e710a437b2aa964358c7b9449
+  #     --inx.enabled=true
+  #     --inx.bindAddress=0.0.0.0:9029
 
-  node-4:
-    image: docker-network-node-1-validator:latest
-    stop_grace_period: 1m
-    restart: no
-    ulimits:
-      nofile:
-        soft: 16384
-        hard: 16384
-    networks:
-      - iota-core
-    ports:
-      - "8080:14265/tcp" # REST-API
-      - "8081:8081/tcp" # Dashboard
-      - "6081:6061/tcp" # pprof
-      - "9089:9029/tcp" # INX
-    volumes:
-      - ./docker-network.snapshot:/app/data/snapshot.bin
-      - ./config.json:/app/config.json:ro
-    command: >
-      ${COMMON_CONFIG}
-      ${MANUALPEERING_CONFIG}
-      --p2p.identityPrivateKey=03feb3bcd25e57f75697bb329e6e0100680431e4c45c85bc013da2aea9e9d0345e08a0c37407dc62369deebc64cb0fb3ea26127d19d141ee7fb8eaa6b92019d7
-      --inx.enabled=true
-      --inx.bindAddress=0.0.0.0:9029
-      --prometheus.goMetrics=false
-      --prometheus.processMetrics=false
+  # node-4:
+  #   image: docker-network-node-1-validator:latest
+  #   stop_grace_period: 1m
+  #   restart: no
+  #   ulimits:
+  #     nofile:
+  #       soft: 16384
+  #       hard: 16384
+  #   networks:
+  #     - iota-core
+  #   ports:
+  #     - "8080:14265/tcp" # REST-API
+  #     - "8081:8081/tcp" # Dashboard
+  #     - "6081:6061/tcp" # pprof
+  #     - "9089:9029/tcp" # INX
+  #   volumes:
+  #     - ./docker-network.snapshot:/app/data/snapshot.bin
+  #     - ./config.json:/app/config.json:ro
+  #   command: >
+  #     ${COMMON_CONFIG}
+  #     ${MANUALPEERING_CONFIG}
+  #     --p2p.identityPrivateKey=03feb3bcd25e57f75697bb329e6e0100680431e4c45c85bc013da2aea9e9d0345e08a0c37407dc62369deebc64cb0fb3ea26127d19d141ee7fb8eaa6b92019d7
+  #     --inx.enabled=true
+  #     --inx.bindAddress=0.0.0.0:9029
+  #     --prometheus.goMetrics=false
+  #     --prometheus.processMetrics=false
 
-  node-5:
-    image: docker-network-node-1-validator:latest
-    stop_grace_period: 1m
-    restart: no
-    ulimits:
-      nofile:
-        soft: 16384
-        hard: 16384
-    networks:
-      - iota-core
-    ports:
-      - "8090:14265/tcp" # REST-API
-      - "8091:8081/tcp" # Dashboard
-      - "6091:6061/tcp" # pprof
-      - "9099:9029/tcp" # INX
-    volumes:
-      - ./docker-network.snapshot:/app/data/snapshot.bin
-      - ./config.json:/app/config.json:ro
-    command: >
-      ${COMMON_CONFIG}
-      ${MANUALPEERING_CONFIG}
-      --p2p.identityPrivateKey=7d1491df3ef334dee988d6cdfc4b430b996d520bd63375a01d6754f8cee979b855b200fbea8c936ea1937a27e6ad72a7c9a21c1b17c2bd3c11f1f6994d813446
-      --inx.enabled=true
-      --inx.bindAddress=0.0.0.0:9029
-      --prometheus.goMetrics=false
-      --prometheus.processMetrics=false
+  # node-5:
+  #   image: docker-network-node-1-validator:latest
+  #   stop_grace_period: 1m
+  #   restart: no
+  #   ulimits:
+  #     nofile:
+  #       soft: 16384
+  #       hard: 16384
+  #   networks:
+  #     - iota-core
+  #   ports:
+  #     - "8090:14265/tcp" # REST-API
+  #     - "8091:8081/tcp" # Dashboard
+  #     - "6091:6061/tcp" # pprof
+  #     - "9099:9029/tcp" # INX
+  #   volumes:
+  #     - ./docker-network.snapshot:/app/data/snapshot.bin
+  #     - ./config.json:/app/config.json:ro
+  #   command: >
+  #     ${COMMON_CONFIG}
+  #     ${MANUALPEERING_CONFIG}
+  #     --p2p.identityPrivateKey=7d1491df3ef334dee988d6cdfc4b430b996d520bd63375a01d6754f8cee979b855b200fbea8c936ea1937a27e6ad72a7c9a21c1b17c2bd3c11f1f6994d813446
+  #     --inx.enabled=true
+  #     --inx.bindAddress=0.0.0.0:9029
+  #     --prometheus.goMetrics=false
+  #     --prometheus.processMetrics=false
 
   ##################################################################
   #  Monitoring                                                    #

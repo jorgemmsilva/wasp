@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/origin"
+	"github.com/iotaledger/wasp/packages/util"
 
 	"github.com/iotaledger/wasp/packages/registry"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
@@ -127,8 +128,13 @@ func CreateChainOrigin(
 		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}
 
+	blockIssuerID, err := util.BlockIssuerFromOutputs(utxoMap)
+	if err != nil {
+		return isc.ChainID{}, err
+	}
+
 	// ------------- post origin transaction and wait for confirmation
-	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx)
+	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx, blockIssuerID, originator)
 	if err != nil {
 		return isc.ChainID{}, fmt.Errorf("CreateChainOrigin: %w", err)
 	}

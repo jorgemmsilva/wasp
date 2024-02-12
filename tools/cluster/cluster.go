@@ -97,12 +97,12 @@ func (clu *Cluster) Logf(format string, args ...any) {
 
 func (clu *Cluster) NewKeyPairWithFunds() (*cryptolib.KeyPair, iotago.Address, error) {
 	key, addr := testkey.GenKeyAddr()
-	err := clu.RequestFunds(addr)
+	err := clu.RequestFunds(key)
 	return key, addr, err
 }
 
-func (clu *Cluster) RequestFunds(addr iotago.Address) error {
-	return clu.l1.RequestFunds(addr)
+func (clu *Cluster) RequestFunds(kp *cryptolib.KeyPair) error {
+	return clu.l1.RequestFunds(kp)
 }
 
 func (clu *Cluster) L1Client() l1connection.Client {
@@ -243,9 +243,7 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 		Cluster:           clu,
 	}
 
-	address := chain.OriginatorAddress()
-
-	err := clu.RequestFunds(address)
+	err := clu.RequestFunds(chain.OriginatorKeyPair)
 	if err != nil {
 		return nil, fmt.Errorf("DeployChain: %w", err)
 	}
@@ -394,7 +392,7 @@ func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Si
 	}
 
 	validatorKeyPair := clu.Config.ValidatorKeyPair(accessNodeIndex)
-	err := clu.RequestFunds(validatorKeyPair.Address())
+	err := clu.RequestFunds(validatorKeyPair)
 	if err != nil {
 		return nil, err
 	}
@@ -832,11 +830,6 @@ func (clu *Cluster) ActiveNodes() []int {
 	return nodes
 }
 
-func (clu *Cluster) PostTransaction(tx *iotago.SignedTransaction) error {
-	_, err := clu.l1.PostTxAndWaitUntilConfirmation(tx)
-	return err
-}
-
 func (clu *Cluster) AddressBalances(addr iotago.Address) *isc.Assets {
 	// get funds controlled by addr
 	outputMap, err := clu.l1.OutputMap(addr)
@@ -894,7 +887,13 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}
-	_, err = clu.l1.PostTxAndWaitUntilConfirmation(tx)
+
+	blockIssuerID, err := util.BlockIssuerFromOutputs(outputsSet)
+	if err != nil {
+		return iotago.OutputID{}, nil, err
+	}
+
+	_, err = clu.l1.PostTxAndWaitUntilConfirmation(tx, blockIssuerID, issuerKeypair)
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}

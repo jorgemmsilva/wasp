@@ -92,7 +92,7 @@ func setupClientCluster(t *testing.T) *wasmclient.WasmClientContext {
 	wallet := cryptolib.KeyPairFromPrivateKey(pk)
 
 	// request funds to the wallet that the wasm client will use
-	err := env.Clu.RequestFunds(wallet.Address())
+	err := env.Clu.RequestFunds(wallet)
 	require.NoError(t, err)
 
 	// deposit funds to the on-chain account

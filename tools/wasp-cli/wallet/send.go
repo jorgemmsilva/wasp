@@ -1,16 +1,7 @@
 package wallet
 
 import (
-	"time"
-
 	"github.com/spf13/cobra"
-
-	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/packages/transaction"
-	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
-	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet"
-	"github.com/iotaledger/wasp/tools/wasp-cli/log"
-	"github.com/iotaledger/wasp/tools/wasp-cli/util"
 )
 
 func initSendFundsCmd() *cobra.Command {
@@ -21,55 +12,56 @@ func initSendFundsCmd() *cobra.Command {
 		Short: "Transfer L1 tokens",
 		Args:  cobra.MinimumNArgs(2),
 		Run: func(cmd *cobra.Command, args []string) {
-			_, targetAddress, err := iotago.ParseBech32(args[0])
-			log.Check(err)
+			panic("TODO rewrite")
+			// _, targetAddress, err := iotago.ParseBech32(args[0])
+			// log.Check(err)
 
-			tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args[1:]))
-			log.Check(err)
+			// tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args[1:]))
+			// log.Check(err)
 
-			log.Printf("\nSending \n\t%v \n\tto: %v\n\n", tokens, args[0])
+			// log.Printf("\nSending \n\t%v \n\tto: %v\n\n", tokens, args[0])
 
-			myWallet := wallet.Load()
-			senderAddress := myWallet.Address()
-			client := cliclients.L1Client()
+			// myWallet := wallet.Load()
+			// senderAddress := myWallet.Address()
+			// client := cliclients.L1Client()
 
-			outputSet, err := client.OutputMap(senderAddress)
-			log.Check(err)
+			// outputSet, err := client.OutputMap(senderAddress)
+			// log.Check(err)
 
-			if !adjustStorageDeposit {
-				// check if the resulting output needs to be adjusted for Storage Deposit
-				output := transaction.MakeBasicOutput(
-					targetAddress,
-					senderAddress,
-					&tokens.FungibleTokens,
-					0, // TODO is this correct?
-					nil,
-					[]iotago.UnlockCondition{},
-				)
-				util.SDAdjustmentPrompt(output)
-			}
+			// if !adjustStorageDeposit {
+			// 	// check if the resulting output needs to be adjusted for Storage Deposit
+			// 	output := transaction.MakeBasicOutput(
+			// 		targetAddress,
+			// 		senderAddress,
+			// 		&tokens.FungibleTokens,
+			// 		0, // TODO is this correct?
+			// 		nil,
+			// 		[]iotago.UnlockCondition{},
+			// 	)
+			// 	util.SDAdjustmentPrompt(output)
+			// }
 
-			tx, err := transaction.NewTransferTransaction(
-				&tokens.FungibleTokens,
-				0,
-				senderAddress,
-				myWallet.KeyPair,
-				targetAddress,
-				outputSet,
-				[]iotago.UnlockCondition{},
-				cliclients.API().TimeProvider().SlotFromTime(time.Now()),
-				false,
-				cliclients.L1Client().APIProvider(),
-			)
-			log.Check(err)
+			// tx, err := transaction.NewTransferTransaction(
+			// 	&tokens.FungibleTokens,
+			// 	0,
+			// 	senderAddress,
+			// 	myWallet.KeyPair,
+			// 	targetAddress,
+			// 	outputSet,
+			// 	[]iotago.UnlockCondition{},
+			// 	cliclients.API().TimeProvider().SlotFromTime(time.Now()),
+			// 	false,
+			// 	cliclients.L1Client().APIProvider(),
+			// )
+			// log.Check(err)
 
-			txID, err := tx.ID()
-			log.Check(err)
+			// txID, err := tx.ID()
+			// log.Check(err)
 
-			_, err = client.PostTxAndWaitUntilConfirmation(tx)
-			log.Check(err)
+			// _, err = client.PostTxAndWaitUntilConfirmation(tx)
+			// log.Check(err)
 
-			log.Printf("Transaction [%v] sent successfully.\n", txID.ToHex())
+			// log.Printf("Transaction [%v] sent successfully.\n", txID.ToHex())
 		},
 	}
 

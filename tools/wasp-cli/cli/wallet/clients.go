@@ -12,6 +12,6 @@ func ChainClient(waspClient *apiclient.APIClient, chainID isc.ChainID) *chaincli
 		cliclients.L1Client(),
 		waspClient,
 		chainID,
-		Load().KeyPair,
+		Load(),
 	)
 }

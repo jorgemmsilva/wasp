@@ -44,3 +44,4 @@ go.work
 go.work.sum
 TMP*
 tmp.*
+sdk/

@@ -135,7 +135,7 @@ func accountOutputSD(api iotago.API) iotago.BaseToken {
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
 // returns the transaction and newly minted chain ID
 func NewChainOriginTransaction(
-	keyPair *cryptolib.KeyPair,
+	keyPair cryptolib.VariantKeyPair,
 	stateControllerAddress iotago.Address,
 	governanceControllerAddress iotago.Address,
 	deposit iotago.BaseToken,
@@ -147,7 +147,7 @@ func NewChainOriginTransaction(
 	l1APIProvider iotago.APIProvider,
 	tokenInfo *api.InfoResBaseToken,
 ) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID, error) {
-	walletAddr := keyPair.GetPublicKey().AsEd25519Address()
+	walletAddr := keyPair.Address()
 
 	if initParams == nil {
 		initParams = dict.New()
@@ -211,7 +211,11 @@ func NewChainOriginTransaction(
 		},
 		Outputs: outputs,
 	}
-	sigs, err := tx.Sign(keyPair.GetPrivateKey().AddressKeysForEd25519Address(walletAddr))
+	sigs, err := transaction.SignTransaction(tx, keyPair)
+	if err != nil {
+		return nil, nil, isc.ChainID{}, err
+	}
+
 	if err != nil {
 		return nil, nil, isc.ChainID{}, err
 	}

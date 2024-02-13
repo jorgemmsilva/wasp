@@ -34,16 +34,16 @@ type Config struct {
 
 type Client interface {
 	// requests funds from faucet, waits for confirmation
-	RequestFunds(kp *cryptolib.KeyPair, timeout ...time.Duration) error
+	RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Duration) error
 	// creates a simple value transaction
 	MakeSimpleValueTX(
-		sender *cryptolib.KeyPair,
+		sender cryptolib.VariantKeyPair,
 		recipientAddr iotago.Address,
 		amount iotago.BaseToken,
 		blockIssuerAccountID iotago.AccountID,
 	) (*iotago.SignedTransaction, error)
 	// sends a tx (build block, do tipselection, etc) and wait for confirmation
-	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer *cryptolib.KeyPair, timeout ...time.Duration) (iotago.BlockID, error)
+	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer cryptolib.VariantKeyPair, timeout ...time.Duration) (iotago.BlockID, error)
 	// returns the outputs owned by a given address
 	OutputMap(myAddress iotago.Address, timeout ...time.Duration) (iotago.OutputSet, error)
 	// output
@@ -160,7 +160,7 @@ func (c *l1client) postBlockAndWaitUntilConfirmation(block *iotago.Block, timeou
 	return c.waitUntilBlockConfirmed(ctxWithTimeout, blockID)
 }
 
-func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer *cryptolib.KeyPair, timeout ...time.Duration) (iotago.BlockID, error) {
+func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer cryptolib.VariantKeyPair, timeout ...time.Duration) (iotago.BlockID, error) {
 	block, err := c.blockFromTx(tx, issuerID, signer)
 	if err != nil {
 		return iotago.EmptyBlockID, err
@@ -215,7 +215,7 @@ func (c *l1client) GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Dur
 
 // RequestFunds implements L1Connection
 // requests funds directly to the implicit account from a given pubkey
-func (c *l1client) RequestFunds(kp *cryptolib.KeyPair, timeout ...time.Duration) error {
+func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Duration) error {
 	implicitAccoutAddr := iotago.ImplicitAccountCreationAddressFromPubKey(kp.GetPublicKey().AsEd25519PubKey())
 	initialAddrOutputs, err := c.OutputMap(implicitAccoutAddr)
 	if err != nil {
@@ -376,7 +376,7 @@ func (c *l1client) Bech32HRP() iotago.NetworkPrefix {
 }
 
 func (c *l1client) MakeSimpleValueTX(
-	sender *cryptolib.KeyPair,
+	sender cryptolib.VariantKeyPair,
 	recipientAddr iotago.Address,
 	amount iotago.BaseToken,
 	blockIssuerAccountID iotago.AccountID,
@@ -436,7 +436,7 @@ func (c *l1client) MakeSimpleValueTX(
 	)
 }
 
-func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID iotago.AccountID, signer *cryptolib.KeyPair) (*iotago.Block, error) {
+func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID iotago.AccountID, signer cryptolib.VariantKeyPair) (*iotago.Block, error) {
 	bi, err := c.nodeAPIClient.BlockIssuance(c.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query block issuance info: %w", err)
@@ -452,7 +452,7 @@ func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID
 		ShallowLikeParents(bi.ShallowLikeParents).
 		Payload(signedTx).
 		CalculateAndSetMaxBurnedMana(bi.LatestCommitment.ReferenceManaCost).
-		Sign(blockIssuerID, signer.GetPrivateKey().AsStdKey()).
+		SignWithSigner(blockIssuerID, signer.AsAddressSigner(), signer.Address()).
 		Build()
 }
 

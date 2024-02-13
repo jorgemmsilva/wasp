@@ -208,7 +208,7 @@ func MakeSignatureAndReferenceUnlocks(totalInputs int, sig iotago.Signature) iot
 }
 
 func CreateAndSignTx(
-	wallet *cryptolib.KeyPair,
+	wallet cryptolib.VariantKeyPair,
 	inputs iotago.TxEssenceInputs,
 	outputs iotago.TxEssenceOutputs,
 	creationSlot iotago.SlotIndex,
@@ -224,7 +224,7 @@ func CreateAndSignTx(
 		Outputs: outputs,
 	}
 
-	sigs, err := tx.Sign(wallet.GetPrivateKey().AddressKeysForEd25519Address(wallet.Address()))
+	sigs, err := SignTransaction(tx, wallet)
 	if err != nil {
 		return nil, err
 	}

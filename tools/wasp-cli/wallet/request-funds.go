@@ -14,11 +14,11 @@ func initRequestFundsCmd() *cobra.Command {
 		Short: "Request funds from the faucet",
 		Args:  cobra.NoArgs,
 		Run: func(cmd *cobra.Command, args []string) {
-			address := wallet.Load().Address()
-			log.Check(cliclients.L1Client().RequestFunds(address))
+			wallet := wallet.Load()
+			log.Check(cliclients.L1Client().RequestFunds(wallet))
 
 			model := &RequestFundsModel{
-				Address: address.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()),
+				Address: wallet.Address().Bech32(cliclients.API().ProtocolParameters().Bech32HRP()),
 				Message: "success",
 			}
 

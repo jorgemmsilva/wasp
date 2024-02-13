@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
@@ -19,6 +18,7 @@ import (
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/util"
@@ -222,6 +222,8 @@ func TestFoundries(t *testing.T) {
 
 		ch.AssertL2NativeTokens(senderAgentID, nativeTokenID, big.NewInt(5))
 		ch.AssertL2TotalNativeTokens(nativeTokenID, big.NewInt(5))
+
+		testdbhash.VerifyContractStateHash(env, accounts.Contract, "", t.Name())
 	})
 	t.Run("max supply 1, mintTokens 1", func(t *testing.T) {
 		initTest()
@@ -1036,7 +1038,7 @@ func TestDepositNFTWithMinStorageDeposit(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: false})
 	ch := env.NewChain()
 
-	issuerWallet, issuerAddress := env.NewKeyPairWithFunds()
+	issuerWallet, issuerAddress := env.NewKeyPairWithFunds(env.NewSeedFromIndex(1))
 
 	nft, _, err := env.MintNFTL1(issuerWallet, issuerAddress, iotago.MetadataFeatureEntries{"": []byte("foobar")})
 	require.NoError(t, err)
@@ -1046,55 +1048,68 @@ func TestDepositNFTWithMinStorageDeposit(t *testing.T) {
 	req.AddBaseTokens(ch.EstimateNeededStorageDeposit(req, issuerWallet))
 	_, err = ch.PostRequestSync(req, issuerWallet)
 	require.NoError(t, err)
+
+	testdbhash.VerifyContractStateHash(env, accounts.Contract, "", t.Name())
 }
 
 func TestUnprocessableWithNoPruning(t *testing.T) {
-	testUnprocessable(t, nil)
+	testUnprocessable(t, nil, false)
 }
 
 func TestUnprocessableWithPruning(t *testing.T) {
 	testUnprocessable(t, dict.Dict{
 		origin.ParamBlockKeepAmount: codec.Int32.Encode(1),
-	})
+	}, true)
 }
 
-func testUnprocessable(t *testing.T, originParams dict.Dict) {
+func testUnprocessable(t *testing.T, originParams dict.Dict, verifyHash bool) {
 	t.SkipNow() // FIXME
 
 	v := initDepositTest(t, originParams)
 	v.ch.MustDepositBaseTokensToL2(2*isc.Million, v.user)
 
-	// create two foundries and mint 1 token each
+	// create many foundries and mint 1 token each
 	_, nativeTokenID1 := v.createFoundryAndMint(big.NewInt(1), big.NewInt(1))
 	_, nativeTokenID2 := v.createFoundryAndMint(big.NewInt(1), big.NewInt(1))
 
-	assets := isc.NewAssets(1*isc.Million, iotago.NativeTokenSum{
+	allTokens := iotago.NativeTokenSum{
 		nativeTokenID1: big.NewInt(1),
 		nativeTokenID2: big.NewInt(1),
-	})
+	}
 
-	withdrawReq := solo.NewCallParamsEx("accounts", "withdraw").
-		WithAllowance(assets).
-		WithMaxAffordableGasBudget()
-	_, err := v.ch.PostRequestOffLedger(withdrawReq, v.user)
-	require.NoError(t, err)
+	for id, amount := range allTokens {
+		_, err := v.ch.PostRequestOffLedger(
+			solo.NewCallParams(accounts.FuncWithdraw.Message()).
+				WithAllowance(isc.NewAssets(1*isc.Million, iotago.NativeTokenSum{id: amount})).
+				WithMaxAffordableGasBudget(),
+			v.user,
+		)
+		require.NoError(t, err)
+	}
 
 	// move the native tokens to a new user that doesn't have on-chain balance
-	newUser, newUserAddress := v.env.NewKeyPairWithFunds()
+	newUser, newUserAddress := v.env.NewKeyPairWithFunds(v.env.NewSeedFromIndex(20))
 	newUserAgentID := isc.NewAgentID(newUserAddress)
-	v.env.SendL1(newUserAddress, assets, v.user)
+	for id, amount := range allTokens {
+		v.env.SendL1(newUserAddress, isc.NewFungibleTokens(0, iotago.NativeTokenSum{id: amount}), v.user)
+	}
 
-	require.NotZero(t, v.env.L1Assets(newUserAddress).NativeTokens.ValueOrBigInt0(nativeTokenID1).Uint64())
-	require.NotZero(t, v.env.L1Assets(newUserAddress).NativeTokens.ValueOrBigInt0(nativeTokenID2).Uint64())
+	for id := range allTokens {
+		require.NotZero(t, v.env.L1Assets(newUserAddress).NativeTokens.ValueOrBigInt0(id).Uint64())
+	}
 
 	// try to deposit all native tokens in a request with just the minimum SD
 	unprocessableReq := solo.NewCallParams(accounts.FuncDeposit.Message()).
-		WithFungibleTokens(isc.NewAssets(0, assets.NativeTokens))
+		WithFungibleTokens(isc.NewAssets(0, allTokens))
 
 	tx, receipt, _, err := v.ch.PostRequestSyncExt(unprocessableReq, newUser)
 	require.Error(t, err)
 	testmisc.RequireErrorToBe(t, err, "request has been skipped")
 	require.Nil(t, receipt) // nil receipt means the request was not processed
+
+	if verifyHash {
+		testdbhash.VerifyContractStateHash(v.env, blocklog.Contract, "", t.Name())
+	}
 
 	txReqs, err := v.ch.Env.RequestsForChain(tx.Transaction, v.ch.ChainID)
 	require.NoError(t, err)
@@ -1171,7 +1186,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict) {
 
 	// --
 	// try to withdrawa the native tokens
-	err = v.ch.Withdraw(isc.NewAssets(1*isc.Million, assets.NativeTokens), newUser)
+	err = v.ch.Withdraw(isc.NewAssets(1*isc.Million, allTokens), newUser)
 	require.NoError(t, err)
 
 	require.Len(t, v.ch.L2Assets(newUserAgentID).NativeTokens, 0)
@@ -1311,8 +1326,9 @@ func TestNFTMint(t *testing.T) {
 	ch := env.NewChain()
 
 	t.Run("mint for another user", func(t *testing.T) {
-		wallet, _ := env.NewKeyPairWithFunds()
-		anotherUserAgentID := isc.NewAgentID(tpkg.RandEd25519Address())
+		wallet, _ := env.NewKeyPairWithFunds(env.NewSeedFromIndex(1))
+		_, anotherUserAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(2))
+		anotherUserAgentID := isc.NewAgentID(anotherUserAddr)
 
 		// mint NFT to another user and keep it on chain
 		req := solo.NewCallParams(accounts.FuncMintNFT.Message([]byte("foobar"), anotherUserAgentID).Build()).
@@ -1330,9 +1346,9 @@ func TestNFTMint(t *testing.T) {
 	})
 
 	t.Run("mint for another user, directly to outside the chain", func(t *testing.T) {
-		wallet, _ := env.NewKeyPairWithFunds()
+		wallet, _ := env.NewKeyPairWithFunds(env.NewSeedFromIndex(3))
 
-		anotherUserAddr := tpkg.RandEd25519Address()
+		_, anotherUserAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(4))
 		anotherUserAgentID := isc.NewAgentID(anotherUserAddr)
 
 		// mint NFT to another user and withdraw it
@@ -1367,7 +1383,7 @@ func TestNFTMint(t *testing.T) {
 	})
 
 	t.Run("mint to self, then mint from it as a collection", func(t *testing.T) {
-		wallet, address := env.NewKeyPairWithFunds()
+		wallet, address := env.NewKeyPairWithFunds(env.NewSeedFromIndex(5))
 		agentID := isc.NewAgentID(address)
 
 		// mint NFT to self and keep it on chain
@@ -1402,8 +1418,12 @@ func TestNFTMint(t *testing.T) {
 		require.NoError(t, err)
 		mintID := ret.Get(accounts.ParamMintID)
 
+		testdbhash.VerifyContractStateHash(env, accounts.Contract, "", t.Name()+"1")
+
 		// post a dummy request to make the chain progress to the next block
 		ch.PostRequestOffLedger(solo.NewCallParamsEx("foo", "bar"), wallet)
+
+		testdbhash.VerifyContractStateHash(env, accounts.Contract, "", t.Name()+"2")
 
 		ret, err = ch.CallView(accounts.ViewNFTIDbyMintID.Message(mintID))
 		require.NoError(t, err)

@@ -48,7 +48,7 @@ func NewTransferTransaction(
 	inputIDs, remainder, err := ComputeInputsAndRemainder(
 		senderAddress,
 		unspentOutputs,
-		NewAssetsWithMana(ftokens.ToAssets(), mana),
+		NewAssetsWithMana(isc.FungibleTokensFromOutput(output).ToAssets(), mana),
 		creationSlot,
 		l1APIProvider,
 	)

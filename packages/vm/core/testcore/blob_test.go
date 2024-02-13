@@ -12,6 +12,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -33,6 +34,8 @@ func TestUploadBlob(t *testing.T) {
 
 		_, ok := ch.GetBlobInfo(h)
 		require.True(t, ok)
+
+		testdbhash.VerifyContractStateHash(env, blob.Contract, "", t.Name())
 	})
 	t.Run("huge", func(t *testing.T) {
 		env := solo.New(t)

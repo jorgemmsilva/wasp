@@ -1,6 +1,7 @@
 package cryptolib
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"fmt"
 	"io"
@@ -43,75 +44,72 @@ func PublicKeyFromBytes(publicKeyBytes []byte) (*PublicKey, error) {
 		return nil, fmt.Errorf("unexpected bytes length, expected: %d, got: %d", ed25519.PublicKeySize, len(publicKeyBytes))
 	}
 
-	ret := PublicKey{}
+	ret := make([]byte, ed25519.PublicKeySize)
 	copy(ret, publicKeyBytes)
-	return &ret, nil
+	return (*PublicKey)(&ret), nil
 }
 
 func (pkT *PublicKey) Clone() *PublicKey {
-	ret := PublicKey{}
+	ret := make([]byte, ed25519.PublicKeySize)
 	copy(ret, *pkT)
-	return &ret
+	return (*PublicKey)(&ret)
 }
 
-func (pkT PublicKey) AsBytes() []byte {
-	return pkT[:]
+func (pkT *PublicKey) AsBytes() []byte {
+	return (*pkT)[:]
 }
 
-func (pkT PublicKey) AsKey() PublicKeyKey {
+func (pkT *PublicKey) AsKey() PublicKeyKey {
 	ret := PublicKeyKey{}
-	copy(ret[:], pkT)
+	copy(ret[:], *pkT)
 	return ret
 }
 
-func (pkT PublicKey) AsEd25519PubKey() ed25519.PublicKey {
-	return ed25519.PublicKey(pkT)
+func (pkT *PublicKey) AsEd25519PubKey() ed25519.PublicKey {
+	return ed25519.PublicKey(*pkT)
 }
 
-func (pkT PublicKey) AsHiveEd25519PubKey() hiveEd25519.PublicKey {
-	return hiveEd25519.PublicKey(pkT)
+func (pkT *PublicKey) AsHiveEd25519PubKey() hiveEd25519.PublicKey {
+	ret := hiveEd25519.PublicKey{}
+	if len(*pkT) != len(ret) {
+		panic("unexpected public key size")
+	}
+	copy(ret[:], *pkT)
+	return ret
 }
 
-func (pkT PublicKey) AsEd25519Address() *iotago.Ed25519Address {
+func (pkT *PublicKey) AsEd25519Address() *iotago.Ed25519Address {
 	return iotago.Ed25519AddressFromPubKey(pkT.AsEd25519PubKey())
 }
 
-func (pkT PublicKey) AsKyberPoint() (kyber.Point, error) {
-	return PointFromBytes(pkT, new(edwards25519.Curve))
+func (pkT *PublicKey) AsKyberPoint() (kyber.Point, error) {
+	return PointFromBytes(*pkT, new(edwards25519.Curve))
 }
 
-func (pkT PublicKey) Equals(other *PublicKey) bool {
-	if len(pkT) != len(*other) {
-		return false
-	}
-	for i := range pkT {
-		if pkT[i] != (*other)[i] {
-			return false
-		}
-	}
-	return true
+func (pkT *PublicKey) Equals(other *PublicKey) bool {
+	return bytes.Equal(*pkT, *other)
 }
 
-func (pkT PublicKey) Verify(message, sig []byte) bool {
+func (pkT *PublicKey) Verify(message, sig []byte) bool {
 	return ed25519.Verify(pkT.AsEd25519PubKey(), message, sig)
 }
 
-func (pkT PublicKey) String() string {
-	return hexutil.EncodeHex(pkT)
+func (pkT *PublicKey) String() string {
+	return hexutil.EncodeHex(*pkT)
 }
 
-func (pkT PublicKey) Read(r io.Reader) error {
+func (pkT *PublicKey) Read(r io.Reader) error {
 	rr := rwutil.NewReader(r)
-	pkT = make([]byte, ed25519.PublicKeySize)
-	rr.ReadN(pkT)
+	*pkT = make([]byte, ed25519.PublicKeySize)
+	rr.ReadN(*pkT)
 	return rr.Err
 }
 
-func (pkT PublicKey) Write(w io.Writer) error {
+func (pkT *PublicKey) Write(w io.Writer) error {
 	ww := rwutil.NewWriter(w)
-	if len(pkT) != ed25519.PublicKeySize {
-		panic("unexpected public key size for write")
+	if len(*pkT) != ed25519.PublicKeySize {
+		panic(fmt.Sprintf("unexpected public key size for write: expected %d, got %d", ed25519.PublicKeySize, len(*pkT)))
 	}
-	ww.WriteN(pkT)
+	ww.WriteN(*pkT)
 	return ww.Err
 }

@@ -235,7 +235,7 @@ func TestRebootN3Single(t *testing.T) {
 	client := env.createNewClient()
 	tm.Step("createNewClient")
 
-	env.DepositFunds(1_000_000, client.KeyPair) // For Off-ledger requests to pass.
+	env.DepositFunds(1_000_000, client.KeyPair.(*cryptolib.KeyPair)) // For Off-ledger requests to pass.
 	tm.Step("DepositFunds")
 
 	icc := newIncCounterClient(t, env, client)
@@ -262,7 +262,7 @@ func TestRebootN3TwoNodes(t *testing.T) {
 	client := env.createNewClient()
 	tm.Step("createNewClient")
 
-	env.DepositFunds(1_000_000, client.KeyPair) // For Off-ledger requests to pass.
+	env.DepositFunds(1_000_000, client.KeyPair.(*cryptolib.KeyPair)) // For Off-ledger requests to pass.
 	tm.Step("DepositFunds")
 
 	icc := newIncCounterClient(t, env, client)

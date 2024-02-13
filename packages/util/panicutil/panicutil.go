@@ -73,7 +73,7 @@ func CatchPanic(f func()) (err error) {
 				err = fmt.Errorf("%v", r)
 			}
 			if os.Getenv("DEBUG") != "" {
-				fmt.Println(string(debug.Stack()))
+				debug.PrintStack()
 			}
 		}()
 		f()
@@ -89,7 +89,7 @@ func CatchAllExcept(f func(), exceptErrors ...error) (err error) {
 				return
 			}
 			if os.Getenv("DEBUG") != "" {
-				fmt.Println(string(debug.Stack()))
+				debug.PrintStack()
 			}
 			if recoveredError, ok := r.(error); ok {
 				for _, e := range exceptErrors {

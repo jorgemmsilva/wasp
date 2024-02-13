@@ -35,6 +35,6 @@ func TestTrustedPeer(t *testing.T) {
 	tpList, err = trustedPeersRegistry.TrustedPeers()
 	require.NoError(t, err)
 	require.Equal(t, 1, len(tpList))
-	require.True(t, keyPair2.GetPublicKey().Equals(tpList[0].PubKey()))
+	require.Equal(t, keyPair2.GetPublicKey(), tpList[0].PubKey())
 	require.Equal(t, "host2b:2002", tpList[0].PeeringURL)
 }

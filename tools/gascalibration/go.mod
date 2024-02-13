@@ -40,7 +40,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/ethereum/c-kzg-4844 v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.13.11 // indirect
+	github.com/ethereum/go-ethereum v1.13.12 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/gballet/go-libpcsclite v0.0.0-20191108122812-4678299bea08 // indirect
 	github.com/gballet/go-verkle v0.1.1-0.20231031103413-a67434b50f46 // indirect
@@ -64,14 +64,14 @@ require (
 	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20240124161008-b987a3ca53b2 // indirect
 	github.com/iotaledger/hive.go/crypto v0.0.0-20240126143305-9caf79103e85 // indirect
 	github.com/iotaledger/hive.go/ds v0.0.0-20240126143305-9caf79103e85 // indirect
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20240126143305-9caf79103e85 // indirect
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
 	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff // indirect
 	github.com/iotaledger/hive.go/lo v0.0.0-20240126143305-9caf79103e85 // indirect
 	github.com/iotaledger/hive.go/log v0.0.0-20240124155714-a0713583cf95 // indirect
 	github.com/iotaledger/hive.go/runtime v0.0.0-20240126143305-9caf79103e85 // indirect
 	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240124161008-b987a3ca53b2 // indirect
 	github.com/iotaledger/hive.go/stringify v0.0.0-20240126143305-9caf79103e85 // indirect
-	github.com/iotaledger/iota.go/v4 v4.0.0-20240125151023-8623fbbce914 // indirect
+	github.com/iotaledger/iota.go/v4 v4.0.0-20240213091059-357a70562b25 // indirect
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
@@ -111,13 +111,13 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.dedis.ch/kyber/v3 v3.1.0 // indirect
-	golang.org/x/crypto v0.18.0 // indirect
+	golang.org/x/crypto v0.19.0 // indirect
 	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
 	golang.org/x/image v0.11.0 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.17.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect

@@ -436,22 +436,22 @@ func (c *l1client) MakeSimpleValueTX(
 	)
 }
 
-func (c *l1client) blockFromTx(tx *iotago.SignedTransaction, blockIssuerID iotago.AccountID, signer *cryptolib.KeyPair) (*iotago.Block, error) {
+func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID iotago.AccountID, signer *cryptolib.KeyPair) (*iotago.Block, error) {
 	bi, err := c.nodeAPIClient.BlockIssuance(c.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query block issuance info: %w", err)
 	}
 
 	// Build a Block and post it.
-	l1API := c.nodeAPIClient.LatestAPI()
-	mana := l1API.ProtocolParameters().CongestionControlParameters().MinReferenceManaCost * iotago.Mana(c.nodeAPIClient.LatestAPI().MaxBlockWork())
+	l1API := c.nodeAPIClient.CommittedAPI()
 	return builder.NewBasicBlockBuilder(l1API).
-		Payload(tx).
+		SlotCommitmentID(bi.LatestCommitment.MustID()).
+		LatestFinalizedSlot(bi.LatestFinalizedSlot).
 		StrongParents(bi.StrongParents).
 		WeakParents(bi.WeakParents).
-		SlotCommitmentID(bi.LatestCommitment.MustID()).
-		ProtocolVersion(l1API.Version()).
-		MaxBurnedMana(mana).
+		ShallowLikeParents(bi.ShallowLikeParents).
+		Payload(signedTx).
+		CalculateAndSetMaxBurnedMana(bi.LatestCommitment.ReferenceManaCost).
 		Sign(blockIssuerID, signer.GetPrivateKey().AsStdKey()).
 		Build()
 }

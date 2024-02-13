@@ -80,7 +80,7 @@ func (s *L1Starter) setupWorkingDir() {
 	}
 	s.workingDir = dir
 	writefile := func(filename, content string) {
-		err := os.WriteFile(filepath.Join(s.workingDir, filename), []byte(content), 0o644)
+		err := os.WriteFile(filepath.Join(s.workingDir, filename), []byte(content), 0o644) //nolint:gosec // we need these permissions
 		if err != nil {
 			panic(err)
 		}
@@ -106,7 +106,7 @@ func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 	// anyway, for now to build the image, just pull iota-core repo, then `cd tools/docker-network && bash run.sh`, then kill the process and you should have the image ready
 
 	// start the l1 network using the pre-built snapshot
-	go s.runCmd(exec.Command("docker", "compose", "up"), log)
+	go s.runCmd(exec.Command("docker", "compose", "up", "-d"), log)
 
 	s.WaitReady(log)
 }

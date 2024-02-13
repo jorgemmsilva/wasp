@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/samber/lo"
+
 	"github.com/iotaledger/hive.go/log"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
@@ -180,13 +182,10 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 		}
 
 		// poll the node for block confirmation state
-		// TODO query by TXID instead (if the endpoint gets added)
 		metadata, err := c.nodeAPIClient.BlockMetadataByBlockID(ctx, blockID)
 		if err != nil {
 			return iotago.EmptyBlockID, fmt.Errorf("failed to get block metadata: %w", err)
 		}
-
-		// TODO refactor to use inx.BlockMetadata_TRANSACTION_STATE_[...] variables (?)
 		// check if block was included
 		switch metadata.BlockState {
 		case api.BlockStateConfirmed, api.BlockStateFinalized:
@@ -195,12 +194,8 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 		case api.BlockStateRejected, api.BlockStateFailed:
 			return iotago.EmptyBlockID, fmt.Errorf("block was not included in the ledger.  LedgerInclusionState: %s, FailureReason: %d",
 				metadata.BlockState, metadata.BlockFailureReason)
-
-			// TODO: <lmoe> used to be  "pending", "conflicting".
-			// Conflicting does not exist anymore, accepted seemed to be a sensible alternative here.
-			// We need to revalidate the logic here soon anyway.
 		case api.BlockStatePending, api.BlockStateAccepted:
-			// do nothing
+			// do nothing, keep waiting
 
 		default:
 			panic(fmt.Errorf("uknown block state %s", metadata.BlockState))
@@ -258,7 +253,7 @@ LoopWaitOutputs:
 	for {
 		select {
 		case <-ctxWithTimeout.Done():
-			return errors.New("faucet request timed-out while waiting for the issuerAccount to be present in the accounts ledger")
+			return errors.New("faucet request timed-out while waiting for funds to be available")
 		case <-time.After(delay):
 			accountOutputs, err = c.OutputMap(implicitAccoutAddr)
 			if err != nil {
@@ -290,7 +285,7 @@ LoopWaitIssuerAccount:
 	for {
 		select {
 		case <-ctxWithTimeout.Done():
-			return errors.New("faucet request timed-out while waiting for funds to be available")
+			return errors.New("faucet request timed-out while waiting for the issuerAccount to be present in the accounts ledger")
 		case <-time.After(delay):
 			congestion, err2 := c.nodeAPIClient.Congestion(ctxWithTimeout, blockIssuerAccountID.ToAddress().(*iotago.AccountAddress), c.nodeAPIClient.LatestAPI().MaxBlockWork())
 			if err2 != nil {
@@ -306,15 +301,16 @@ LoopWaitIssuerAccount:
 		}
 	}
 
-	txBuilder := builder.NewTransactionBuilder(c.APIProvider().LatestAPI())
+	l1API := c.APIProvider().LatestAPI()
+	txBuilder := builder.NewTransactionBuilder(l1API)
 	txBuilder.AddInput(&builder.TxInput{
 		UnlockTarget: kp.Address(),
 		InputID:      outputToConvertID,
 		Input:        outputToConvert,
 	})
 
-	txBuilder.AddOutput(&iotago.AccountOutput{
-		Amount:         100_000, // TODO calc minSD somehow?
+	issuerAccountOutput := &iotago.AccountOutput{
+		Amount:         0,
 		Mana:           outputToConvert.StoredMana(),
 		AccountID:      blockIssuerAccountID,
 		FoundryCounter: 0,
@@ -331,10 +327,13 @@ LoopWaitIssuerAccount:
 				},
 			},
 		},
-	})
+	}
+	// set the amount to the minimum possible SD
+	issuerAccountOutput.Amount = lo.Must(l1API.StorageScoreStructure().MinDeposit(issuerAccountOutput))
+	txBuilder.AddOutput(issuerAccountOutput)
 
 	txBuilder.AddOutput(&iotago.BasicOutput{
-		Amount: outputToConvert.BaseTokenAmount() - 100_000,
+		Amount: outputToConvert.BaseTokenAmount() - issuerAccountOutput.Amount,
 		Mana:   0,
 		UnlockConditions: []iotago.BasicOutputUnlockCondition{
 			&iotago.AddressUnlockCondition{
@@ -342,6 +341,20 @@ LoopWaitIssuerAccount:
 			},
 		},
 	})
+
+	// mana
+	blockIssuance, err := c.nodeAPIClient.BlockIssuance(c.ctx)
+	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
+
+	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
+		txBuilder.CreationSlot(),
+		blockIssuance.LatestCommitment.ReferenceManaCost,
+		blockIssuerAccountID,
+		1,
+	)
+	if err != nil {
+		return err
+	}
 
 	tx, err := txBuilder.Build(kp.AsAddressSigner())
 	if err != nil {
@@ -395,27 +408,27 @@ func (c *l1client) MakeSimpleValueTX(
 		Amount:           amount,
 		UnlockConditions: iotago.BasicOutputUnlockConditions{&iotago.AddressUnlockCondition{Address: recipientAddr}},
 	})
+	storeManaOutputIndex := 0
 
 	if inputSum > amount {
 		txBuilder = txBuilder.AddOutput(&iotago.BasicOutput{
 			Amount:           inputSum - amount,
 			UnlockConditions: iotago.BasicOutputUnlockConditions{&iotago.AddressUnlockCondition{Address: recipientAddr}},
 		})
+		storeManaOutputIndex = 1
 	}
 
 	// mana ---
-	// TODO should probably use AllotMinRequiredManaAndStoreRemainingManaInOutput instead
 	blockIssuance, err := c.nodeAPIClient.BlockIssuance(c.ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query block issuance info: %w", err)
 	}
-	txBuilder.AllotAllMana(blockIssuance.LatestCommitment.Slot, iotago.AccountID(senderAccountAddr.ID()), blockIssuance.LatestCommitment.ReferenceManaCost)
-	// txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
-	// 	blockIssuance.LatestCommitment.Slot,
-	// 	blockIssuance.LatestCommitment.ReferenceManaCost,
-	// 	iotago.AccountID(senderAccountAddr.ID()),
-	// 	1, // ????????? not sure if correct - let's just try to use some output of this tx
-	// )
+	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
+		txBuilder.CreationSlot(),
+		blockIssuance.LatestCommitment.ReferenceManaCost,
+		iotago.AccountID(senderAccountAddr.ID()),
+		storeManaOutputIndex,
+	)
 	// ---
 
 	return txBuilder.Build(
@@ -431,12 +444,14 @@ func (c *l1client) blockFromTx(tx *iotago.SignedTransaction, blockIssuerID iotag
 
 	// Build a Block and post it.
 	l1API := c.nodeAPIClient.LatestAPI()
+	mana := l1API.ProtocolParameters().CongestionControlParameters().MinReferenceManaCost * iotago.Mana(c.nodeAPIClient.LatestAPI().MaxBlockWork())
 	return builder.NewBasicBlockBuilder(l1API).
 		Payload(tx).
 		StrongParents(bi.StrongParents).
 		WeakParents(bi.WeakParents).
 		SlotCommitmentID(bi.LatestCommitment.MustID()).
 		ProtocolVersion(l1API.Version()).
+		MaxBurnedMana(mana).
 		Sign(blockIssuerID, signer.GetPrivateKey().AsStdKey()).
 		Build()
 }
@@ -448,7 +463,7 @@ func (c *l1client) Health(timeout ...time.Duration) (bool, error) {
 	return c.nodeAPIClient.Health(ctxWithTimeout)
 }
 
-const defaultTimeout = 1 * time.Minute
+const defaultTimeout = 5 * time.Minute
 
 func newCtx(ctx context.Context, timeout ...time.Duration) (context.Context, context.CancelFunc) {
 	t := defaultTimeout

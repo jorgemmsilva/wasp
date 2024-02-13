@@ -15,6 +15,7 @@ import (
 
 	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/l1connection"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 var (
@@ -57,6 +58,7 @@ func (s *L1Starter) PrivtangleEnabled() bool {
 type LogFunc func(format string, args ...any)
 
 func (s *L1Starter) runCmd(cmd *exec.Cmd, log LogFunc) {
+	util.TerminateCmdWhenTestStops(cmd)
 	cmd.Dir = s.workingDir
 	// combine output of stdout and stderr and print using the provided log func
 	stdOut := lo.Must(cmd.StdoutPipe())
@@ -106,7 +108,7 @@ func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 	// anyway, for now to build the image, just pull iota-core repo, then `cd tools/docker-network && bash run.sh`, then kill the process and you should have the image ready
 
 	// start the l1 network using the pre-built snapshot
-	go s.runCmd(exec.Command("docker", "compose", "up", "-d"), log)
+	go s.runCmd(exec.Command("docker", "compose", "up"), log)
 
 	s.WaitReady(log)
 }

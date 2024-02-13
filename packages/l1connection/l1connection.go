@@ -111,7 +111,6 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
 
-	// TODO how to get the current epoch
 	bech32Addr := myAddress.Bech32(c.Bech32HRP())
 	queries := []nodeclient.IndexerQuery{
 		&api.BasicOutputsQuery{AddressBech32: bech32Addr},
@@ -119,7 +118,6 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 		&api.NFTsQuery{AddressBech32: bech32Addr},
 		&api.AnchorsQuery{
 			GovernorBech32: bech32Addr,
-			// IssuerBech32:                     "", // TODO needed? prob not
 		},
 		&api.AccountsQuery{AddressBech32: bech32Addr},
 	}
@@ -362,7 +360,6 @@ LoopWaitIssuerAccount:
 		return err
 	}
 
-	// _, err = c.PostTxAndWaitUntilConfirmation(tx, iotago.AccountID(implicitAccoutAddr.ID()), kp)
 	_, err = c.PostTxAndWaitUntilConfirmation(tx, blockIssuerAccountID, kp)
 	return err
 }

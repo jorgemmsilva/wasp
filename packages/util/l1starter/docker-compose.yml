@@ -285,6 +285,11 @@ services:
       --inx.address=node-1-validator:9029
       --faucet.bindAddress=inx-faucet:8091
       --faucet.rateLimit.enabled=false
+      --faucet.baseTokenAmount=1000000000
+      --faucet.baseTokenAmountSmall=100000000
+      --faucet.baseTokenAmountMaxTarget=5000000000
+      --faucet.manaAmount=10000000
+      --faucet.manaAmountMinFaucet=100000000
 
   inx-validator-1:
     image: iotaledger/inx-validator:1.0-alpha
@@ -338,22 +343,22 @@ services:
       --validator.accountAddress=rms1pp4wuuz0y42caz48vv876qfpmffswsvg40zz8v79sy8cp0jfxm4kunflcgt
       --validator.issueCandidacyPayload=${ISSUE_CANDIDACY_PAYLOAD_V3:-true}
 
-  inx-validator-4:
-    image: iotaledger/inx-validator:1.0-alpha
-    stop_grace_period: 1m
-    restart: unless-stopped
-    depends_on:
-      node-3-validator:
-        condition: service_started
-    networks:
-      - iota-core
-    environment:
-      - "VALIDATOR_PRV_KEY=5cceed8ca18146639330177ab4f61ab1a71e2d3fea3d4389f9e2e43f34ec8b33c9ceac37d293155a578381aa313ee74edfa3ac73ee930d045564aae7771e8ffe"
-    command: >
-      --logger.level=debug
-      --inx.address=node-4-validator:9029
-      --validator.accountAddress=rms1pr8cxs3dzu9xh4cduff4dd4cxdthpjkpwmz2244f75m0urslrsvtsshrrjw
-      --validator.issueCandidacyPayload=${ISSUE_CANDIDACY_PAYLOAD_V4:-true}
+  # inx-validator-4:
+  #   image: iotaledger/inx-validator:1.0-alpha
+  #   stop_grace_period: 1m
+  #   restart: unless-stopped
+  #   depends_on:
+  #     node-3-validator:
+  #       condition: service_started
+  #   networks:
+  #     - iota-core
+  #   environment:
+  #     - "VALIDATOR_PRV_KEY=5cceed8ca18146639330177ab4f61ab1a71e2d3fea3d4389f9e2e43f34ec8b33c9ceac37d293155a578381aa313ee74edfa3ac73ee930d045564aae7771e8ffe"
+  #   command: >
+  #     --logger.level=debug
+  #     --inx.address=node-4-validator:9029
+  #     --validator.accountAddress=rms1pr8cxs3dzu9xh4cduff4dd4cxdthpjkpwmz2244f75m0urslrsvtsshrrjw
+  #     --validator.issueCandidacyPayload=${ISSUE_CANDIDACY_PAYLOAD_V4:-true}
 
 # Create our own network
 networks:

@@ -109,7 +109,7 @@ func (e *ChainEnv) NewChainClient() *chainclient.Client {
 	return chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), e.Chain.ChainID, wallet)
 }
 
-func (e *ChainEnv) DepositFunds(amount iotago.BaseToken, keyPair *cryptolib.KeyPair) {
+func (e *ChainEnv) DepositFunds(amount iotago.BaseToken, keyPair cryptolib.VariantKeyPair) {
 	tx, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncDeposit.Message(), chainclient.PostRequestParams{
 		Transfer: isc.NewAssetsBaseTokens(iotago.BaseToken(amount)),
 	})

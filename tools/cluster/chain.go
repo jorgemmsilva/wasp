@@ -70,7 +70,7 @@ func (ch *Chain) OriginatorClient() *chainclient.Client {
 	return ch.Client(ch.OriginatorKeyPair)
 }
 
-func (ch *Chain) Client(keyPair *cryptolib.KeyPair, nodeIndex ...int) *chainclient.Client {
+func (ch *Chain) Client(keyPair cryptolib.VariantKeyPair, nodeIndex ...int) *chainclient.Client {
 	idx := 0
 	if len(nodeIndex) == 1 {
 		idx = nodeIndex[0]

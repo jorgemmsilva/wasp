@@ -16,7 +16,7 @@ func NewRotateChainStateControllerTx(
 	chainOutput iotago.Output,
 	creationSlot iotago.SlotIndex,
 	l1API iotago.API,
-	kp *cryptolib.KeyPair,
+	kp cryptolib.VariantKeyPair,
 ) (*iotago.SignedTransaction, error) {
 	o, ok := chainOutput.(*iotago.AnchorOutput)
 	if !ok {

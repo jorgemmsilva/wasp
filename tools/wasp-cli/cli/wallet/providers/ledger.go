@@ -2,12 +2,12 @@ package providers
 
 import (
 	walletsdk "github.com/iotaledger/wasp-wallet-sdk"
-	"github.com/iotaledger/wasp/packages/parameters"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet/wallets"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
-func LoadLedgerWallet(sdk *walletsdk.IOTASDK, addressIndex uint32) wallets.Wallet {
+func LoadLedgerWallet(sdk *walletsdk.IOTASDK, addressIndex int) wallets.Wallet {
 	secretManager, err := walletsdk.NewLedgerSecretManager(sdk, false)
 	log.Check(err)
 
@@ -22,7 +22,7 @@ func LoadLedgerWallet(sdk *walletsdk.IOTASDK, addressIndex uint32) wallets.Walle
 		log.Fatalf("Ledger is locked")
 	}
 
-	hrp := parameters.L1().Protocol.Bech32HRP
+	hrp := cliclients.API().ProtocolParameters().Bech32HRP()
 	coinType := MapCoinType(hrp)
 
 	return wallets.NewExternalWallet(secretManager, addressIndex, string(hrp), coinType)

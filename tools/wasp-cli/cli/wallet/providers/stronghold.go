@@ -10,8 +10,8 @@ import (
 
 	walletsdk "github.com/iotaledger/wasp-wallet-sdk"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/parameters"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet/wallets"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -35,14 +35,14 @@ func configureStronghold(sdk *walletsdk.IOTASDK, unlockPassword *memguard.Enclav
 	return secretManager, nil
 }
 
-func LoadStrongholdWallet(sdk *walletsdk.IOTASDK, addressIndex uint32) wallets.Wallet {
+func LoadStrongholdWallet(sdk *walletsdk.IOTASDK, addressIndex int) wallets.Wallet {
 	password, err := config.GetKeyChain().GetStrongholdPassword()
 	log.Check(err)
 
 	secretManager, err := configureStronghold(sdk, password)
 	log.Check(err)
 
-	hrp := parameters.L1().Protocol.Bech32HRP
+	hrp := cliclients.API().ProtocolParameters().Bech32HRP()
 	coinType := MapCoinType(hrp)
 
 	return wallets.NewExternalWallet(secretManager, addressIndex, string(hrp), coinType)
@@ -73,8 +73,9 @@ func MigrateToStrongholdWallet(sdk *walletsdk.IOTASDK, seed cryptolib.Seed) {
 	unlockPassword := cli.ReadPasswordFromStdin()
 	log.Printf("\n")
 
+	hrp := cliclients.API().ProtocolParameters().Bech32HRP()
 	useLegacyDerivation := config.GetUseLegacyDerivation()
-	s := cryptolib.SubSeed(seed[:], 0, useLegacyDerivation)
+	s := cryptolib.SubSeed(seed[:], 0, hrp, useLegacyDerivation)
 
 	mnemonicStr, err := bip39.NewMnemonic(s[:])
 	log.Check(err)

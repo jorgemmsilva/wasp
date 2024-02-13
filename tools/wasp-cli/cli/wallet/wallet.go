@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	wasp_wallet_sdk "github.com/iotaledger/wasp-wallet-sdk"
 	"github.com/iotaledger/wasp-wallet-sdk/types"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -18,7 +18,7 @@ import (
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
-var AddressIndex uint32
+var AddressIndex int
 
 type WalletProvider string
 
@@ -139,7 +139,7 @@ func Migrate(provider WalletProvider) {
 		return
 	}
 
-	seedBytes, err := iotago.DecodeHex(seedHex)
+	seedBytes, err := hexutil.DecodeHex(seedHex)
 	log.Check(err)
 	seed := cryptolib.SeedFromBytes(seedBytes)
 

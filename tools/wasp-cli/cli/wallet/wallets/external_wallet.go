@@ -1,7 +1,8 @@
 package wallets
 
 import (
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	walletsdk "github.com/iotaledger/wasp-wallet-sdk"
 	"github.com/iotaledger/wasp-wallet-sdk/types"
 	"github.com/iotaledger/wasp/packages/cryptolib"
@@ -11,12 +12,12 @@ import (
 type ExternalWallet struct {
 	secretManager *walletsdk.SecretManager
 
-	addressIndex uint32
+	addressIndex int
 	Bech32Hrp    string
 	CoinType     types.CoinType
 }
 
-func NewExternalWallet(secretManager *walletsdk.SecretManager, addressIndex uint32, bech32Hrp string, coinType types.CoinType) *ExternalWallet {
+func NewExternalWallet(secretManager *walletsdk.SecretManager, addressIndex int, bech32Hrp string, coinType types.CoinType) *ExternalWallet {
 	return &ExternalWallet{
 		secretManager: secretManager,
 		addressIndex:  addressIndex,
@@ -25,13 +26,13 @@ func NewExternalWallet(secretManager *walletsdk.SecretManager, addressIndex uint
 	}
 }
 
-func (l *ExternalWallet) AddressIndex() uint32 {
+func (l *ExternalWallet) AddressIndex() int {
 	return l.addressIndex
 }
 
 func (l *ExternalWallet) Sign(addr iotago.Address, payload []byte) (signature iotago.Signature, err error) {
-	bip32Chain := walletsdk.BuildBip44Chain(l.CoinType, 0, l.addressIndex)
-	signResult, err := l.secretManager.SignTransactionEssence(types.HexEncodedString(iotago.EncodeHex(payload)), bip32Chain)
+	bip32Chain := walletsdk.BuildBip44Chain(l.CoinType, 0, uint32(l.addressIndex))
+	signResult, err := l.secretManager.SignTransactionEssence(types.HexEncodedString(hexutil.EncodeHex(payload)), bip32Chain)
 	if err != nil {
 		return nil, err
 	}
@@ -40,11 +41,11 @@ func (l *ExternalWallet) Sign(addr iotago.Address, payload []byte) (signature io
 }
 
 func (l *ExternalWallet) SignBytes(payload []byte) []byte {
-	bip32Chain := walletsdk.BuildBip44Chain(l.CoinType, 0, l.addressIndex)
-	signResult, err := l.secretManager.SignTransactionEssence(types.HexEncodedString(iotago.EncodeHex(payload)), bip32Chain)
+	bip32Chain := walletsdk.BuildBip44Chain(l.CoinType, 0, uint32(l.addressIndex))
+	signResult, err := l.secretManager.SignTransactionEssence(types.HexEncodedString(hexutil.EncodeHex(payload)), bip32Chain)
 	log.Check(err)
 
-	signature, err := iotago.DecodeHex(signResult.Signature)
+	signature, err := hexutil.DecodeHex(signResult.Signature)
 	log.Check(err)
 
 	return signature
@@ -68,7 +69,7 @@ func (l *ExternalWallet) GetPublicKey() *cryptolib.PublicKey {
 }
 
 func (l *ExternalWallet) Address() *iotago.Ed25519Address {
-	addressStr, err := l.secretManager.GenerateEd25519Address(l.addressIndex, 0, l.Bech32Hrp, l.CoinType, &types.IGenerateAddressOptions{
+	addressStr, err := l.secretManager.GenerateEd25519Address(uint32(l.addressIndex), 0, l.Bech32Hrp, l.CoinType, &types.IGenerateAddressOptions{
 		Internal:         false,
 		LedgerNanoPrompt: false,
 	})

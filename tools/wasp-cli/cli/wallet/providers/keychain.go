@@ -2,6 +2,7 @@ package providers
 
 import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/config"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/wallet/wallets"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -9,26 +10,28 @@ import (
 
 type KeyChainWallet struct {
 	cryptolib.VariantKeyPair
-	addressIndex uint32
+	addressIndex int
 }
 
-func newInMemoryWallet(keyPair *cryptolib.KeyPair, addressIndex uint32) *KeyChainWallet {
+func newInMemoryWallet(keyPair *cryptolib.KeyPair, addressIndex int) *KeyChainWallet {
 	return &KeyChainWallet{
 		VariantKeyPair: keyPair,
 		addressIndex:   addressIndex,
 	}
 }
 
-func (i *KeyChainWallet) AddressIndex() uint32 {
+func (i *KeyChainWallet) AddressIndex() int {
 	return i.addressIndex
 }
 
-func LoadKeyChain(addressIndex uint32) wallets.Wallet {
+func LoadKeyChain(addressIndex int) wallets.Wallet {
 	seed, err := config.GetKeyChain().GetSeed()
 	log.Check(err)
 
+	hrp := cliclients.API().ProtocolParameters().Bech32HRP()
 	useLegacyDerivation := config.GetUseLegacyDerivation()
-	keyPair := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(seed[:], addressIndex, useLegacyDerivation))
+
+	keyPair := cryptolib.KeyPairFromSeed(cryptolib.SubSeed(seed[:], uint32(addressIndex), hrp, useLegacyDerivation))
 
 	return newInMemoryWallet(keyPair, addressIndex)
 }

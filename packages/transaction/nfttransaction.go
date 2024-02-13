@@ -7,7 +7,7 @@ import (
 )
 
 func NewMintNFTsTransaction(
-	issuerKeyPair *cryptolib.KeyPair,
+	issuerKeyPair cryptolib.VariantKeyPair,
 	collectionOutputID *iotago.OutputID,
 	target iotago.Address,
 	immutableMetadata []iotago.MetadataFeatureEntries,

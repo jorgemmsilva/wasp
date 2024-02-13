@@ -67,7 +67,7 @@ func initBalanceCmd() *cobra.Command {
 
 			model := &BalanceModel{
 				Address:      address.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()),
-				AddressIndex: myWallet.AddressIndex,
+				AddressIndex: myWallet.AddressIndex(),
 				NativeTokens: balance.NativeTokens,
 				BaseTokens:   balance.BaseTokens,
 				OutputMap:    outs,

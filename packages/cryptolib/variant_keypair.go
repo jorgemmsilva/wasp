@@ -1,7 +1,7 @@
 package cryptolib
 
 import (
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 )
 
 // VariantKeyPair originates from cryptolib.KeyPair

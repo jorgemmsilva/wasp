@@ -2,11 +2,16 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path"
 
 	"github.com/spf13/viper"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp-wallet-sdk/types"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli"
+	"github.com/iotaledger/wasp/tools/wasp-cli/cli/keychain"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
 )
 
@@ -15,6 +20,45 @@ var (
 	ConfigPath        string
 	WaitForCompletion bool
 )
+
+func locateBaseDir() string {
+	homeDir, err := os.UserHomeDir()
+	log.Check(err)
+
+	_, err = os.Stat(homeDir)
+	log.Check(err)
+
+	baseDir := path.Join(homeDir, ".wasp-cli")
+	_, err = os.Stat(baseDir)
+
+	if err != nil {
+		err = os.Mkdir(baseDir, os.ModePerm)
+		log.Check(err)
+	}
+
+	BaseDir = baseDir
+	return baseDir
+}
+
+func locateConfigFile() string {
+	/*
+		Searches for a wasp-cli.json at the current working directory,
+		If not found, use the config file from the base dir (usually ~/.wasp-cli/wasp-cli.json)
+	*/
+	if ConfigPath == "" {
+		cwd, err := os.Getwd()
+		log.Check(err)
+
+		_, err = os.Stat(path.Join(cwd, "wasp-cli.json"))
+		if err == nil {
+			ConfigPath = path.Join(cwd, "wasp-cli.json")
+		} else {
+			ConfigPath = path.Join(BaseDir, "wasp-cli.json")
+		}
+	}
+
+	return ConfigPath
+}
 
 func Read() {
 	locateBaseDir()

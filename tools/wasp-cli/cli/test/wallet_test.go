@@ -10,14 +10,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tyler-smith/go-bip39"
 
-	iotago "github.com/iotaledger/iota.go/v3"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	wasp_wallet_sdk "github.com/iotaledger/wasp-wallet-sdk"
 	"github.com/iotaledger/wasp-wallet-sdk/types"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 )
 
 func TestMnemonic(t *testing.T) {
-	seedBytes, _ := iotago.DecodeHex("0xbc278147b72c6af948eced45252c496901e194c9610bfbffea639e18769c7715")
+	seedBytes, _ := hexutil.DecodeHex("0xbc278147b72c6af948eced45252c496901e194c9610bfbffea639e18769c7715")
 	seed := cryptolib.SeedFromBytes(seedBytes)
 	kp := cryptolib.KeyPairFromSeed(seed)
 	address := kp.Address().Bech32("rms")

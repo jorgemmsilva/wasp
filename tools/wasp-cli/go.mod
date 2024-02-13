@@ -9,11 +9,10 @@ replace (
 )
 
 require (
-	github.com/ethereum/go-ethereum v1.13.12
 	github.com/99designs/keyring v1.2.2
 	github.com/awnumar/memguard v0.22.4
 	github.com/dvsekhvalnov/jose2go v1.6.0
-	github.com/ethereum/go-ethereum v1.13.4
+	github.com/ethereum/go-ethereum v1.13.12
 	github.com/hashicorp/go-version v1.6.0
 	github.com/iotaledger/hive.go/log v0.0.0-20240124155714-a0713583cf95
 	github.com/iotaledger/iota.go/v4 v4.0.0-20240213091059-357a70562b25
@@ -27,17 +26,12 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/iotaledger/wasp-wallet-sdk v0.0.0-20240206105424-87cee27ddfbf
-	github.com/samber/lo v1.38.1
-	github.com/spf13/cobra v1.8.0
-	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/zalando/go-keyring v0.2.3
-	golang.org/x/term v0.16.0
 )
 
 require (
-	filippo.io/edwards25519 v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -62,6 +56,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/crate-crypto/go-ipa v0.0.0-20231025140028-3c0104f4b233 // indirect
 	github.com/crate-crypto/go-kzg-4844 v0.7.0 // indirect
+	github.com/danieljoos/wincred v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/deckarep/golang-set/v2 v2.3.1 // indirect
@@ -175,6 +170,7 @@ require (
 	github.com/multiformats/go-multistream v0.5.0 // indirect
 	github.com/multiformats/go-varint v0.0.7 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/ginkgo/v2 v2.13.0 // indirect
 	github.com/opencontainers/runtime-spec v1.1.0 // indirect
 	github.com/pangpanglabs/echoswagger/v2 v2.4.1 // indirect

@@ -15,7 +15,7 @@ func NewTransferTransaction(
 	ftokens *isc.FungibleTokens,
 	mana iotago.Mana,
 	senderAddress iotago.Address,
-	senderKeyPair *cryptolib.KeyPair,
+	senderKeyPair cryptolib.VariantKeyPair,
 	targetAddress iotago.Address,
 	unspentOutputs iotago.OutputSet,
 	unlockConditions []iotago.UnlockCondition,
@@ -72,7 +72,7 @@ func NewTransferTransaction(
 // Assumes all unspentOutputs and corresponding unspentOutputIDs can be used as inputs, i.e. are
 // unlockable for the sender address
 func NewRequestTransaction(
-	senderKeyPair *cryptolib.KeyPair,
+	senderKeyPair cryptolib.VariantKeyPair,
 	senderAddress iotago.Address, // might be different from the senderKP address (when sending as NFT or anchor)
 	unspentOutputs iotago.OutputSet,
 	request *isc.RequestParameters,
@@ -189,7 +189,7 @@ func addNativeTokens(sumTokensOut iotago.NativeTokenSum, out iotago.Output) {
 }
 
 func updateOutputsWhenSendingOnBehalfOf(
-	senderKeyPair *cryptolib.KeyPair,
+	senderKeyPair cryptolib.VariantKeyPair,
 	senderAddress iotago.Address,
 	unspentOutputs iotago.OutputSet,
 	outputs iotago.TxEssenceOutputs,

@@ -211,7 +211,11 @@ func NewChainOriginTransaction(
 		},
 		Outputs: outputs,
 	}
-	sigs, err := tx.Sign(keyPair.GetPrivateKey().AddressKeysForEd25519Address(walletAddr))
+	sigs, err := transaction.SignTransaction(tx, keyPair)
+	if err != nil {
+		return nil, nil, isc.ChainID{}, err
+	}
+
 	if err != nil {
 		return nil, nil, isc.ChainID{}, err
 	}

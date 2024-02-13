@@ -1,13 +1,13 @@
 package providers
 
 import (
-	iotago "github.com/iotaledger/iota.go/v3"
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp-wallet-sdk/types"
 )
 
 func MapCoinType(prefix iotago.NetworkPrefix) types.CoinType {
 	switch prefix {
-	case iotago.PrefixMainnet, iotago.PrefixDevnet:
+	case iotago.PrefixMainnet:
 		return types.CoinTypeIOTA
 	case iotago.PrefixShimmer, iotago.PrefixTestnet:
 		return types.CoinTypeSMR

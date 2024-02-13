@@ -14,7 +14,7 @@ func NewChangeGovControllerTx(
 	utxos iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
 	l1API iotago.API,
-	wallet *cryptolib.KeyPair,
+	wallet cryptolib.VariantKeyPair,
 ) (*iotago.SignedTransaction, error) {
 	// find the correct chain UTXO
 	var chainOutput *iotago.AnchorOutput

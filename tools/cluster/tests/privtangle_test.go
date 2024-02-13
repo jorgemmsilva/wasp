@@ -31,8 +31,7 @@ func TestPrivtangleStartup(t *testing.T) {
 	//
 	// Try call the faucet.
 	myKeyPair := cryptolib.NewKeyPair()
-	// myAddress := myKeyPair.GetPublicKey().AsEd25519Address() // TODO probably need to use the implicit account here
-	implicitAccountAddr := iotago.ImplicitAccountCreationAddressFromPubKey(myKeyPair.GetPublicKey().AsEd25519PubKey())
+	myAddress := myKeyPair.Address()
 
 	nc, err := nodeclient.New(l1.Config.APIAddress)
 	require.NoError(t, err)
@@ -42,14 +41,14 @@ func TestPrivtangleStartup(t *testing.T) {
 	log := testlogger.NewSilentLogger(true, t.Name())
 	client := l1connection.NewClient(l1.Config, log)
 
-	initialOutputCount := mustOutputCount(client, implicitAccountAddr)
+	initialOutputCount := mustOutputCount(client, myAddress)
 	//
 	// Check if faucet requests are working.
 	require.NoError(t, client.RequestFunds(myKeyPair))
 	for i := 0; ; i++ {
 		t.Log("Waiting for a TX...")
 		time.Sleep(100 * time.Millisecond)
-		if initialOutputCount != mustOutputCount(client, implicitAccountAddr) {
+		if mustOutputCount(client, myAddress) > initialOutputCount {
 			break
 		}
 	}
@@ -60,7 +59,7 @@ func TestPrivtangleStartup(t *testing.T) {
 	addr2 := kp2.GetPublicKey().AsEd25519Address()
 	initialOutputCountAddr2 := mustOutputCount(client, addr2)
 
-	blockIssuerID, err := util.BlockIssuerFromOutputs(mustOutputMap(client, myKeyPair.Address()))
+	blockIssuerID, err := util.BlockIssuerFromOutputs(mustOutputMap(client, myAddress))
 	require.NoError(t, err)
 
 	tx, err := client.MakeSimpleValueTX(myKeyPair, addr2, 500_000, blockIssuerID)

@@ -40,6 +40,7 @@ type Client interface {
 		sender *cryptolib.KeyPair,
 		recipientAddr iotago.Address,
 		amount iotago.BaseToken,
+		blockIssuerAccountID iotago.AccountID,
 	) (*iotago.SignedTransaction, error)
 	// sends a tx (build block, do tipselection, etc) and wait for confirmation
 	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer *cryptolib.KeyPair, timeout ...time.Duration) (iotago.BlockID, error)
@@ -378,9 +379,8 @@ func (c *l1client) MakeSimpleValueTX(
 	sender *cryptolib.KeyPair,
 	recipientAddr iotago.Address,
 	amount iotago.BaseToken,
+	blockIssuerAccountID iotago.AccountID,
 ) (*iotago.SignedTransaction, error) {
-	senderAccountAddr := iotago.ImplicitAccountCreationAddressFromPubKey(sender.GetPublicKey().AsEd25519PubKey())
-
 	senderAddr := sender.Address()
 	senderAccountOutputs, err := c.OutputMap(senderAddr)
 	if err != nil {
@@ -426,7 +426,7 @@ func (c *l1client) MakeSimpleValueTX(
 	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
 		txBuilder.CreationSlot(),
 		blockIssuance.LatestCommitment.ReferenceManaCost,
-		iotago.AccountID(senderAccountAddr.ID()),
+		blockIssuerAccountID,
 		storeManaOutputIndex,
 	)
 	// ---

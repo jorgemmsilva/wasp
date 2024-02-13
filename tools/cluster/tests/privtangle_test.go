@@ -59,10 +59,13 @@ func TestPrivtangleStartup(t *testing.T) {
 	kp2 := cryptolib.NewKeyPair()
 	addr2 := kp2.GetPublicKey().AsEd25519Address()
 	initialOutputCountAddr2 := mustOutputCount(client, addr2)
-	tx, err := client.MakeSimpleValueTX(myKeyPair, addr2, 500_000)
-	require.NoError(t, err)
+
 	blockIssuerID, err := util.BlockIssuerFromOutputs(mustOutputMap(client, myKeyPair.Address()))
 	require.NoError(t, err)
+
+	tx, err := client.MakeSimpleValueTX(myKeyPair, addr2, 500_000, blockIssuerID)
+	require.NoError(t, err)
+
 	_, err = client.PostTxAndWaitUntilConfirmation(tx, blockIssuerID, myKeyPair)
 	require.NoError(t, err)
 

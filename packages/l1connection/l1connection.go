@@ -144,40 +144,51 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	return result, nil
 }
 
-func (c *l1client) postBlockAndWaitUntilConfirmation(block *iotago.Block, timeout ...time.Duration) (iotago.BlockID, error) {
-	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
-	defer cancelContext()
-
-	blockID, err := c.nodeAPIClient.SubmitBlock(ctxWithTimeout, block)
+func (c *l1client) postBlockAndWaitUntilConfirmation(ctx context.Context, block *iotago.Block) (iotago.BlockID, error) {
+	blockID, err := c.nodeAPIClient.SubmitBlock(ctx, block)
 	if err != nil {
 		return iotago.EmptyBlockID, fmt.Errorf("failed to submit block: %w", err)
 	}
 
 	c.log.LogInfof("Posted blockID %v", blockID.ToHex())
 
-	return c.waitUntilBlockConfirmed(ctxWithTimeout, blockID)
+	return c.waitUntilBlockConfirmed(ctx, blockID)
 }
 
 func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer cryptolib.VariantKeyPair, timeout ...time.Duration) (iotago.BlockID, error) {
+	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
+	defer cancelContext()
+
+	// build and post block
 	block, err := c.blockFromTx(tx, issuerID, signer)
 	if err != nil {
 		return iotago.EmptyBlockID, err
 	}
-	return c.postBlockAndWaitUntilConfirmation(block, timeout...)
+	blockID, err := c.postBlockAndWaitUntilConfirmation(ctxWithTimeout, block)
+	if err != nil {
+		return blockID, err
+	}
+
+	// get tx metadata
+	txID, err := tx.Transaction.ID() // NOTE: must use the "unsigned tx ID" (it's different from just `tx.ID()`)
+	if err != nil {
+		return blockID, err
+	}
+	txMetadata, err := c.nodeAPIClient.TransactionMetadata(ctxWithTimeout, txID)
+	if err != nil {
+		return blockID, err
+	}
+	if txMetadata.TransactionFailureReason != api.TxFailureNone {
+		return blockID, fmt.Errorf("tx failed with reason: %v", txMetadata.TransactionFailureReason)
+	}
+	return blockID, nil
 }
 
 // waitUntilBlockConfirmed waits until a given block is confirmed, it takes care of promotions/re-attachments for that block
 func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.BlockID) (iotago.BlockID, error) {
-	checkContext := func() error {
-		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("failed to wait for block confimation within timeout: %w", err)
-		}
-		return nil
-	}
-
 	for {
-		if err := checkContext(); err != nil {
-			return iotago.EmptyBlockID, err
+		if err := ctx.Err(); err != nil {
+			return iotago.EmptyBlockID, fmt.Errorf("failed to wait for block confimation within timeout: %w", err)
 		}
 
 		// poll the node for block confirmation state

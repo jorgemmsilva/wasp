@@ -19,6 +19,7 @@ func (env *Solo) NewKeyPairFromIndex(index int) *cryptolib.KeyPair {
 
 func (env *Solo) NewSeedFromIndex(index int) *cryptolib.Seed {
 	if index < 0 {
+		// SubSeed takes a "uint31"
 		index += math.MaxUint32 / 2
 	}
 	seed := cryptolib.SubSeed(env.seed[:], uint32(index), testutil.L1API.ProtocolParameters().Bech32HRP())

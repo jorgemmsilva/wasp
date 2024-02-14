@@ -439,6 +439,12 @@ func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID
 		return nil, fmt.Errorf("failed to query block issuance info: %w", err)
 	}
 
+	// the issuing time of the blocks need to be monotonically increasing
+	issuingTime := time.Now().UTC()
+	if bi.LatestParentBlockIssuingTime.After(issuingTime) {
+		issuingTime = bi.LatestParentBlockIssuingTime.Add(time.Nanosecond)
+	}
+
 	// Build a Block and post it.
 	l1API := c.nodeAPIClient.CommittedAPI()
 	return builder.NewBasicBlockBuilder(l1API).
@@ -449,6 +455,7 @@ func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID
 		ShallowLikeParents(bi.ShallowLikeParents).
 		Payload(signedTx).
 		CalculateAndSetMaxBurnedMana(bi.LatestCommitment.ReferenceManaCost).
+		IssuingTime(issuingTime).
 		SignWithSigner(blockIssuerID, signer.AsAddressSigner(), signer.Address()).
 		Build()
 }

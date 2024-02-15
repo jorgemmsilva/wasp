@@ -114,10 +114,10 @@ func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 }
 
 func (s *L1Starter) WaitReady(log LogFunc) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 	select {
-	case <-time.After(2 * time.Minute):
+	case <-ctx.Done():
 		panic("timeout waiting for privtangle to be ready")
 	case <-s.nodesReady(ctx, log):
 		return
@@ -131,6 +131,7 @@ func (s *L1Starter) nodesReady(ctx context.Context, log LogFunc) <-chan bool {
 		var err error
 		for {
 			// wait to be ready to create a client
+			log("privtangle - waiting to be able to create an api client")
 			client, err = nodeclient.New(s.Config.APIAddress)
 			if err == nil {
 				break
@@ -139,6 +140,7 @@ func (s *L1Starter) nodesReady(ctx context.Context, log LogFunc) <-chan bool {
 		}
 		for {
 			// wait for the node to be synced
+			log("privtangle - waiting for nodes to be synced")
 			resp, err := client.BlockIssuance(ctx)
 			if err != nil {
 				log("nodes not healthy, retrying. %s", err.Error())
@@ -150,6 +152,7 @@ func (s *L1Starter) nodesReady(ctx context.Context, log LogFunc) <-chan bool {
 		}
 		for {
 			// wait for indexer
+			log("privtangle - waiting for indexer to be ready")
 			_, err := client.Indexer(ctx)
 			if err == nil {
 				readyChan <- true

@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"flag"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -13,10 +14,17 @@ import (
 
 	"github.com/samber/lo"
 
+	"github.com/iotaledger/iota-core/pkg/testsuite/snapshotcreator"
+	"github.com/iotaledger/iota-core/tools/genesis-snapshot/presets"
+	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
+	"github.com/iotaledger/iota.go/v4/wallet"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/util"
 )
+
+// TODO  image `docker-network-node-1-validator` is built using iota-core repo. will they release an image?
+// anyway, for now to build the image, just pull iota-core repo, then `cd tools/docker-network && bash run.sh`, then kill the process and you should have the image ready
 
 var (
 	//go:embed .env
@@ -25,8 +33,6 @@ var (
 	configJSON string
 	//go:embed docker-compose.yml
 	configDockerCompose string
-	//go:embed docker-network.snapshot
-	configSnapshot string
 )
 
 // requires `docker` and `docker compose` installed
@@ -90,7 +96,6 @@ func (s *L1Starter) setupWorkingDir() {
 	writefile(".env", configENV)
 	writefile("config.json", configJSON)
 	writefile("docker-compose.yml", configDockerCompose)
-	writefile("docker-network.snapshot", configSnapshot)
 }
 
 // StartPrivtangleIfNecessary starts a private tangle, unless an L1 host was provided via cli flags
@@ -104,10 +109,17 @@ func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 	s.setupWorkingDir()
 
 	s.Cleanup(log) // cleanup, just in case something is lingering from a previous execution
-	// TODO  image `docker-network-node-1-validator` is built using iota-core repo. will they release an image?
-	// anyway, for now to build the image, just pull iota-core repo, then `cd tools/docker-network && bash run.sh`, then kill the process and you should have the image ready
 
-	// start the l1 network using the pre-built snapshot
+	// Generate a new snapshot (this is needed, because we cannot re-use snapshots)
+	snapshotOpts := presets.Base
+	snapshotOpts = append(snapshotOpts, presets.Docker...)
+	genesisSeed := lo.Must(hexutil.DecodeHex("0x5f4ce0a4a8508dae854d996404ca7168478258c82e38f379d8ec4692ea9ecee6"))
+	keyManager := lo.Must(wallet.NewKeyManager(genesisSeed, wallet.DefaultIOTAPath))
+	snapshotOpts = append(snapshotOpts, snapshotcreator.WithGenesisKeyManager(keyManager))
+	snapshotOpts = append(snapshotOpts, snapshotcreator.WithFilePath(fmt.Sprintf("%s/docker-network.snapshot", s.workingDir)))
+	lo.Must0(snapshotcreator.CreateSnapshot(snapshotOpts...))
+
+	// start the l1 network
 	go s.runCmd(exec.Command("docker", "compose", "up"), log)
 
 	s.WaitReady(log)

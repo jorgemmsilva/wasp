@@ -20,10 +20,7 @@ import (
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-)
-
-const (
-	pollConfirmedBlockInterval = 200 * time.Millisecond
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 type Config struct {
@@ -174,45 +171,49 @@ func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, 
 	if err != nil {
 		return blockID, err
 	}
-	txMetadata, err := c.nodeAPIClient.TransactionMetadata(ctxWithTimeout, txID)
-	if err != nil {
-		return blockID, err
-	}
-	if txMetadata.TransactionFailureReason != api.TxFailureNone {
-		return blockID, fmt.Errorf("tx failed with reason: %v", txMetadata.TransactionFailureReason)
-	}
+	lo.Must0(util.WaitUntil(ctxWithTimeout, func() (util.WaitAction, error) {
+		txMetadata, err := c.nodeAPIClient.TransactionMetadata(ctxWithTimeout, txID)
+		if err != nil {
+			if strings.Contains(err.Error(), "not found") {
+				return util.WaitActionKeepWaiting, nil
+			}
+			return util.WaitActionDone, err
+		}
+		if txMetadata.TransactionFailureReason != api.TxFailureNone {
+			return util.WaitActionDone, fmt.Errorf("tx failed with reason: %v", txMetadata.TransactionFailureReason)
+		}
+		return util.WaitActionDone, nil
+	},
+		util.WaitOpts{TimeoutMsg: "failed to wait for tx metadata"},
+	))
 	return blockID, nil
 }
 
 // waitUntilBlockConfirmed waits until a given block is confirmed, it takes care of promotions/re-attachments for that block
 func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.BlockID) (iotago.BlockID, error) {
-	for {
-		if err := ctx.Err(); err != nil {
-			return iotago.EmptyBlockID, fmt.Errorf("failed to wait for block confimation within timeout: %w", err)
-		}
-
+	return blockID, util.WaitUntil(ctx, func() (util.WaitAction, error) {
 		// poll the node for block confirmation state
 		metadata, err := c.nodeAPIClient.BlockMetadataByBlockID(ctx, blockID)
 		if err != nil {
-			return iotago.EmptyBlockID, fmt.Errorf("failed to get block metadata: %w", err)
+			return util.WaitActionDone, fmt.Errorf("failed to get block metadata: %w", err)
 		}
 		// check if block was included
 		switch metadata.BlockState {
 		case api.BlockStateConfirmed, api.BlockStateFinalized:
-			return blockID, nil // success
+			return util.WaitActionDone, nil // success
 
 		case api.BlockStateRejected, api.BlockStateFailed:
-			return iotago.EmptyBlockID, fmt.Errorf("block was not included in the ledger.  LedgerInclusionState: %s, FailureReason: %d",
+			return util.WaitActionDone, fmt.Errorf("block was not included in the ledger.  LedgerInclusionState: %s, FailureReason: %d",
 				metadata.BlockState, metadata.BlockFailureReason)
 		case api.BlockStatePending, api.BlockStateAccepted:
 			// do nothing, keep waiting
-
+			return util.WaitActionKeepWaiting, nil
 		default:
 			panic(fmt.Errorf("uknown block state %s", metadata.BlockState))
 		}
-
-		time.Sleep(pollConfirmedBlockInterval)
-	}
+	},
+		util.WaitOpts{TimeoutMsg: "failed to wait for block confimation"},
+	)
 }
 
 func (c *l1client) GetAnchorOutput(anchorID iotago.AnchorID, timeout ...time.Duration) (iotago.OutputID, iotago.Output, error) {
@@ -256,25 +257,17 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 		return fmt.Errorf("faucet call failed, response status=%v, body=%v", res.Status, string(resBody))
 	}
 	// wait until funds are available
-	delay := 10 * time.Millisecond // in case the network is REALLY fast
 	var accountOutputs iotago.OutputSet
 
-LoopWaitOutputs:
-	for {
-		select {
-		case <-ctxWithTimeout.Done():
-			return errors.New("faucet request timed-out while waiting for funds to be available")
-		case <-time.After(delay):
-			accountOutputs, err = c.OutputMap(implicitAccoutAddr)
-			if err != nil {
-				return err
-			}
-			if len(accountOutputs) > len(initialAddrOutputs) {
-				break LoopWaitOutputs // success
-			}
-			delay = 1 * time.Second
+	lo.Must0(util.WaitUntil(ctxWithTimeout, func() (util.WaitAction, error) {
+		accountOutputs, err = c.OutputMap(implicitAccoutAddr)
+		if err != nil {
+			return util.WaitActionDone, err
 		}
-	}
+		return len(accountOutputs) > len(initialAddrOutputs), nil
+	},
+		util.WaitOpts{TimeoutMsg: "faucet request timed-out while waiting for the issuerAccount to be present in the accounts ledger"},
+	))
 
 	// convert the basic output into an account output + basicOutput
 	if len(accountOutputs) != 1 {
@@ -291,25 +284,23 @@ LoopWaitOutputs:
 	blockIssuerAccountID := iotago.AccountIDFromOutputID(outputToConvertID)
 
 	// wait until  blockIssuerAccountID is available on the "accounts ledger"
-LoopWaitIssuerAccount:
-	for {
-		select {
-		case <-ctxWithTimeout.Done():
-			return errors.New("faucet request timed-out while waiting for the issuerAccount to be present in the accounts ledger")
-		case <-time.After(delay):
+	lo.Must0(
+		util.WaitUntil(ctxWithTimeout, func() (util.WaitAction, error) {
 			congestion, err2 := c.nodeAPIClient.Congestion(ctxWithTimeout, blockIssuerAccountID.ToAddress().(*iotago.AccountAddress), c.nodeAPIClient.LatestAPI().MaxBlockWork())
 			if err2 != nil {
 				if strings.Contains(err2.Error(), "account not found") {
-					continue // keep waiting if "account not found"
+					return util.WaitActionKeepWaiting, nil
 				}
-				return err2
+				return util.WaitActionDone, err2
 			}
 			if congestion.Ready {
-				break LoopWaitIssuerAccount // success
+				return util.WaitActionDone, nil
 			}
-			delay = 1 * time.Second
-		}
-	}
+			return util.WaitActionKeepWaiting, nil
+		},
+			util.WaitOpts{TimeoutMsg: "faucet request timed-out while waiting for funds to be available"},
+		),
+	)
 
 	l1API := c.APIProvider().LatestAPI()
 	txBuilder := builder.NewTransactionBuilder(l1API)
@@ -320,8 +311,8 @@ LoopWaitIssuerAccount:
 	})
 
 	issuerAccountOutput := &iotago.AccountOutput{
-		Amount:         0,
-		Mana:           outputToConvert.StoredMana(),
+		Amount: 0,
+		// Mana:           outputToConvert.StoredMana(),
 		AccountID:      blockIssuerAccountID,
 		FoundryCounter: 0,
 		UnlockConditions: []iotago.AccountOutputUnlockCondition{
@@ -354,17 +345,16 @@ LoopWaitIssuerAccount:
 
 	// mana
 	blockIssuance, err := c.nodeAPIClient.BlockIssuance(c.ctx)
+	if err != nil {
+		return err
+	}
 	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
-
 	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
 		txBuilder.CreationSlot(),
 		blockIssuance.LatestCommitment.ReferenceManaCost,
 		blockIssuerAccountID,
 		1,
 	)
-	if err != nil {
-		return err
-	}
 
 	tx, err := txBuilder.Build(kp.AsAddressSigner())
 	if err != nil {

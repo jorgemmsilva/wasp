@@ -343,11 +343,18 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 		},
 	})
 
-	// mana
 	blockIssuance, err := c.nodeAPIClient.BlockIssuance(c.ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to query block issuance info: %w", err)
 	}
+
+	latestCommitmentID, err := blockIssuance.LatestCommitment.ID()
+	if err != nil {
+		return fmt.Errorf("failed to get latest commitment ID: %w", err)
+	}
+
+	txBuilder.AddCommitmentInput(&iotago.CommitmentInput{CommitmentID: latestCommitmentID})
+	txBuilder.AddBlockIssuanceCreditInput(&iotago.BlockIssuanceCreditInput{AccountID: blockIssuerAccountID})
 	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
 	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
 		txBuilder.CreationSlot(),

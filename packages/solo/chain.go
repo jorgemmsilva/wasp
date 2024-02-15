@@ -38,6 +38,7 @@ import (
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/state/indexedstore"
 	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 	"github.com/iotaledger/wasp/packages/vm"
@@ -502,28 +503,29 @@ func (ch *Chain) L1L2Funds(addr iotago.Address) *L1L2AddressAssets {
 }
 
 func (ch *Chain) GetL2FundsFromFaucet(agentID isc.AgentID, baseTokens ...iotago.BaseToken) {
-	// deterministically find a L1 address that has 0 balance on L2
-	walletKey, walletAddr := func() (*cryptolib.KeyPair, iotago.Address) {
-		masterSeed := []byte("GetL2FundsFromFaucet")
-		i := uint32(0)
-		for {
-			ss := cryptolib.SubSeed(masterSeed, i, testutil.L1API.ProtocolParameters().Bech32HRP())
-			key, addr := ch.Env.NewKeyPair(&ss)
-			_, err := ch.Env.GetFundsFromFaucet(addr)
-			require.NoError(ch.Env.T, err)
-			if ch.L2BaseTokens(isc.NewAgentID(addr)) == 0 {
-				return key, addr
-			}
-			i++
-		}
-	}()
-
 	var amount iotago.BaseToken
 	if len(baseTokens) > 0 {
 		amount = baseTokens[0]
 	} else {
-		amount = ch.Env.L1BaseTokens(walletAddr)/2 - TransferAllowanceToGasBudgetBaseTokens
+		amount = utxodb.FundsFromFaucetAmount - TransferAllowanceToGasBudgetBaseTokens
 	}
+
+	// deterministically find a L1 address that has 0 balance on L2
+	walletKey, _ := func() (*cryptolib.KeyPair, iotago.Address) {
+		masterSeed := []byte("GetL2FundsFromFaucet")
+		for i := uint32(0); ; i++ {
+			ss := cryptolib.SubSeed(masterSeed, i, testutil.L1API.ProtocolParameters().Bech32HRP())
+			key, addr := ch.Env.NewKeyPair(&ss)
+			if ch.L2BaseTokens(isc.NewAgentID(addr)) == 0 {
+				// need some extra amount to store excess mana in TransferAllowanceTo
+				fundsFromUtxodb := max(amount*2, utxodb.FundsFromFaucetAmount)
+				_, err := ch.Env.GetFundsFromFaucet(addr, fundsFromUtxodb)
+				require.NoError(ch.Env.T, err)
+				return key, addr
+			}
+		}
+	}()
+
 	err := ch.TransferAllowanceTo(
 		isc.NewAssetsBaseTokens(amount),
 		agentID,

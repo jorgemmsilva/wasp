@@ -30,7 +30,6 @@ func locateBaseDir() string {
 
 	baseDir := path.Join(homeDir, ".wasp-cli")
 	_, err = os.Stat(baseDir)
-
 	if err != nil {
 		err = os.Mkdir(baseDir, os.ModePerm)
 		log.Check(err)
@@ -168,6 +167,7 @@ func SetWalletProviderString(provider string) {
 func GetSeedForMigration() string {
 	return viper.GetString("wallet.seed")
 }
+func RemoveSeedForMigration() { viper.Set("wallet.seed", "") }
 
 func GetWalletLogLevel() types.ILoggerConfigLevelFilter {
 	logLevel := viper.GetString("wallet.loglevel")

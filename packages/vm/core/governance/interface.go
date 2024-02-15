@@ -152,8 +152,9 @@ const (
 	// state pruning
 	VarBlockKeepAmount = "b" // covered in: TestMetadata
 
-	// AccountID of the chain's AccountOutput
-	VarChainAccountID = "A" // TODO
+	// AccountID of the chain's AccountOutput.
+	// TODO: New in [iota2.0].
+	VarChainAccountID = "A"
 )
 
 // request parameters

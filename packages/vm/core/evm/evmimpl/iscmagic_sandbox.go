@@ -4,9 +4,8 @@
 package evmimpl
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/holiman/uint256"
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/hashing"
@@ -56,8 +55,8 @@ func (h *magicContractHandler) TakeAllowedFunds(addr common.Address, allowance i
 
 var errInvalidAllowance = coreerrors.Register("allowance must not be greater than sent tokens").Create()
 
-func (h *magicContractHandler) handleCallValue(callValue *big.Int) iotago.BaseToken {
-	adjustedTxValue, _ := util.EthereumDecimalsToBaseTokenDecimals(callValue, h.ctx.TokenInfo().Decimals)
+func (h *magicContractHandler) handleCallValue(callValue *uint256.Int) iotago.BaseToken {
+	adjustedTxValue, _ := util.EthereumDecimalsToBaseTokenDecimals(callValue.ToBig(), h.ctx.TokenInfo().Decimals)
 
 	evmAddr := isc.NewEthereumAddressAgentID(h.ctx.ChainID(), iscmagic.Address)
 	caller := isc.NewEthereumAddressAgentID(h.ctx.ChainID(), h.caller.Address())

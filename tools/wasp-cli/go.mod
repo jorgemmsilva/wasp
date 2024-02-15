@@ -3,7 +3,7 @@ module github.com/iotaledger/wasp/tools/wasp-cli
 go 1.21
 
 replace (
-	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.13.10-wasp
+	github.com/ethereum/go-ethereum => github.com/iotaledger/go-ethereum v1.13.12-wasp1
 	github.com/iotaledger/wasp => ../../
 	go.dedis.ch/kyber/v3 => github.com/kape1395/kyber/v3 v3.0.14-0.20230124095845-ec682ff08c93 // branch: dkg-2suites
 )
@@ -17,21 +17,18 @@ require (
 	github.com/iotaledger/hive.go/log v0.0.0-20240124155714-a0713583cf95
 	github.com/iotaledger/iota.go/v4 v4.0.0-20240213155212-c6caf30e259a
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000
+	github.com/iotaledger/wasp-wallet-sdk v0.0.0-20240206105424-87cee27ddfbf
 	github.com/samber/lo v1.39.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/viper v1.18.2
+	github.com/stretchr/testify v1.8.4
+	github.com/tyler-smith/go-bip39 v1.1.0
+	github.com/zalando/go-keyring v0.2.3
 	golang.org/x/term v0.17.0
 )
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
-	github.com/iotaledger/wasp-wallet-sdk v0.0.0-20240206105424-87cee27ddfbf
-	github.com/stretchr/testify v1.8.4
-	github.com/tyler-smith/go-bip39 v1.1.0
-	github.com/zalando/go-keyring v0.2.3
-)
-
-require (
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/DataDog/zstd v1.5.5 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -223,9 +220,9 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/exp v0.0.0-20240119083558-1b970713d09a // indirect
+	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/mod v0.14.0 // indirect
-	golang.org/x/net v0.20.0 // indirect
+	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect

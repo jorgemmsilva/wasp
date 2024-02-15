@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
@@ -23,10 +24,14 @@ func EVMEstimateGas(
 	ch chaintypes.ChainCore,
 	chainOutputs *isc.ChainOutputs,
 	call ethereum.CallMsg,
-) (uint64, error) {
+) (uint64, error) { //nolint:gocyclo,funlen
 	// Determine the lowest and highest possible gas limits to binary search in between
+	intrinsicGas, err := core.IntrinsicGas(call.Data, nil, call.To == nil, true, true, true)
+	if err != nil {
+		return 0, err
+	}
 	var (
-		lo     uint64 = params.TxGas - 1
+		lo     uint64 = intrinsicGas - 1
 		hi     uint64
 		gasCap uint64
 	)

@@ -82,6 +82,7 @@ const (
 const (
 	// Array of blockIndex => BlockInfo (pruned)
 	// Covered in: TestGetEvents
+	// TODO [iota2.0]: Support reading BlockInfo pre 2.0 (or prune)
 	PrefixBlockRegistry = "a"
 
 	// Map of request.ID().LookupDigest() => []RequestLookupKey (pruned)
@@ -93,6 +94,7 @@ const (
 	// Map of RequestLookupKey => RequestReceipt (pruned)
 	//   RequestLookupKey = blockIndex | requestIndex
 	// Covered in: TestGetEvents
+	// TODO [iota2.0]: Support reading RequestReceipt pre 2.0 (or prune)
 	prefixRequestReceipts = "c"
 
 	// Map of EventLookupKey => event (pruned)
@@ -102,11 +104,13 @@ const (
 
 	// Map of requestID => unprocessableRequestRecord
 	// Covered in: TestUnprocessableWithPruning
+	// TODO [iota2.0]: Delete? (In 2.0 it is not possible to send more than a single native token or NFT)
 	prefixUnprocessableRequests = "u"
 
 	// Array of requestID.
 	// Temporary list of unprocessable requests that need updating the outputID field
 	// Covered in: TestUnprocessableWithPruning
+	// TODO [iota2.0]: Delete? (In 2.0 it is not possible to send more than a single native token or NFT)
 	prefixNewUnprocessableRequests = "U"
 )
 

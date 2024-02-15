@@ -34,8 +34,9 @@ const (
 	// prefixBaseTokens | <accountID> stores the amount of base tokens (big.Int)
 	// Covered in: TestFoundries
 	prefixBaseTokens = "b"
-	// prefixBaseTokens | <accountID> stores a map of <nativeTokenID> => big.Int
+	// PrefixNativeTokens | <accountID> stores a map of <nativeTokenID> => big.Int
 	// Covered in: TestFoundries
+	// TODO [iota2.0]: needs migration if NativeTokenIDs are not preserved
 	PrefixNativeTokens = "t"
 
 	// L2TotalsAccount is the special <accountID> storing the total fungible tokens
@@ -45,16 +46,21 @@ const (
 
 	// PrefixNFTs | <agentID> stores a map of <NFTID> => true
 	// Covered in: TestDepositNFTWithMinStorageDeposit
+	// TODO [iota2.0]: needs migration if NFTIDs are not preserved
 	PrefixNFTs = "n"
-	// PrefixNFTsByCollection | <agentID> | <collectionID> stores a map of <nftID> => true
+	// PrefixNFTsByCollection | <agentID> | <collectionID> stores a map of <NFTID> => true
 	// Covered in: TestNFTMint
 	// Covered in: TestDepositNFTWithMinStorageDeposit
+	// TODO [iota2.0]: needs migration if NFTIDs are not preserved
 	PrefixNFTsByCollection = "c"
-	// prefixNewlyMintedNFTs stores a map of <position in minted list> => <newly minted NFT> to be updated when the outputID is known
+	// prefixNewlyMintedNFTs stores a map of <position in minted list> => <mintedNFTRecord> to be updated when the outputID is known
 	// Covered in: TestNFTMint
+	// TODO [iota2.0]: needs migration
 	prefixNewlyMintedNFTs = "N"
-	// prefixMintIDMap stores a map of <internal NFTID> => <NFTID> it is updated when the NFTID of newly minted nfts is known
+	// prefixMintIDMap stores a map of <mintID> => <NFTID> it is updated when the NFTID of newly minted nfts is known
 	// Covered in: TestNFTMint
+	// TODO [iota2.0]: migrate mintID?
+	// TODO [iota2.0]: needs migration if NFTIDs are not preserved
 	prefixMintIDMap = "M"
 	// PrefixFoundries + <agentID> stores a map of <foundrySN> (uint32) => true
 	// Covered in: TestFoundries
@@ -69,26 +75,35 @@ const (
 	keyNonce = "m"
 
 	// keyNativeTokenOutputMap stores a map of <nativeTokenID> => nativeTokenOutputRec
+	// TODO [iota2.0]:
+	//  - Does NativeTokenID need migration? Size is the same (38)
+	//  - migrate nativeTokenOutputRec
 	// Covered in: TestFoundries
 	keyNativeTokenOutputMap = "TO"
 	// keyFoundryOutputRecords stores a map of <foundrySN> => foundryOutputRec
 	// Covered in: TestFoundries
+	// TODO [iota2.0]: migrate foundryOutputRec
 	keyFoundryOutputRecords = "FO"
 	// keyNFTOutputRecords stores a map of <NFTID> => NFTOutputRec
 	// Covered in: TestDepositNFTWithMinStorageDeposit
+	// TODO [iota2.0]: needs migration if NFTIDs are not preserved
+	// TODO [iota2.0]: migrate NFTOutputRec
 	keyNFTOutputRecords = "NO"
 	// keyNFTOwner stores a map of <NFTID> => isc.AgentID
 	// Covered in: TestDepositNFTWithMinStorageDeposit
+	// TODO [iota2.0]: needs migration if NFTIDs are not preserved
 	keyNFTOwner = "NW"
 
 	// keyNewNativeTokens stores an array of <nativeTokenID>, containing the newly created native tokens that need filling out the OutputID
 	// Covered in: TestFoundries
+	// TODO [iota2.0]: needs migration if NativeTokenIDs are not preserved
 	keyNewNativeTokens = "TN"
 	// keyNewFoundries stores an array of <foundrySN>, containing the newly created foundries that need filling out the OutputID
 	// Covered in: TestFoundries
 	keyNewFoundries = "FN"
 	// keyNewNFTs stores an array of <NFTID>, containing the newly created NFTs that need filling out the OutputID
 	// Covered in: TestDepositNFTWithMinStorageDeposit
+	// TODO [iota2.0]: needs migration if NFTIDs are not preserved
 	keyNewNFTs = "NN"
 )
 

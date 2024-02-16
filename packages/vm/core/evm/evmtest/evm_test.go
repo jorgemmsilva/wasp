@@ -1585,6 +1585,16 @@ func testERC20NativeTokens(
 		)
 	}
 	{
+		// test querying balance via ISC.Accounts.getL2BalanceNativeTokens
+		ethKey, _ := env.Chain.NewEthereumAccountWithL2Funds()
+		iscTest := env.deployISCTestContract(ethKey)
+
+		var bal *big.Int
+		err := iscTest.callView("getBalance", []interface{}{iscmagic.WrapNativeTokenID(nativeTokenID), iscmagic.WrapISCAgentID(ethAgentID)}, &bal)
+		require.NoError(t, err)
+		require.EqualValues(t, l2Balance(ethAgentID), bal.Uint64())
+	}
+	{
 		initialBalance := l2Balance(ethAgentID)
 		_, ethAddr2 := solo.NewEthereumAccount()
 		eth2AgentID := isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr2)

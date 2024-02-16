@@ -210,4 +210,9 @@ contract ISCTest {
         emit SomeEvent();
         revert();
     }
+
+   function getBalance(NativeTokenID memory nativeTokenID, ISCAgentID memory agentID) public view returns (uint256) {
+        return ISC.accounts.getL2BalanceNativeTokens(nativeTokenID, agentID);
+    }
+ 
 }

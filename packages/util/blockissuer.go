@@ -21,3 +21,14 @@ func BlockIssuerFromOutputs(outputs iotago.OutputSet) (iotago.AccountID, error) 
 	}
 	return blockIssuerID, nil
 }
+
+func AccountOutputFromOutputs(outputs iotago.OutputSet) (iotago.OutputID, *iotago.AccountOutput) {
+	// use whatever account output is present in unspent outputs
+	for id, out := range outputs {
+		if out.Type() == iotago.OutputAccount {
+			// found the account to issue the block from, do not include it in the tx
+			return id, out.(*iotago.AccountOutput)
+		}
+	}
+	return iotago.EmptyOutputID, nil
+}

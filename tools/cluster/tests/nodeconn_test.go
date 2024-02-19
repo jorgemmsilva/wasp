@@ -153,8 +153,7 @@ func TestNodeConn(t *testing.T) {
 
 	// wallet := cryptolib.NewKeyPair()
 	// client.RequestFunds(wallet)
-	// tx, err := client.MakeSimpleValueTX(wallet, chainID.AsAddress(), 1*isc.Million)
-	// require.NoError(t, err)
+	// tx := makeSimpleValueTX(t,client, wallet, chainID.AsAddress(), 1*isc.Million)
 
 	// ctxPublish, cancelPublish := context.WithCancel(context.Background())
 	// nc.PublishTX(ctxPublish, chainID, tx, func(tx *iotago.Transaction, confirmed bool) {

@@ -32,13 +32,6 @@ type Config struct {
 type Client interface {
 	// requests funds from faucet, waits for confirmation
 	RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Duration) error
-	// creates a simple value transaction
-	MakeSimpleValueTX(
-		sender cryptolib.VariantKeyPair,
-		recipientAddr iotago.Address,
-		amount iotago.BaseToken,
-		blockIssuerAccountID iotago.AccountID,
-	) (*iotago.SignedTransaction, error)
 	// sends a tx (build block, do tipselection, etc) and wait for confirmation
 	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer cryptolib.VariantKeyPair, timeout ...time.Duration) (iotago.BlockID, error)
 	// returns the outputs owned by a given address
@@ -48,7 +41,7 @@ type Client interface {
 	// used to query the health endpoint of the node
 	Health(timeout ...time.Duration) (bool, error)
 	// APIProvider returns the L1 APIProvider
-	APIProvider() iotago.APIProvider
+	APIProvider() *nodeclient.Client
 	// Bech32HRP returns the bech32 humanly readable prefix for the current network
 	Bech32HRP() iotago.NetworkPrefix
 	// TokenInfo returns information about the L1 BaseToken
@@ -200,7 +193,10 @@ func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.B
 		// check if block was included
 		switch metadata.BlockState {
 		case api.BlockStateConfirmed, api.BlockStateFinalized:
-			return util.WaitActionDone, nil // success
+			if metadata.TransactionMetadata.TransactionFailureReason == api.TxFailureNone {
+				return util.WaitActionDone, nil // success
+			}
+			return util.WaitActionDone, fmt.Errorf("block was successful, but tx failed with reason: %v", metadata.TransactionMetadata.TransactionFailureReason) // tx failed
 
 		case api.BlockStateRejected, api.BlockStateFailed:
 			return util.WaitActionDone, fmt.Errorf("block was not included in the ledger.  LedgerInclusionState: %s, FailureReason: %d",
@@ -283,7 +279,7 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 
 	blockIssuerAccountID := iotago.AccountIDFromOutputID(outputToConvertID)
 
-	// wait until  blockIssuerAccountID is available on the "accounts ledger"
+	// wait until blockIssuerAccountID is available on the "accounts ledger"
 	lo.Must0(
 		util.WaitUntil(ctxWithTimeout, func() (util.WaitAction, error) {
 			congestion, err2 := c.nodeAPIClient.Congestion(ctxWithTimeout, blockIssuerAccountID.ToAddress().(*iotago.AccountAddress), c.nodeAPIClient.LatestAPI().MaxBlockWork())
@@ -310,9 +306,9 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 		Input:        outputToConvert,
 	})
 
-	issuerAccountOutput := &iotago.AccountOutput{
-		Amount: 0,
-		// Mana:           outputToConvert.StoredMana(),
+	// convert it into an account output
+	txBuilder.AddOutput(&iotago.AccountOutput{
+		Amount:         outputToConvert.BaseTokenAmount(),
 		AccountID:      blockIssuerAccountID,
 		FoundryCounter: 0,
 		UnlockConditions: []iotago.AccountOutputUnlockCondition{
@@ -328,19 +324,6 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 				},
 			},
 		},
-	}
-	// set the amount to the minimum possible SD
-	issuerAccountOutput.Amount = lo.Must(l1API.StorageScoreStructure().MinDeposit(issuerAccountOutput))
-	txBuilder.AddOutput(issuerAccountOutput)
-
-	txBuilder.AddOutput(&iotago.BasicOutput{
-		Amount: outputToConvert.BaseTokenAmount() - issuerAccountOutput.Amount,
-		Mana:   0,
-		UnlockConditions: []iotago.BasicOutputUnlockCondition{
-			&iotago.AddressUnlockCondition{
-				Address: kp.Address(),
-			},
-		},
 	})
 
 	blockIssuance, err := c.nodeAPIClient.BlockIssuance(c.ctx)
@@ -348,19 +331,14 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 		return fmt.Errorf("failed to query block issuance info: %w", err)
 	}
 
-	latestCommitmentID, err := blockIssuance.LatestCommitment.ID()
-	if err != nil {
-		return fmt.Errorf("failed to get latest commitment ID: %w", err)
-	}
-
-	txBuilder.AddCommitmentInput(&iotago.CommitmentInput{CommitmentID: latestCommitmentID})
+	txBuilder.AddCommitmentInput(&iotago.CommitmentInput{CommitmentID: lo.Must(blockIssuance.LatestCommitment.ID())})
 	txBuilder.AddBlockIssuanceCreditInput(&iotago.BlockIssuanceCreditInput{AccountID: blockIssuerAccountID})
 	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
 	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
 		txBuilder.CreationSlot(),
 		blockIssuance.LatestCommitment.ReferenceManaCost,
 		blockIssuerAccountID,
-		1,
+		0, // store the extra mana in the account output
 	)
 
 	tx, err := txBuilder.Build(kp.AsAddressSigner())
@@ -372,73 +350,12 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 	return err
 }
 
-func (c *l1client) APIProvider() iotago.APIProvider {
+func (c *l1client) APIProvider() *nodeclient.Client {
 	return c.nodeAPIClient
 }
 
 func (c *l1client) Bech32HRP() iotago.NetworkPrefix {
 	return c.nodeAPIClient.LatestAPI().ProtocolParameters().Bech32HRP()
-}
-
-func (c *l1client) MakeSimpleValueTX(
-	sender cryptolib.VariantKeyPair,
-	recipientAddr iotago.Address,
-	amount iotago.BaseToken,
-	blockIssuerAccountID iotago.AccountID,
-) (*iotago.SignedTransaction, error) {
-	senderAddr := sender.Address()
-	senderAccountOutputs, err := c.OutputMap(senderAddr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get address outputs: %w", err)
-	}
-	txBuilder := builder.NewTransactionBuilder(c.APIProvider().LatestAPI())
-	inputSum := iotago.BaseToken(0)
-	for i, o := range senderAccountOutputs {
-		if inputSum >= amount {
-			break
-		}
-		oid := i
-		out := o
-		txBuilder = txBuilder.AddInput(&builder.TxInput{
-			UnlockTarget: senderAddr,
-			InputID:      oid,
-			Input:        out,
-		})
-		inputSum += out.BaseTokenAmount()
-	}
-	if inputSum < amount {
-		return nil, fmt.Errorf("not enough funds, have=%v, need=%v", inputSum, amount)
-	}
-	txBuilder = txBuilder.AddOutput(&iotago.BasicOutput{
-		Amount:           amount,
-		UnlockConditions: iotago.BasicOutputUnlockConditions{&iotago.AddressUnlockCondition{Address: recipientAddr}},
-	})
-	storeManaOutputIndex := 0
-
-	if inputSum > amount {
-		txBuilder = txBuilder.AddOutput(&iotago.BasicOutput{
-			Amount:           inputSum - amount,
-			UnlockConditions: iotago.BasicOutputUnlockConditions{&iotago.AddressUnlockCondition{Address: recipientAddr}},
-		})
-		storeManaOutputIndex = 1
-	}
-
-	// mana ---
-	blockIssuance, err := c.nodeAPIClient.BlockIssuance(c.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query block issuance info: %w", err)
-	}
-	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
-		txBuilder.CreationSlot(),
-		blockIssuance.LatestCommitment.ReferenceManaCost,
-		blockIssuerAccountID,
-		storeManaOutputIndex,
-	)
-	// ---
-
-	return txBuilder.Build(
-		sender.AsAddressSigner(),
-	)
 }
 
 func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID iotago.AccountID, signer cryptolib.VariantKeyPair) (*iotago.Block, error) {

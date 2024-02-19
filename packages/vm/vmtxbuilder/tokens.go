@@ -93,7 +93,7 @@ func (n *nativeTokenBalance) identicalInOut() bool {
 		panic("identicalBasicOutputs: internal inconsistency 1")
 	case n.accountingInput == nil || n.accountingOutput == nil:
 		return false
-	case !n.accountingInput.Ident().Equal(n.accountingOutput.Ident()):
+	case !n.accountingInput.Owner().Equal(n.accountingOutput.Owner()):
 		return false
 	case n.accountingInput.Amount != n.accountingOutput.Amount:
 		return false

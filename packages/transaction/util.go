@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"time"
 
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
+	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 
@@ -60,16 +63,19 @@ func ComputeInputsAndRemainder(
 	slotIndex iotago.SlotIndex,
 	l1 iotago.APIProvider,
 ) (
-	inputIDs iotago.OutputIDs,
-	remainder iotago.TxEssenceOutputs,
+	inputs iotago.OutputSet,
+	remainder []iotago.Output,
+	blockIssuerAccountID iotago.AccountID,
 	err error,
 ) {
+	inputs = make(iotago.OutputSet)
 	sum := NewEmptyAssetsWithMana()
 
 	unspentOutputIDs := lo.Keys(unspentOutputs)
 	slices.SortFunc(unspentOutputIDs, func(a, b iotago.OutputID) int {
 		return bytes.Compare(a[:], b[:])
 	})
+	var issuerAccountOutput *iotago.AccountOutput
 	for _, outputID := range unspentOutputIDs {
 		output := unspentOutputs[outputID]
 		if output.UnlockConditionSet().StorageDepositReturn() != nil {
@@ -91,25 +97,32 @@ func ComputeInputsAndRemainder(
 			// this is an UTXO that holds an foundry that is not relevant for this tx, should be skipped
 			continue
 		}
-		if _, ok := output.(*iotago.AccountOutput); ok {
-			// this is an UTXO that holds an account that is not relevant for this tx, should be skipped
-			continue
+		if accUTXO, ok := output.(*iotago.AccountOutput); ok {
+			// NOTE: only the 1st account output found will be used
+			// this is an UTXO that holds an account make note of it. it should be used to save all excess base tokens + mana
+			if issuerAccountOutput != nil {
+				continue // already have an account output
+			}
+			issuerAccountOutput = accUTXO
 		}
-		inputIDs = append(inputIDs, outputID)
-		a, err := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex, l1)
-		if err != nil {
-			return nil, nil, err
+		inputs[outputID] = output
+		a, err2 := AssetsAndAvailableManaFromOutput(outputID, output, slotIndex, l1)
+		if err2 != nil {
+			return nil, nil, iotago.EmptyAccountID, err2
 		}
 		sum.Add(a)
 		if sum.Geq(target) {
 			break
 		}
 	}
-	remainder, err = computeRemainderOutputs(senderAddress, sum, target, l1.APIForSlot(slotIndex))
-	if err != nil {
-		return nil, nil, err
+	if issuerAccountOutput == nil {
+		return nil, nil, iotago.EmptyAccountID, fmt.Errorf("no account issuer output found")
 	}
-	return inputIDs, remainder, nil
+	remainder, err = computeRemainderOutputs(senderAddress, issuerAccountOutput, sum, target, l1.APIForSlot(slotIndex))
+	if err != nil {
+		return nil, nil, iotago.EmptyAccountID, err
+	}
+	return inputs, remainder, issuerAccountOutput.AccountID, nil
 }
 
 // computeRemainderOutputs calculates remainders for base tokens and native tokens
@@ -121,20 +134,16 @@ func ComputeInputsAndRemainder(
 
 func computeRemainderOutputs(
 	senderAddress iotago.Address,
+	accountOutput *iotago.AccountOutput,
 	available *AssetsWithMana,
 	target *AssetsWithMana,
 	l1API iotago.API,
-) (ret iotago.TxEssenceOutputs, err error) {
+) (ret []iotago.Output, err error) {
 	excess := available.Clone()
 	if excess.BaseTokens < target.BaseTokens {
 		return nil, ErrNotEnoughBaseTokens
 	}
 	excess.BaseTokens -= target.BaseTokens
-
-	if excess.Mana < target.Mana {
-		return nil, ErrNotEnoughMana
-	}
-	excess.Mana -= target.Mana
 
 	for id, amount := range target.NativeTokens {
 		excessAmount := excess.NativeTokens.ValueOrBigInt0(id)
@@ -157,9 +166,9 @@ func computeRemainderOutputs(
 				&iotago.AddressUnlockCondition{Address: senderAddress},
 			},
 		}
-		sd, err := l1API.StorageScoreStructure().MinDeposit(out)
-		if err != nil {
-			return nil, err
+		sd, err2 := l1API.StorageScoreStructure().MinDeposit(out)
+		if err2 != nil {
+			return nil, err2
 		}
 		if excess.BaseTokens < sd {
 			return nil, ErrNotEnoughBaseTokensForStorageDeposit
@@ -169,69 +178,103 @@ func computeRemainderOutputs(
 		ret = append(ret, out)
 	}
 
-	if excess.BaseTokens > 0 {
-		out := &iotago.BasicOutput{
-			Amount: excess.BaseTokens,
-			UnlockConditions: iotago.BasicOutputUnlockConditions{
-				&iotago.AddressUnlockCondition{Address: senderAddress},
-			},
-		}
-		sd, err := l1API.StorageScoreStructure().MinDeposit(out)
-		if err != nil {
-			return nil, err
-		}
-		if excess.BaseTokens < sd {
-			return nil, ErrNotEnoughBaseTokensForStorageDeposit
-		}
-		ret = append(ret, out)
+	// NOTE: the account output must be the last one ( other tx building functions assume this is the case)
+	// place all remaining base tokens in the account output
+	newAccountOutput := accountOutput.Clone().(*iotago.AccountOutput)
+
+	minSD, err := l1API.StorageScoreStructure().MinDeposit(newAccountOutput)
+	if err != nil {
+		return nil, err
+	}
+	if excess.BaseTokens < minSD {
+		return nil, fmt.Errorf("not enough remaining base tokens for the Storage Deposit of the Account Output")
 	}
 
-	if excess.Mana > 0 {
-		if len(ret) == 0 {
-			// cannot place excess mana into a remainder output
-			return nil, ErrExcessMana
-		}
-		out := ret[len(ret)-1].(*iotago.BasicOutput)
-		out.Mana = excess.Mana
-	}
+	newAccountOutput.Amount = excess.BaseTokens
+	newAccountOutput.Mana = 0 // let the mana be placed here when `AllotMinRequiredManaAndStoreRemainingManaInOutput` is called
+	ret = append(ret, newAccountOutput)
 
 	return ret, nil
 }
 
-func MakeSignatureAndReferenceUnlocks(totalInputs int, sig iotago.Signature) iotago.Unlocks {
-	ret := make(iotago.Unlocks, totalInputs)
-	ret[0] = &iotago.SignatureUnlock{Signature: sig}
-	for i := 1; i < totalInputs; i++ {
-		ret[i] = &iotago.ReferenceUnlock{Reference: 0}
+func TxBuilderFromInputsAndOutputs(
+	l1API iotago.API,
+	inputs iotago.OutputSet,
+	outputs []iotago.Output,
+	wallet cryptolib.VariantKeyPair,
+) *builder.TransactionBuilder {
+	txBuilder := builder.NewTransactionBuilder(l1API, wallet)
+
+	for inputID, input := range inputs {
+		txBuilder.AddInput(&builder.TxInput{
+			UnlockTarget: wallet.Address(),
+			InputID:      inputID,
+			Input:        input,
+		})
 	}
-	return ret
+
+	for _, output := range outputs {
+		txBuilder.AddOutput(output)
+	}
+	return txBuilder
 }
 
-func CreateAndSignTx(
-	wallet cryptolib.VariantKeyPair,
-	inputs iotago.TxEssenceInputs,
-	outputs iotago.TxEssenceOutputs,
-	creationSlot iotago.SlotIndex,
-	l1API iotago.API,
+func finalizeAndSignTx(
+	txBuilder *builder.TransactionBuilder,
+	blockIssuance *api.IssuanceBlockHeaderResponse,
+	storedManaOutputIndex int,
+	blockIssuerID iotago.AccountID,
 ) (*iotago.SignedTransaction, error) {
-	tx := &iotago.Transaction{
-		API: l1API,
-		TransactionEssence: &iotago.TransactionEssence{
-			NetworkID:    l1API.ProtocolParameters().NetworkID(),
-			CreationSlot: creationSlot,
-			Inputs:       inputs,
-		},
-		Outputs: outputs,
+	txBuilder.AddCommitmentInput(&iotago.CommitmentInput{CommitmentID: lo.Must(blockIssuance.LatestCommitment.ID())})
+	txBuilder.AddBlockIssuanceCreditInput(&iotago.BlockIssuanceCreditInput{AccountID: blockIssuerID})
+	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
+	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
+		txBuilder.CreationSlot(),
+		blockIssuance.LatestCommitment.ReferenceManaCost,
+		blockIssuerID,
+		storedManaOutputIndex,
+	)
+
+	return txBuilder.Build()
+}
+
+func BlockFromTx(
+	l1API iotago.API,
+	bi *api.IssuanceBlockHeaderResponse,
+	signedTx *iotago.SignedTransaction,
+	blockIssuerID iotago.AccountID,
+	signer cryptolib.VariantKeyPair,
+) (*iotago.Block, error) {
+	// the issuing time of the blocks need to be monotonically increasing
+	issuingTime := time.Now().UTC()
+	if bi.LatestParentBlockIssuingTime.After(issuingTime) {
+		issuingTime = bi.LatestParentBlockIssuingTime.Add(time.Nanosecond)
 	}
 
-	sigs, err := SignTransaction(tx, wallet)
+	return builder.NewBasicBlockBuilder(l1API).
+		SlotCommitmentID(bi.LatestCommitment.MustID()).
+		LatestFinalizedSlot(bi.LatestFinalizedSlot).
+		StrongParents(bi.StrongParents).
+		WeakParents(bi.WeakParents).
+		ShallowLikeParents(bi.ShallowLikeParents).
+		Payload(signedTx).
+		CalculateAndSetMaxBurnedMana(bi.LatestCommitment.ReferenceManaCost).
+		IssuingTime(issuingTime).
+		SignWithSigner(blockIssuerID, signer, signer.Address()).
+		Build()
+}
+
+func FinalizeTxAndBuildBlock(
+	l1API iotago.API,
+	txBuilder *builder.TransactionBuilder,
+	blockIssuance *api.IssuanceBlockHeaderResponse,
+	storedManaOutputIndex int,
+	blockIssuerID iotago.AccountID,
+	signer cryptolib.VariantKeyPair,
+) (*iotago.Block, error) {
+	tx, err := finalizeAndSignTx(txBuilder, blockIssuance, storedManaOutputIndex, blockIssuerID)
 	if err != nil {
 		return nil, err
 	}
-
-	return &iotago.SignedTransaction{
-		API:         l1API,
-		Transaction: tx,
-		Unlocks:     MakeSignatureAndReferenceUnlocks(len(inputs), sigs[0]),
-	}, nil
+	return BlockFromTx(l1API, blockIssuance, tx, blockIssuerID, signer)
 }

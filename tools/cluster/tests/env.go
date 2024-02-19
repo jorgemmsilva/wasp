@@ -26,6 +26,7 @@ import (
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/evm"
 	"github.com/iotaledger/wasp/tools/cluster"
@@ -65,9 +66,9 @@ func (e *ChainEnv) deployWasmContract(wasmName string) *contractEnv {
 	require.NoError(e.t, err)
 	chClient := chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), e.Chain.ChainID, e.Chain.OriginatorKeyPair)
 
-	reqTx, err := chClient.DepositFunds(1_000_000)
+	reqBlock, err := chClient.DepositFunds(1_000_000)
 	require.NoError(e.t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(reqBlock), false, 30*time.Second)
 	require.NoError(e.t, err)
 
 	ph, err := e.Chain.DeployWasmContract(wasmName, wasm, nil)
@@ -110,29 +111,29 @@ func (e *ChainEnv) NewChainClient() *chainclient.Client {
 }
 
 func (e *ChainEnv) DepositFunds(amount iotago.BaseToken, keyPair cryptolib.VariantKeyPair) {
-	tx, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncDeposit.Message(), chainclient.PostRequestParams{
+	block, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncDeposit.Message(), chainclient.PostRequestParams{
 		Transfer: isc.NewAssetsBaseTokens(iotago.BaseToken(amount)),
 	})
 	require.NoError(e.t, err)
-	txID, err := tx.ID()
+	txID, err := block.ID()
 	require.NoError(e.t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(e.t, err, "Error while WaitUntilAllRequestsProcessedSuccessfully for tx.ID=%v", txID.ToHex())
 }
 
 func (e *ChainEnv) TransferFundsTo(assets *isc.Assets, nft *isc.NFT, keyPair *cryptolib.KeyPair, targetAccount isc.AgentID) {
 	transferAssets := assets.Clone()
 	transferAssets.AddBaseTokens(1 * isc.Million) // to pay for the fees
-	tx, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncTransferAllowanceTo.Message(targetAccount), chainclient.PostRequestParams{
+	block, err := e.Chain.Client(keyPair).PostRequest(accounts.FuncTransferAllowanceTo.Message(targetAccount), chainclient.PostRequestParams{
 		Transfer:                 transferAssets,
 		NFT:                      nft,
 		Allowance:                assets,
 		AutoAdjustStorageDeposit: false,
 	})
 	require.NoError(e.t, err)
-	txID, err := tx.ID()
+	txID, err := block.ID()
 	require.NoError(e.t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(e.t, err, "Error while WaitUntilAllRequestsProcessedSuccessfully for tx.ID=%v", txID.ToHex())
 }
 

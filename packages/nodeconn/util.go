@@ -138,17 +138,17 @@ func getAnchorIDFromOtherOutputs(output iotago.Output) iotago.AnchorID {
 	var addressToCheck iotago.Address
 	switch output.Type() {
 	case iotago.OutputBasic:
-		addressToCheck = output.(*iotago.BasicOutput).Ident()
+		addressToCheck = output.(*iotago.BasicOutput).Owner()
 
 	case iotago.OutputAnchor:
 		// chains can't own other anchor outputs
 		return iotago.AnchorID{}
 
 	case iotago.OutputFoundry:
-		addressToCheck = output.(*iotago.FoundryOutput).Ident()
+		addressToCheck = output.(*iotago.FoundryOutput).Owner()
 
 	case iotago.OutputNFT:
-		addressToCheck = output.(*iotago.NFTOutput).Ident()
+		addressToCheck = output.(*iotago.NFTOutput).Owner()
 
 	default:
 		panic(fmt.Errorf("%w: type %d", iotago.ErrUnknownOutputType, output.Type()))

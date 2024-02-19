@@ -18,6 +18,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
@@ -49,35 +50,36 @@ func (tcl *TestChainLedger) ChainID() isc.ChainID {
 	return tcl.chainID
 }
 
-func (tcl *TestChainLedger) MakeTxChainOrigin(committeeAddress iotago.Address) (*iotago.SignedTransaction, *isc.ChainOutputs, isc.ChainID) {
+func (tcl *TestChainLedger) MakeTxChainOrigin(committeePubKey *cryptolib.PublicKey) (*iotago.Block, *isc.ChainOutputs, isc.ChainID) {
 	outs := tcl.utxoDB.GetUnspentOutputs(tcl.governor.Address())
-	originTX, _, chainID, err := origin.NewChainOriginTransaction(
+	originBlock, _, _, chainID, err := origin.NewChainOriginTransaction(
 		tcl.governor,
-		committeeAddress,
+		committeePubKey,
 		tcl.governor.Address(),
 		100*isc.Million,
-		0,
 		nil,
 		outs,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 		testutil.L1APIProvider,
+		tcl.utxoDB.BlockIssuance(),
 		testutil.TokenInfo,
 	)
 	require.NoError(tcl.t, err)
-	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
+	originTx := util.TxFromBlock(originBlock)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTx.Transaction)
 	require.NoError(tcl.t, err)
 	require.NotNil(tcl.t, stateAnchor)
 	require.NotNil(tcl.t, anchorOutput)
 	chainOutputs := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID, nil, iotago.OutputID{})
-	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(originTX))
+	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(originBlock))
 	tcl.chainID = chainID
-	return originTX, chainOutputs, chainID
+	return originBlock, chainOutputs, chainID
 }
 
 func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []isc.Request {
 	outs := tcl.utxoDB.GetUnspentOutputs(account.Address())
-	tx, err := transaction.NewRequestTransaction(
+	block, err := transaction.NewRequestTransaction(
 		account,
 		account.Address(),
 		outs,
@@ -94,16 +96,17 @@ func (tcl *TestChainLedger) MakeTxAccountsDeposit(account *cryptolib.KeyPair) []
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		false,
 		testutil.L1APIProvider,
+		tcl.utxoDB.BlockIssuance(),
 	)
 	require.NoError(tcl.t, err)
-	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))
-	return tcl.findChainRequests(tx.Transaction)
+	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(block))
+	return tcl.findChainRequests(util.TxFromBlock(block).Transaction)
 }
 
 func (tcl *TestChainLedger) MakeTxDeployIncCounterContract() []isc.Request {
 	sender := tcl.governor
 	outs := tcl.utxoDB.GetUnspentOutputs(sender.Address())
-	tx, err := transaction.NewRequestTransaction(
+	block, err := transaction.NewRequestTransaction(
 		sender,
 		sender.Address(),
 		outs,
@@ -124,10 +127,11 @@ func (tcl *TestChainLedger) MakeTxDeployIncCounterContract() []isc.Request {
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		false,
 		testutil.L1APIProvider,
+		tcl.utxoDB.BlockIssuance(),
 	)
 	require.NoError(tcl.t, err)
-	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(tx))
-	return tcl.findChainRequests(tx.Transaction)
+	require.NoError(tcl.t, tcl.utxoDB.AddToLedger(block))
+	return tcl.findChainRequests(util.TxFromBlock(block).Transaction)
 }
 
 func (tcl *TestChainLedger) FakeStateTransition(chainOuts *isc.ChainOutputs, stateCommitment *state.L1Commitment) *isc.ChainOutputs {

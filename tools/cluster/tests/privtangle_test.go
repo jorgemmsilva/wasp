@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -18,6 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -61,11 +61,11 @@ func TestPrivtangleStartup(t *testing.T) {
 	addr2 := kp2.GetPublicKey().AsEd25519Address()
 	initialOutputCountAddr2 := mustOutputCount(client, addr2)
 
-	blockIssuerID, err := util.BlockIssuerFromOutputs(mustOutputMap(client, myAddress))
+	blockIssuerID, err := util.BlockIssuerAccountIDFromOutputs(mustOutputMap(client, myAddress))
 	require.NoError(t, err)
 
-	tx := makeSimpleValueTX(t, client, myKeyPair, addr2, 500_000, blockIssuerID)
-	_, err = client.PostTxAndWaitUntilConfirmation(tx, blockIssuerID, myKeyPair)
+	block := makeSimpleValueTX(t, client, myKeyPair, addr2, 500_000, blockIssuerID)
+	err = client.PostBlockAndWaitUntilConfirmation(block)
 	require.NoError(t, err)
 
 	for i := 0; ; i++ {
@@ -84,13 +84,13 @@ func makeSimpleValueTX(
 	recipientAddr iotago.Address,
 	amount iotago.BaseToken,
 	blockIssuerID iotago.AccountID,
-) *iotago.SignedTransaction {
+) *iotago.Block {
 	senderAddr := sender.Address()
 	senderAccountOutputs, err := c.OutputMap(senderAddr)
 	require.NoError(t, err)
 
 	l1API := c.APIProvider().LatestAPI()
-	txBuilder := builder.NewTransactionBuilder(l1API)
+	txBuilder := builder.NewTransactionBuilder(l1API, sender)
 
 	// use the funds in the account output
 	accountUTXOID, accountUTXO := util.AccountOutputFromOutputs(senderAccountOutputs)
@@ -117,28 +117,21 @@ func makeSimpleValueTX(
 	newAccountUTXO := accountUTXO.Clone().(*iotago.AccountOutput)
 	newAccountUTXO.Amount -= amount // update the amount in the account output
 	newAccountUTXO.Mana = 0         // set mana to 0, it will be updated later
-	txBuilder = txBuilder.AddOutput(newAccountUTXO)
+	txBuilder.AddOutput(newAccountUTXO)
 
-	// mana ---
 	blockIssuance, err := c.APIProvider().BlockIssuance(context.Background())
 	require.NoError(t, err)
 
-	txBuilder.AddCommitmentInput(&iotago.CommitmentInput{CommitmentID: lo.Must(blockIssuance.LatestCommitment.ID())})
-	txBuilder.AddBlockIssuanceCreditInput(&iotago.BlockIssuanceCreditInput{AccountID: blockIssuerID})
-	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
-	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
-		txBuilder.CreationSlot(),
-		blockIssuance.LatestCommitment.ReferenceManaCost,
+	block, err := transaction.FinalizeTxAndBuildBlock(
+		l1API,
+		txBuilder,
+		blockIssuance,
+		1,
 		blockIssuerID,
-		1, // save the mana in the account output
-	)
-	// ---
-
-	tx, err := txBuilder.Build(
-		sender.AsAddressSigner(),
+		sender,
 	)
 	require.NoError(t, err)
-	return tx
+	return block
 }
 
 func mustOutputCount(client l1connection.Client, myAddress iotago.Address) int {

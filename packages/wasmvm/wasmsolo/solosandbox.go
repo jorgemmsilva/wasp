@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmhost"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib"
@@ -114,13 +115,13 @@ func (s *SoloSandbox) postSync(contract, function string, params dict.Dict, allo
 		res, ctx.Err = ctx.Chain.PostRequestOffLedger(req, ctx.keyPair)
 		ctx.UpdateGasFees()
 	} else if !ctx.isRequest {
-		ctx.Tx, res, ctx.Err = ctx.Chain.PostRequestSyncTx(req, ctx.keyPair)
+		ctx.Block, res, ctx.Err = ctx.Chain.PostRequestSyncTx(req, ctx.keyPair)
 		ctx.UpdateGasFees()
 	} else {
 		ctx.isRequest = false
-		ctx.Tx, _, ctx.Err = ctx.Chain.RequestFromParamsToLedger(req, nil)
+		ctx.Block, _, ctx.Err = ctx.Chain.RequestFromParamsToLedger(req, nil)
 		if ctx.Err == nil {
-			ctx.Chain.Env.EnqueueRequests(ctx.Tx)
+			ctx.Chain.Env.EnqueueRequests(util.TxFromBlock(ctx.Block))
 		}
 		// do NOT ctx.UpdateGasFees(), because this runs in parallel
 	}

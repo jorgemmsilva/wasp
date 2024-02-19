@@ -16,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
 
@@ -84,10 +85,10 @@ func testPost1Request(t *testing.T, e *ChainEnv) {
 
 	myClient := e.Chain.Client(myWallet)
 
-	tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
+	block, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 	require.NoError(t, err)
 
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(t, err)
 
 	e.expectCounter(43)
@@ -104,13 +105,13 @@ func testPost3Recursive(t *testing.T, e *ChainEnv) {
 	myClient := e.Chain.Client(myWallet)
 
 	var numRepeats int64 = 3
-	tx, err := myClient.PostRequest(inccounter.FuncIncAndRepeatMany.Message(nil, &numRepeats), chainclient.PostRequestParams{
+	block, err := myClient.PostRequest(inccounter.FuncIncAndRepeatMany.Message(nil, &numRepeats), chainclient.PostRequestParams{
 		Transfer:  isc.NewAssetsBaseTokens(10 * isc.Million),
 		Allowance: isc.NewAssetsBaseTokens(9 * isc.Million),
 	})
 	require.NoError(t, err)
 
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(t, err)
 
 	e.waitUntilCounterEquals(43+3, 10*time.Second)
@@ -130,12 +131,12 @@ func testPost5Requests(t *testing.T, e *ChainEnv) {
 	onChainBalance := iotago.BaseToken(0)
 	for i := 0; i < 5; i++ {
 		baseTokesSent := 1 * isc.Million
-		tx, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil), chainclient.PostRequestParams{
+		block, err := myClient.PostRequest(inccounter.FuncIncCounter.Message(nil), chainclient.PostRequestParams{
 			Transfer: isc.NewAssets(baseTokesSent, nil),
 		})
 		require.NoError(t, err)
 
-		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 		require.NoError(t, err)
 
 		gasFeeCharged := parseBaseToken(receipts[0].GasFeeCharged)
@@ -160,18 +161,18 @@ func testPost5AsyncRequests(t *testing.T, e *ChainEnv) {
 
 	myClient := e.Chain.Client(myWallet)
 
-	tx := [5]*iotago.SignedTransaction{}
+	blocks := [5]*iotago.Block{}
 	onChainBalance := iotago.BaseToken(0)
 	baseTokesSent := 1 * isc.Million
 	for i := 0; i < 5; i++ {
-		tx[i], err = myClient.PostRequest(inccounter.FuncIncCounter.Message(nil), chainclient.PostRequestParams{
+		blocks[i], err = myClient.PostRequest(inccounter.FuncIncCounter.Message(nil), chainclient.PostRequestParams{
 			Transfer: isc.NewAssets(baseTokesSent, nil),
 		})
 		require.NoError(t, err)
 	}
 
 	for i := 0; i < 5; i++ {
-		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx[i], false, 30*time.Second)
+		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(blocks[i]), false, 30*time.Second)
 		require.NoError(t, err)
 
 		gasFeeCharged := parseBaseToken(receipts[0].GasFeeCharged)

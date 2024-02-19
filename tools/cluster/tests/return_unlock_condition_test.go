@@ -1,72 +1,66 @@
 package tests
 
 import (
-	"math"
 	"testing"
-	"time"
-
-	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/cryptolib"
-	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/transaction"
 )
 
 // builds a normal tx to post a request to inccounter, optionally adds SDRC
 func buildTX(t *testing.T, env *ChainEnv, addr iotago.Address, keyPair *cryptolib.KeyPair, addSDRC bool) *iotago.SignedTransaction {
-	outputs, err := env.Clu.L1Client().OutputMap(addr)
-	require.NoError(t, err)
+	panic("TODO rewrite")
+	// outputs, err := env.Clu.L1Client().OutputMap(addr)
+	// require.NoError(t, err)
 
-	tx, err := transaction.NewRequestTransaction(
-		keyPair,
-		addr,
-		outputs,
-		&isc.RequestParameters{
-			TargetAddress: env.Chain.ChainAddress(),
-			Assets:        isc.NewAssets(2*isc.Million, nil),
-			Metadata: &isc.SendMetadata{
-				Message:   inccounter.FuncIncCounter.Message(nil),
-				GasBudget: math.MaxUint64,
-			},
-		},
-		nil,
-		env.Clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
-		false,
-		env.Clu.L1Client().APIProvider(),
-	)
-	require.NoError(t, err)
+	// tx, err := transaction.NewRequestTransaction(
+	// 	keyPair,
+	// 	addr,
+	// 	outputs,
+	// 	&isc.RequestParameters{
+	// 		TargetAddress: env.Chain.ChainAddress(),
+	// 		Assets:        isc.NewAssets(2*isc.Million, nil),
+	// 		Metadata: &isc.SendMetadata{
+	// 			Message:   inccounter.FuncIncCounter.Message(nil),
+	// 			GasBudget: math.MaxUint64,
+	// 		},
+	// 	},
+	// 	nil,
+	// 	env.Clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
+	// 	false,
+	// 	env.Clu.L1Client().APIProvider(),
+	// )
+	// require.NoError(t, err)
 
-	if !addSDRC {
-		return tx
-	}
+	// if !addSDRC {
+	// 	return tx
+	// }
 
-	// tweak the tx , so the request output has a StorageDepositReturn unlock condition
-	for i, out := range tx.Transaction.Outputs {
-		if out.FeatureSet().Metadata() == nil {
-			// skip if not the request output
-			continue
-		}
-		customOut := out.Clone().(*iotago.BasicOutput)
-		sendBackCondition := &iotago.StorageDepositReturnUnlockCondition{
-			ReturnAddress: addr,
-			Amount:        1 * isc.Million,
-		}
-		customOut.UnlockConditions = append(customOut.UnlockConditions, sendBackCondition)
-		tx.Transaction.Outputs[i] = customOut
-	}
+	// // tweak the tx , so the request output has a StorageDepositReturn unlock condition
+	// for i, out := range tx.Transaction.Outputs {
+	// 	if out.FeatureSet().Metadata() == nil {
+	// 		// skip if not the request output
+	// 		continue
+	// 	}
+	// 	customOut := out.Clone().(*iotago.BasicOutput)
+	// 	sendBackCondition := &iotago.StorageDepositReturnUnlockCondition{
+	// 		ReturnAddress: addr,
+	// 		Amount:        1 * isc.Million,
+	// 	}
+	// 	customOut.UnlockConditions = append(customOut.UnlockConditions, sendBackCondition)
+	// 	tx.Transaction.Outputs[i] = customOut
+	// }
 
-	// parameters.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
-	tx, err = transaction.CreateAndSignTx(
-		keyPair,
-		tx.Transaction.TransactionEssence.Inputs,
-		tx.Transaction.Outputs,
-		env.Clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
-		env.Clu.L1Client().APIProvider().LatestAPI(),
-	)
-	require.NoError(t, err)
-	return tx
+	// // parameters.L1API().TimeProvider().SlotFromTime(vmctx.task.Timestamp)
+	// tx, err = transaction.CreateAndSignTx(
+	// 	keyPair,
+	// 	tx.Transaction.TransactionEssence.Inputs,
+	// 	tx.Transaction.Outputs,
+	// 	env.Clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
+	// 	env.Clu.L1Client().APIProvider().LatestAPI(),
+	// )
+	// require.NoError(t, err)
+	// return tx
 }
 
 // executed in cluster_test.go

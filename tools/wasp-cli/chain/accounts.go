@@ -176,7 +176,7 @@ func initDepositCmd() *cobra.Command {
 				// deposit to own agentID
 				tokens := util.ParseFungibleTokens(util.ArgsToFungibleTokensStr(args))
 
-				util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), node, func() (*iotago.SignedTransaction, error) {
+				util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), node, func() (*iotago.Block, error) {
 					client := cliclients.WaspClient(node)
 
 					return wallet.ChainClient(client, chainID).PostRequest(
@@ -209,7 +209,7 @@ func initDepositCmd() *cobra.Command {
 					}
 				}
 
-				util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), node, func() (*iotago.SignedTransaction, error) {
+				util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), node, func() (*iotago.Block, error) {
 					client := cliclients.WaspClient(node)
 
 					return wallet.ChainClient(client, chainID).PostRequest(

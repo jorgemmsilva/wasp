@@ -205,7 +205,7 @@ const (
 // contract constants
 const (
 	// DefaultMinBaseTokensOnCommonAccount can't harvest the minimum
-	DefaultMinBaseTokensOnCommonAccount = iotago.BaseToken(3000)
+	DefaultMinBaseTokensOnCommonAccount = 10 * isc.Million
 
 	BlockKeepAll           = -1
 	DefaultBlockKeepAmount = 10_000
@@ -231,7 +231,7 @@ func (o OutputChainInfo) Encode(info *isc.ChainInfo) dict.Dict {
 		varGasLimitsBytes:    info.GasLimits.Bytes(),
 		varMetadata:          info.Metadata.Bytes(),
 	}
-	if len(info.PublicURL) > 0 {
+	if info.PublicURL == "" {
 		ret.Set(varPublicURL, codec.String.Encode(info.PublicURL))
 	}
 	return ret
@@ -247,7 +247,7 @@ func (o OutputChainInfo) Decode(r dict.Dict) (*isc.ChainInfo, error) {
 
 type InputAddCandidateNode struct{}
 
-func (_ InputAddCandidateNode) Encode(a *AccessNodeInfo) dict.Dict {
+func (InputAddCandidateNode) Encode(a *AccessNodeInfo) dict.Dict {
 	return dict.Dict{
 		ParamAccessNodeInfoForCommittee: codec.Bool.Encode(a.ForCommittee),
 		ParamAccessNodeInfoPubKey:       a.NodePubKey,
@@ -256,7 +256,7 @@ func (_ InputAddCandidateNode) Encode(a *AccessNodeInfo) dict.Dict {
 	}
 }
 
-func (_ InputAddCandidateNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
+func (InputAddCandidateNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
 	return &AccessNodeInfo{
 		NodePubKey:   d[ParamAccessNodeInfoPubKey],
 		Certificate:  d[ParamAccessNodeInfoCertificate],
@@ -274,7 +274,7 @@ func (e InputRevokeAccessNode) Encode(a *AccessNodeInfo) dict.Dict {
 	}
 }
 
-func (_ InputRevokeAccessNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
+func (InputRevokeAccessNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
 	return &AccessNodeInfo{
 		NodePubKey:  d[ParamAccessNodeInfoPubKey],
 		Certificate: d[ParamAccessNodeInfoCertificate],
@@ -283,7 +283,7 @@ func (_ InputRevokeAccessNode) Decode(d dict.Dict) (*AccessNodeInfo, error) {
 
 type InputChangeAccessNodes struct{}
 
-func (_ InputChangeAccessNodes) Encode(r ChangeAccessNodesRequest) dict.Dict {
+func (InputChangeAccessNodes) Encode(r ChangeAccessNodesRequest) dict.Dict {
 	d := dict.New()
 	actionsMap := collections.NewMap(d, ParamChangeAccessNodesActions)
 	for pubKey, action := range r {
@@ -294,7 +294,7 @@ func (_ InputChangeAccessNodes) Encode(r ChangeAccessNodesRequest) dict.Dict {
 
 var errInvalidAction = coreerrors.Register("invalid action").Create()
 
-func (_ InputChangeAccessNodes) Decode(d dict.Dict) (ChangeAccessNodesRequest, error) {
+func (InputChangeAccessNodes) Decode(d dict.Dict) (ChangeAccessNodesRequest, error) {
 	actions := NewChangeAccessNodesRequest()
 	m := collections.NewMapReadOnly(d, ParamChangeAccessNodesActions)
 	var err error
@@ -319,7 +319,7 @@ func (_ InputChangeAccessNodes) Decode(d dict.Dict) (ChangeAccessNodesRequest, e
 
 type OutputChainNodes struct{}
 
-func (_ OutputChainNodes) Encode(r *GetChainNodesResponse) dict.Dict {
+func (OutputChainNodes) Encode(r *GetChainNodesResponse) dict.Dict {
 	res := dict.New()
 	candidates := collections.NewMap(res, ParamGetChainNodesAccessNodeCandidates)
 	for pk, ani := range r.AccessNodeCandidates {
@@ -332,7 +332,7 @@ func (_ OutputChainNodes) Encode(r *GetChainNodesResponse) dict.Dict {
 	return res
 }
 
-func (_ OutputChainNodes) Decode(d dict.Dict) (*GetChainNodesResponse, error) {
+func (OutputChainNodes) Decode(d dict.Dict) (*GetChainNodesResponse, error) {
 	res := &GetChainNodesResponse{
 		AccessNodeCandidates: make(map[cryptolib.PublicKeyKey]*AccessNodeInfo),
 		AccessNodes:          make(map[cryptolib.PublicKeyKey]struct{}),

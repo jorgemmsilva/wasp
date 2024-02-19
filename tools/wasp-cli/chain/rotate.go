@@ -59,8 +59,8 @@ func initRotateWithDKGCmd() *cobra.Command {
 				defer setMaintenanceStatus(chain, node, false, offLedger)
 			}
 
-			controllerAddr := doDKG(node, peers, quorum)
-			rotateTo(chain, controllerAddr)
+			controllerPubKey := doDKG(node, peers, quorum)
+			rotateTo(chain, controllerPubKey.AsEd25519Address())
 		},
 	}
 

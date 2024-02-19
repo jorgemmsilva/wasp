@@ -87,12 +87,12 @@ func testAccessNodesOffLedger(t *testing.T, numRequests, numValidatorNodes, clus
 	require.NoError(t, err)
 
 	accountsClient := e.Chain.Client(keyPair)
-	tx, err := accountsClient.PostRequest(accounts.FuncDeposit.Message(), chainclient.PostRequestParams{
+	block, err := accountsClient.PostRequest(accounts.FuncDeposit.Message(), chainclient.PostRequestParams{
 		Transfer: isc.NewAssetsBaseTokens(1_000_000),
 	})
 	require.NoError(t, err)
 
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(t, err)
 
 	myClient := e.Chain.Client(keyPair)

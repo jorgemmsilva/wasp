@@ -13,12 +13,18 @@ import (
 
 	"github.com/samber/lo"
 
+	hiveEd25519 "github.com/iotaledger/hive.go/crypto/ed25519"
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/iota.go/v4/vm"
 	"github.com/iotaledger/iota.go/v4/vm/nova"
+	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 const (
@@ -30,19 +36,21 @@ const (
 var (
 	genesisPrivKey = ed25519.NewKeyFromSeed([]byte("3.141592653589793238462643383279"))
 	genesisAddress = iotago.Ed25519AddressFromPubKey(genesisPrivKey.Public().(ed25519.PublicKey))
-	genesisSigner  = iotago.NewInMemoryAddressSigner(iotago.NewAddressKeysForEd25519Address(genesisAddress, genesisPrivKey))
+	genesisSigner  = cryptolib.KeyPairFromPrivateKey(lo.Must(cryptolib.PrivateKeyFromBytes(genesisPrivKey[:])))
 )
 
 // UtxoDB mocks the Tangle ledger by implementing a fully synchronous in-memory database
 // of transactions. It ensures the consistency of the ledger and all added transactions
 // by checking inputs, outputs and signatures.
 type UtxoDB struct {
-	mutex        sync.RWMutex
-	transactions map[iotago.TransactionID]*iotago.SignedTransaction
-	utxo         map[iotago.OutputID]struct{}
-	timestamp    time.Time
-	timestep     time.Duration
-	api          iotago.API
+	mutex              sync.RWMutex
+	transactions       map[iotago.TransactionID]*iotago.SignedTransaction
+	utxo               map[iotago.OutputID]struct{}
+	blockIssuer        map[iotago.AccountID]struct{}
+	timestamp          time.Time
+	timestep           time.Duration
+	api                iotago.API
+	genesisBlockIssuer iotago.AccountID
 }
 
 // New creates a new UtxoDB instance
@@ -50,6 +58,7 @@ func New(api iotago.API) *UtxoDB {
 	u := &UtxoDB{
 		transactions: make(map[iotago.TransactionID]*iotago.SignedTransaction),
 		utxo:         make(map[iotago.OutputID]struct{}),
+		blockIssuer:  make(map[iotago.AccountID]struct{}),
 		timestamp:    time.Unix(1, 0),
 		timestep:     1 * time.Millisecond,
 		api:          api,
@@ -58,35 +67,71 @@ func New(api iotago.API) *UtxoDB {
 	return u
 }
 
-func (u *UtxoDB) TxBuilder() *builder.TransactionBuilder {
-	return builder.NewTransactionBuilder(u.api).SetCreationSlot(u.SlotIndex())
+func (u *UtxoDB) TxBuilder(signer iotago.AddressSigner) *builder.TransactionBuilder {
+	return builder.NewTransactionBuilder(u.api, signer).SetCreationSlot(u.SlotIndex())
 }
 
 func (u *UtxoDB) genesisInit() {
-	genesisTx, err := u.TxBuilder().
+	inputID := u.dummyOutputID()
+	blockIssuerAccountID := iotago.AccountIDFromOutputID(inputID)
+
+	hivepubKey, _, err := hiveEd25519.PublicKeyFromBytes(genesisPrivKey.Public().(ed25519.PublicKey)[:])
+	if err != nil {
+		panic(err)
+	}
+
+	// create and account output for the faucet to be able to issue blocks
+	accountIssuerOutput := &iotago.AccountOutput{
+		Amount:         0,
+		Mana:           0,
+		AccountID:      blockIssuerAccountID,
+		FoundryCounter: 0,
+		UnlockConditions: []iotago.AccountOutputUnlockCondition{
+			&iotago.AddressUnlockCondition{
+				Address: genesisAddress,
+			},
+		},
+		Features: []iotago.AccountOutputFeature{
+			&iotago.BlockIssuerFeature{
+				ExpirySlot: math.MaxUint32,
+				BlockIssuerKeys: []iotago.BlockIssuerKey{
+					iotago.Ed25519PublicKeyHashBlockIssuerKeyFromPublicKey(hivepubKey),
+				},
+			},
+		},
+	}
+	accountIssuerMinSD := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(accountIssuerOutput))
+	accountIssuerOutput.Amount = accountIssuerMinSD
+
+	// keep all the iotas and mana in a basic output (so it can be freely sent to someone else)
+	fundsOutput := &iotago.BasicOutput{
+		Amount: u.Supply() - accountIssuerMinSD,
+		Mana:   iotago.MaxMana / 2, // if you use max mana here, it will blow up when trying to build a block later
+		UnlockConditions: iotago.BasicOutputUnlockConditions{
+			&iotago.AddressUnlockCondition{Address: genesisAddress},
+		},
+	}
+
+	genesisTx, err := u.TxBuilder(genesisSigner).
 		AddInput(&builder.TxInput{
 			UnlockTarget: genesisAddress,
-			InputID:      u.dummyOutputID(),
+			InputID:      inputID,
 			Input: &iotago.BasicOutput{
 				Amount: u.Supply(),
-				Mana:   iotago.MaxMana / 2,
+				Mana:   iotago.MaxMana / 2, // if you use max mana here, it will blow up when trying to build a block later
 				UnlockConditions: iotago.BasicOutputUnlockConditions{
 					&iotago.AddressUnlockCondition{Address: genesisAddress},
 				},
 			},
 		}).
-		AddOutput(&iotago.BasicOutput{
-			Amount: u.Supply(),
-			Mana:   iotago.MaxMana / 2,
-			UnlockConditions: iotago.BasicOutputUnlockConditions{
-				&iotago.AddressUnlockCondition{Address: genesisAddress},
-			},
-		}).
-		Build(genesisSigner)
+		AddOutput(accountIssuerOutput).
+		AddOutput(fundsOutput).
+		Build()
 	if err != nil {
 		panic(err)
 	}
 	u.addTransaction(genesisTx, true)
+	u.genesisBlockIssuer = blockIssuerAccountID
 }
 
 func (u *UtxoDB) dummyOutputID() iotago.OutputID {
@@ -98,26 +143,51 @@ func (u *UtxoDB) dummyOutputID() iotago.OutputID {
 	return outputID
 }
 
+func hasImplicitAccount(o *iotago.BasicOutput) bool {
+	if addressUnlock := o.UnlockConditionSet().Address(); addressUnlock != nil {
+		return addressUnlock.Address.Type() == iotago.AddressImplicitAccountCreation
+	}
+	return false
+}
+
 func (u *UtxoDB) addTransaction(tx *iotago.SignedTransaction, isGenesis bool) {
 	txid, err := tx.Transaction.ID()
 	if err != nil {
 		panic(err)
 	}
-	// delete consumed outputs from the ledger
+	// delete consumed account outputs from the ledger (they will be added back if still on the output side)
 	inputs, err := u.getTransactionInputs(tx)
 	if !isGenesis && err != nil {
 		panic(err)
 	}
-	for outID := range inputs {
+	for outID, out := range inputs {
 		delete(u.utxo, outID)
+		switch o := out.(type) {
+		case *iotago.AccountOutput:
+			delete(u.blockIssuer, util.AccountIDFromOutputAndID(o, outID))
+		case *iotago.BasicOutput: // check for implicit accounts
+			if hasImplicitAccount(o) {
+				delete(u.blockIssuer, iotago.AccountIDFromOutputID(outID))
+			}
+		}
 	}
 	// store transaction
 	u.transactions[txid] = tx
 
 	// add unspent outputs to the ledger
-	for i := range tx.Transaction.Outputs {
+	for i, out := range tx.Transaction.Outputs {
 		outputID := iotago.OutputIDFromTransactionIDAndIndex(txid, uint16(i))
 		u.utxo[outputID] = struct{}{}
+
+		// keep track of issuer accounts
+		switch o := out.(type) {
+		case *iotago.AccountOutput:
+			u.blockIssuer[util.AccountIDFromOutputAndID(o, outputID)] = struct{}{}
+		case *iotago.BasicOutput: // check for implicit accounts
+			if hasImplicitAccount(o) {
+				u.blockIssuer[iotago.AccountIDFromOutputID(outputID)] = struct{}{}
+			}
+		}
 	}
 	u.advanceTime(u.timestep)
 	u.checkLedgerBalance()
@@ -161,65 +231,133 @@ func (u *UtxoDB) GenesisAddress() iotago.Address {
 	return genesisAddress
 }
 
-func (u *UtxoDB) mustGetFundsFromFaucetTx(target iotago.Address, amount ...iotago.BaseToken) *iotago.SignedTransaction {
+// NewWalletWithFundsFromFaucet sends FundsFromFaucetAmount base tokens from the genesis address to the given address.
+//
+//nolint:funlen
+func (u *UtxoDB) NewWalletWithFundsFromFaucet(keyPair ...*cryptolib.KeyPair) (*cryptolib.KeyPair, *iotago.Block, error) {
+	var wallet *cryptolib.KeyPair
+	if len(keyPair) > 0 {
+		wallet = keyPair[0]
+	} else {
+		wallet = cryptolib.NewKeyPair()
+	}
+	walletPubkey := wallet.GetPublicKey()
+	if len(u.getUnspentOutputs(wallet.Address())) > 0 {
+		return nil, nil, fmt.Errorf("this account already has funds on L1")
+	}
+
+	implicitAccoutAddr := iotago.ImplicitAccountCreationAddressFromPubKey(walletPubkey.AsEd25519PubKey())
+
+	hivePubKey, _, err := hiveEd25519.PublicKeyFromBytes((*walletPubkey)[:])
+	if err != nil {
+		return nil, nil, err
+	}
+
 	unspentOutputs := u.getUnspentOutputs(genesisAddress)
-	if len(unspentOutputs) != 1 {
-		panic("number of genesis outputs must be 1")
+	if len(unspentOutputs) != 2 {
+		panic("number of genesis outputs must be 2")
 	}
 	var input *iotago.BasicOutput
 	var inputID iotago.OutputID
 	for oid, out := range unspentOutputs {
+		if out.Type() == iotago.OutputAccount {
+			continue
+		}
 		input = out.(*iotago.BasicOutput)
 		inputID = oid
 	}
 
-	mana, err := vm.TotalManaIn(
-		u.api.ManaDecayProvider(),
-		u.api.StorageScoreStructure(),
-		u.slotIndex(),
-		vm.InputSet{inputID: input},
-		vm.RewardsInputSet{},
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	fundsAmount := FundsFromFaucetAmount
-	if len(amount) > 0 {
-		fundsAmount = amount[0]
-	}
-
-	tx, err := u.TxBuilder().
+	txBuilder := u.TxBuilder(genesisSigner).
 		AddInput(&builder.TxInput{
 			UnlockTarget: genesisAddress,
 			InputID:      inputID,
 			Input:        input,
 		}).
 		AddOutput(&iotago.BasicOutput{
-			Amount: fundsAmount,
-			UnlockConditions: iotago.BasicOutputUnlockConditions{
-				&iotago.AddressUnlockCondition{Address: target},
+			Amount: FundsFromFaucetAmount,
+			Mana:   ManaFromFaucetAmount,
+			UnlockConditions: []iotago.BasicOutputUnlockCondition{
+				&iotago.AddressUnlockCondition{Address: implicitAccoutAddr}, // send to the implicit acount
 			},
-			Mana: ManaFromFaucetAmount,
-		}).
-		AddOutput(&iotago.BasicOutput{
-			Amount: input.Amount - fundsAmount,
-			UnlockConditions: iotago.BasicOutputUnlockConditions{
-				&iotago.AddressUnlockCondition{Address: genesisAddress},
-			},
-			Mana: mana - ManaFromFaucetAmount,
-		}).
-		Build(genesisSigner)
-	if err != nil {
-		panic(err)
-	}
-	return tx
-}
+			Features: []iotago.BasicOutputFeature{},
+		})
 
-// GetFundsFromFaucet sends FundsFromFaucetAmount base tokens from the genesis address to the given address.
-func (u *UtxoDB) GetFundsFromFaucet(target iotago.Address, amount ...iotago.BaseToken) (*iotago.SignedTransaction, error) {
-	tx := u.mustGetFundsFromFaucetTx(target, amount...)
-	return tx, u.AddToLedger(tx)
+	nextFaucetOutput := input.Clone().(*iotago.BasicOutput)
+	nextFaucetOutput.Amount -= FundsFromFaucetAmount
+	nextFaucetOutput.Mana = 0 // set to 0, because it will be filled by `FinalizeAndSignTx`
+	txBuilder.AddOutput(nextFaucetOutput)
+
+	blockIssuance := u.BlockIssuance()
+
+	block, err := transaction.FinalizeTxAndBuildBlock(
+		testutil.L1API,
+		txBuilder,
+		blockIssuance,
+		1,
+		u.genesisBlockIssuer,
+		genesisSigner,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = u.AddToLedger(block)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// now take the basic output owned by the implicit acount and convert it to an AccountOutput
+	tx := util.TxFromBlock(block)
+	outputToConvert := tx.Transaction.Outputs[0].Clone()
+	outputToConvertID := iotago.OutputIDFromTransactionIDAndIndex(lo.Must(tx.Transaction.ID()), 0)
+
+	txBuilderTarget := u.TxBuilder(wallet).
+		AddInput(&builder.TxInput{
+			UnlockTarget: wallet.Address(),
+			InputID:      outputToConvertID,
+			Input:        outputToConvert,
+		})
+
+	blockIssuerAccountID := iotago.AccountIDFromOutputID(outputToConvertID)
+
+	txBuilderTarget.
+		AddOutput(&iotago.AccountOutput{
+			Amount:    FundsFromFaucetAmount,
+			Mana:      0,
+			AccountID: blockIssuerAccountID,
+			UnlockConditions: []iotago.AccountOutputUnlockCondition{
+				&iotago.AddressUnlockCondition{
+					Address: wallet.Address(),
+				},
+			},
+			Features: []iotago.AccountOutputFeature{
+				&iotago.BlockIssuerFeature{
+					ExpirySlot: math.MaxUint32,
+					BlockIssuerKeys: []iotago.BlockIssuerKey{
+						iotago.Ed25519PublicKeyHashBlockIssuerKeyFromPublicKey(hivePubKey),
+					},
+				},
+			},
+		})
+
+	convertBlock, err := transaction.FinalizeTxAndBuildBlock(
+		testutil.L1API,
+		txBuilderTarget,
+		u.BlockIssuance(),
+		0,
+		blockIssuerAccountID,
+		wallet,
+	)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = u.AddToLedger(convertBlock)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return wallet, convertBlock, nil
 }
 
 // Supply returns supply of the instance.
@@ -311,15 +449,45 @@ func (u *UtxoDB) validateTransaction(tx *iotago.SignedTransaction) error {
 }
 
 // AddToLedger adds a transaction to UtxoDB, ensuring consistency of the UtxoDB ledger.
-func (u *UtxoDB) AddToLedger(tx *iotago.SignedTransaction) error {
+func (u *UtxoDB) AddToLedger(block *iotago.Block) error {
 	u.mutex.Lock()
 	defer u.mutex.Unlock()
 
+	// check block signature
+	valid, err := block.VerifySignature()
+	if err != nil || !valid {
+		return fmt.Errorf("invalid block signature")
+	}
+
+	// verify that there is an account issuer for the block
+	if _, ok := u.blockIssuer[block.Header.IssuerID]; !ok {
+		return fmt.Errorf("block issuer not found")
+	}
+
+	// check block mana
+	b, ok := block.Body.(*iotago.BasicBlockBody)
+	if !ok {
+		return fmt.Errorf("unexpected block type, %v", block.Body.Type())
+	}
+	manaCost, err := block.ManaCost(u.blockIssuanceInfoFromSlot(block.Header.SlotCommitmentID.Index()).LatestCommitment.ReferenceManaCost)
+	if err != nil {
+		return err
+	}
+	if b.MaxBurnedMana < manaCost {
+		return fmt.Errorf("not enough mana burned: expected: %v, burned %v", manaCost, b.MaxBurnedMana)
+	}
+
+	// check block tx
+	if b.Payload.PayloadType() != iotago.PayloadSignedTransaction {
+		return fmt.Errorf("unexpected payload type, %v", b.Payload.PayloadType())
+	}
+
+	tx, _ := b.Payload.(*iotago.SignedTransaction)
 	if err := u.validateTransaction(tx); err != nil {
 		return err
 	}
-
 	u.addTransaction(tx, false)
+
 	return nil
 }
 
@@ -405,6 +573,34 @@ func (u *UtxoDB) GetAccountOutputs(addr iotago.Address) map[iotago.OutputID]*iot
 	return filterOutputsOfType[*iotago.AccountOutput](u.getUnspentOutputs(addr))
 }
 
+var dummyblockIDBytes = [iotago.BlockHeaderLength + iotago.Ed25519SignatureSerializedBytesSize]byte{0x1}
+
+func (u *UtxoDB) blockIssuanceInfoFromSlot(si iotago.SlotIndex) *api.IssuanceBlockHeaderResponse {
+	minRefManaCost := testutil.L1API.ProtocolParameters().CongestionControlParameters().MinReferenceManaCost
+
+	dummyBlockID := iotago.NewBlockID(si, lo.Must(iotago.BlockIdentifierFromBlockBytes(dummyblockIDBytes[:])))
+
+	return &api.IssuanceBlockHeaderResponse{
+		StrongParents:                []iotago.BlockID{dummyBlockID},
+		WeakParents:                  []iotago.BlockID{dummyBlockID},
+		ShallowLikeParents:           []iotago.BlockID{dummyBlockID},
+		LatestParentBlockIssuingTime: u.timestamp,
+		LatestFinalizedSlot:          si,
+		LatestCommitment: &iotago.Commitment{
+			ProtocolVersion:      3,
+			Slot:                 si,
+			PreviousCommitmentID: [36]byte{},
+			RootsID:              [32]byte{},
+			CumulativeWeight:     0,
+			ReferenceManaCost:    minRefManaCost + iotago.Mana(si), // make mana cost increase every block
+		},
+	}
+}
+
+func (u *UtxoDB) BlockIssuance() *api.IssuanceBlockHeaderResponse {
+	return u.blockIssuanceInfoFromSlot(u.slotIndex())
+}
+
 func filterOutputsOfType[T iotago.Output](outs iotago.OutputSet) map[iotago.OutputID]T {
 	ret := make(map[iotago.OutputID]T)
 	for oid, out := range outs {
@@ -444,9 +640,9 @@ func (u *UtxoDB) mustGetTransaction(txID iotago.TransactionID) *iotago.SignedTra
 
 func getOutputAddress(out iotago.Output, outputID iotago.OutputID) iotago.Address {
 	switch output := out.(type) {
-	case iotago.TransIndepIdentOutput:
-		return output.Ident()
-	case iotago.TransDepIdentOutput:
+	case iotago.OwnerTransitionIndependentOutput:
+		return output.Owner()
+	case iotago.OwnerTransitionDependentOutput:
 		chainID := output.ChainID()
 		if chainID.Empty() {
 			utxoChainID, is := chainID.(iotago.UTXOIDChainID)

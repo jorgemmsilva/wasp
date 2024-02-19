@@ -254,6 +254,7 @@ func (txb *AnchorTransactionBuilder) BuildTransactionEssence(
 
 // buildInputs generates a deterministic list of inputs for the transaction essence
 // - index 0 is always anchor output
+// - index 1 is always the account output
 // - then goes consumed external BasicOutput UTXOs, the requests, in the order of processing
 // - then goes inputs of native token UTXOs, sorted by token id
 // - then goes inputs of foundries sorted by serial number

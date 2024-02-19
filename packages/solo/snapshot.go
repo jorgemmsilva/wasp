@@ -43,7 +43,7 @@ func (env *Solo) TakeSnapshot() *Snapshot {
 			Name:                   ch.Name,
 			StateControllerKeyPair: rwutil.WriteToBytes(ch.StateControllerKeyPair),
 			ChainID:                ch.ChainID.Bytes(),
-			OriginatorPrivateKey:   rwutil.WriteToBytes(ch.OriginatorPrivateKey),
+			OriginatorPrivateKey:   rwutil.WriteToBytes(ch.OriginatorKeyPair),
 			ValidatorFeeTarget:     ch.ValidatorFeeTarget.Bytes(),
 		}
 
@@ -88,7 +88,7 @@ func (env *Solo) RestoreSnapshot(snapshot *Snapshot) {
 			Name:                   chainSnapshot.Name,
 			StateControllerKeyPair: sckp,
 			ChainID:                chainID,
-			OriginatorPrivateKey:   okp,
+			OriginatorKeyPair:      okp,
 			ValidatorFeeTarget:     val,
 			db:                     chainDB,
 			writeMutex:             &sync.Mutex{},

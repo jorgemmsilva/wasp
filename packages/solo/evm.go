@@ -134,17 +134,6 @@ func (b *jsonRPCSoloBackend) TakeSnapshot() (int, error) {
 	return len(b.snapshots) - 1, nil
 }
 
-/*
-indexDbEngine hivedb.Engine,
-indexDbPath string,
-db, err := database.DatabaseWithDefaultSettings(indexDbPath, true, indexDbEngine, false)
-
-	if err != nil {
-		panic(err)
-	}
-
-path.Join(indexDbPath, backend.ISCChainID().String())
-*/
 func (ch *Chain) EVM() *jsonrpc.EVMChain {
 	return jsonrpc.NewEVMChain(
 		newJSONRPCSoloBackend(ch),

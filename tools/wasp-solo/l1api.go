@@ -253,7 +253,7 @@ func l1FaucetInit(env *solo.Solo, e *echo.Echo) {
 		if prefix != env.L1APIProvider().CommittedAPI().ProtocolParameters().Bech32HRP() {
 			return echo.NewHTTPError(http.StatusBadRequest, "invalid network prefix")
 		}
-		_, err = env.L1Ledger().GetFundsFromFaucet(addr)
+		_, err = env.L1Ledger().NewWalletWithFundsFromFaucet(addr)
 		if err != nil {
 			return err
 		}

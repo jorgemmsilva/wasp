@@ -37,7 +37,7 @@ func test2Chains(t *testing.T, w bool) {
 	}).
 		WithNativeContract(sbtestsc.Processor)
 	chain1 := env.NewChain()
-	chain2, _ := env.NewChainExt(nil, 0, 0, "chain2")
+	chain2, _ := env.NewChainExt(nil, 0, "chain2")
 	// chain owner deposit base tokens on chain2
 	chain2BaseTokenOwnerDeposit := 5 * isc.Million
 	err := chain2.DepositAssetsToL2(isc.NewAssetsBaseTokens(chain2BaseTokenOwnerDeposit), nil)

@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
 
@@ -41,10 +42,10 @@ func TestDepositWithdraw(t *testing.T) {
 	chClient := chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), chain.ChainID, myWallet)
 
 	par := chainclient.NewPostRequestParams().WithBaseTokens(depositBaseTokens)
-	reqTx, err := chClient.PostRequest(accounts.FuncDeposit.Message(), *par)
+	block, err := chClient.PostRequest(accounts.FuncDeposit.Message(), *par)
 	require.NoError(t, err)
 
-	receipts, err := chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, reqTx, true, 30*time.Second)
+	receipts, err := chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, util.TxFromBlock(block), true, 30*time.Second)
 	require.NoError(t, err)
 	chEnv.checkLedger()
 

@@ -17,6 +17,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
@@ -45,10 +46,10 @@ func TestBasicAccountsNLow(t *testing.T) {
 }
 
 func testAccounts(e *ChainEnv) {
-	tx, err := e.Chain.DeployContract(inccounter.Contract.Name, inccounter.Contract.ProgramHash.String(), inccounter.InitParams(42))
+	block, err := e.Chain.DeployContract(inccounter.Contract.Name, inccounter.Contract.ProgramHash.String(), inccounter.InitParams(42))
 	require.NoError(e.t, err)
 
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(e.t, err)
 
 	e.t.Logf("   %s: %s", root.Contract.Name, root.Contract.Hname().String())
@@ -84,10 +85,10 @@ func testAccounts(e *ChainEnv) {
 	chClient := chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), e.Chain.ChainID, myWallet)
 
 	par := chainclient.NewPostRequestParams().WithBaseTokens(transferBaseTokens)
-	reqTx, err := chClient.PostRequest(inccounter.FuncIncCounter.Message(nil), *par)
+	reqBlock, err := chClient.PostRequest(inccounter.FuncIncCounter.Message(nil), *par)
 	require.NoError(e.t, err)
 
-	receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 10*time.Second)
+	receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(reqBlock), false, 10*time.Second)
 	require.NoError(e.t, err)
 
 	fees := iotago.BaseToken(lo.Must(strconv.ParseUint(receipts[0].GasFeeCharged, 10, 64)))
@@ -112,10 +113,10 @@ func testAccounts(e *ChainEnv) {
 func testBasic2Accounts(t *testing.T, env *ChainEnv) {
 	chain := env.Chain
 
-	tx, err := chain.DeployContract(inccounter.Contract.Name, inccounter.Contract.ProgramHash.String(), inccounter.InitParams(42))
+	block, err := chain.DeployContract(inccounter.Contract.Name, inccounter.Contract.ProgramHash.String(), inccounter.InitParams(42))
 	require.NoError(t, err)
 
-	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, tx, false, 30*time.Second)
+	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(env.t, err)
 
 	env.checkCoreContracts()
@@ -155,10 +156,10 @@ func testBasic2Accounts(t *testing.T, env *ChainEnv) {
 	myWalletClient := chainclient.New(env.Clu.L1Client(), env.Clu.WaspClient(0), chain.ChainID, myWallet)
 
 	par := chainclient.NewPostRequestParams().WithBaseTokens(transferBaseTokens)
-	reqTx, err := myWalletClient.PostRequest(inccounter.FuncIncCounter.Message(nil), *par)
+	reqBlock, err := myWalletClient.PostRequest(inccounter.FuncIncCounter.Message(nil), *par)
 	require.NoError(t, err)
 
-	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, reqTx, false, 30*time.Second)
+	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, util.TxFromBlock(reqBlock), false, 30*time.Second)
 	require.NoError(t, err)
 	env.checkLedger()
 

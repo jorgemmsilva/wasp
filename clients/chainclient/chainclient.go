@@ -72,7 +72,7 @@ func defaultParams(params ...PostRequestParams) PostRequestParams {
 func (c *Client) PostRequest(
 	msg isc.Message,
 	params ...PostRequestParams,
-) (*iotago.SignedTransaction, error) {
+) (*iotago.Block, error) {
 	outputsSet, err := c.Layer1Client.OutputMap(c.KeyPair.Address())
 	if err != nil {
 		return nil, err
@@ -85,44 +85,50 @@ func (c *Client) PostNRequests(
 	msg isc.Message,
 	requestsCount int,
 	params ...PostRequestParams,
-) ([]*iotago.SignedTransaction, error) {
+) ([]*iotago.Block, error) {
 	var err error
 	outputs, err := c.Layer1Client.OutputMap(c.KeyPair.Address())
 	if err != nil {
 		return nil, err
 	}
-	transactions := make([]*iotago.SignedTransaction, requestsCount)
+	blocks := make([]*iotago.Block, requestsCount)
 	for i := 0; i < requestsCount; i++ {
-		transactions[i], err = c.post1RequestWithOutputs(msg, outputs, params...)
+		blocks[i], err = c.post1RequestWithOutputs(msg, outputs, params...)
 		if err != nil {
 			return nil, err
 		}
-		txID, err := transactions[i].Transaction.ID()
+		tx := util.TxFromBlock(blocks[i])
+		txID, err := tx.Transaction.ID()
 		if err != nil {
 			return nil, err
 		}
-		for _, input := range lo.Must(transactions[i].Transaction.Inputs()) {
+		for _, input := range lo.Must(tx.Transaction.Inputs()) {
 			delete(outputs, input.OutputID())
 		}
-		for index, output := range transactions[i].Transaction.Outputs {
+		for index, output := range tx.Transaction.Outputs {
 			if basicOutput, ok := output.(*iotago.BasicOutput); ok {
-				if basicOutput.Ident().Equal(c.KeyPair.Address()) {
+				if basicOutput.Owner().Equal(c.KeyPair.Address()) {
 					outputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(index))
-					outputs[outputID] = transactions[i].Transaction.Outputs[index]
+					outputs[outputID] = tx.Transaction.Outputs[index]
 				}
 			}
 		}
 	}
-	return transactions, nil
+	return blocks, nil
 }
 
 func (c *Client) post1RequestWithOutputs(
 	msg isc.Message,
 	outputs iotago.OutputSet,
 	params ...PostRequestParams,
-) (*iotago.SignedTransaction, error) {
+) (*iotago.Block, error) {
 	par := defaultParams(params...)
-	tx, err := transaction.NewRequestTransaction(
+	bi, err := c.Layer1Client.APIProvider().BlockIssuance(context.TODO())
+	if err != nil {
+		return nil, err
+	}
+
+	block, err := transaction.NewRequestTransaction(
 		c.KeyPair,
 		c.KeyPair.Address(),
 		outputs,
@@ -140,18 +146,12 @@ func (c *Client) post1RequestWithOutputs(
 		c.Layer1Client.APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 		false,
 		c.Layer1Client.APIProvider(),
+		bi,
 	)
 	if err != nil {
 		return nil, err
 	}
-
-	blockIssuerID, err := util.BlockIssuerFromOutputs(outputs)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.Layer1Client.PostTxAndWaitUntilConfirmation(tx, blockIssuerID, c.KeyPair)
-	return tx, err
+	return block, c.Layer1Client.PostBlockAndWaitUntilConfirmation(block)
 }
 
 func (c *Client) ISCNonce(ctx context.Context) (uint64, error) {
@@ -206,7 +206,7 @@ func (c *Client) PostOffLedgerRequest(
 	return signed, err
 }
 
-func (c *Client) DepositFunds(n iotago.BaseToken) (*iotago.SignedTransaction, error) {
+func (c *Client) DepositFunds(n iotago.BaseToken) (*iotago.Block, error) {
 	return c.PostRequest(accounts.FuncDeposit.Message(), PostRequestParams{
 		Transfer: isc.NewAssets(n, nil),
 	})

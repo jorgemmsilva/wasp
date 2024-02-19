@@ -72,7 +72,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	// Create ledger accounts.
 	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
-	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
+	_, err := utxoDB.NewWalletWithFundsFromFaucet(originator.Address())
 	require.NoError(t, err)
 	//
 	// Create a fake network and keys for the tests.

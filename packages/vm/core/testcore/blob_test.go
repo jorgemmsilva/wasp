@@ -174,7 +174,7 @@ func TestBigBlob(t *testing.T) {
 
 	upload := func(n int) gas.GasUnits {
 		blobBin := make([]byte, n)
-		_, err := ch.UploadWasm(ch.OriginatorPrivateKey, blobBin)
+		_, err := ch.UploadWasm(ch.OriginatorKeyPair, blobBin)
 		require.NoError(t, err)
 		return ch.LastReceipt().GasBurned
 	}

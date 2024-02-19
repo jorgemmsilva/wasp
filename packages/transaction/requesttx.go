@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/util"
@@ -22,7 +23,8 @@ func NewTransferTransaction(
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
 	l1APIProvider iotago.APIProvider,
-) (*iotago.SignedTransaction, error) {
+	blockIssuance *api.IssuanceBlockHeaderResponse,
+) (*iotago.Block, error) {
 	l1API := l1APIProvider.APIForSlot(creationSlot)
 	output := MakeBasicOutput(
 		targetAddress,
@@ -45,7 +47,7 @@ func NewTransferTransaction(
 			ErrNotEnoughBaseTokensForStorageDeposit, output.BaseTokenAmount(), storageDeposit)
 	}
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(
+	inputs, remainder, blockIssuerAccountID, err := ComputeInputsAndRemainder(
 		senderAddress,
 		unspentOutputs,
 		NewAssetsWithMana(isc.FungibleTokensFromOutput(output).ToAssets(), mana),
@@ -56,14 +58,15 @@ func NewTransferTransaction(
 		return nil, err
 	}
 
-	outputs := append(iotago.TxEssenceOutputs{output}, remainder...)
+	outputs := append([]iotago.Output{output}, remainder...)
 
-	return CreateAndSignTx(
-		senderKeyPair,
-		inputIDs.UTXOInputs(),
-		outputs,
-		creationSlot,
+	return FinalizeTxAndBuildBlock(
 		l1API,
+		TxBuilderFromInputsAndOutputs(l1API, inputs, outputs, senderKeyPair),
+		blockIssuance,
+		len(outputs)-1, // store mana in the last output
+		blockIssuerAccountID,
+		senderKeyPair,
 	)
 }
 
@@ -80,8 +83,9 @@ func NewRequestTransaction(
 	creationSlot iotago.SlotIndex,
 	disableAutoAdjustStorageDeposit bool, // if true, the minimal storage deposit won't be adjusted automatically
 	l1APIProvider iotago.APIProvider,
-) (*iotago.SignedTransaction, error) {
-	outputs := iotago.TxEssenceOutputs{}
+	blockIssuance *api.IssuanceBlockHeaderResponse,
+) (*iotago.Block, error) {
+	outputs := []iotago.Output{}
 
 	l1API := l1APIProvider.APIForSlot(creationSlot)
 
@@ -111,7 +115,7 @@ func NewRequestTransaction(
 		l1APIProvider,
 	)
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(
+	inputs, remainder, blockIssuerAccountID, err := ComputeInputsAndRemainder(
 		senderKeyPair.Address(),
 		unspentOutputs,
 		outputAssets,
@@ -124,12 +128,13 @@ func NewRequestTransaction(
 
 	outputs = append(outputs, remainder...)
 
-	return CreateAndSignTx(
-		senderKeyPair,
-		inputIDs.UTXOInputs(),
-		outputs,
-		creationSlot,
+	return FinalizeTxAndBuildBlock(
 		l1API,
+		TxBuilderFromInputsAndOutputs(l1API, inputs, outputs, senderKeyPair),
+		blockIssuance,
+		len(outputs)-1, // store mana in the last output
+		blockIssuerAccountID,
+		senderKeyPair,
 	)
 }
 
@@ -192,12 +197,12 @@ func updateOutputsWhenSendingOnBehalfOf(
 	senderKeyPair cryptolib.VariantKeyPair,
 	senderAddress iotago.Address,
 	unspentOutputs iotago.OutputSet,
-	outputs iotago.TxEssenceOutputs,
+	outputs []iotago.Output,
 	outputAssets *AssetsWithMana,
 	creationSlot iotago.SlotIndex,
 	l1APIProvider iotago.APIProvider,
 ) (
-	iotago.TxEssenceOutputs,
+	[]iotago.Output,
 	*AssetsWithMana,
 ) {
 	if senderAddress.Equal(senderKeyPair.Address()) {

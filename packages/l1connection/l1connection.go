@@ -20,6 +20,7 @@ import (
 	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/iota.go/v4/nodeclient"
 	"github.com/iotaledger/wasp/packages/cryptolib"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
@@ -33,7 +34,7 @@ type Client interface {
 	// requests funds from faucet, waits for confirmation
 	RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Duration) error
 	// sends a tx (build block, do tipselection, etc) and wait for confirmation
-	PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer cryptolib.VariantKeyPair, timeout ...time.Duration) (iotago.BlockID, error)
+	PostBlockAndWaitUntilConfirmation(block *iotago.Block, timeout ...time.Duration) error
 	// returns the outputs owned by a given address
 	OutputMap(myAddress iotago.Address, timeout ...time.Duration) (iotago.OutputSet, error)
 	// output
@@ -134,57 +135,20 @@ func (c *l1client) OutputMap(myAddress iotago.Address, timeout ...time.Duration)
 	return result, nil
 }
 
-func (c *l1client) postBlockAndWaitUntilConfirmation(ctx context.Context, block *iotago.Block) (iotago.BlockID, error) {
-	blockID, err := c.nodeAPIClient.SubmitBlock(ctx, block)
-	if err != nil {
-		return iotago.EmptyBlockID, fmt.Errorf("failed to submit block: %w", err)
-	}
-
-	c.log.LogInfof("Posted blockID %v", blockID.ToHex())
-
-	return c.waitUntilBlockConfirmed(ctx, blockID)
-}
-
-func (c *l1client) PostTxAndWaitUntilConfirmation(tx *iotago.SignedTransaction, issuerID iotago.AccountID, signer cryptolib.VariantKeyPair, timeout ...time.Duration) (iotago.BlockID, error) {
+func (c *l1client) PostBlockAndWaitUntilConfirmation(block *iotago.Block, timeout ...time.Duration) error {
 	ctxWithTimeout, cancelContext := newCtx(c.ctx, timeout...)
 	defer cancelContext()
-
-	// build and post block
-	block, err := c.blockFromTx(tx, issuerID, signer)
+	blockID, err := c.nodeAPIClient.SubmitBlock(ctxWithTimeout, block)
 	if err != nil {
-		return iotago.EmptyBlockID, err
+		return fmt.Errorf("failed to submit block: %w", err)
 	}
-	blockID, err := c.postBlockAndWaitUntilConfirmation(ctxWithTimeout, block)
-	if err != nil {
-		return blockID, err
-	}
-
-	// get tx metadata
-	txID, err := tx.Transaction.ID() // NOTE: must use the "unsigned tx ID" (it's different from just `tx.ID()`)
-	if err != nil {
-		return blockID, err
-	}
-	lo.Must0(util.WaitUntil(ctxWithTimeout, func() (util.WaitAction, error) {
-		txMetadata, err := c.nodeAPIClient.TransactionMetadata(ctxWithTimeout, txID)
-		if err != nil {
-			if strings.Contains(err.Error(), "not found") {
-				return util.WaitActionKeepWaiting, nil
-			}
-			return util.WaitActionDone, err
-		}
-		if txMetadata.TransactionFailureReason != api.TxFailureNone {
-			return util.WaitActionDone, fmt.Errorf("tx failed with reason: %v", txMetadata.TransactionFailureReason)
-		}
-		return util.WaitActionDone, nil
-	},
-		util.WaitOpts{TimeoutMsg: "failed to wait for tx metadata"},
-	))
-	return blockID, nil
+	c.log.LogInfof("Posted blockID %v", blockID.ToHex())
+	return c.waitUntilBlockConfirmed(ctxWithTimeout, blockID)
 }
 
 // waitUntilBlockConfirmed waits until a given block is confirmed, it takes care of promotions/re-attachments for that block
-func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.BlockID) (iotago.BlockID, error) {
-	return blockID, util.WaitUntil(ctx, func() (util.WaitAction, error) {
+func (c *l1client) waitUntilBlockConfirmed(ctx context.Context, blockID iotago.BlockID) error {
+	return util.WaitUntil(ctx, func() (util.WaitAction, error) {
 		// poll the node for block confirmation state
 		metadata, err := c.nodeAPIClient.BlockMetadataByBlockID(ctx, blockID)
 		if err != nil {
@@ -299,7 +263,7 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 	)
 
 	l1API := c.APIProvider().LatestAPI()
-	txBuilder := builder.NewTransactionBuilder(l1API)
+	txBuilder := builder.NewTransactionBuilder(l1API, kp)
 	txBuilder.AddInput(&builder.TxInput{
 		UnlockTarget: kp.Address(),
 		InputID:      outputToConvertID,
@@ -331,23 +295,19 @@ func (c *l1client) RequestFunds(kp cryptolib.VariantKeyPair, timeout ...time.Dur
 		return fmt.Errorf("failed to query block issuance info: %w", err)
 	}
 
-	txBuilder.AddCommitmentInput(&iotago.CommitmentInput{CommitmentID: lo.Must(blockIssuance.LatestCommitment.ID())})
-	txBuilder.AddBlockIssuanceCreditInput(&iotago.BlockIssuanceCreditInput{AccountID: blockIssuerAccountID})
-	txBuilder.SetCreationSlot(blockIssuance.LatestCommitment.Slot)
-	txBuilder.AllotMinRequiredManaAndStoreRemainingManaInOutput(
-		txBuilder.CreationSlot(),
-		blockIssuance.LatestCommitment.ReferenceManaCost,
-		blockIssuerAccountID,
+	block, err := transaction.FinalizeTxAndBuildBlock(
+		l1API,
+		txBuilder,
+		blockIssuance,
 		0, // store the extra mana in the account output
+		blockIssuerAccountID,
+		kp,
 	)
-
-	tx, err := txBuilder.Build(kp.AsAddressSigner())
 	if err != nil {
 		return err
 	}
 
-	_, err = c.PostTxAndWaitUntilConfirmation(tx, blockIssuerAccountID, kp)
-	return err
+	return c.PostBlockAndWaitUntilConfirmation(block)
 }
 
 func (c *l1client) APIProvider() *nodeclient.Client {
@@ -356,33 +316,6 @@ func (c *l1client) APIProvider() *nodeclient.Client {
 
 func (c *l1client) Bech32HRP() iotago.NetworkPrefix {
 	return c.nodeAPIClient.LatestAPI().ProtocolParameters().Bech32HRP()
-}
-
-func (c *l1client) blockFromTx(signedTx *iotago.SignedTransaction, blockIssuerID iotago.AccountID, signer cryptolib.VariantKeyPair) (*iotago.Block, error) {
-	bi, err := c.nodeAPIClient.BlockIssuance(c.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query block issuance info: %w", err)
-	}
-
-	// the issuing time of the blocks need to be monotonically increasing
-	issuingTime := time.Now().UTC()
-	if bi.LatestParentBlockIssuingTime.After(issuingTime) {
-		issuingTime = bi.LatestParentBlockIssuingTime.Add(time.Nanosecond)
-	}
-
-	// Build a Block and post it.
-	l1API := c.nodeAPIClient.CommittedAPI()
-	return builder.NewBasicBlockBuilder(l1API).
-		SlotCommitmentID(bi.LatestCommitment.MustID()).
-		LatestFinalizedSlot(bi.LatestFinalizedSlot).
-		StrongParents(bi.StrongParents).
-		WeakParents(bi.WeakParents).
-		ShallowLikeParents(bi.ShallowLikeParents).
-		Payload(signedTx).
-		CalculateAndSetMaxBurnedMana(bi.LatestCommitment.ReferenceManaCost).
-		IssuingTime(issuingTime).
-		SignWithSigner(blockIssuerID, signer.AsAddressSigner(), signer.Address()).
-		Build()
 }
 
 // Health implements L1Client

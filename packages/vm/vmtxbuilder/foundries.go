@@ -247,7 +247,7 @@ func identicalFoundries(f1, f2 *iotago.FoundryOutput) bool {
 		panic("identicalFoundries: inconsistency, amount is assumed immutable")
 	case simpleTokenSchemeF1.MaximumSupply.Cmp(simpleTokenSchemeF2.MaximumSupply) != 0:
 		panic("identicalFoundries: inconsistency, maximum supply is immutable")
-	case !f1.Ident().Equal(f2.Ident()):
+	case !f1.Owner().Equal(f2.Owner()):
 		panic("identicalFoundries: inconsistency, addresses must always be equal")
 	case !equalTokenScheme(simpleTokenSchemeF1, simpleTokenSchemeF2):
 		panic("identicalFoundries: inconsistency, if serial numbers are equal, token schemes must be equal")

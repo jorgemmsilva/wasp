@@ -93,7 +93,7 @@ func TestRotate(t *testing.T) {
 		chain := env.NewChain()
 
 		kp, addr := env.NewKeyPairWithFunds()
-		err := chain.RotateStateController(addr, kp, kp)
+		err := chain.RotateStateController(addr, cryptolib.NewKeyPair(), kp)
 		require.Error(t, err)
 		strings.Contains(err.Error(), "checkRotateStateControllerRequest: unauthorized access")
 	})
@@ -135,7 +135,7 @@ func TestRotate(t *testing.T) {
 		chain.DepositAssetsToL2(isc.NewAssetsBaseTokens(10*isc.Million), someWallet)
 
 		rotationReq := solo.NewCallParams(governance.FuncRotateStateController.Message(newAddr)).
-			WithMaxAffordableGasBudget().NewRequestOffLedger(chain, chain.OriginatorPrivateKey)
+			WithMaxAffordableGasBudget().NewRequestOffLedger(chain, chain.OriginatorKeyPair)
 		dummyReq := solo.NewCallParams(isc.NewMessageFromNames("dummy", "dummy")).WithNonce(0).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, someWallet)
 		dummyReq2 := solo.NewCallParams(isc.NewMessageFromNames("dummy", "dummy")).WithNonce(1).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, someWallet)
 
@@ -176,7 +176,7 @@ func TestAccessNodes(t *testing.T) {
 	node1KP, _ := env.NewKeyPairWithFunds(env.NewSeedFromIndex(1))
 	node1OwnerKP, node1OwnerAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(2))
 	chainKP, _ := env.NewKeyPairWithFunds(env.NewSeedFromIndex(3))
-	chain, _ := env.NewChainExt(chainKP, 0, initMana, "chain1")
+	chain, _ := env.NewChainExt(chainKP, 0, "chain1")
 	var res dict.Dict
 	var err error
 
@@ -770,11 +770,13 @@ func TestGasPayout(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, payoutAgentID, retAgentID)
 
-	// send a new request (another deposit from user1)
-	_, err = ch.PostRequestSync(
-		solo.NewCallParams(accounts.FuncDeposit.Message()).AddBaseTokens(transferAmt),
+	// send a new request (another deposit from user1) (that fills the common account, so it doesn't have to take any tokens)
+	ch.TransferAllowanceTo(
+		isc.NewAssetsBaseTokens(governance.DefaultMinBaseTokensOnCommonAccount),
+		accounts.CommonAccount(),
 		user1,
 	)
+
 	require.NoError(t, err)
 	gasFees = ch.LastReceipt().GasFeeCharged
 	ownerBal4 := ch.L2Assets(ch.OriginatorAgentID)
@@ -782,7 +784,8 @@ func TestGasPayout(t *testing.T) {
 	user1Bal4 := ch.L2Assets(user1AgentID)
 	payoutBal4 := ch.L2Assets(payoutAgentID)
 	require.Equal(t, ownerBal4.BaseTokens, ownerBal3.BaseTokens)
-	require.Equal(t, commonBal4.BaseTokens, commonBal3.BaseTokens)
+	require.GreaterOrEqual(t, commonBal4.BaseTokens, commonBal3.BaseTokens)
+	require.GreaterOrEqual(t, commonBal4.BaseTokens, governance.DefaultMinBaseTokensOnCommonAccount)
 	require.Equal(t, user1Bal4.BaseTokens, user1Bal3.BaseTokens+transferAmt-gasFees)
 	require.Equal(t, gasFees, payoutBal4.BaseTokens)
 }

@@ -116,8 +116,6 @@ func TestWithdrawEverything(t *testing.T) {
 	require.Zero(t, finalL2Balance)
 }
 
-const initMana = 1_000
-
 func TestFoundries(t *testing.T) {
 	var env *solo.Solo
 	var ch *solo.Chain
@@ -127,7 +125,7 @@ func TestFoundries(t *testing.T) {
 
 	initTest := func() {
 		env = solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ = env.NewChainExt(nil, 10*isc.Million, initMana, "chain1")
+		ch, _ = env.NewChainExt(nil, 20*isc.Million, "chain1")
 		senderKeyPair, senderAddr = env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
 		senderAgentID = isc.NewAgentID(senderAddr)
 
@@ -494,14 +492,14 @@ func TestAccountBalances(t *testing.T) {
 	l1BaseTokens := func(addr iotago.Address) iotago.BaseToken { return env.L1Assets(addr).BaseTokens }
 	totalBaseTokens := l1BaseTokens(chainOwnerAddr) + l1BaseTokens(senderAddr)
 
-	ch, _ := env.NewChainExt(chainOwner, 0, initMana, "chain1")
+	ch, _ := env.NewChainExt(chainOwner, 0, "chain1")
 
 	totalGasFeeCharged := iotago.BaseToken(0)
 
 	checkBalance := func() {
 		require.EqualValues(t,
 			totalBaseTokens,
-			l1BaseTokens(chainOwnerAddr)+l1BaseTokens(senderAddr)+l1BaseTokens(ch.ChainID.AsAddress()),
+			l1BaseTokens(chainOwnerAddr)+l1BaseTokens(senderAddr)+l1BaseTokens(ch.ChainID.AsAddress())+l1BaseTokens(ch.StateControllerAddress),
 		)
 
 		chainOutputs := ch.GetChainOutputsFromL1()
@@ -522,7 +520,7 @@ func TestAccountBalances(t *testing.T) {
 		totalGasFeeCharged += bi.GasFeeCharged
 		require.EqualValues(t,
 			utxodb.FundsFromFaucetAmount,
-			anchorSD+accountSD-totalGasFeeCharged+l1BaseTokens(chainOwnerAddr)+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(accounts.CommonAccount()),
+			anchorSD+accountSD-totalGasFeeCharged+l1BaseTokens(chainOwnerAddr)+ch.L2BaseTokens(chainOwnerAgentID)+ch.L2BaseTokens(accounts.CommonAccount())+l1BaseTokens(ch.StateControllerAddress),
 		)
 		require.EqualValues(t,
 			utxodb.FundsFromFaucetAmount-totalGasFeeCharged,
@@ -572,7 +570,7 @@ func initDepositTest(t *testing.T, originParams dict.Dict, initLoad ...iotago.Ba
 	if len(initLoad) != 0 {
 		initBaseTokens = initLoad[0]
 	}
-	ret.ch, _ = ret.env.NewChainExt(ret.chainOwner, initBaseTokens, initMana, "chain1", originParams)
+	ret.ch, _ = ret.env.NewChainExt(ret.chainOwner, initBaseTokens, "chain1", originParams)
 
 	ret.req = solo.NewCallParams(accounts.FuncDeposit.Message())
 	return ret
@@ -605,11 +603,11 @@ func TestDepositBaseTokens(t *testing.T) {
 			v.req.WithGasBudget(estimateRec.GasBurned)
 
 			v.req = v.req.AddBaseTokens(addBaseTokens)
-			tx, _, err := v.ch.PostRequestSyncTx(v.req, v.user)
+			block, _, err := v.ch.PostRequestSyncTx(v.req, v.user)
 			require.NoError(t, err)
 			rec := v.ch.LastReceipt()
 
-			storageDeposit := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(tx.Transaction.Outputs[0]))
+			storageDeposit := lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(util.TxFromBlock(block).Transaction.Outputs[0]))
 			t.Logf("byteCost = %d", storageDeposit)
 
 			adjusted := addBaseTokens
@@ -804,7 +802,7 @@ func TestWithdrawDepositNativeTokens(t *testing.T) {
 
 		// create a new chain (ch2) with active state pruning set to keep only 1 block
 		blockKeepAmount := int32(1)
-		ch2, _ := v.env.NewChainExt(nil, 0, initMana, "evmchain", dict.Dict{
+		ch2, _ := v.env.NewChainExt(nil, 0, "evmchain", dict.Dict{
 			origin.ParamBlockKeepAmount: codec.Int32.Encode(blockKeepAmount),
 		})
 
@@ -1102,7 +1100,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict, verifyHash bool) {
 	unprocessableReq := solo.NewCallParams(accounts.FuncDeposit.Message()).
 		WithFungibleTokens(isc.NewAssets(0, allTokens))
 
-	tx, receipt, _, err := v.ch.PostRequestSyncExt(unprocessableReq, newUser)
+	block, receipt, _, err := v.ch.PostRequestSyncExt(unprocessableReq, newUser)
 	require.Error(t, err)
 	testmisc.RequireErrorToBe(t, err, "request has been skipped")
 	require.Nil(t, receipt) // nil receipt means the request was not processed
@@ -1111,7 +1109,7 @@ func testUnprocessable(t *testing.T, originParams dict.Dict, verifyHash bool) {
 		testdbhash.VerifyContractStateHash(v.env, blocklog.Contract, "", t.Name())
 	}
 
-	txReqs, err := v.ch.Env.RequestsForChain(tx.Transaction, v.ch.ChainID)
+	txReqs, err := v.ch.Env.RequestsForChain(util.TxFromBlock(block).Transaction, v.ch.ChainID)
 	require.NoError(t, err)
 	unprocessableReqID := txReqs[0].ID()
 

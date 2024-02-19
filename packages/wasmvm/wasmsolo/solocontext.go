@@ -78,7 +78,7 @@ type SoloContext struct {
 	nfts           map[iotago.NFTID]*isc.NFT
 	offLedger      bool
 	scName         string
-	Tx             *iotago.SignedTransaction
+	Block          *iotago.Block
 	wc             *wasmhost.WasmContext
 }
 
@@ -252,8 +252,8 @@ func StartChain(t testing.TB, chainName string, env ...*solo.Solo) *solo.Chain {
 			},
 		})
 	}
-	chain, _ := soloEnv.NewChainExt(nil, 0, 0, chainName)
-	chain.MustDepositBaseTokensToL2(L2FundsOriginator, chain.OriginatorPrivateKey)
+	chain, _ := soloEnv.NewChainExt(nil, 0, chainName)
+	chain.MustDepositBaseTokensToL2(L2FundsOriginator, chain.OriginatorKeyPair)
 	return chain
 }
 
@@ -464,7 +464,7 @@ func (ctx *SoloContext) Originator() *SoloAgent {
 		Env:     ctx.Chain.Env,
 		ID:      agentID.Bech32(ctx.API().ProtocolParameters().Bech32HRP()),
 		Name:    ctx.Chain.Name + ".Originator",
-		Pair:    ctx.Chain.OriginatorPrivateKey,
+		Pair:    ctx.Chain.OriginatorKeyPair,
 	}
 }
 

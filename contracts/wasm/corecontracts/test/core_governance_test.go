@@ -272,9 +272,9 @@ func TestGetChainOwner(t *testing.T) {
 func TestGetChainNodes(t *testing.T) {
 	ctx := setupGovernance(t)
 	require.NoError(t, ctx.Err)
-	pubkeyBytes := ctx.Chain.OriginatorPrivateKey.GetPrivateKey().Public().AsBytes()
+	pubkeyBytes := ctx.Chain.OriginatorKeyPair.GetPrivateKey().Public().AsBytes()
 	accessAPI := "http://my-api/url"
-	certificate := governance.NewNodeOwnershipCertificate(ctx.Chain.OriginatorPrivateKey, ctx.Chain.OriginatorAddress).Bytes()
+	certificate := governance.NewNodeOwnershipCertificate(ctx.Chain.OriginatorKeyPair, ctx.Chain.OriginatorAddress).Bytes()
 
 	fget := coregovernance.ScFuncs.GetChainNodes(ctx)
 	fget.Func.Call()

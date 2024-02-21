@@ -29,7 +29,7 @@ func initTestChainOfBlocks(t *testing.T) (
 	require.NoError(t, err)
 	sm, ok := smGPA.(*stateManagerGPA)
 	require.True(t, ok)
-	origin.InitChain(0, store, bf.GetChainInitParameters(), 0, testutil.TokenInfo)
+	origin.InitChain(0, store, bf.GetChainInitParameters(), 0, testutil.TokenInfo, testutil.L1API)
 	return log, bf, store, sm
 }
 

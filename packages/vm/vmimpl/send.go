@@ -13,8 +13,8 @@ const MaxPostedOutputsInOneRequest = 4
 
 func (vmctx *vmContext) getNFTData(chainState kv.KVStore, nftID iotago.NFTID) *isc.NFT {
 	var nft *isc.NFT
-	withContractState(chainState, accounts.Contract, func(s kv.KVStore) {
-		nft = accounts.GetNFTData(s, nftID)
+	vmctx.withAccountsState(chainState, func(s *accounts.StateWriter) {
+		nft = s.GetNFTData(nftID)
 	})
 	return nft
 }
@@ -38,7 +38,7 @@ func (reqctx *requestContext) doSend(caller isc.ContractIdentity, par isc.Reques
 			nft,
 			reqctx.L1API(),
 		)
-		debitNFTFromAccount(reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), nft.ID, reqctx.ChainID())
+		reqctx.debitNFTFromAccount(reqctx.CurrentContractAccountID(), nft.ID, true)
 		reqctx.sendOutput(out)
 		return
 	}
@@ -68,5 +68,5 @@ func (reqctx *requestContext) sendOutput(o iotago.Output) {
 	reqctx.adjustL2BaseTokensIfNeeded(baseTokenAdjustmentL2, reqctx.CurrentContractAccountID())
 	// debit the assets from the on-chain account
 	// It panics with accounts.ErrNotEnoughFunds if sender's account balances are exceeded
-	debitFromAccount(reqctx.SchemaVersion(), reqctx.chainStateWithGasBurn(), reqctx.CurrentContractAccountID(), fts, reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API().ProtocolParameters().Bech32HRP())
+	reqctx.debitFromAccount(reqctx.CurrentContractAccountID(), fts, true)
 }

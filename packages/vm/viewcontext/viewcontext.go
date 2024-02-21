@@ -118,30 +118,31 @@ func (ctx *ViewContext) Processors() *processors.Cache {
 }
 
 func (ctx *ViewContext) GetNativeTokens(agentID isc.AgentID) iotago.NativeTokenSum {
-	return accounts.GetNativeTokens(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID)
+	return ctx.accountsState().GetNativeTokens(agentID)
 }
 
 func (ctx *ViewContext) GetAccountNFTs(agentID isc.AgentID) []iotago.NFTID {
-	return accounts.GetAccountNFTs(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID)
+	return ctx.accountsState().GetAccountNFTs(agentID)
 }
 
 func (ctx *ViewContext) GetNFTData(nftID iotago.NFTID) *isc.NFT {
-	return accounts.GetNFTData(ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), nftID)
+	return ctx.accountsState().GetNFTData(nftID)
 }
 
 func (ctx *ViewContext) Timestamp() time.Time {
 	return ctx.stateReader.Timestamp()
 }
 
-func (ctx *ViewContext) GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken {
-	return accounts.GetBaseTokensBalance(ctx.schemaVersion, ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()), agentID, ctx.chainID, ctx.tokenInfo)
+func (ctx *ViewContext) accountsState() *accounts.StateReader {
+	return accounts.NewStateReader(ctx, ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()))
+}
+
+func (ctx *ViewContext) GetBaseTokensBalance(agentID isc.AgentID) (iotago.BaseToken, *big.Int) {
+	return ctx.accountsState().GetBaseTokensBalance(agentID)
 }
 
 func (ctx *ViewContext) GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int {
-	return accounts.GetNativeTokenBalance(
-		ctx.contractStateReaderWithGasBurn(accounts.Contract.Hname()),
-		agentID,
-		nativeTokenID, ctx.chainID)
+	return ctx.accountsState().GetNativeTokenBalance(agentID, nativeTokenID)
 }
 
 func (ctx *ViewContext) Call(msg isc.Message, _ *isc.Assets) dict.Dict {

@@ -70,12 +70,8 @@ func (reqctx *requestContext) checkReasonToSkipOffLedger() error {
 			expectedNonce = evmimpl.Nonce(s, evmAgentID.EthAddress())
 		})
 	} else {
-		withContractState(reqctx.uncommittedState, accounts.Contract, func(s kv.KVStore) {
-			expectedNonce = accounts.AccountNonce(
-				s,
-				senderAccount,
-				reqctx.ChainID(),
-			)
+		reqctx.vm.withAccountsState(reqctx.uncommittedState, func(s *accounts.StateWriter) {
+			expectedNonce = s.AccountNonce(senderAccount)
 		})
 	}
 	if reqNonce != expectedNonce {

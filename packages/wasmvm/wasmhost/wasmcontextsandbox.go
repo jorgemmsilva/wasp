@@ -216,7 +216,8 @@ func (s *WasmContextSandbox) fnAllowance(_ []byte) []byte {
 
 func (s *WasmContextSandbox) fnBalance(args []byte) []byte {
 	if len(args) == 0 {
-		return codec.Uint64.Encode(uint64(s.common.BalanceBaseTokens()))
+		bal, _ := s.common.BalanceBaseTokens()
+		return codec.Uint64.Encode(uint64(bal))
 	}
 	tokenID := wasmtypes.TokenIDFromBytes(args)
 	token := cvt.IscTokenID(&tokenID)
@@ -225,7 +226,8 @@ func (s *WasmContextSandbox) fnBalance(args []byte) []byte {
 
 func (s *WasmContextSandbox) fnBalances(_ []byte) []byte {
 	allowance := &isc.Assets{}
-	allowance.BaseTokens = s.common.BalanceBaseTokens()
+	bal, _ := s.common.BalanceBaseTokens()
+	allowance.BaseTokens = bal
 	// FIXME calling function with a empty address may cause error?
 	allowance.NativeTokens = s.common.BalanceNativeTokens()
 	allowance.NFTs = s.common.OwnedNFTs()

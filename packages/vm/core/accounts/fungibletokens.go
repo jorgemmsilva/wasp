@@ -7,185 +7,137 @@ import (
 	"github.com/samber/lo"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
 // CreditToAccount brings new funds to the on chain ledger
-func CreditToAccount(
-	v isc.SchemaVersion,
-	state kv.KVStore,
+func (s *StateWriter) CreditToAccount(agentID isc.AgentID, fts *isc.FungibleTokens) {
+	s.CreditToAccountFullDecimals(
+		agentID,
+		util.BaseTokensDecimalsToEthereumDecimals(fts.BaseTokens, s.ctx.TokenInfo().Decimals),
+		fts.NativeTokens,
+	)
+}
+
+func (s *StateWriter) CreditToAccountFullDecimals(
 	agentID isc.AgentID,
-	fts *isc.FungibleTokens,
-	chainID isc.ChainID,
-	baseToken *api.InfoResBaseToken,
+	baseTokens *big.Int,
+	nativeTokens iotago.NativeTokenSum,
 ) {
-	if fts.IsEmpty() {
+	if baseTokens.Sign() == 0 && len(nativeTokens) == 0 {
 		return
 	}
-	creditToAccount(v, state, accountKey(agentID, chainID), fts, baseToken)
-	creditToAccount(v, state, L2TotalsAccount, fts, baseToken)
-	touchAccount(state, agentID, chainID)
+	s.creditToAccount(s.accountKey(agentID), baseTokens, nativeTokens)
+	s.creditToAccount(L2TotalsAccount, baseTokens, nativeTokens)
+	s.touchAccount(agentID)
 }
 
 // creditToAccount adds assets to the internal account map
-func creditToAccount(
-	v isc.SchemaVersion,
-	state kv.KVStore,
+func (s *StateWriter) creditToAccount(
 	accountKey kv.Key,
-	fts *isc.FungibleTokens,
-	baseToken *api.InfoResBaseToken,
+	baseTokens *big.Int,
+	nativeTokens iotago.NativeTokenSum,
 ) {
-	if fts.IsEmpty() {
+	if baseTokens.Sign() == 0 && len(nativeTokens) == 0 {
 		return
 	}
 
-	if fts.BaseTokens > 0 {
-		incomingTokensFullDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(fts.BaseTokens, baseToken.Decimals)
-		creditToAccountFullDecimals(v, state, accountKey, incomingTokensFullDecimals)
+	if baseTokens.Sign() > 0 {
+		s.setBaseTokensFullDecimals(accountKey, new(big.Int).Add(s.getBaseTokensFullDecimals(accountKey), baseTokens))
 	}
-	for id, amount := range fts.NativeTokens {
+	for id, amount := range nativeTokens {
 		if amount.Sign() == 0 {
 			continue
 		}
 		if amount.Sign() < 0 {
 			panic(ErrBadAmount)
 		}
-		balance := getNativeTokenAmount(state, accountKey, id)
+		balance := s.getNativeTokenAmount(accountKey, id)
 		balance.Add(balance, amount)
 		if balance.Cmp(util.MaxUint256) > 0 {
 			panic(ErrOverflow)
 		}
-		setNativeTokenAmount(state, accountKey, id, balance)
+		s.setNativeTokenAmount(accountKey, id, balance)
 	}
-}
-
-func CreditToAccountFullDecimals(v isc.SchemaVersion, state kv.KVStore, agentID isc.AgentID, amount *big.Int, chainID isc.ChainID) {
-	if !util.IsPositiveBigInt(amount) {
-		return
-	}
-	creditToAccountFullDecimals(v, state, accountKey(agentID, chainID), amount)
-	creditToAccountFullDecimals(v, state, L2TotalsAccount, amount)
-	touchAccount(state, agentID, chainID)
-}
-
-// creditToAccountFullDecimals adds assets to the internal account map
-func creditToAccountFullDecimals(v isc.SchemaVersion, state kv.KVStore, accountKey kv.Key, amount *big.Int) {
-	setBaseTokensFullDecimals(v)(state, accountKey, new(big.Int).Add(GetBaseTokensFullDecimals(v)(state, accountKey), amount))
 }
 
 // DebitFromAccount takes out assets balance the on chain ledger. If not enough it panics
-func DebitFromAccount(
-	v isc.SchemaVersion,
-	state kv.KVStore,
+func (s *StateWriter) DebitFromAccount(agentID isc.AgentID, fts *isc.FungibleTokens) {
+	s.DebitFromAccountFullDecimals(
+		agentID,
+		util.BaseTokensDecimalsToEthereumDecimals(fts.BaseTokens, s.ctx.TokenInfo().Decimals),
+		fts.NativeTokens,
+	)
+}
+
+func (s *StateWriter) DebitFromAccountFullDecimals(
 	agentID isc.AgentID,
-	fts *isc.FungibleTokens,
-	chainID isc.ChainID,
-	baseToken *api.InfoResBaseToken,
-	hrp iotago.NetworkPrefix,
+	baseTokens *big.Int,
+	nativeTokens iotago.NativeTokenSum,
 ) {
-	if fts.IsEmpty() {
+	if baseTokens.Sign() == 0 && len(nativeTokens) == 0 {
 		return
 	}
-	if !debitFromAccount(v, state, accountKey(agentID, chainID), fts, baseToken) {
-		panic(fmt.Errorf("cannot debit (%s) from %s: %w", fts, agentID.Bech32(hrp), ErrNotEnoughFunds))
+	if !s.debitFromAccount(s.accountKey(agentID), baseTokens, nativeTokens) {
+		panic(fmt.Errorf("cannot debit from %s: %w", agentID.Bech32(s.ctx.L1API().ProtocolParameters().Bech32HRP()), ErrNotEnoughFunds))
 	}
-	if !debitFromAccount(v, state, L2TotalsAccount, fts, baseToken) {
+	if !s.debitFromAccount(L2TotalsAccount, baseTokens, nativeTokens) {
 		panic("debitFromAccount: inconsistent ledger state")
 	}
-	touchAccount(state, agentID, chainID)
+	s.touchAccount(agentID)
 }
 
 // debitFromAccount debits assets from the internal accounts map
-func debitFromAccount(
-	v isc.SchemaVersion,
-	state kv.KVStore,
+func (s *StateWriter) debitFromAccount(
 	accountKey kv.Key,
-	debit *isc.FungibleTokens,
-	baseToken *api.InfoResBaseToken,
+	debitBaseTokens *big.Int,
+	debitNativeTokens iotago.NativeTokenSum,
 ) bool {
-	if debit.IsEmpty() {
+	if debitBaseTokens.Sign() == 0 && len(debitNativeTokens) == 0 {
 		return true
 	}
 
-	var baseTokensToSet *big.Int
 	// first check, then mutate
-	balance := isc.NewEmptyFungibleTokens()
-	if debit.BaseTokens > 0 {
-		baseTokensToDebit := util.MustBaseTokensDecimalsToEthereumDecimalsExact(debit.BaseTokens, baseToken.Decimals)
-		balance := GetBaseTokensFullDecimals(v)(state, accountKey)
-		if baseTokensToDebit.Cmp(balance) > 0 {
+	var resultBaseTokens *big.Int
+	resultNativeTokens := iotago.NativeTokenSum{}
+	if debitBaseTokens.Sign() > 0 {
+		balance := s.getBaseTokensFullDecimals(accountKey)
+		if balance.Cmp(debitBaseTokens) < 0 {
 			return false
 		}
-		baseTokensToSet = new(big.Int).Sub(balance, baseTokensToDebit)
+		resultBaseTokens = new(big.Int).Sub(balance, debitBaseTokens)
 	}
-	for id, amount := range debit.NativeTokens {
-		if amount.Sign() == 0 {
+	for id, debitAmount := range debitNativeTokens {
+		if debitAmount.Sign() == 0 {
 			continue
 		}
-		if amount.Sign() < 0 {
+		if debitAmount.Sign() < 0 {
 			panic(ErrBadAmount)
 		}
-		ntBalance := getNativeTokenAmount(state, accountKey, id)
-		if ntBalance.Cmp(amount) < 0 {
+		ntBalance := s.getNativeTokenAmount(accountKey, id)
+		if ntBalance.Cmp(debitAmount) < 0 {
 			return false
 		}
-		balance.AddNativeTokens(id, ntBalance)
+		resultNativeTokens[id] = new(big.Int).Sub(ntBalance, debitAmount)
 	}
 
-	if baseTokensToSet != nil {
-		setBaseTokensFullDecimals(v)(state, accountKey, baseTokensToSet)
+	if resultBaseTokens != nil {
+		s.setBaseTokensFullDecimals(accountKey, resultBaseTokens)
 	}
-	for id, amount := range debit.NativeTokens {
-		setNativeTokenAmount(state, accountKey, id, new(big.Int).Sub(balance.NativeTokens.ValueOrBigInt0(id), amount))
+	for id, amount := range resultNativeTokens {
+		s.setNativeTokenAmount(accountKey, id, amount)
 	}
-	return true
-}
-
-// DebitFromAccountFullDecimals removes the amount from the chain ledger. If not enough it panics
-func DebitFromAccountFullDecimals(
-	v isc.SchemaVersion,
-	state kv.KVStore,
-	agentID isc.AgentID,
-	amount *big.Int,
-	chainID isc.ChainID,
-	hrp iotago.NetworkPrefix,
-) {
-	if !util.IsPositiveBigInt(amount) {
-		return
-	}
-	if !debitFromAccountFullDecimals(v, state, accountKey(agentID, chainID), amount) {
-		panic(fmt.Errorf("cannot debit (%s) from %s: %w", amount.String(), agentID.Bech32(hrp), ErrNotEnoughFunds))
-	}
-
-	if !debitFromAccountFullDecimals(v, state, L2TotalsAccount, amount) {
-		panic("debitFromAccount: inconsistent ledger state")
-	}
-	touchAccount(state, agentID, chainID)
-}
-
-// debitFromAccountFullDecimals debits the amount from the internal accounts map
-func debitFromAccountFullDecimals(v isc.SchemaVersion, state kv.KVStore, accountKey kv.Key, amount *big.Int) bool {
-	balance := GetBaseTokensFullDecimals(v)(state, accountKey)
-	if balance.Cmp(amount) < 0 {
-		return false
-	}
-	setBaseTokensFullDecimals(v)(state, accountKey, new(big.Int).Sub(balance, amount))
 	return true
 }
 
 // getFungibleTokens returns the fungible tokens owned by an account (base tokens extra decimals will be discarded)
-func getFungibleTokens(
-	v isc.SchemaVersion,
-	state kv.KVStoreReader,
-	accountKey kv.Key,
-	baseToken *api.InfoResBaseToken,
-) *isc.FungibleTokens {
+func (s *StateReader) getFungibleTokensDiscardExtraDecimals(accountKey kv.Key) *isc.FungibleTokens {
 	ret := isc.NewEmptyFungibleTokens()
-	ret.AddBaseTokens(getBaseTokens(v)(state, accountKey, baseToken))
-	NativeTokensMapR(state, accountKey).Iterate(func(idBytes []byte, val []byte) bool {
+	bts, _ := s.getBaseTokens(accountKey)
+	ret.AddBaseTokens(bts)
+	s.NativeTokensMap(accountKey).Iterate(func(idBytes []byte, val []byte) bool {
 		ret.AddNativeTokens(
 			lo.Must(isc.NativeTokenIDFromBytes(idBytes)),
 			new(big.Int).SetBytes(val),
@@ -195,21 +147,20 @@ func getFungibleTokens(
 	return ret
 }
 
-// GetAccountFungibleTokens returns all fungible tokens belonging to the agentID on the state
-func GetAccountFungibleTokens(
-	v isc.SchemaVersion,
-	state kv.KVStoreReader,
-	agentID isc.AgentID,
-	chainID isc.ChainID,
-	baseToken *api.InfoResBaseToken,
-) *isc.FungibleTokens {
-	return getFungibleTokens(v, state, accountKey(agentID, chainID), baseToken)
+// GetAccountFungibleTokens returns all fungible tokens belonging to the agentID on the state (base tokens extra decimals will be discarded)
+func (s *StateReader) GetAccountFungibleTokensDiscardExtraDecimals(agentID isc.AgentID) *isc.FungibleTokens {
+	return s.getFungibleTokensDiscardExtraDecimals(s.accountKey(agentID))
 }
 
-func GetTotalL2FungibleTokens(
-	v isc.SchemaVersion,
-	state kv.KVStoreReader,
-	baseToken *api.InfoResBaseToken,
-) *isc.FungibleTokens {
-	return getFungibleTokens(v, state, L2TotalsAccount, baseToken)
+func (s *StateReader) GetTotalL2FungibleTokens() *isc.FungibleTokens {
+	fullDecimals := s.getBaseTokensFullDecimals(L2TotalsAccount)
+	nts := s.getNativeTokens(L2TotalsAccount)
+	return isc.NewFungibleTokens(
+		util.MustEthereumDecimalsToBaseTokenDecimalsExact(fullDecimals, s.ctx.TokenInfo().Decimals),
+		nts,
+	)
+}
+
+func (s *StateReader) GetTotalL2FungibleTokensDiscardExtraDecimals() *isc.FungibleTokens {
+	return s.getFungibleTokensDiscardExtraDecimals(L2TotalsAccount)
 }

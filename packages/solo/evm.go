@@ -108,6 +108,10 @@ func (b *jsonRPCSoloBackend) ISCStateByTrieRoot(trieRoot trie.Hash) (state.State
 	return b.Chain.store.StateByTrieRoot(trieRoot)
 }
 
+func (b *jsonRPCSoloBackend) L1APIProvider() iotago.APIProvider {
+	return b.Chain.L1APIProvider()
+}
+
 func (b *jsonRPCSoloBackend) BaseTokenInfo() *api.InfoResBaseToken {
 	return testutil.TokenInfo
 }

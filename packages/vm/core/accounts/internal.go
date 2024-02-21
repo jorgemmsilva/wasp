@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/collections"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 )
 
@@ -107,29 +107,33 @@ const (
 	keyNewNFTs = "NN"
 )
 
-func accountKey(agentID isc.AgentID, chainID isc.ChainID) kv.Key {
-	if agentID.BelongsToChain(chainID) {
+func (s *StateReader) accountKey(agentID isc.AgentID) kv.Key {
+	if agentID.BelongsToChain(s.ctx.ChainID()) {
 		// save bytes by skipping the chainID bytes on agentIDs for this chain
 		return kv.Key(agentID.BytesWithoutChainID())
 	}
 	return kv.Key(agentID.Bytes())
 }
 
-func allAccountsMap(state kv.KVStore) *collections.Map {
-	return collections.NewMap(state, keyAllAccounts)
+func AllAccountsMap(contractState kv.KVStore) *collections.Map {
+	return collections.NewMap(contractState, keyAllAccounts)
 }
 
-func AllAccountsMapR(state kv.KVStoreReader) *collections.ImmutableMap {
-	return collections.NewMapReadOnly(state, keyAllAccounts)
+func (s *StateWriter) AllAccountsMap() *collections.Map {
+	return AllAccountsMap(s.state)
 }
 
-func accountExists(state kv.KVStoreReader, agentID isc.AgentID, chainID isc.ChainID) bool {
-	return AllAccountsMapR(state).HasAt([]byte(accountKey(agentID, chainID)))
+func (s *StateReader) AllAccountsMap() *collections.ImmutableMap {
+	return collections.NewMapReadOnly(s.state, keyAllAccounts)
 }
 
-func AllAccountsAsDict(state kv.KVStoreReader) dict.Dict {
+func (s *StateReader) AccountExists(agentID isc.AgentID) bool {
+	return s.AllAccountsMap().HasAt([]byte(s.accountKey(agentID)))
+}
+
+func (s *StateReader) AllAccountsAsDict() dict.Dict {
 	ret := dict.New()
-	AllAccountsMapR(state).IterateKeys(func(accKey []byte) bool {
+	s.AllAccountsMap().IterateKeys(func(accKey []byte) bool {
 		ret.Set(kv.Key(accKey), []byte{0x01})
 		return true
 	})
@@ -137,35 +141,29 @@ func AllAccountsAsDict(state kv.KVStoreReader) dict.Dict {
 }
 
 // touchAccount ensures the account is in the list of all accounts
-func touchAccount(state kv.KVStore, agentID isc.AgentID, chainID isc.ChainID) {
-	allAccountsMap(state).SetAt([]byte(accountKey(agentID, chainID)), codec.Bool.Encode(true))
+func (s *StateWriter) touchAccount(agentID isc.AgentID) {
+	s.AllAccountsMap().SetAt([]byte(s.accountKey(agentID)), codec.Bool.Encode(true))
 }
 
 // HasEnoughForAllowance checks whether an account has enough balance to cover for the allowance
-func HasEnoughForAllowance(
-	v isc.SchemaVersion,
-	state kv.KVStoreReader,
-	agentID isc.AgentID,
-	allowance *isc.Assets,
-	chainID isc.ChainID,
-	tokenInfo *api.InfoResBaseToken,
-) bool {
+func (s *StateReader) HasEnoughForAllowance(agentID isc.AgentID, allowance *isc.Assets) bool {
 	if allowance == nil || allowance.IsEmpty() {
 		return true
 	}
-	accountKey := accountKey(agentID, chainID)
+	accountKey := s.accountKey(agentID)
 	if allowance != nil {
-		if getBaseTokens(v)(state, accountKey, tokenInfo) < allowance.BaseTokens {
+		bts, _ := s.getBaseTokens(accountKey)
+		if bts < allowance.BaseTokens {
 			return false
 		}
 		for id, amount := range allowance.NativeTokens {
-			if getNativeTokenAmount(state, accountKey, id).Cmp(amount) < 0 {
+			if s.getNativeTokenAmount(accountKey, id).Cmp(amount) < 0 {
 				return false
 			}
 		}
 	}
 	for _, nftID := range allowance.NFTs {
-		if !hasNFT(state, agentID, nftID) {
+		if !s.hasNFT(agentID, nftID) {
 			return false
 		}
 	}
@@ -173,48 +171,38 @@ func HasEnoughForAllowance(
 }
 
 // MoveBetweenAccounts moves assets between on-chain accounts
-func MoveBetweenAccounts(
-	v isc.SchemaVersion,
-	state kv.KVStore,
+func (s *StateWriter) MoveBetweenAccounts(
 	fromAgentID, toAgentID isc.AgentID,
 	assets *isc.Assets,
-	chainID isc.ChainID,
-	tokenInfo *api.InfoResBaseToken,
 ) error {
 	if fromAgentID.Equals(toAgentID) {
 		// no need to move
 		return nil
 	}
-	if assets == nil {
+	if assets == nil || assets.IsEmpty() {
 		return nil
 	}
 
-	if !debitFromAccount(v, state, accountKey(fromAgentID, chainID), &assets.FungibleTokens, tokenInfo) {
+	bts := util.BaseTokensDecimalsToEthereumDecimals(assets.FungibleTokens.BaseTokens, s.ctx.TokenInfo().Decimals)
+	if !s.debitFromAccount(s.accountKey(fromAgentID), bts, assets.FungibleTokens.NativeTokens) {
 		return errors.New("MoveBetweenAccounts: not enough funds")
 	}
-	creditToAccount(v, state, accountKey(toAgentID, chainID), &assets.FungibleTokens, tokenInfo)
+	s.creditToAccount(s.accountKey(toAgentID), bts, assets.FungibleTokens.NativeTokens)
 
 	for _, nftID := range assets.NFTs {
-		nft := GetNFTData(state, nftID)
+		nft := s.GetNFTData(nftID)
 		if nft == nil {
 			return fmt.Errorf("MoveBetweenAccounts: unknown NFT %s", nftID)
 		}
-		if !debitNFTFromAccount(state, fromAgentID, nft) {
+		if !s.debitNFTFromAccount(fromAgentID, nft) {
 			return errors.New("MoveBetweenAccounts: NFT not found in origin account")
 		}
-		creditNFTToAccount(state, toAgentID, nft.ID, nft.Issuer)
+		s.creditNFTToAccount(toAgentID, nft.ID, nft.Issuer)
 	}
 
-	touchAccount(state, fromAgentID, chainID)
-	touchAccount(state, toAgentID, chainID)
+	s.touchAccount(fromAgentID)
+	s.touchAccount(toAgentID)
 	return nil
-}
-
-func MustMoveBetweenAccounts(v isc.SchemaVersion, state kv.KVStore, fromAgentID, toAgentID isc.AgentID, assets *isc.Assets, chainID isc.ChainID, tokenInfo *api.InfoResBaseToken) {
-	err := MoveBetweenAccounts(v, state, fromAgentID, toAgentID, assets, chainID, tokenInfo)
-	if err != nil {
-		panic(err)
-	}
 }
 
 // debitBaseTokensFromAllowance is used for adjustment of L2 when part of base tokens are taken for storage deposit
@@ -225,12 +213,12 @@ func debitBaseTokensFromAllowance(ctx isc.Sandbox, amount iotago.BaseToken, chai
 	}
 	storageDepositAssets := isc.NewFungibleTokens(amount, nil)
 	ctx.TransferAllowedFunds(CommonAccount(), storageDepositAssets.ToAssets())
-	DebitFromAccount(ctx.SchemaVersion(), ctx.State(), CommonAccount(), storageDepositAssets, chainID, ctx.TokenInfo(), ctx.L1API().ProtocolParameters().Bech32HRP())
+	NewStateWriterFromSandbox(ctx).DebitFromAccount(CommonAccount(), storageDepositAssets)
 }
 
-func UpdateLatestOutputID(state kv.KVStore, anchorTxID iotago.TransactionID, blockIndex uint32) {
-	updateNativeTokenOutputIDs(state, anchorTxID)
-	updateFoundryOutputIDs(state, anchorTxID)
-	updateNFTOutputIDs(state, anchorTxID)
-	updateNewlyMintedNFTOutputIDs(state, anchorTxID, blockIndex)
+func (s *StateWriter) UpdateLatestOutputID(anchorTxID iotago.TransactionID, blockIndex uint32) {
+	s.updateNativeTokenOutputIDs(anchorTxID)
+	s.updateFoundryOutputIDs(anchorTxID)
+	s.updateNFTOutputIDs(anchorTxID)
+	s.updateNewlyMintedNFTOutputIDs(anchorTxID, blockIndex)
 }

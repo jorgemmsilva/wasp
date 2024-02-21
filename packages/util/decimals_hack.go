@@ -24,6 +24,9 @@ func adaptDecimals(value *big.Int, fromDecimals, toDecimals uint32) (result *big
 
 // wei => base tokens
 func EthereumDecimalsToBaseTokenDecimals(value *big.Int, baseTokenDecimals uint32) (result iotago.BaseToken, remainder *big.Int) {
+	if baseTokenDecimals > ethereumDecimals {
+		panic("expected baseTokenDecimals <= ethereumDecimals")
+	}
 	r, m := adaptDecimals(value, ethereumDecimals, baseTokenDecimals)
 	if !r.IsUint64() {
 		panic("cannot convert ether value to base tokens: too large")
@@ -40,18 +43,13 @@ func MustEthereumDecimalsToBaseTokenDecimalsExact(value *big.Int, baseTokenDecim
 }
 
 // base tokens => wei
-func BaseTokensDecimalsToEthereumDecimals(value iotago.BaseToken, baseTokenDecimals uint32) (result *big.Int, remainder iotago.BaseToken) {
-	r, m := adaptDecimals(new(big.Int).SetUint64(uint64(value)), baseTokenDecimals, ethereumDecimals)
-	if !m.IsUint64() {
-		panic("cannot convert ether value to base tokens: too large")
+func BaseTokensDecimalsToEthereumDecimals(value iotago.BaseToken, baseTokenDecimals uint32) (result *big.Int) {
+	if baseTokenDecimals > ethereumDecimals {
+		panic("expected baseTokenDecimals <= ethereumDecimals")
 	}
-	return r, iotago.BaseToken(m.Uint64())
-}
-
-func MustBaseTokensDecimalsToEthereumDecimalsExact(value iotago.BaseToken, baseTokenDecimals uint32) (result *big.Int) {
-	r, m := BaseTokensDecimalsToEthereumDecimals(value, baseTokenDecimals)
-	if m != 0 {
-		panic("cannot convert base tokens value to ether: non-exact conversion")
+	r, m := adaptDecimals(new(big.Int).SetUint64(uint64(value)), baseTokenDecimals, ethereumDecimals)
+	if m.Sign() != 0 {
+		panic("expected zero remainder")
 	}
 	return r
 }

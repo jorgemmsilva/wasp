@@ -28,12 +28,12 @@ func addCandidateNode(ctx isc.Sandbox, ani *governance.AccessNodeInfo) dict.Dict
 	ani = governance.AccessNodeInfoWithValidatorAddress(ctx, ani)
 	pubKeyStr := base64.StdEncoding.EncodeToString(ani.NodePubKey)
 
-	state := ctx.State()
-	governance.AccessNodeCandidatesMap(state).SetAt(ani.NodePubKey, ani.Bytes())
+	state := governance.NewStateWriterFromSandbox(ctx)
+	state.AccessNodeCandidatesMap().SetAt(ani.NodePubKey, ani.Bytes())
 	ctx.Log().LogInfof("Governance::AddCandidateNode: accessNodeCandidate added, pubKey=%s", pubKeyStr)
 
 	if ctx.ChainOwnerID().Equals(ctx.Request().SenderAccount()) {
-		governance.AccessNodesMap(state).SetAt(ani.NodePubKey, codec.Bool.Encode(true))
+		state.AccessNodesMap().SetAt(ani.NodePubKey, codec.Bool.Encode(true))
 		ctx.Log().LogInfof("Governance::AddCandidateNode: accessNode added, pubKey=%s", pubKeyStr)
 	}
 
@@ -48,18 +48,18 @@ func addCandidateNode(ctx isc.Sandbox, ani *governance.AccessNodeInfo) dict.Dict
 // must be initiated by the chain owner explicitly.
 func revokeAccessNode(ctx isc.Sandbox, ani *governance.AccessNodeInfo) dict.Dict {
 	ani = governance.AccessNodeInfoWithValidatorAddress(ctx, ani)
-	state := ctx.State()
-	governance.AccessNodeCandidatesMap(state).DelAt(ani.NodePubKey)
-	governance.AccessNodesMap(state).DelAt(ani.NodePubKey)
+	state := governance.NewStateWriterFromSandbox(ctx)
+	state.AccessNodeCandidatesMap().DelAt(ani.NodePubKey)
+	state.AccessNodesMap().DelAt(ani.NodePubKey)
 	return nil
 }
 
 // Can only be invoked by the chain owner.
 func changeAccessNodes(ctx isc.Sandbox, req governance.ChangeAccessNodesRequest) dict.Dict {
 	ctx.RequireCallerIsChainOwner()
-	state := ctx.State()
-	accessNodeCandidates := governance.AccessNodeCandidatesMap(state)
-	accessNodes := governance.AccessNodesMap(state)
+	state := governance.NewStateWriterFromSandbox(ctx)
+	accessNodeCandidates := state.AccessNodeCandidatesMap()
+	accessNodes := state.AccessNodesMap()
 	ctx.Log().LogDebugf("changeAccessNodes: actions len: %d", len(req))
 	for pubKey, action := range req {
 		switch action {
@@ -82,13 +82,13 @@ func getChainNodes(ctx isc.SandboxView) *governance.GetChainNodesResponse {
 		AccessNodeCandidates: make(map[cryptolib.PublicKeyKey]*governance.AccessNodeInfo),
 		AccessNodes:          make(map[cryptolib.PublicKeyKey]struct{}),
 	}
-	stateR := ctx.StateR()
-	governance.AccessNodeCandidatesMapR(stateR).Iterate(func(key, value []byte) bool {
+	state := governance.NewStateReaderFromSandbox(ctx)
+	state.AccessNodeCandidatesMap().Iterate(func(key, value []byte) bool {
 		ani := lo.Must(governance.AccessNodeInfoFromBytes(key, value))
 		res.AccessNodeCandidates[lo.Must(cryptolib.PublicKeyFromBytes(key)).AsKey()] = ani
 		return true
 	})
-	governance.AccessNodesMapR(stateR).IterateKeys(func(key []byte) bool {
+	state.AccessNodesMap().IterateKeys(func(key []byte) bool {
 		res.AccessNodes[lo.Must(cryptolib.PublicKeyFromBytes(key)).AsKey()] = struct{}{}
 		return true
 	})

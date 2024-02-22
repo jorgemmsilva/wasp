@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/samber/lo"
 
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/isc"
@@ -131,7 +132,7 @@ func EVMEstimateGas(
 }
 
 func getChainInfo(ch chaintypes.ChainCore) *isc.ChainInfo {
-	return governance.NewStateAccess(mustLatestState(ch)).ChainInfo(ch.ID())
+	return lo.Must(governance.NewStateReaderFromChainState(mustLatestState(ch)).GetChainInfo(ch.ID()))
 }
 
 func resolveError(ch chaintypes.ChainCore, receiptError *isc.UnresolvedVMError) (isOutOfGas bool, resolved *isc.VMError, err error) {

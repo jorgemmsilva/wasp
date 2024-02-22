@@ -544,8 +544,8 @@ func (mpi *mempoolImpl) shouldAddOffledgerRequest(req isc.OffLedgerRequest) erro
 	accountsState := mpi.accountsState()
 	if !accountsState.AccountExists(req.SenderAccount()) {
 		// make an exception for gov calls (sender is chan owner and target is gov contract)
-		governanceState := governance.NewStateAccess(mpi.chainHeadState)
-		chainOwner := governanceState.ChainOwnerID()
+		governanceState := governance.NewStateReaderFromChainState(mpi.chainHeadState)
+		chainOwner := governanceState.GetChainOwnerID()
 		isGovRequest := req.SenderAccount().Equals(chainOwner) && req.Message().Target.Contract == governance.Contract.Hname()
 		if !isGovRequest {
 			return fmt.Errorf("no funds on chain")

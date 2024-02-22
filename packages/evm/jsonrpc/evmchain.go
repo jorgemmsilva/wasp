@@ -27,7 +27,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/subrealm"
 
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
@@ -147,14 +146,14 @@ func (e *EVMChain) BlockNumber() *big.Int {
 }
 
 func (e *EVMChain) GasFeePolicy() *gas.FeePolicy {
-	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasFeePolicy := lo.Must(governance.GetGasFeePolicy(govPartition))
+	govState := governance.NewStateReaderFromChainState(e.backend.ISCLatestState())
+	gasFeePolicy := lo.Must(govState.GetGasFeePolicy())
 	return gasFeePolicy
 }
 
 func (e *EVMChain) gasLimits() *gas.Limits {
-	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasLimits := lo.Must(governance.GetGasLimits(govPartition))
+	govState := governance.NewStateReaderFromChainState(e.backend.ISCLatestState())
+	gasLimits := lo.Must(govState.GetGasLimits())
 	return gasLimits
 }
 
@@ -662,17 +661,17 @@ func evmBlockNumberByISCBlockIndex(n uint32) uint64 {
 }
 
 func blockchainDB(chainState state.State) *emulator.BlockchainDB {
-	govPartition := subrealm.NewReadOnly(chainState, kv.Key(governance.Contract.Hname().Bytes()))
-	gasLimits := lo.Must(governance.GetGasLimits(govPartition))
-	gasFeePolicy := lo.Must(governance.GetGasFeePolicy(govPartition))
-	blockKeepAmount := governance.GetBlockKeepAmount(govPartition)
+	govState := governance.NewStateReaderFromChainState(chainState)
+	gasLimits := lo.Must(govState.GetGasLimits())
+	gasFeePolicy := lo.Must(govState.GetGasFeePolicy())
+	blockKeepAmount := govState.GetBlockKeepAmount()
 	return emulator.NewBlockchainDB(
-		buffered.NewBufferedKVStore(evm.EmulatorStateSubrealmR(evm.ContractPartitionR(chainState))),
+		buffered.NewBufferedKVStore(evm.EmulatorStateSubrealmR(evm.Contract.StateSubrealmR(chainState))),
 		gas.EVMBlockGasLimit(gasLimits, &gasFeePolicy.EVMGasRatio),
 		blockKeepAmount,
 	)
 }
 
 func stateDBSubrealmR(chainState state.State) kv.KVStoreReader {
-	return emulator.StateDBSubrealmR(evm.EmulatorStateSubrealmR(evm.ContractPartitionR(chainState)))
+	return emulator.StateDBSubrealmR(evm.EmulatorStateSubrealmR(evm.Contract.StateSubrealmR(chainState)))
 }

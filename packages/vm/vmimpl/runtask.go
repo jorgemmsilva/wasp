@@ -65,7 +65,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 	// run the batch of requests
 	requestResults, numSuccess, numOffLedger, unprocessable := vmctx.runRequests(
 		vmctx.task.Requests,
-		governance.NewStateAccess(stateDraft).MaintenanceStatus(),
+		governance.NewStateReaderFromChainState(stateDraft).MaintenanceStatus(),
 		vmctx.task.Log,
 	)
 
@@ -131,8 +131,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	if id, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
 		vmctx.withStateUpdate(func(chainState kv.KVStore) {
 			withContractState(chainState, governance.Contract, func(s kv.KVStore) {
-				governance.SetChainAccountID(
-					s,
+				governance.NewStateWriter(s).SetChainAccountID(
 					util.AccountIDFromAccountOutput(out, id),
 				)
 			})

@@ -83,7 +83,7 @@ func (vmctx *vmContext) runRequest(req isc.Request, requestIndex uint16, mainten
 func (vmctx *vmContext) payoutAgentID() isc.AgentID {
 	var payoutAgentID isc.AgentID
 	withContractState(vmctx.stateDraft, governance.Contract, func(s kv.KVStore) {
-		payoutAgentID = governance.GetPayoutAgentID(s)
+		payoutAgentID = governance.NewStateReader(s).GetPayoutAgentID()
 	})
 	return payoutAgentID
 }
@@ -145,7 +145,7 @@ func (reqctx *requestContext) shouldChargeGasFee() bool {
 	// NOT FOR PUBLIC NETWORK
 	var freeGasPerToken bool
 	reqctx.callCore(governance.Contract, func(s kv.KVStore) {
-		gasPerToken := lo.Must(governance.GetGasFeePolicy(s)).GasPerToken
+		gasPerToken := lo.Must(governance.NewStateReader(s).GetGasFeePolicy()).GasPerToken
 		freeGasPerToken = gasPerToken.A == 0 && gasPerToken.B == 0
 	})
 	if freeGasPerToken {
@@ -297,7 +297,7 @@ func (reqctx *requestContext) getGasBudget() gas.GasUnits {
 
 	var gasRatio util.Ratio32
 	reqctx.callCore(governance.Contract, func(s kv.KVStore) {
-		gasRatio = lo.Must(governance.GetGasFeePolicy(s)).EVMGasRatio
+		gasRatio = lo.Must(governance.NewStateReader(s).GetGasFeePolicy()).EVMGasRatio
 	})
 	return gas.EVMGasToISC(gasBudget, &gasRatio)
 }
@@ -408,7 +408,7 @@ func (reqctx *requestContext) chargeGasFee() {
 	// if the payout AgentID is not set in governance contract, then chain owner will be used
 	var minBalanceInCommonAccount iotago.BaseToken
 	withContractState(reqctx.uncommittedState, governance.Contract, func(s kv.KVStore) {
-		minBalanceInCommonAccount = governance.GetMinCommonAccountBalance(s)
+		minBalanceInCommonAccount = governance.NewStateReader(s).GetMinCommonAccountBalance()
 	})
 	commonAccountBal := reqctx.GetBaseTokensBalanceDiscardExtraDecimals(accounts.CommonAccount())
 	if commonAccountBal < minBalanceInCommonAccount {
@@ -456,7 +456,7 @@ func (reqctx *requestContext) GetContractRecord(contractHname isc.Hname) (ret *r
 }
 
 func (vmctx *vmContext) loadChainConfig() {
-	vmctx.chainInfo = governance.NewStateAccess(vmctx.stateDraft).ChainInfo(vmctx.ChainID())
+	vmctx.chainInfo = lo.Must(governance.NewStateReaderFromChainState(vmctx.stateDraft).GetChainInfo(vmctx.ChainID()))
 }
 
 func makeSignedTx(tx *iotago.Transaction, unlocks iotago.Unlocks, anchorSignature iotago.Signature) *iotago.SignedTransaction {

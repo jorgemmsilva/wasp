@@ -296,7 +296,7 @@ func (e *EVMChain) accountsState(chainState state.State) *accounts.StateReader {
 			e.backend.BaseTokenInfo(),
 			e.backend.L1APIProvider().APIForTime(chainState.Timestamp()),
 		),
-		accounts.ContractStateR(chainState),
+		accounts.Contract.StateSubrealmR(chainState),
 	)
 }
 

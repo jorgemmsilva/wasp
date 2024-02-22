@@ -155,8 +155,9 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 	}
 
 	withContractState(vmctx.stateDraft, blocklog.Contract, func(s kv.KVStore) {
-		blocklog.SaveNextBlockInfo(s, blockInfo)
-		blocklog.Prune(s, blockInfo.BlockIndex(), vmctx.chainInfo.BlockKeepAmount)
+		blocklogState := blocklog.NewStateWriter(s)
+		blocklogState.SaveNextBlockInfo(blockInfo)
+		blocklogState.Prune(blockInfo.BlockIndex(), vmctx.chainInfo.BlockKeepAmount)
 	})
 	vmctx.task.Log.LogDebugf("saved blockinfo:\n%s", blockInfo)
 	return nil
@@ -243,7 +244,7 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 
 func (vmctx *vmContext) removeUnprocessable(reqID isc.RequestID) {
 	withContractState(vmctx.stateDraft, blocklog.Contract, func(s kv.KVStore) {
-		blocklog.RemoveUnprocessable(s, reqID)
+		blocklog.NewStateWriter(s).RemoveUnprocessable(reqID)
 	})
 }
 

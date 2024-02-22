@@ -44,7 +44,7 @@ func (reqctx *requestContext) checkReasonRequestProcessed() error {
 	reqid := reqctx.req.ID()
 	var isProcessed bool
 	withContractState(reqctx.uncommittedState, blocklog.Contract, func(s kv.KVStore) {
-		isProcessed = lo.Must(blocklog.IsRequestProcessed(s, reqid))
+		isProcessed = lo.Must(blocklog.NewStateReader(s).IsRequestProcessed(reqid))
 	})
 	if isProcessed {
 		return errors.New("already processed")

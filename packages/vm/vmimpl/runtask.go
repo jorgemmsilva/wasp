@@ -142,8 +142,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	// save the anchor tx ID of the current state
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		withContractState(chainState, blocklog.Contract, func(s kv.KVStore) {
-			blocklog.UpdateLatestBlockInfo(
-				s,
+			blocklog.NewStateWriter(s).UpdateLatestBlockInfo(
 				vmctx.task.Inputs.AnchorOutputID.TransactionID(),
 			)
 		})

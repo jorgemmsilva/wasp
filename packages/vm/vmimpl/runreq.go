@@ -107,15 +107,15 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		}
 		// onleger request with no sender, send all assets to the payoutAddress
 		payoutAgentID := reqctx.vm.payoutAgentID()
-		creditNFTToAccount(reqctx.uncommittedState, payoutAgentID, req, reqctx.ChainID())
-		creditToAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, payoutAgentID, &req.Assets().FungibleTokens, reqctx.ChainID(), reqctx.TokenInfo())
+		reqctx.creditNFTToAccount(payoutAgentID)
+		reqctx.creditToAccount(payoutAgentID, &req.Assets().FungibleTokens)
 		if storageDepositNeeded > 0 {
-			debitFromAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, payoutAgentID, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API().ProtocolParameters().Bech32HRP())
+			reqctx.debitFromAccount(payoutAgentID, isc.NewFungibleTokens(storageDepositNeeded, nil), false)
 		}
 		return
 	}
 
-	senderBaseTokens := req.Assets().BaseTokens + reqctx.GetBaseTokensBalance(sender)
+	senderBaseTokens := req.Assets().BaseTokens + reqctx.GetBaseTokensBalanceDiscardExtraDecimals(sender)
 
 	minReqCost := reqctx.ChainInfo().GasFeePolicy.MinFee()
 	if senderBaseTokens < storageDepositNeeded+minReqCost {
@@ -123,11 +123,11 @@ func (reqctx *requestContext) creditAssetsToChain() {
 		panic(vmexceptions.ErrNotEnoughFundsForSD)
 	}
 
-	creditToAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, sender, &req.Assets().FungibleTokens, reqctx.ChainID(), reqctx.TokenInfo())
-	creditNFTToAccount(reqctx.uncommittedState, sender, req, reqctx.ChainID())
+	reqctx.creditToAccount(sender, &req.Assets().FungibleTokens)
+	reqctx.creditNFTToAccount(sender)
 	if storageDepositNeeded > 0 {
 		reqctx.sdCharged = storageDepositNeeded
-		debitFromAccount(reqctx.SchemaVersion(), reqctx.uncommittedState, sender, isc.NewFungibleTokens(storageDepositNeeded, nil), reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API().ProtocolParameters().Bech32HRP())
+		reqctx.debitFromAccount(sender, isc.NewFungibleTokens(storageDepositNeeded, nil), false)
 	}
 }
 
@@ -344,7 +344,7 @@ func (reqctx *requestContext) calculateAffordableGasBudget() (budget gas.GasUnit
 // calcGuaranteedFeeTokens return the maximum tokens (base tokens or native) can be guaranteed for the fee,
 // taking into account allowance (which must be 'reserved')
 func (reqctx *requestContext) calcGuaranteedFeeTokens() iotago.BaseToken {
-	tokensGuaranteed := reqctx.GetBaseTokensBalance(reqctx.req.SenderAccount())
+	tokensGuaranteed := reqctx.GetBaseTokensBalanceDiscardExtraDecimals(reqctx.req.SenderAccount())
 	// safely subtract the allowed from the sender to the target
 	if allowed := reqctx.req.Allowance(); allowed != nil {
 		if tokensGuaranteed < allowed.BaseTokens {
@@ -396,14 +396,11 @@ func (reqctx *requestContext) chargeGasFee() {
 	if sendToValidator != 0 {
 		transferToValidator := isc.NewEmptyAssets()
 		transferToValidator.BaseTokens = sendToValidator
-		mustMoveBetweenAccounts(
-			reqctx.SchemaVersion(),
-			reqctx.uncommittedState,
+		reqctx.mustMoveBetweenAccounts(
 			sender,
 			reqctx.vm.task.ValidatorFeeTarget,
 			transferToValidator,
-			reqctx.ChainID(),
-			reqctx.TokenInfo(),
+			false,
 		)
 	}
 
@@ -413,7 +410,7 @@ func (reqctx *requestContext) chargeGasFee() {
 	withContractState(reqctx.uncommittedState, governance.Contract, func(s kv.KVStore) {
 		minBalanceInCommonAccount = governance.GetMinCommonAccountBalance(s)
 	})
-	commonAccountBal := reqctx.GetBaseTokensBalance(accounts.CommonAccount())
+	commonAccountBal := reqctx.GetBaseTokensBalanceDiscardExtraDecimals(accounts.CommonAccount())
 	if commonAccountBal < minBalanceInCommonAccount {
 		// pay to common account since the balance of common account is less than minSD
 		transferToCommonAcc := sendToPayout
@@ -423,26 +420,20 @@ func (reqctx *requestContext) chargeGasFee() {
 			transferToCommonAcc -= excess
 			sendToPayout = excess
 		}
-		mustMoveBetweenAccounts(
-			reqctx.SchemaVersion(),
-			reqctx.uncommittedState,
+		reqctx.mustMoveBetweenAccounts(
 			sender,
 			accounts.CommonAccount(),
 			isc.NewAssetsBaseTokens(transferToCommonAcc),
-			reqctx.ChainID(),
-			reqctx.TokenInfo(),
+			false,
 		)
 	}
 	if sendToPayout > 0 {
 		payoutAgentID := reqctx.vm.payoutAgentID()
-		mustMoveBetweenAccounts(
-			reqctx.SchemaVersion(),
-			reqctx.uncommittedState,
+		reqctx.mustMoveBetweenAccounts(
 			sender,
 			payoutAgentID,
 			isc.NewAssetsBaseTokens(sendToPayout),
-			reqctx.ChainID(),
-			reqctx.TokenInfo(),
+			false,
 		)
 	}
 }

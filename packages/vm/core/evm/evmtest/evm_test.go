@@ -614,8 +614,7 @@ func TestSendNonPayableValueTX(t *testing.T) {
 	senderInitialBalance := env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddress))
 
 	// call any function including some value
-	value, remainder := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, testutil.TokenInfo.Decimals)
-	require.Zero(t, remainder)
+	value := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, testutil.TokenInfo.Decimals)
 
 	sandbox := env.ISCMagicSandbox(ethKey)
 
@@ -644,8 +643,7 @@ func TestSendPayableValueTX(t *testing.T) {
 	require.Zero(t, env.solo.L1BaseTokens(receiver))
 	senderInitialBalance := env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, senderEthAddress))
 
-	value, remainder := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, testutil.TokenInfo.Decimals)
-	require.Zero(t, remainder)
+	value := util.BaseTokensDecimalsToEthereumDecimals(1*isc.Million, testutil.TokenInfo.Decimals)
 
 	res, err := env.ISCMagicSandbox(ethKey).CallFn(
 		[]ethCallOptions{{sender: ethKey, value: value, gasLimit: 100_000}},
@@ -1419,7 +1417,8 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 		accounts.FuncFoundryCreateNew.Message(&tokenScheme),
 		1*isc.Million, // allowance necessary to cover the foundry creation SD
 	)
-	// NOTE here we know that the SN must be 1. An ethereum contract calling "FuncFoundryCreateNew" would have to save the return value of that function call and persis the obtained foundrySN into it's state
+	// NOTE here we know that the SN must be 1. The ISC.accounts.foundryCreateNew() function in
+	// iscmagic returns the SN, so an ethereum contract would have to persist that in its state.
 	foundrySN := uint32(1)
 	nativeTokenID, err := foundryChain.GetNativeTokenIDByFoundrySN(foundrySN)
 	require.NoError(t, err)
@@ -1773,7 +1772,7 @@ func TestEVMTransferBaseTokens(t *testing.T) {
 
 	// issue a tx with non-0 amount (try to send ETH/basetoken)
 	// try sending 1 million base tokens (expressed in ethereum decimals)
-	value := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	value := util.BaseTokensDecimalsToEthereumDecimals(
 		1*isc.Million,
 		testutil.TokenInfo.Decimals,
 	)
@@ -1790,7 +1789,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	iscTest := env.deployISCTestContract(ethKey)
 
 	// try sending funds to `someEthereumAddr` by sending a "value tx" to the isc test contract
-	oneMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	oneMillionInEthDecimals := util.BaseTokensDecimalsToEthereumDecimals(
 		1*isc.Million,
 		testutil.TokenInfo.Decimals,
 	)
@@ -1803,7 +1802,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 	env.Chain.AssertL2BaseTokens(someEthereumAgentID, 1*isc.Million)
 
 	// attempt to send more than the contract will have available
-	twoMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	twoMillionInEthDecimals := util.BaseTokensDecimalsToEthereumDecimals(
 		2*isc.Million,
 		testutil.TokenInfo.Decimals,
 	)
@@ -1823,7 +1822,7 @@ func TestSolidityTransferBaseTokens(t *testing.T) {
 		l1Wallet,
 	)
 
-	tenMillionInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	tenMillionInEthDecimals := util.BaseTokensDecimalsToEthereumDecimals(
 		10*isc.Million,
 		testutil.TokenInfo.Decimals,
 	)
@@ -1853,7 +1852,7 @@ func TestSendEntireBalance(t *testing.T) {
 	// send all initial
 	initial := env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr))
 	// try sending funds to `someEthereumAddr` by sending a "value tx"
-	initialBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	initialBalanceInEthDecimals := util.BaseTokensDecimalsToEthereumDecimals(
 		initial,
 		testutil.TokenInfo.Decimals,
 	)
@@ -1873,7 +1872,7 @@ func TestSendEntireBalance(t *testing.T) {
 	// now try sending all balance, minus the funds needed for gas
 	currentBalance := env.Chain.L2BaseTokens(isc.NewEthereumAddressAgentID(env.Chain.ChainID, ethAddr))
 
-	currentBalanceInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	currentBalanceInEthDecimals := util.BaseTokensDecimalsToEthereumDecimals(
 		currentBalance,
 		testutil.TokenInfo.Decimals,
 	)
@@ -1894,7 +1893,7 @@ func TestSendEntireBalance(t *testing.T) {
 
 	gasLimit := feePolicy.GasBudgetFromTokens(tokensForGasBudget) // TODO this gas limit seems to be ISC gas, but used as EVM gas (?)
 
-	valueToSendInEthDecimals := util.MustBaseTokensDecimalsToEthereumDecimalsExact(
+	valueToSendInEthDecimals := util.BaseTokensDecimalsToEthereumDecimals(
 		currentBalance-tokensForGasBudget,
 		testutil.TokenInfo.Decimals,
 	)

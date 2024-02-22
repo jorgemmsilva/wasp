@@ -16,6 +16,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/vm"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/vmimpl"
 )
@@ -69,7 +70,10 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 
 	res, err := vmimpl.Run(task)
 	require.NoError(ch.Env.T, err)
-	CheckLedger(res.StateDraft.SchemaVersion(), res.StateDraft, "solo")
+	accounts.NewStateReader(
+		accounts.NewStateContext(res.StateDraft.SchemaVersion(), ch.ChainID, ch.TokenInfo(), testutil.L1API),
+		accounts.ContractState(res.StateDraft),
+	).CheckLedgerConsistency()
 	return res
 }
 

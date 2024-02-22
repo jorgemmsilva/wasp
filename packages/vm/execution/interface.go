@@ -38,7 +38,7 @@ type WaspCallContext interface {
 	CurrentContractAccountID() isc.AgentID
 	Caller() isc.AgentID
 	GetNativeTokens(agentID isc.AgentID) iotago.NativeTokenSum
-	GetBaseTokensBalance(agentID isc.AgentID) iotago.BaseToken
+	GetBaseTokensBalance(agentID isc.AgentID) (iotago.BaseToken, *big.Int)
 	GetNativeTokenBalance(agentID isc.AgentID, nativeTokenID iotago.NativeTokenID) *big.Int
 	Call(msg isc.Message, allowance *isc.Assets) dict.Dict
 	ChainID() isc.ChainID

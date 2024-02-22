@@ -22,12 +22,12 @@ var AccountDecimals = migrations.Migration{
 				return
 			}
 			amount := lo.Must(codec.BaseToken.Decode(amountBytes))
-			amountMigrated := util.MustBaseTokensDecimalsToEthereumDecimalsExact(amount, 6)
+			amountMigrated := util.BaseTokensDecimalsToEthereumDecimals(amount, 6)
 			state.Set(key, codec.BigIntAbs.Encode(amountMigrated))
 		}
 
 		// iterate though all accounts,
-		allAccountsMap := accounts.AllAccountsMapR(state)
+		allAccountsMap := accounts.AllAccountsMap(state)
 		allAccountsMap.IterateKeys(func(accountKey []byte) bool {
 			// migrate each account
 			migrateBaseTokens(accountKey)

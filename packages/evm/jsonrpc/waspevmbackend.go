@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 
+	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/chainutil"
@@ -101,6 +102,10 @@ func (b *WaspEVMBackend) EVMTraceTransaction(
 
 func (b *WaspEVMBackend) ISCCallView(chainState state.State, msg isc.Message) (dict.Dict, error) {
 	return chainutil.CallView(chainState, b.chain, msg)
+}
+
+func (b *WaspEVMBackend) L1APIProvider() iotago.APIProvider {
+	return b.chain.L1APIProvider()
 }
 
 func (b *WaspEVMBackend) BaseTokenInfo() *api.InfoResBaseToken {

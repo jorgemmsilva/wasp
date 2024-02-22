@@ -10,6 +10,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 	"github.com/iotaledger/wasp/packages/kv/subrealm"
 	"github.com/iotaledger/wasp/packages/vm"
+	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/vm/execution"
 	"github.com/iotaledger/wasp/packages/vm/sandbox"
@@ -90,6 +91,15 @@ func withContractState(chainState kv.KVStore, c *coreutil.ContractInfo, f func(s
 	f(subrealm.New(chainState, kv.Key(c.Hname().Bytes())))
 }
 
+func (vm *vmContext) withAccountsState(chainState kv.KVStore, f func(*accounts.StateWriter)) {
+	withContractState(chainState, accounts.Contract, func(contractState kv.KVStore) {
+		f(accounts.NewStateWriter(
+			accounts.NewStateContext(vm.schemaVersion, vm.ChainID(), vm.task.TokenInfo, vm.task.L1API()),
+			contractState,
+		))
+	})
+}
+
 func (reqctx *requestContext) callCore(c *coreutil.ContractInfo, f func(s kv.KVStore)) {
 	var caller isc.AgentID
 	if len(reqctx.callStack) > 0 {
@@ -101,4 +111,13 @@ func (reqctx *requestContext) callCore(c *coreutil.ContractInfo, f func(s kv.KVS
 	defer reqctx.popCallContext()
 
 	f(reqctx.contractStateWithGasBurn())
+}
+
+func (reqctx *requestContext) callAccounts(f func(*accounts.StateWriter)) {
+	reqctx.callCore(accounts.Contract, func(contractState kv.KVStore) {
+		f(accounts.NewStateWriter(
+			accounts.NewStateContext(reqctx.vm.schemaVersion, reqctx.ChainID(), reqctx.TokenInfo(), reqctx.L1API()),
+			contractState,
+		))
+	})
 }

@@ -24,16 +24,10 @@ func TestBaseTokensDecimalsToEthereumDecimals(t *testing.T) {
 			decimals: 18,
 			expected: 12345678,
 		},
-		{
-			decimals:          20,
-			expected:          123456,
-			expectedRemainder: 78,
-		},
 	}
 	for _, test := range tests {
-		wei, rem := BaseTokensDecimalsToEthereumDecimals(value, test.decimals)
+		wei := BaseTokensDecimalsToEthereumDecimals(value, test.decimals)
 		require.EqualValues(t, test.expected, wei.Uint64())
-		require.EqualValues(t, test.expectedRemainder, rem)
 	}
 }
 
@@ -52,10 +46,6 @@ func TestEthereumDecimalsToBaseTokenDecimals(t *testing.T) {
 		{
 			decimals: 18,
 			expected: iotago.BaseToken(value),
-		},
-		{
-			decimals: 20,
-			expected: iotago.BaseToken(value) * 100,
 		},
 	}
 	for _, test := range tests {

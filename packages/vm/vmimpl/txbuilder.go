@@ -62,30 +62,30 @@ func (vmctx *vmContext) restoreTxBuilderSnapshot(snapshot *vmtxbuilder.AnchorTra
 }
 
 func (vmctx *vmContext) loadNativeTokenOutput(nativeTokenID iotago.NativeTokenID) (out *iotago.BasicOutput, id iotago.OutputID) {
-	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		out, id = accounts.GetNativeTokenOutput(s, nativeTokenID, vmctx.ChainID())
+	vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
+		out, id = s.GetNativeTokenOutput(nativeTokenID)
 	})
 	return
 }
 
 func (vmctx *vmContext) loadFoundry(serNum uint32) (out *iotago.FoundryOutput, id iotago.OutputID) {
-	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		out, id = accounts.GetFoundryOutput(s, serNum, vmctx.MustChainAccountID())
+	vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
+		out, id = s.GetFoundryOutput(serNum, vmctx.MustChainAccountID())
 	})
 	return
 }
 
 func (vmctx *vmContext) loadNFT(nftID iotago.NFTID) (out *iotago.NFTOutput, id iotago.OutputID) {
-	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
-		out, id = accounts.GetNFTOutput(s, nftID)
+	vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
+		out, id = s.GetNFTOutput(nftID)
 	})
 	return
 }
 
 func (vmctx *vmContext) loadTotalFungibleTokens() *isc.FungibleTokens {
 	var ret *isc.FungibleTokens
-	withContractState(vmctx.stateDraft, accounts.Contract, func(state kv.KVStore) {
-		ret = accounts.GetTotalL2FungibleTokens(vmctx.schemaVersion, state, vmctx.task.TokenInfo)
+	vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
+		ret = s.GetTotalL2FungibleTokens()
 	})
 	return ret
 }

@@ -34,7 +34,7 @@ func newBlockWALTestSM(t *rapid.T) *blockWALTestSM {
 	bwtsmT := new(blockWALTestSM)
 	var err error
 	bwtsmT.factory = NewBlockFactory(t)
-	bwtsmT.lastBlockCommitment = origin.L1Commitment(0, nil, 0, testutil.TokenInfo)
+	bwtsmT.lastBlockCommitment = origin.L1Commitment(0, nil, 0, testutil.TokenInfo, testutil.L1API)
 	bwtsmT.log = testlogger.NewLogger(t)
 	bwtsmT.bw, err = NewBlockWAL(bwtsmT.log, constTestFolder, bwtsmT.factory.GetChainID(), mockBlockWALMetrics(), testutil.L1API.ProtocolParameters().Bech32HRP())
 	require.NoError(t, err)

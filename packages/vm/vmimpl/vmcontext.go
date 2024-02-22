@@ -179,16 +179,8 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	if changeInSD != 0 {
 		vmctx.task.Log.LogDebugf("adjusting commonAccount because AO SD cost changed, change:%d", oldSD, newSD, changeInSD)
 		// update the commonAccount with the change in SD cost
-		withContractState(vmctx.stateDraft, accounts.Contract, func(state kv.KVStore) {
-			accounts.AdjustAccountBaseTokens(
-				vmctx.schemaVersion,
-				state,
-				accounts.CommonAccount(),
-				changeInSD,
-				vmctx.ChainID(),
-				vmctx.task.TokenInfo,
-				vmctx.task.L1API().ProtocolParameters().Bech32HRP(),
-			)
+		vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
+			s.AdjustAccountBaseTokens(accounts.CommonAccount(), changeInSD)
 		})
 	}
 
@@ -204,43 +196,43 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 
 	outputIndex := uint16(2) // anchor + account outputs are on index 0 and 1
 
-	withContractState(vmctx.stateDraft, accounts.Contract, func(s kv.KVStore) {
+	vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
 		// update native token outputs
 		for _, ntID := range nativeTokenIDsToBeUpdated {
 			vmctx.task.Log.LogDebugf("saving NT %s, outputIndex: %d", ntID, outputIndex)
-			accounts.SaveNativeTokenOutput(s, nativeTokensMap[ntID], outputIndex)
+			s.SaveNativeTokenOutput(nativeTokensMap[ntID], outputIndex)
 			outputIndex++
 		}
 		for _, id := range nativeTokensToBeRemoved {
 			vmctx.task.Log.LogDebugf("deleting NT %s", id)
-			accounts.DeleteNativeTokenOutput(s, id)
+			s.DeleteNativeTokenOutput(id)
 		}
 
 		// update foundry UTXOs
 		for _, foundryID := range foundryIDsToBeUpdated {
 			vmctx.task.Log.LogDebugf("saving foundry %d, outputIndex: %d", foundryID, outputIndex)
-			accounts.SaveFoundryOutput(s, foundryOutputsMap[foundryID], outputIndex)
+			s.SaveFoundryOutput(foundryOutputsMap[foundryID], outputIndex)
 			outputIndex++
 		}
 		for _, sn := range foundriesToBeRemoved {
 			vmctx.task.Log.LogDebugf("deleting foundry %d", sn)
-			accounts.DeleteFoundryOutput(s, sn)
+			s.DeleteFoundryOutput(sn)
 		}
 
 		// update NFT Outputs
 		for _, out := range NFTOutputsToBeAdded {
 			vmctx.task.Log.LogDebugf("saving NFT %s, outputIndex: %d", out.NFTID, outputIndex)
-			accounts.SaveNFTOutput(s, out, outputIndex)
+			s.SaveNFTOutput(out, outputIndex)
 			outputIndex++
 		}
 		for _, out := range NFTOutputsToBeRemoved {
 			vmctx.task.Log.LogDebugf("deleting NFT %s", out.NFTID)
-			accounts.DeleteNFTOutput(s, out.NFTID)
+			s.DeleteNFTOutput(out.NFTID)
 		}
 
 		for positionInMintedList := range MintedNFTOutputs {
 			vmctx.task.Log.LogDebugf("minted NFT on output index: %d", outputIndex)
-			accounts.SaveMintedNFTOutput(s, uint16(positionInMintedList), outputIndex)
+			s.SaveMintedNFTOutput(uint16(positionInMintedList), outputIndex)
 			outputIndex++
 		}
 	})

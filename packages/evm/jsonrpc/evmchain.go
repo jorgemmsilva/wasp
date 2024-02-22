@@ -288,18 +288,26 @@ func (e *EVMChain) iscChainOutputsFromEVMBlockNumberOrHash(blockNumberOrHash *rp
 	return e.iscChainOutputsFromEVMBlockNumber(block.Number())
 }
 
+func (e *EVMChain) accountsState(chainState state.State) *accounts.StateReader {
+	return accounts.NewStateReader(
+		accounts.NewStateContext(
+			chainState.SchemaVersion(),
+			*e.backend.ISCChainID(),
+			e.backend.BaseTokenInfo(),
+			e.backend.L1APIProvider().APIForTime(chainState.Timestamp()),
+		),
+		accounts.ContractStateR(chainState),
+	)
+}
+
 func (e *EVMChain) Balance(address common.Address, blockNumberOrHash *rpc.BlockNumberOrHash) (*big.Int, error) {
 	e.log.LogDebugf("Balance(address=%v, blockNumberOrHash=%v)", address, blockNumberOrHash)
 	chainState, err := e.iscStateFromEVMBlockNumberOrHash(blockNumberOrHash)
 	if err != nil {
 		return nil, err
 	}
-	accountsPartition := subrealm.NewReadOnly(chainState, kv.Key(accounts.Contract.Hname().Bytes()))
-	baseTokens := accounts.GetBaseTokensBalanceFullDecimals(
-		chainState.SchemaVersion(),
-		accountsPartition,
+	baseTokens := e.accountsState(chainState).GetBaseTokensBalanceFullDecimals(
 		isc.NewEthereumAddressAgentID(*e.backend.ISCChainID(), address),
-		*e.backend.ISCChainID(),
 	)
 	return baseTokens, nil
 }

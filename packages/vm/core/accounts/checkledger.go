@@ -1,4 +1,4 @@
-package solo
+package accounts
 
 import (
 	"fmt"
@@ -9,31 +9,29 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
-	"github.com/iotaledger/wasp/packages/kv/subrealm"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/util"
-	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 )
 
 // only used in internal tests and solo
-func CheckLedger(v isc.SchemaVersion, store kv.KVStoreReader, checkpoint string) {
-	state := subrealm.NewReadOnly(store, kv.Key(accounts.Contract.Hname().Bytes()))
-	t := accounts.GetTotalL2FungibleTokens(v, state, testutil.TokenInfo)
-	c := calcL2TotalFungibleTokens(v, state)
+func (s *StateReader) CheckLedgerConsistency() {
+	t := s.GetTotalL2FungibleTokens()
+	c := s.calcL2TotalFungibleTokens()
 	if !t.Equals(c) {
-		c := calcL2TotalFungibleTokens(v, state)
-		panic(fmt.Sprintf("inconsistent on-chain account ledger @ checkpoint '%s'\n total assets: %s\ncalc total: %s\n",
-			checkpoint, t, c))
+		panic(fmt.Sprintf(
+			"inconsistent on-chain account ledger\n total assets: %s\ncalc total: %s\n",
+			t, c,
+		))
 	}
 }
 
-func calcL2TotalFungibleTokens(v isc.SchemaVersion, state kv.KVStoreReader) *isc.FungibleTokens {
+func (s *StateReader) calcL2TotalFungibleTokens() *isc.FungibleTokens {
 	ret := isc.NewEmptyFungibleTokens()
 	totalBaseTokens := big.NewInt(0)
 
-	accounts.AllAccountsMapR(state).IterateKeys(func(accountKey []byte) bool {
+	s.AllAccountsMap().IterateKeys(func(accountKey []byte) bool {
 		// add all native tokens owned by each account
-		accounts.NativeTokensMapR(state, kv.Key(accountKey)).Iterate(func(idBytes []byte, val []byte) bool {
+		s.NativeTokensMap(kv.Key(accountKey)).Iterate(func(idBytes []byte, val []byte) bool {
 			ret.AddNativeTokens(
 				lo.Must(isc.NativeTokenIDFromBytes(idBytes)),
 				lo.Must(codec.BigIntAbs.Decode(val)),
@@ -41,7 +39,7 @@ func calcL2TotalFungibleTokens(v isc.SchemaVersion, state kv.KVStoreReader) *isc
 			return true
 		})
 		// use the full decimals for each account, so no dust balance is lost in the calculation
-		baseTokensFullDecimals := accounts.GetBaseTokensFullDecimals(v)(state, kv.Key(accountKey))
+		baseTokensFullDecimals := s.getBaseTokensFullDecimals(kv.Key(accountKey))
 		totalBaseTokens = new(big.Int).Add(totalBaseTokens, baseTokensFullDecimals)
 		return true
 	})

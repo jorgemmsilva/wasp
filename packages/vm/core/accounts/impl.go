@@ -4,10 +4,8 @@ import (
 	"math/big"
 
 	iotago "github.com/iotaledger/iota.go/v4"
-	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
-	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/util"
@@ -54,9 +52,12 @@ var Processor = Contract.Processor(nil,
 )
 
 // this expects the origin amount minus SD
-func SetInitialState(v isc.SchemaVersion, state kv.KVStore, baseTokensOnAnchor iotago.BaseToken, tokenInfo *api.InfoResBaseToken) {
+func (s *StateWriter) SetInitialState(baseTokensOnAnchor iotago.BaseToken) {
 	// initial load with base tokens from origin anchor output exceeding minimum storage deposit assumption
-	CreditToAccount(v, state, CommonAccount(), isc.NewFungibleTokens(baseTokensOnAnchor, nil), isc.ChainID{}, tokenInfo)
+	s.CreditToAccount(
+		CommonAccount(),
+		isc.NewFungibleTokens(baseTokensOnAnchor, nil),
+	)
 }
 
 // deposit is a function to deposit attached assets to the sender's chain account
@@ -243,7 +244,7 @@ func foundryCreateNew(ctx isc.Sandbox, tokenSchemeOpt *iotago.TokenScheme) dict.
 	debitBaseTokensFromAllowance(ctx, storageDepositConsumed, ctx.ChainID())
 
 	// add to the ownership list of the account
-	addFoundryToAccount(ctx.State(), ctx.Caller(), sn)
+	NewStateWriterFromSandbox(ctx).addFoundryToAccount(ctx.Caller(), sn)
 
 	ret := dict.New()
 	ret.Set(ParamFoundrySN, codec.Uint32.Encode(sn))
@@ -257,15 +258,15 @@ var errFoundryWithCirculatingSupply = coreerrors.Register("foundry must have zer
 func foundryDestroy(ctx isc.Sandbox, sn uint32) dict.Dict {
 	ctx.Log().LogDebugf("accounts.foundryDestroy")
 	// check if foundry is controlled by the caller
-	state := ctx.State()
+	state := NewStateWriterFromSandbox(ctx)
 	caller := ctx.Caller()
-	if !hasFoundry(state, caller, sn) {
+	if !state.hasFoundry(caller, sn) {
 		panic(vm.ErrUnauthorized)
 	}
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(state, sn, accountID)
+	out, _ := state.GetFoundryOutput(sn, accountID)
 	simpleTokenScheme := util.MustTokenScheme(out.TokenScheme)
 	if !util.IsZeroBigInt(big.NewInt(0).Sub(simpleTokenScheme.MintedTokens, simpleTokenScheme.MeltedTokens)) {
 		panic(errFoundryWithCirculatingSupply)
@@ -273,16 +274,12 @@ func foundryDestroy(ctx isc.Sandbox, sn uint32) dict.Dict {
 
 	storageDepositReleased := ctx.Privileged().DestroyFoundry(sn)
 
-	deleteFoundryFromAccount(state, caller, sn)
-	DeleteFoundryOutput(state, sn)
+	state.deleteFoundryFromAccount(caller, sn)
+	state.DeleteFoundryOutput(sn)
 	// the storage deposit goes to the caller's account
-	CreditToAccount(
-		ctx.SchemaVersion(),
-		state,
+	state.CreditToAccount(
 		caller,
 		&isc.FungibleTokens{BaseTokens: storageDepositReleased},
-		ctx.ChainID(),
-		ctx.TokenInfo(),
 	)
 	eventFoundryDestroyed(ctx, sn)
 	return nil
@@ -293,16 +290,16 @@ func foundryModifySupply(ctx isc.Sandbox, sn uint32, delta *big.Int, destroy boo
 	if util.IsZeroBigInt(delta) {
 		return nil
 	}
-	state := ctx.State()
+	state := NewStateWriterFromSandbox(ctx)
 	caller := ctx.Caller()
 	// check if foundry is controlled by the caller
-	if !hasFoundry(state, caller, sn) {
+	if !state.hasFoundry(caller, sn) {
 		panic(vm.ErrUnauthorized)
 	}
 
 	accountID, ok := ctx.ChainAccountID()
 	ctx.Requiref(ok, "chain AccountID unknown")
-	out, _ := GetFoundryOutput(state, sn, accountID)
+	out, _ := state.GetFoundryOutput(sn, accountID)
 	if out == nil {
 		panic(errFoundryNotFound)
 	}
@@ -318,10 +315,10 @@ func foundryModifySupply(ctx isc.Sandbox, sn uint32, delta *big.Int, destroy boo
 		ctx.TransferAllowedFunds(accountID, isc.NewAssets(0, iotago.NativeTokenSum{
 			nativeTokenID: delta,
 		}))
-		DebitFromAccount(ctx.SchemaVersion(), state, accountID, deltaAssets, ctx.ChainID(), ctx.TokenInfo(), ctx.L1API().ProtocolParameters().Bech32HRP())
+		state.DebitFromAccount(accountID, deltaAssets)
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta.Neg(delta))
 	} else {
-		CreditToAccount(ctx.SchemaVersion(), state, caller, deltaAssets, ctx.ChainID(), ctx.TokenInfo())
+		state.CreditToAccount(caller, deltaAssets)
 		storageDepositAdjustment = ctx.Privileged().ModifyFoundrySupply(sn, delta)
 	}
 
@@ -332,7 +329,7 @@ func foundryModifySupply(ctx isc.Sandbox, sn uint32, delta *big.Int, destroy boo
 		debitBaseTokensFromAllowance(ctx, iotago.BaseToken(-storageDepositAdjustment), ctx.ChainID())
 	case storageDepositAdjustment > 0:
 		// storage deposit is returned to the caller account
-		CreditToAccount(ctx.SchemaVersion(), state, caller, isc.NewFungibleTokens(iotago.BaseToken(storageDepositAdjustment), nil), ctx.ChainID(), ctx.TokenInfo())
+		state.CreditToAccount(caller, isc.NewFungibleTokens(iotago.BaseToken(storageDepositAdjustment), nil))
 	}
 	eventFoundryModified(ctx, sn)
 	return nil

@@ -36,7 +36,7 @@ func CoreContractProgramHash(name string) hashing.HashValue {
 }
 
 func defaultInitFunc(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().LogDebugf("default init function invoked for contract %s from caller %s", ctx.Contract(), ctx.Caller())
+	ctx.Log().LogDebugf("default init function invoked for contract %s from caller %s", ctx.Contract(), ctx.Caller().Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()))
 	return nil
 }
 

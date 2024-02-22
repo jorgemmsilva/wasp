@@ -98,7 +98,7 @@ func PublishBlockEvents(blockApplied *blockApplied, events *Events, log log.Logg
 	} else {
 		for index, receipt := range receipts {
 			// TODO: this should be errors partition, to be fixed in develop
-			vmError, resolveError := errors.ResolveFromState(blocklog.Contract.StateSubrealmR(block.MutationsReader()), receipt.Error)
+			vmError, resolveError := errors.NewStateReaderFromChainState(block.MutationsReader()).Resolve(receipt.Error)
 			if resolveError != nil {
 				log.LogErrorf("Could not parse vmerror of receipt [%v]: %v", receipt.Request.ID(), resolveError)
 			}

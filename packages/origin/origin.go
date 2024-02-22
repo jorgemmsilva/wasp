@@ -86,7 +86,7 @@ func InitChain(
 	).
 		SetInitialState(originDeposit)
 	blocklog.NewStateWriter(blocklog.Contract.StateSubrealm(d)).SetInitialState()
-	errors.SetInitialState(errors.Contract.StateSubrealm(d))
+	errors.NewStateWriter(errors.Contract.StateSubrealm(d)).SetInitialState()
 	governanceimpl.SetInitialState(governance.Contract.StateSubrealm(d), chainOwner, blockKeepAmount)
 	evmimpl.SetInitialState(evm.Contract.StateSubrealm(d), evmChainID)
 

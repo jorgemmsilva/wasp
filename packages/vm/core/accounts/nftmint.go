@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"io"
+	"slices"
 
 	"github.com/samber/lo"
 
@@ -85,7 +86,7 @@ type mintParameters struct {
 func mintParams(ctx isc.Sandbox, immutableMetadata []byte, targetAgentID isc.AgentID, withdrawOnMint bool, collectionID iotago.NFTID) mintParameters {
 	chainAddress := ctx.ChainID().AsAddress()
 	ret := mintParameters{
-		immutableMetadata: immutableMetadata,
+		immutableMetadata: slices.Clone(immutableMetadata),
 		targetAddress:     chainAddress,
 		issuerAddress:     chainAddress,
 		ownerAgentID:      targetAgentID,

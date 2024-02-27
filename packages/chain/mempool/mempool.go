@@ -835,7 +835,7 @@ func (mpi *mempoolImpl) handleTrackNewChainHead(req *reqTrackNewChainHead) {
 			panic(fmt.Errorf("cannot extract receipts from block: %w", err))
 		}
 		mpi.metrics.IncBlocksPerChain()
-		mpi.listener.BlockApplied(mpi.chainID, block)
+		mpi.listener.BlockApplied(mpi.chainID, block, mpi.chainHeadState)
 		for _, receipt := range blockReceipts {
 			mpi.metrics.IncRequestsProcessed()
 			mpi.tryRemoveRequest(receipt.Request)

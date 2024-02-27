@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
@@ -125,7 +126,10 @@ func (ch *Chain) settleStateTransition(stateTx *iotago.SignedTransaction, stateD
 	if err != nil {
 		panic(err)
 	}
-	ch.Env.Publisher().BlockApplied(ch.ChainID, block)
+
+	latestState, _ := ch.LatestState(chaintypes.ActiveOrCommittedState)
+
+	ch.Env.Publisher().BlockApplied(ch.ChainID, block, latestState)
 
 	blockReceipts, err := blocklog.RequestReceiptsFromBlock(block)
 	if err != nil {

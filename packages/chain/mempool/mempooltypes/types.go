@@ -2,6 +2,7 @@ package mempooltypes
 
 import (
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/state"
 )
 
@@ -12,5 +13,5 @@ type ChainListener interface {
 	// This function is called by the chain when new block is applied to the
 	// state. This block might be not confirmed yet, but the chain is going
 	// to build the next block on top of this one.
-	BlockApplied(chainID isc.ChainID, block state.Block)
+	BlockApplied(chainID isc.ChainID, block state.Block, latestState kv.KVStoreReader)
 }

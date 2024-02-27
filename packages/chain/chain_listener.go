@@ -7,6 +7,7 @@ import (
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/state"
 )
 
@@ -21,6 +22,7 @@ func NewEmptyChainListener() chaintypes.ChainListener {
 	return &emptyChainListener{}
 }
 
-func (ecl *emptyChainListener) BlockApplied(chainID isc.ChainID, block state.Block)    {}
+func (ecl *emptyChainListener) BlockApplied(chainID isc.ChainID, block state.Block, latestState kv.KVStoreReader) {
+}
 func (ecl *emptyChainListener) AccessNodesUpdated(isc.ChainID, []*cryptolib.PublicKey) {}
 func (ecl *emptyChainListener) ServerNodesUpdated(isc.ChainID, []*cryptolib.PublicKey) {}

@@ -21,6 +21,7 @@ var (
 	FuncCheckContextFromFullEP = Contract.Func("checkContextFromFullEP")
 	FuncCheckContextFromViewEP = Contract.ViewFunc("checkContextFromViewEP")
 
+	FuncTestCustomError         = Contract.Func("testCustomError")
 	FuncPanicFullEP             = Contract.Func("testPanicFullEP")
 	FuncPanicViewEP             = Contract.ViewFunc("testPanicViewEP")
 	FuncCallPanicFullEP         = Contract.Func("testCallPanicFullEP")
@@ -69,6 +70,7 @@ var Processor = Contract.Processor(initialize,
 	FuncEventLogDeploy.WithHandler(testEventLogDeploy),
 	FuncSandboxCall.WithHandler(testSandboxCall),
 
+	FuncTestCustomError.WithHandler(testCustomError),
 	FuncPanicFullEP.WithHandler(testPanicFullEP),
 	FuncPanicViewEP.WithHandler(testPanicViewEP),
 	FuncCallPanicFullEP.WithHandler(testCallPanicFullEP),

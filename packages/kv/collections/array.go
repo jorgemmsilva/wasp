@@ -16,6 +16,10 @@ var ErrArrayOverflow = errors.New("Array overflow")
 // WasmLib maps these collections in the exact same way
 const arrayElemKeyCode = byte('#')
 
+func ArrayElemPrefix(name string) kv.Key {
+	return kv.Key(name) + kv.Key([]byte{arrayElemKeyCode})
+}
+
 func ArrayElemKey(name string, index uint32) kv.Key {
 	return kv.Key(rwutil.NewBytesWriter().
 		WriteN([]byte(name)).

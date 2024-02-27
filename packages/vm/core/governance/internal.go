@@ -24,11 +24,15 @@ func (s *StateWriter) SetInitialState(chainOwner isc.AgentID, blockKeepAmount in
 	s.SetPayoutAgentID(chainOwner)
 }
 
+func (s *StateWriter) SetRotationAddress(addr iotago.Address) {
+	s.state.Set(varRotateToAddress, isc.AddressToBytes(addr))
+}
+
 // GetRotationAddress tries to read the state of 'governance' and extract rotation address
 // If succeeds, it means this block is fake.
 // If fails, return nil
 func (s *StateReader) GetRotationAddress() iotago.Address {
-	ret, err := codec.Address.Decode(s.state.Get(VarRotateToAddress), nil)
+	ret, err := codec.Address.Decode(s.state.Get(varRotateToAddress), nil)
 	if err != nil {
 		return nil
 	}
@@ -67,51 +71,51 @@ func (s *StateReader) GetChainInfo(chainID isc.ChainID) (*isc.ChainInfo, error) 
 }
 
 func (s *StateReader) GetMinCommonAccountBalance() iotago.BaseToken {
-	return lo.Must(codec.BaseToken.Decode(s.state.Get(VarMinBaseTokensOnCommonAccount)))
+	return lo.Must(codec.BaseToken.Decode(s.state.Get(varMinBaseTokensOnCommonAccount)))
 }
 
 func (s *StateWriter) SetMinCommonAccountBalance(m iotago.BaseToken) {
-	s.state.Set(VarMinBaseTokensOnCommonAccount, codec.BaseToken.Encode(m))
+	s.state.Set(varMinBaseTokensOnCommonAccount, codec.BaseToken.Encode(m))
 }
 
 func (s *StateReader) GetChainOwnerID() isc.AgentID {
-	return lo.Must(codec.AgentID.Decode(s.state.Get(VarChainOwnerID)))
+	return lo.Must(codec.AgentID.Decode(s.state.Get(varChainOwnerID)))
 }
 
 func (s *StateWriter) SetChainOwnerID(a isc.AgentID) {
-	s.state.Set(VarChainOwnerID, codec.AgentID.Encode(a))
+	s.state.Set(varChainOwnerID, codec.AgentID.Encode(a))
 	if s.GetChainOwnerIDDelegated() != nil {
-		s.state.Del(VarChainOwnerIDDelegated)
+		s.state.Del(varChainOwnerIDDelegated)
 	}
 }
 
 func (s *StateReader) GetChainOwnerIDDelegated() isc.AgentID {
-	return lo.Must(codec.AgentID.Decode(s.state.Get(VarChainOwnerIDDelegated), nil))
+	return lo.Must(codec.AgentID.Decode(s.state.Get(varChainOwnerIDDelegated), nil))
 }
 
 func (s *StateWriter) SetChainOwnerIDDelegated(a isc.AgentID) {
-	s.state.Set(VarChainOwnerIDDelegated, codec.AgentID.Encode(a))
+	s.state.Set(varChainOwnerIDDelegated, codec.AgentID.Encode(a))
 }
 
 func (s *StateReader) GetPayoutAgentID() isc.AgentID {
-	return lo.Must(codec.AgentID.Decode(s.state.Get(VarPayoutAgentID)))
+	return lo.Must(codec.AgentID.Decode(s.state.Get(varPayoutAgentID)))
 }
 
 func (s *StateWriter) SetPayoutAgentID(a isc.AgentID) {
-	s.state.Set(VarPayoutAgentID, codec.AgentID.Encode(a))
+	s.state.Set(varPayoutAgentID, codec.AgentID.Encode(a))
 }
 
 // GetGasFeePolicy returns gas policy from the state
 func (s *StateReader) GetGasFeePolicy() (*gas.FeePolicy, error) {
-	return gas.FeePolicyFromBytes(s.state.Get(VarGasFeePolicyBytes))
+	return gas.FeePolicyFromBytes(s.state.Get(varGasFeePolicyBytes))
 }
 
 func (s *StateWriter) SetGasFeePolicy(fp *gas.FeePolicy) {
-	s.state.Set(VarGasFeePolicyBytes, fp.Bytes())
+	s.state.Set(varGasFeePolicyBytes, fp.Bytes())
 }
 
 func (s *StateReader) GetGasLimits() (*gas.Limits, error) {
-	data := s.state.Get(VarGasLimitsBytes)
+	data := s.state.Get(varGasLimitsBytes)
 	if data == nil {
 		return gas.LimitsDefault, nil
 	}
@@ -119,31 +123,31 @@ func (s *StateReader) GetGasLimits() (*gas.Limits, error) {
 }
 
 func (s *StateWriter) SetGasLimits(gl *gas.Limits) {
-	s.state.Set(VarGasLimitsBytes, gl.Bytes())
+	s.state.Set(varGasLimitsBytes, gl.Bytes())
 }
 
 func (s *StateReader) GetBlockKeepAmount() int32 {
-	return lo.Must(codec.Int32.Decode(s.state.Get(VarBlockKeepAmount), DefaultBlockKeepAmount))
+	return lo.Must(codec.Int32.Decode(s.state.Get(varBlockKeepAmount), DefaultBlockKeepAmount))
 }
 
 func (s *StateWriter) SetBlockKeepAmount(n int32) {
-	s.state.Set(VarBlockKeepAmount, codec.Int32.Encode(n))
+	s.state.Set(varBlockKeepAmount, codec.Int32.Encode(n))
 }
 
 func (s *StateWriter) SetPublicURL(url string) {
-	s.state.Set(VarPublicURL, codec.String.Encode(url))
+	s.state.Set(varPublicURL, codec.String.Encode(url))
 }
 
 func (s *StateReader) GetPublicURL() (string, error) {
-	return codec.String.Decode(s.state.Get(VarPublicURL), "")
+	return codec.String.Decode(s.state.Get(varPublicURL), "")
 }
 
 func (s *StateWriter) SetMetadata(metadata *isc.PublicChainMetadata) {
-	s.state.Set(VarMetadata, metadata.Bytes())
+	s.state.Set(varMetadata, metadata.Bytes())
 }
 
 func (s *StateReader) GetMetadata() (*isc.PublicChainMetadata, error) {
-	metadataBytes := s.state.Get(VarMetadata)
+	metadataBytes := s.state.Get(varMetadata)
 	if metadataBytes == nil {
 		return &isc.PublicChainMetadata{}, nil
 	}
@@ -151,11 +155,11 @@ func (s *StateReader) GetMetadata() (*isc.PublicChainMetadata, error) {
 }
 
 func (s *StateWriter) SetChainAccountID(accountID iotago.AccountID) {
-	s.state.Set(VarChainAccountID, accountID[:])
+	s.state.Set(varChainAccountID, accountID[:])
 }
 
 func (s *StateReader) GetChainAccountID() (iotago.AccountID, bool) {
-	b := s.state.Get(VarChainAccountID)
+	b := s.state.Get(varChainAccountID)
 	if b == nil {
 		return iotago.AccountID{}, false
 	}
@@ -167,19 +171,19 @@ func (s *StateReader) GetChainAccountID() (iotago.AccountID, bool) {
 }
 
 func (s *StateWriter) AccessNodesMap() *collections.Map {
-	return collections.NewMap(s.state, VarAccessNodes)
+	return collections.NewMap(s.state, varAccessNodes)
 }
 
 func (s *StateReader) AccessNodesMap() *collections.ImmutableMap {
-	return collections.NewMapReadOnly(s.state, VarAccessNodes)
+	return collections.NewMapReadOnly(s.state, varAccessNodes)
 }
 
 func (s *StateWriter) AccessNodeCandidatesMap() *collections.Map {
-	return collections.NewMap(s.state, VarAccessNodeCandidates)
+	return collections.NewMap(s.state, varAccessNodeCandidates)
 }
 
 func (s *StateReader) AccessNodeCandidatesMap() *collections.ImmutableMap {
-	return collections.NewMapReadOnly(s.state, VarAccessNodeCandidates)
+	return collections.NewMapReadOnly(s.state, varAccessNodeCandidates)
 }
 
 func (s *StateReader) MaintenanceStatus() bool {
@@ -218,4 +222,12 @@ func (s *StateReader) CandidateNodes() []*AccessNodeInfo {
 		return true
 	})
 	return candidateNodes
+}
+
+func (s *StateWriter) GetAllowedStateControllerAddresses() *collections.Map {
+	return collections.NewMap(s.state, varAllowedStateControllerAddresses)
+}
+
+func (s *StateReader) GetAllowedStateControllerAddresses() *collections.ImmutableMap {
+	return collections.NewMapReadOnly(s.state, varAllowedStateControllerAddresses)
 }

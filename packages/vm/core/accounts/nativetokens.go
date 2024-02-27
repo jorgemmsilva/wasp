@@ -13,7 +13,7 @@ import (
 )
 
 func nativeTokensMapKey(accountKey kv.Key) string {
-	return PrefixNativeTokens + string(accountKey)
+	return prefixNativeTokens + string(accountKey)
 }
 
 func (s *StateReader) NativeTokensMap(accountKey kv.Key) *collections.ImmutableMap {

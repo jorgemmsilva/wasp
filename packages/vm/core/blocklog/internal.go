@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/samber/lo"
+
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
@@ -11,10 +13,24 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/collections"
 )
 
+func (s *StateWriter) GetBlockRegistry() *collections.Array {
+	return collections.NewArray(s.state, prefixBlockRegistry)
+}
+
+func (s *StateReader) GetBlockRegistry() *collections.ArrayReadOnly {
+	return collections.NewArrayReadOnly(s.state, prefixBlockRegistry)
+}
+
+func (s *StateReader) IterateBlockRegistryPrefix(f func(blockInfo *BlockInfo)) {
+	s.state.Iterate(collections.ArrayElemPrefix(prefixBlockRegistry), func(key kv.Key, value []byte) bool {
+		f(lo.Must(BlockInfoFromBytes(value)))
+		return true
+	})
+}
+
 // SaveNextBlockInfo appends block info and returns its index
 func (s *StateWriter) SaveNextBlockInfo(blockInfo *BlockInfo) {
-	registry := collections.NewArray(s.state, PrefixBlockRegistry)
-	registry.Push(blockInfo.Bytes())
+	s.GetBlockRegistry().Push(blockInfo.Bytes())
 }
 
 // UpdateLatestBlockInfo is called before producing the next block to save anchor tx id and commitment data of the previous one
@@ -124,8 +140,7 @@ func (s *StateReader) getRequestEventsInternal(reqID isc.RequestID) ([][]byte, e
 }
 
 func (s *StateReader) getSmartContractEventsInternal(q EventsForContractQuery) [][]byte {
-	registry := collections.NewArrayReadOnly(s.state, PrefixBlockRegistry)
-	latestBlockIndex := registry.Len() - 1
+	latestBlockIndex := s.GetBlockRegistry().Len() - 1
 	adjustedToBlock := q.BlockRange.To
 
 	if adjustedToBlock > latestBlockIndex {
@@ -230,7 +245,7 @@ func (s *StateWriter) pruneRequestLogRecordsByBlockIndex(blockIndex uint32, tota
 }
 
 func (s *StateReader) getBlockInfoBytes(blockIndex uint32) []byte {
-	return collections.NewArrayReadOnly(s.state, PrefixBlockRegistry).GetAt(blockIndex)
+	return s.GetBlockRegistry().GetAt(blockIndex)
 }
 
 func RequestReceiptKey(rkey RequestLookupKey) []byte {
@@ -252,8 +267,7 @@ func getBlockIndexParams(ctx isc.SandboxView, blockIndexOptional *uint32) uint32
 	if blockIndexOptional != nil {
 		return *blockIndexOptional
 	}
-	registry := collections.NewArrayReadOnly(ctx.StateR(), PrefixBlockRegistry)
-	return registry.Len() - 1
+	return NewStateReaderFromSandbox(ctx).GetBlockRegistry().Len() - 1
 }
 
 func (s *StateWriter) pruneBlock(blockIndex uint32) {
@@ -262,8 +276,7 @@ func (s *StateWriter) pruneBlock(blockIndex uint32) {
 		// already pruned?
 		return
 	}
-	registry := collections.NewArray(s.state, PrefixBlockRegistry)
-	registry.PruneAt(blockIndex)
+	s.GetBlockRegistry().PruneAt(blockIndex)
 	s.pruneRequestLogRecordsByBlockIndex(blockIndex, blockInfo.TotalRequests)
 	s.pruneEventsByBlockIndex(blockIndex, blockInfo.TotalRequests)
 }

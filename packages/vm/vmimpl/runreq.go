@@ -81,11 +81,7 @@ func (vmctx *vmContext) runRequest(req isc.Request, requestIndex uint16, mainten
 }
 
 func (vmctx *vmContext) payoutAgentID() isc.AgentID {
-	var payoutAgentID isc.AgentID
-	withContractState(vmctx.stateDraft, governance.Contract, func(s kv.KVStore) {
-		payoutAgentID = governance.NewStateReader(s).GetPayoutAgentID()
-	})
-	return payoutAgentID
+	return governance.NewStateReaderFromChainState(vmctx.stateDraft).GetPayoutAgentID()
 }
 
 // creditAssetsToChain credits L1 accounts with attached assets and accrues all of them to the sender's account on-chain
@@ -406,10 +402,8 @@ func (reqctx *requestContext) chargeGasFee() {
 
 	// ensure common account has at least minBalanceInCommonAccount, and transfer the rest of gas fee to payout AgentID
 	// if the payout AgentID is not set in governance contract, then chain owner will be used
-	var minBalanceInCommonAccount iotago.BaseToken
-	withContractState(reqctx.uncommittedState, governance.Contract, func(s kv.KVStore) {
-		minBalanceInCommonAccount = governance.NewStateReader(s).GetMinCommonAccountBalance()
-	})
+	minBalanceInCommonAccount := governance.NewStateReaderFromChainState(reqctx.uncommittedState).
+		GetMinCommonAccountBalance()
 	commonAccountBal := reqctx.GetBaseTokensBalanceDiscardExtraDecimals(accounts.CommonAccount())
 	if commonAccountBal < minBalanceInCommonAccount {
 		// pay to common account since the balance of common account is less than minSD

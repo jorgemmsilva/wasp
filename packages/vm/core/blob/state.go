@@ -17,6 +17,10 @@ func NewStateReaderFromSandbox(ctx isc.SandboxBase) *StateReader {
 	return NewStateReader(ctx.StateR())
 }
 
+func NewStateReaderFromChainState(chainState kv.KVStoreReader) *StateReader {
+	return NewStateReader(Contract.StateSubrealmR(chainState))
+}
+
 type StateWriter struct {
 	*StateReader
 	state kv.KVStore

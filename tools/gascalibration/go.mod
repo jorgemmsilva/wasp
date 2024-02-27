@@ -53,28 +53,28 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/snappy v0.0.5-0.20220116011046-fa5810519dcb // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/huin/goupnp v1.3.0 // indirect
 	github.com/iancoleman/orderedmap v0.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/iotaledger/hive.go/constraints v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20240124161008-b987a3ca53b2 // indirect
-	github.com/iotaledger/hive.go/crypto v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/hive.go/ds v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/hive.go/ierrors v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/hive.go/kvstore v0.0.0-20240115140343-94cb44b074ff // indirect
-	github.com/iotaledger/hive.go/lo v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/hive.go/log v0.0.0-20240124155714-a0713583cf95 // indirect
-	github.com/iotaledger/hive.go/runtime v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240124161008-b987a3ca53b2 // indirect
-	github.com/iotaledger/hive.go/stringify v0.0.0-20240212120619-c0bb6cb3c1f8 // indirect
-	github.com/iotaledger/iota.go/v4 v4.0.0-20240213155212-c6caf30e259a // indirect
+	github.com/iotaledger/hive.go/constraints v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/core v1.0.0-rc.3.0.20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/crypto v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/ds v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/ierrors v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/kvstore v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/lo v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/log v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/runtime v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/serializer/v2 v2.0.0-rc.1.0.20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/hive.go/stringify v0.0.0-20240214175801-9ca9f93790f5 // indirect
+	github.com/iotaledger/iota.go/v4 v4.0.0-20240214180848-ff6a4bb7bc41 // indirect
 	github.com/iotaledger/wasp v1.0.0-00010101000000-000000000000 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.17.6 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
@@ -92,7 +92,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_golang v1.18.0 // indirect
 	github.com/prometheus/client_model v0.5.0 // indirect
-	github.com/prometheus/common v0.45.0 // indirect
+	github.com/prometheus/common v0.46.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
@@ -112,14 +112,14 @@ require (
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.dedis.ch/kyber/v3 v3.1.0 // indirect
 	golang.org/x/crypto v0.19.0 // indirect
-	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
+	golang.org/x/exp v0.0.0-20240213143201-ec583247a57a // indirect
 	golang.org/x/image v0.11.0 // indirect
-	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/mod v0.15.0 // indirect
 	golang.org/x/net v0.21.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/sys v0.17.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.17.0 // indirect
+	golang.org/x/tools v0.18.0 // indirect
 	google.golang.org/protobuf v1.32.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect

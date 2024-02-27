@@ -111,9 +111,7 @@ func (vmctx *vmContext) extractBlock(
 	var rotationAddr iotago.Address
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		rotationAddr = vmctx.saveBlockInfo(numRequests, numSuccess, numOffLedger)
-		withContractState(chainState, evm.Contract, func(s kv.KVStore) {
-			evmimpl.MintBlock(s, vmctx.chainInfo, vmctx.task.Timestamp)
-		})
+		evmimpl.MintBlock(evm.Contract.StateSubrealm(chainState), vmctx.chainInfo, vmctx.task.Timestamp)
 		vmctx.saveInternalUTXOs(unprocessable)
 	})
 
@@ -128,10 +126,7 @@ func (vmctx *vmContext) extractBlock(
 }
 
 func (vmctx *vmContext) checkRotationAddress() (ret iotago.Address) {
-	withContractState(vmctx.stateDraft, governance.Contract, func(s kv.KVStore) {
-		ret = governance.GetRotationAddress(s)
-	})
-	return
+	return governance.NewStateReaderFromChainState(vmctx.stateDraft).GetRotationAddress()
 }
 
 // saveBlockInfo is in the blocklog partition context. Returns rotation address if this block is a rotation block
@@ -154,10 +149,9 @@ func (vmctx *vmContext) saveBlockInfo(numRequests, numSuccess, numOffLedger uint
 		GasFeeCharged:         vmctx.blockGas.feeCharged,
 	}
 
-	withContractState(vmctx.stateDraft, blocklog.Contract, func(s kv.KVStore) {
-		blocklog.SaveNextBlockInfo(s, blockInfo)
-		blocklog.Prune(s, blockInfo.BlockIndex(), vmctx.chainInfo.BlockKeepAmount)
-	})
+	blocklogState := blocklog.NewStateWriter(blocklog.Contract.StateSubrealm(vmctx.stateDraft))
+	blocklogState.SaveNextBlockInfo(blockInfo)
+	blocklogState.Prune(blockInfo.BlockIndex(), vmctx.chainInfo.BlockKeepAmount)
 	vmctx.task.Log.LogDebugf("saved blockinfo:\n%s", blockInfo)
 	return nil
 }
@@ -179,9 +173,8 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 	if changeInSD != 0 {
 		vmctx.task.Log.LogDebugf("adjusting commonAccount because AO SD cost changed, change:%d", oldSD, newSD, changeInSD)
 		// update the commonAccount with the change in SD cost
-		vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
-			s.AdjustAccountBaseTokens(accounts.CommonAccount(), changeInSD)
-		})
+		vmctx.accountsStateWriterFromChainState(vmctx.stateDraft).
+			AdjustAccountBaseTokens(accounts.CommonAccount(), changeInSD)
 	}
 
 	nativeTokenIDsToBeUpdated, nativeTokensToBeRemoved := vmctx.txbuilder.NativeTokenRecordsToBeUpdated()
@@ -196,55 +189,52 @@ func (vmctx *vmContext) saveInternalUTXOs(unprocessable []isc.OnLedgerRequest) {
 
 	outputIndex := uint16(2) // anchor + account outputs are on index 0 and 1
 
-	vmctx.withAccountsState(vmctx.stateDraft, func(s *accounts.StateWriter) {
-		// update native token outputs
-		for _, ntID := range nativeTokenIDsToBeUpdated {
-			vmctx.task.Log.LogDebugf("saving NT %s, outputIndex: %d", ntID, outputIndex)
-			s.SaveNativeTokenOutput(nativeTokensMap[ntID], outputIndex)
-			outputIndex++
-		}
-		for _, id := range nativeTokensToBeRemoved {
-			vmctx.task.Log.LogDebugf("deleting NT %s", id)
-			s.DeleteNativeTokenOutput(id)
-		}
+	accountsState := vmctx.accountsStateWriterFromChainState(vmctx.stateDraft)
+	// update native token outputs
+	for _, ntID := range nativeTokenIDsToBeUpdated {
+		vmctx.task.Log.LogDebugf("saving NT %s, outputIndex: %d", ntID, outputIndex)
+		accountsState.SaveNativeTokenOutput(nativeTokensMap[ntID], outputIndex)
+		outputIndex++
+	}
+	for _, id := range nativeTokensToBeRemoved {
+		vmctx.task.Log.LogDebugf("deleting NT %s", id)
+		accountsState.DeleteNativeTokenOutput(id)
+	}
 
-		// update foundry UTXOs
-		for _, foundryID := range foundryIDsToBeUpdated {
-			vmctx.task.Log.LogDebugf("saving foundry %d, outputIndex: %d", foundryID, outputIndex)
-			s.SaveFoundryOutput(foundryOutputsMap[foundryID], outputIndex)
-			outputIndex++
-		}
-		for _, sn := range foundriesToBeRemoved {
-			vmctx.task.Log.LogDebugf("deleting foundry %d", sn)
-			s.DeleteFoundryOutput(sn)
-		}
+	// update foundry UTXOs
+	for _, foundryID := range foundryIDsToBeUpdated {
+		vmctx.task.Log.LogDebugf("saving foundry %d, outputIndex: %d", foundryID, outputIndex)
+		accountsState.SaveFoundryOutput(foundryOutputsMap[foundryID], outputIndex)
+		outputIndex++
+	}
+	for _, sn := range foundriesToBeRemoved {
+		vmctx.task.Log.LogDebugf("deleting foundry %d", sn)
+		accountsState.DeleteFoundryOutput(sn)
+	}
 
-		// update NFT Outputs
-		for _, out := range NFTOutputsToBeAdded {
-			vmctx.task.Log.LogDebugf("saving NFT %s, outputIndex: %d", out.NFTID, outputIndex)
-			s.SaveNFTOutput(out, outputIndex)
-			outputIndex++
-		}
-		for _, out := range NFTOutputsToBeRemoved {
-			vmctx.task.Log.LogDebugf("deleting NFT %s", out.NFTID)
-			s.DeleteNFTOutput(out.NFTID)
-		}
+	// update NFT Outputs
+	for _, out := range NFTOutputsToBeAdded {
+		vmctx.task.Log.LogDebugf("saving NFT %s, outputIndex: %d", out.NFTID, outputIndex)
+		accountsState.SaveNFTOutput(out, outputIndex)
+		outputIndex++
+	}
+	for _, out := range NFTOutputsToBeRemoved {
+		vmctx.task.Log.LogDebugf("deleting NFT %s", out.NFTID)
+		accountsState.DeleteNFTOutput(out.NFTID)
+	}
 
-		for positionInMintedList := range MintedNFTOutputs {
-			vmctx.task.Log.LogDebugf("minted NFT on output index: %d", outputIndex)
-			s.SaveMintedNFTOutput(uint16(positionInMintedList), outputIndex)
-			outputIndex++
-		}
-	})
+	for positionInMintedList := range MintedNFTOutputs {
+		vmctx.task.Log.LogDebugf("minted NFT on output index: %d", outputIndex)
+		accountsState.SaveMintedNFTOutput(uint16(positionInMintedList), outputIndex)
+		outputIndex++
+	}
 
 	// add unprocessable requests
 	vmctx.storeUnprocessable(vmctx.stateDraft, unprocessable, outputIndex)
 }
 
 func (vmctx *vmContext) removeUnprocessable(reqID isc.RequestID) {
-	withContractState(vmctx.stateDraft, blocklog.Contract, func(s kv.KVStore) {
-		blocklog.RemoveUnprocessable(s, reqID)
-	})
+	blocklog.NewStateWriter(blocklog.Contract.StateSubrealm(vmctx.stateDraft)).RemoveUnprocessable(reqID)
 }
 
 func (vmctx *vmContext) assertConsistentGasTotals(requestResults []*vm.RequestResult) {
@@ -264,8 +254,5 @@ func (vmctx *vmContext) assertConsistentGasTotals(requestResults []*vm.RequestRe
 }
 
 func (vmctx *vmContext) locateProgram(chainState kv.KVStore, programHash hashing.HashValue) (vmtype string, binary []byte, err error) {
-	withContractState(chainState, blob.Contract, func(s kv.KVStore) {
-		vmtype, binary, err = blob.LocateProgram(s, programHash)
-	})
-	return vmtype, binary, err
+	return blob.NewStateReaderFromChainState(chainState).LocateProgram(programHash)
 }

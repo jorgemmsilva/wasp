@@ -11,5 +11,5 @@ func ResolveError(ch chaintypes.ChainCore, e *isc.UnresolvedVMError) (*isc.VMErr
 	if err != nil {
 		return nil, err
 	}
-	return errors.ResolveFromState(s, e)
+	return errors.NewStateReaderFromChainState(s).Resolve(e)
 }

@@ -14,7 +14,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/subrealm"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/trie"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
@@ -69,15 +68,17 @@ func (ctx *ViewContext) stateReaderWithGasBurn() kv.KVStoreReader {
 }
 
 func (ctx *ViewContext) contractStateReaderWithGasBurn(contract isc.Hname) kv.KVStoreReader {
-	return subrealm.NewReadOnly(ctx.stateReaderWithGasBurn(), kv.Key(contract.Bytes()))
+	return isc.ContractStateSubrealmR(ctx.stateReaderWithGasBurn(), contract)
 }
 
 func (ctx *ViewContext) LocateProgram(programHash hashing.HashValue) (vmtype string, binary []byte, err error) {
-	return blob.LocateProgram(ctx.contractStateReaderWithGasBurn(blob.Contract.Hname()), programHash)
+	blobState := blob.NewStateReader(ctx.contractStateReaderWithGasBurn(blob.Contract.Hname()))
+	return blobState.LocateProgram(programHash)
 }
 
 func (ctx *ViewContext) GetContractRecord(contractHname isc.Hname) (ret *root.ContractRecord) {
-	return root.FindContract(ctx.contractStateReaderWithGasBurn(root.Contract.Hname()), contractHname)
+	rootState := root.NewStateReader(ctx.contractStateReaderWithGasBurn(root.Contract.Hname()))
+	return rootState.FindContract(contractHname)
 }
 
 func (ctx *ViewContext) GasBurn(burnCode gas.BurnCode, par ...uint64) {
@@ -231,10 +232,10 @@ func (ctx *ViewContext) callView(msg isc.Message) (ret dict.Dict) {
 }
 
 func (ctx *ViewContext) initAndCallView(msg isc.Message) (ret dict.Dict) {
-	ctx.chainInfo = lo.Must(governance.GetChainInfo(
-		ctx.contractStateReaderWithGasBurn(governance.Contract.Hname()),
-		ctx.chainID,
-	))
+	ctx.chainInfo = lo.Must(
+		governance.NewStateReader(ctx.contractStateReaderWithGasBurn(governance.Contract.Hname())).
+			GetChainInfo(ctx.chainID),
+	)
 
 	ctx.gasBudget = ctx.chainInfo.GasLimits.MaxGasExternalViewCall
 	if ctx.gasBurnLoggingEnabled {

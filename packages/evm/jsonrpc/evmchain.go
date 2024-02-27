@@ -27,7 +27,6 @@ import (
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/buffered"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/subrealm"
 
 	"github.com/iotaledger/wasp/packages/publisher"
 	"github.com/iotaledger/wasp/packages/state"
@@ -147,14 +146,14 @@ func (e *EVMChain) BlockNumber() *big.Int {
 }
 
 func (e *EVMChain) GasFeePolicy() *gas.FeePolicy {
-	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasFeePolicy := lo.Must(governance.GetGasFeePolicy(govPartition))
+	govState := governance.NewStateReaderFromChainState(e.backend.ISCLatestState())
+	gasFeePolicy := lo.Must(govState.GetGasFeePolicy())
 	return gasFeePolicy
 }
 
 func (e *EVMChain) gasLimits() *gas.Limits {
-	govPartition := subrealm.NewReadOnly(e.backend.ISCLatestState(), kv.Key(governance.Contract.Hname().Bytes()))
-	gasLimits := lo.Must(governance.GetGasLimits(govPartition))
+	govState := governance.NewStateReaderFromChainState(e.backend.ISCLatestState())
+	gasLimits := lo.Must(govState.GetGasLimits())
 	return gasLimits
 }
 
@@ -265,8 +264,7 @@ func (e *EVMChain) iscChainOutputsFromEVMBlockNumber(blockNumber *big.Int) (*isc
 	if err != nil {
 		return nil, err
 	}
-	blocklogStatePartition := subrealm.NewReadOnly(nextISCState, kv.Key(blocklog.Contract.Hname().Bytes()))
-	nextBlock, ok := blocklog.GetBlockInfo(blocklogStatePartition, nextISCBlockIndex)
+	nextBlock, ok := blocklog.NewStateReaderFromChainState(nextISCState).GetBlockInfo(nextISCBlockIndex)
 	if !ok {
 		return nil, fmt.Errorf("block not found: %d", nextISCBlockIndex)
 	}
@@ -296,7 +294,7 @@ func (e *EVMChain) accountsState(chainState state.State) *accounts.StateReader {
 			e.backend.BaseTokenInfo(),
 			e.backend.L1APIProvider().APIForTime(chainState.Timestamp()),
 		),
-		accounts.ContractStateR(chainState),
+		accounts.Contract.StateSubrealmR(chainState),
 	)
 }
 
@@ -606,9 +604,7 @@ func (e *EVMChain) iscRequestsInBlock(evmBlockNumber uint64) (*blocklog.BlockInf
 	if err != nil {
 		return nil, nil, err
 	}
-	iscBlockIndex := iscState.BlockIndex()
-	blocklogStatePartition := subrealm.NewReadOnly(iscState, kv.Key(blocklog.Contract.Hname().Bytes()))
-	return blocklog.GetRequestsInBlock(blocklogStatePartition, iscBlockIndex)
+	return blocklog.NewStateReaderFromChainState(iscState).GetRequestsInBlock(iscState.BlockIndex())
 }
 
 func (e *EVMChain) TraceTransaction(txHash common.Hash, config *tracers.TraceConfig) (any, error) {
@@ -665,17 +661,17 @@ func evmBlockNumberByISCBlockIndex(n uint32) uint64 {
 }
 
 func blockchainDB(chainState state.State) *emulator.BlockchainDB {
-	govPartition := subrealm.NewReadOnly(chainState, kv.Key(governance.Contract.Hname().Bytes()))
-	gasLimits := lo.Must(governance.GetGasLimits(govPartition))
-	gasFeePolicy := lo.Must(governance.GetGasFeePolicy(govPartition))
-	blockKeepAmount := governance.GetBlockKeepAmount(govPartition)
+	govState := governance.NewStateReaderFromChainState(chainState)
+	gasLimits := lo.Must(govState.GetGasLimits())
+	gasFeePolicy := lo.Must(govState.GetGasFeePolicy())
+	blockKeepAmount := govState.GetBlockKeepAmount()
 	return emulator.NewBlockchainDB(
-		buffered.NewBufferedKVStore(evm.EmulatorStateSubrealmR(evm.ContractPartitionR(chainState))),
+		buffered.NewBufferedKVStore(evm.EmulatorStateSubrealmR(evm.Contract.StateSubrealmR(chainState))),
 		gas.EVMBlockGasLimit(gasLimits, &gasFeePolicy.EVMGasRatio),
 		blockKeepAmount,
 	)
 }
 
 func stateDBSubrealmR(chainState state.State) kv.KVStoreReader {
-	return emulator.StateDBSubrealmR(evm.EmulatorStateSubrealmR(evm.ContractPartitionR(chainState)))
+	return emulator.StateDBSubrealmR(evm.EmulatorStateSubrealmR(evm.Contract.StateSubrealmR(chainState)))
 }

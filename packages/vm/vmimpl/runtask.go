@@ -17,7 +17,6 @@ import (
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/panicutil"
 	"github.com/iotaledger/wasp/packages/vm"
-	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations"
@@ -65,7 +64,7 @@ func runTask(task *vm.VMTask) *vm.VMTaskResult {
 	// run the batch of requests
 	requestResults, numSuccess, numOffLedger, unprocessable := vmctx.runRequests(
 		vmctx.task.Requests,
-		governance.NewStateAccess(stateDraft).MaintenanceStatus(),
+		governance.NewStateReaderFromChainState(stateDraft).MaintenanceStatus(),
 		vmctx.task.Log,
 	)
 
@@ -124,36 +123,29 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		migrationScheme := vmctx.getMigrations()
 		vmctx.runMigrations(chainState, migrationScheme)
-		vmctx.schemaVersion = root.NewStateAccess(chainState).SchemaVersion()
+		vmctx.schemaVersion = root.NewStateReaderFromChainState(chainState).GetSchemaVersion()
 	})
 
 	// save the AccountID of the AccountOutput
 	if id, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
 		vmctx.withStateUpdate(func(chainState kv.KVStore) {
-			withContractState(chainState, governance.Contract, func(s kv.KVStore) {
-				governance.SetChainAccountID(
-					s,
-					util.AccountIDFromAccountOutput(out, id),
-				)
-			})
+			governance.NewStateWriter(governance.Contract.StateSubrealm(chainState)).SetChainAccountID(
+				util.AccountIDFromAccountOutput(out, id),
+			)
 		})
 	}
 
 	// save the anchor tx ID of the current state
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
-		withContractState(chainState, blocklog.Contract, func(s kv.KVStore) {
-			blocklog.UpdateLatestBlockInfo(
-				s,
-				vmctx.task.Inputs.AnchorOutputID.TransactionID(),
-			)
-		})
+		blocklog.NewStateWriter(blocklog.Contract.StateSubrealm(chainState)).UpdateLatestBlockInfo(
+			vmctx.task.Inputs.AnchorOutputID.TransactionID(),
+		)
 	})
 
 	// save the OutputID of the newly created tokens, foundries and NFTs in the previous block
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
-		vmctx.withAccountsState(chainState, func(s *accounts.StateWriter) {
-			s.UpdateLatestOutputID(vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex)
-		})
+		vmctx.accountsStateWriterFromChainState(chainState).
+			UpdateLatestOutputID(vmctx.task.Inputs.AnchorOutputID.TransactionID(), vmctx.task.Inputs.AnchorOutput.StateIndex)
 	})
 
 	vmctx.txbuilder = vmtxbuilder.NewAnchorTransactionBuilder(

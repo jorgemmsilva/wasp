@@ -4,13 +4,9 @@
 package governanceimpl
 
 import (
-	"github.com/samber/lo"
-
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/kvdecoder"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 )
@@ -22,19 +18,17 @@ var errOwnerNotDelegated = coreerrors.Register("not delegated to another chain o
 // Note that ownership is only changed by the successful call to  claimChainOwnership
 func claimChainOwnership(ctx isc.Sandbox) dict.Dict {
 	ctx.Log().LogDebugf("governance.delegateChainOwnership.begin")
-	state := ctx.State()
+	state := governance.NewStateWriterFromSandbox(ctx)
 
-	stateDecoder := kvdecoder.New(state, ctx.Log())
-	currentOwner := stateDecoder.MustGetAgentID(governance.VarChainOwnerID)
-	nextOwner := stateDecoder.MustGetAgentID(governance.VarChainOwnerIDDelegated, currentOwner)
+	currentOwner := state.GetChainOwnerID()
+	nextOwner := state.GetChainOwnerIDDelegated()
 
-	if nextOwner.Equals(currentOwner) {
+	if nextOwner == nil {
 		panic(errOwnerNotDelegated)
 	}
 	ctx.RequireCaller(nextOwner)
 
-	state.Set(governance.VarChainOwnerID, codec.AgentID.Encode(nextOwner))
-	state.Del(governance.VarChainOwnerIDDelegated)
+	state.SetChainOwnerID(nextOwner)
 	ctx.Log().LogDebugf("governance.chainChainOwner.success: chain owner changed: %s --> %s",
 		currentOwner.Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()),
 		nextOwner.Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()),
@@ -48,31 +42,37 @@ func claimChainOwnership(ctx isc.Sandbox) dict.Dict {
 func delegateChainOwnership(ctx isc.Sandbox, newOwnerID isc.AgentID) dict.Dict {
 	ctx.Log().LogDebugf("governance.delegateChainOwnership.begin")
 	ctx.RequireCallerIsChainOwner()
-	ctx.State().Set(governance.VarChainOwnerIDDelegated, codec.AgentID.Encode(newOwnerID))
+	state := governance.NewStateWriterFromSandbox(ctx)
+	state.SetChainOwnerIDDelegated(newOwnerID)
 	ctx.Log().LogDebugf("governance.delegateChainOwnership.success: chain ownership delegated to %s", newOwnerID.Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()))
 	return nil
 }
 
 func setPayoutAgentID(ctx isc.Sandbox, agent isc.AgentID) dict.Dict {
 	ctx.RequireCallerIsChainOwner()
-	ctx.State().Set(governance.VarPayoutAgentID, codec.AgentID.Encode(agent))
+	state := governance.NewStateWriterFromSandbox(ctx)
+	state.SetPayoutAgentID(agent)
 	return nil
 }
 
 func getPayoutAgentID(ctx isc.SandboxView) isc.AgentID {
-	return lo.Must(codec.AgentID.Decode(ctx.StateR().Get(governance.VarPayoutAgentID)))
+	state := governance.NewStateReaderFromSandbox(ctx)
+	return state.GetPayoutAgentID()
 }
 
 func setMinCommonAccountBalance(ctx isc.Sandbox, minCommonAccountBalance iotago.BaseToken) dict.Dict {
 	ctx.RequireCallerIsChainOwner()
-	ctx.State().Set(governance.VarMinBaseTokensOnCommonAccount, codec.BaseToken.Encode(minCommonAccountBalance))
+	state := governance.NewStateWriterFromSandbox(ctx)
+	state.SetMinCommonAccountBalance(minCommonAccountBalance)
 	return nil
 }
 
 func getMinCommonAccountBalance(ctx isc.SandboxView) iotago.BaseToken {
-	return lo.Must(codec.BaseToken.Decode(ctx.StateR().Get(governance.VarMinBaseTokensOnCommonAccount)))
+	state := governance.NewStateReaderFromSandbox(ctx)
+	return state.GetMinCommonAccountBalance()
 }
 
 func getChainOwner(ctx isc.SandboxView) isc.AgentID {
-	return lo.Must(codec.AgentID.Decode(ctx.StateR().Get(governance.VarChainOwnerID)))
+	state := governance.NewStateReaderFromSandbox(ctx)
+	return state.GetChainOwnerID()
 }

@@ -12,7 +12,7 @@ type StateAccess struct {
 }
 
 func NewStateAccess(store kv.KVStoreReader) *StateAccess {
-	return &StateAccess{evmPartition: evm.ContractPartitionR(store)}
+	return &StateAccess{evmPartition: evm.Contract.StateSubrealmR(store)}
 }
 
 func (sa *StateAccess) Nonce(addr common.Address) uint64 {

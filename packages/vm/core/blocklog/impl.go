@@ -6,7 +6,6 @@ import (
 	"github.com/samber/lo"
 
 	"github.com/iotaledger/wasp/packages/isc"
-	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/vm/core/errors/coreerrors"
 )
 
@@ -26,8 +25,8 @@ var Processor = Contract.Processor(nil,
 
 var ErrBlockNotFound = coreerrors.Register("Block not found").Create()
 
-func SetInitialState(s kv.KVStore) {
-	SaveNextBlockInfo(s, &BlockInfo{
+func (s *StateWriter) SetInitialState() {
+	s.SaveNextBlockInfo(&BlockInfo{
 		SchemaVersion:         BlockInfoLatestSchemaVersion,
 		Timestamp:             time.Unix(0, 0),
 		TotalRequests:         1,
@@ -38,8 +37,9 @@ func SetInitialState(s kv.KVStore) {
 
 // viewGetBlockInfo returns blockInfo for a given block.
 func viewGetBlockInfo(ctx isc.SandboxView, blockIndexOptional *uint32) (uint32, *BlockInfo) {
+	state := NewStateReaderFromSandbox(ctx)
 	blockIndex := getBlockIndexParams(ctx, blockIndexOptional)
-	b, ok := GetBlockInfo(ctx.StateR(), blockIndex)
+	b, ok := state.GetBlockInfo(blockIndex)
 	if !ok {
 		panic(ErrBlockNotFound)
 	}
@@ -50,12 +50,13 @@ var errNotFound = coreerrors.Register("not found").Create()
 
 // viewGetRequestIDsForBlock returns a list of requestIDs for a given block.
 func viewGetRequestIDsForBlock(ctx isc.SandboxView, blockIndexOptional *uint32) (uint32, []isc.RequestID) {
+	state := NewStateReaderFromSandbox(ctx)
 	blockIndex := getBlockIndexParams(ctx, blockIndexOptional)
 	if blockIndex == 0 {
 		// block 0 is an empty state
 		return blockIndex, nil
 	}
-	receipts, found := getRequestLogRecordsForBlockBin(ctx.StateR(), blockIndex)
+	receipts, found := state.getRequestLogRecordsForBlockBin(blockIndex)
 	if !found {
 		panic(errNotFound)
 	}
@@ -67,20 +68,22 @@ func viewGetRequestIDsForBlock(ctx isc.SandboxView, blockIndexOptional *uint32) 
 }
 
 func viewGetRequestReceipt(ctx isc.SandboxView, reqID isc.RequestID) *RequestReceipt {
-	rec, err := GetRequestRecordDataByRequestID(ctx.StateR(), reqID)
+	state := NewStateReaderFromSandbox(ctx)
+	rec, err := state.GetRequestRecordDataByRequestID(reqID)
 	ctx.RequireNoError(err)
 	return rec
 }
 
 // viewGetRequestReceiptsForBlock returns a list of receipts for a given block.
 func viewGetRequestReceiptsForBlock(ctx isc.SandboxView, blockIndexOptional *uint32) (uint32, []*RequestReceipt) {
+	state := NewStateReaderFromSandbox(ctx)
 	blockIndex := getBlockIndexParams(ctx, blockIndexOptional)
 	if blockIndex == 0 {
 		// block 0 is an empty state
 		return 0, nil
 	}
 
-	receipts, found := getRequestLogRecordsForBlockBin(ctx.StateR(), blockIndex)
+	receipts, found := state.getRequestLogRecordsForBlockBin(blockIndex)
 	if !found {
 		panic(errNotFound)
 	}
@@ -93,14 +96,16 @@ func viewGetRequestReceiptsForBlock(ctx isc.SandboxView, blockIndexOptional *uin
 }
 
 func viewIsRequestProcessed(ctx isc.SandboxView, requestID isc.RequestID) bool {
-	requestReceipt, err := getRequestReceipt(ctx.StateR(), requestID)
+	state := NewStateReaderFromSandbox(ctx)
+	requestReceipt, err := state.GetRequestReceipt(requestID)
 	ctx.RequireNoError(err)
 	return requestReceipt != nil
 }
 
 // viewGetEventsForRequest returns a list of events for a given request.
 func viewGetEventsForRequest(ctx isc.SandboxView, requestID isc.RequestID) []*isc.Event {
-	events, err := getRequestEventsInternal(ctx.StateR(), requestID)
+	state := NewStateReaderFromSandbox(ctx)
+	events, err := state.getRequestEventsInternal(requestID)
 	ctx.RequireNoError(err)
 	return lo.Map(events, func(b []byte, _ int) *isc.Event {
 		return lo.Must(isc.EventFromBytes(b))
@@ -115,10 +120,10 @@ func viewGetEventsForBlock(ctx isc.SandboxView, blockIndexOptional *uint32) (uin
 		return 0, nil
 	}
 
-	stateR := ctx.StateR()
-	blockInfo, ok := GetBlockInfo(stateR, blockIndex)
+	state := NewStateReaderFromSandbox(ctx)
+	blockInfo, ok := state.GetBlockInfo(blockIndex)
 	ctx.Requiref(ok, "block not found: %d", blockIndex)
-	events := GetEventsByBlockIndex(stateR, blockIndex, blockInfo.TotalRequests)
+	events := state.GetEventsByBlockIndex(blockIndex, blockInfo.TotalRequests)
 	return blockIndex, lo.Map(events, func(b []byte, _ int) *isc.Event {
 		return lo.Must(isc.EventFromBytes(b))
 	})
@@ -126,7 +131,8 @@ func viewGetEventsForBlock(ctx isc.SandboxView, blockIndexOptional *uint32) (uin
 
 // viewGetEventsForContract returns a list of events for a given smart contract.
 func viewGetEventsForContract(ctx isc.SandboxView, q EventsForContractQuery) []*isc.Event {
-	events := getSmartContractEventsInternal(ctx.StateR(), q)
+	state := NewStateReaderFromSandbox(ctx)
+	events := state.getSmartContractEventsInternal(q)
 	return lo.Map(events, func(b []byte, _ int) *isc.Event {
 		return lo.Must(isc.EventFromBytes(b))
 	})

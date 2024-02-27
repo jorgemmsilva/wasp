@@ -12,5 +12,6 @@ import (
 
 // getChainInfo view returns general info about the chain: chain ID, chain owner ID, limits and default fees
 func getChainInfo(ctx isc.SandboxView) *isc.ChainInfo {
-	return lo.Must(governance.GetChainInfo(ctx.StateR(), ctx.ChainID()))
+	state := governance.NewStateReaderFromSandbox(ctx)
+	return lo.Must(state.GetChainInfo(ctx.ChainID()))
 }

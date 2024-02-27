@@ -12,7 +12,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv"
 	"github.com/iotaledger/wasp/packages/kv/dict"
-	"github.com/iotaledger/wasp/packages/kv/subrealm"
 )
 
 type Handler[S isc.SandboxBase] func(ctx S) dict.Dict
@@ -37,7 +36,7 @@ func CoreContractProgramHash(name string) hashing.HashValue {
 }
 
 func defaultInitFunc(ctx isc.Sandbox) dict.Dict {
-	ctx.Log().LogDebugf("default init function invoked for contract %s from caller %s", ctx.Contract(), ctx.Caller())
+	ctx.Log().LogDebugf("default init function invoked for contract %s from caller %s", ctx.Contract(), ctx.Caller().Bech32(ctx.L1API().ProtocolParameters().Bech32HRP()))
 	return nil
 }
 
@@ -69,6 +68,14 @@ func (i *ContractInfo) Hname() isc.Hname {
 // FullKey concatenates 4 bytes of hname with postfix
 func (i *ContractInfo) FullKey(postfix []byte) []byte {
 	return append(i.Hname().Bytes(), postfix...)
+}
+
+func (i *ContractInfo) StateSubrealm(chainState kv.KVStore) kv.KVStore {
+	return isc.ContractStateSubrealm(chainState, i.Hname())
+}
+
+func (i *ContractInfo) StateSubrealmR(chainState kv.KVStoreReader) kv.KVStoreReader {
+	return isc.ContractStateSubrealmR(chainState, i.Hname())
 }
 
 // Func declares a full entry point
@@ -156,8 +163,4 @@ func (p *ContractProcessor) GetEntryPoint(code isc.Hname) (isc.VMProcessorEntryP
 
 func (p *ContractProcessor) Entrypoints() map[isc.Hname]isc.ProcessorEntryPoint {
 	return p.Handlers
-}
-
-func (p *ContractProcessor) GetStateReadOnly(chainState kv.KVStoreReader) kv.KVStoreReader {
-	return subrealm.NewReadOnly(chainState, kv.Key(p.Contract.Hname().Bytes()))
 }

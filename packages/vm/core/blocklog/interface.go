@@ -83,7 +83,7 @@ const (
 	// Array of blockIndex => BlockInfo (pruned)
 	// Covered in: TestGetEvents
 	// TODO [iota2.0]: Support reading BlockInfo pre 2.0 (or prune)
-	PrefixBlockRegistry = "a"
+	prefixBlockRegistry = "a"
 
 	// Map of request.ID().LookupDigest() => []RequestLookupKey (pruned)
 	//   LookupDigest = reqID[:6] | outputIndex

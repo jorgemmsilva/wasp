@@ -72,7 +72,7 @@ func (ch *Chain) runTaskNoLock(reqs []isc.Request, estimateGas bool) *vm.VMTaskR
 	require.NoError(ch.Env.T, err)
 	accounts.NewStateReader(
 		accounts.NewStateContext(res.StateDraft.SchemaVersion(), ch.ChainID, ch.TokenInfo(), testutil.L1API),
-		accounts.ContractState(res.StateDraft),
+		accounts.Contract.StateSubrealm(res.StateDraft),
 	).CheckLedgerConsistency()
 	return res
 }

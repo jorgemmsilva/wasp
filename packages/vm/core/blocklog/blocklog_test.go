@@ -72,7 +72,7 @@ func TestPruneRequestIndexLookupTable(t *testing.T) {
 	requestIndexLUT.SetAt(requestIDDigest1[:], createRequestLookupKeys(maxBlocks, requestsToCreate))
 
 	require.NotPanics(t, func() {
-		pruneRequestLookupTable(d, requestIDDigest0, blockToPrune)
+		NewStateWriter(d).pruneRequestLookupTable(requestIDDigest0, blockToPrune)
 	})
 
 	validatePrunedRequestIndexLookupBlock(t, d, kv.Key(requestIDDigest0[:]), blockToPrune)
@@ -142,12 +142,12 @@ func TestGetEventsInternal(t *testing.T) {
 
 	d := dict.Dict{}
 
-	registry := collections.NewArray(d, PrefixBlockRegistry)
+	registry := collections.NewArray(d, prefixBlockRegistry)
 
 	eventMap := collections.NewMap(d, prefixRequestEvents)
 	createEventLookupKeys(registry, eventMap, contractID, maxBlocks, maxRequests, maxEventsPerRequest)
 
-	events := getSmartContractEventsInternal(d, EventsForContractQuery{
+	events := NewStateReader(d).getSmartContractEventsInternal(EventsForContractQuery{
 		Contract:   contractID,
 		BlockRange: &BlockRange{From: blockFrom, To: blockTo},
 	})

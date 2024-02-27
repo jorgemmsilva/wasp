@@ -26,7 +26,6 @@ import (
 	"github.com/iotaledger/wasp/packages/vm/core/evm/evmimpl"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
-	"github.com/iotaledger/wasp/packages/vm/core/root/rootimpl"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -77,7 +76,15 @@ func InitChain(
 	chainOwner := lo.Must(codec.AgentID.Decode(initParams.Get(ParamChainOwner), &isc.NilAgentID{}))
 
 	// init the state of each core contract
-	rootimpl.SetInitialState(v, root.Contract.StateSubrealm(d))
+	root.NewStateWriter(root.Contract.StateSubrealm(d)).SetInitialState(v, []*coreutil.ContractInfo{
+		root.Contract,
+		blob.Contract,
+		accounts.Contract,
+		blocklog.Contract,
+		errors.Contract,
+		governance.Contract,
+		evm.Contract,
+	})
 	blob.NewStateWriter(blob.Contract.StateSubrealm(d)).SetInitialState()
 	accounts.NewStateWriter(
 		accounts.NewStateContext(v, isc.ChainID{}, tokenInfo, l1API),

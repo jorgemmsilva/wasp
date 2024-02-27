@@ -124,7 +124,7 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 	vmctx.withStateUpdate(func(chainState kv.KVStore) {
 		migrationScheme := vmctx.getMigrations()
 		vmctx.runMigrations(chainState, migrationScheme)
-		vmctx.schemaVersion = root.NewStateAccess(chainState).SchemaVersion()
+		vmctx.schemaVersion = root.NewStateReaderFromChainState(chainState).GetSchemaVersion()
 	})
 
 	// save the AccountID of the AccountOutput

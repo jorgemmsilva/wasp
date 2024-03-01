@@ -255,15 +255,6 @@ func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.K
 		return nil, isc.RequestID{}, err
 	}
 	err = ch.Env.AddToLedger(block)
-	// ----------------------------------------
-	// TODO remove
-	if err != nil {
-		block, _ := ch.createRequestTx(req, keyPair)
-
-		ch.Env.AddToLedger(block)
-		println("potato")
-	}
-	// ----------------------------------------
 	// once we created transaction successfully, it should be added to the ledger smoothly
 	require.NoError(ch.Env.T, err)
 	txid, err := util.TxFromBlock(block).Transaction.ID()

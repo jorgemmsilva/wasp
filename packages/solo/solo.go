@@ -444,6 +444,11 @@ func (env *Solo) addChain(chData chainData) *Chain {
 // AddToLedger adds (synchronously confirms) transaction to the UTXODB ledger. Return error if it is
 // invalid or double spend
 func (env *Solo) AddToLedger(block *iotago.Block) error {
+	tx := util.TxFromBlock(block)
+	env.logger.LogDebugf("adding tx to L1 (ID: %s) %s",
+		lo.Must(tx.Transaction.ID()).ToHex(),
+		string(lo.Must(testutil.L1API.JSONEncode(tx))),
+	)
 	return env.utxoDB.AddToLedger(block)
 }
 

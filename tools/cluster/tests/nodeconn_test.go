@@ -7,19 +7,18 @@
 package tests
 
 import (
+	"context"
 	"testing"
 	"time"
 
 	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/l1connection"
 	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/testutil/testlogger"
-	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
 )
 
@@ -32,23 +31,25 @@ func createChain(t *testing.T) isc.ChainID {
 	utxoMap, err := layer1Client.OutputMap(originator.Address())
 	require.NoError(t, err)
 
-	originTx, _, chainID, err := origin.NewChainOriginTransaction(
+	bi, err := layer1Client.APIProvider().BlockIssuance(context.TODO())
+	require.NoError(t, err)
+
+	originBlock, _, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
-		originator.Address(),
+		originator.GetPublicKey(),
 		originator.Address(),
 		0,
-		iotago.Mana(0),
 		nil,
 		utxoMap,
 		layer1Client.APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 		layer1Client.APIProvider(),
+		bi,
 		lo.Must(layer1Client.TokenInfo()),
 	)
 	require.NoError(t, err)
-	blockIssuerID, err := util.BlockIssuerFromOutputs(utxoMap)
 	require.NoError(t, err)
-	_, err = layer1Client.PostTxAndWaitUntilConfirmation(originTx, blockIssuerID, originator)
+	err = layer1Client.PostBlockAndWaitUntilConfirmation(originBlock)
 	require.NoError(t, err)
 
 	return chainID

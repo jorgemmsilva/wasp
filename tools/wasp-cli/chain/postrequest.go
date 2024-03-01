@@ -48,7 +48,7 @@ func postRequest(nodeName, chain string, msg isc.Message, params chainclient.Pos
 		util.SDAdjustmentPrompt(output)
 	}
 
-	util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), nodeName, func() (*iotago.SignedTransaction, error) {
+	util.WithSCTransaction(config.GetChain(chain, cliclients.API().ProtocolParameters().Bech32HRP()), nodeName, func() (*iotago.Block, error) {
 		return chainClient.PostRequest(msg, params)
 	})
 }

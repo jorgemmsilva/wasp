@@ -174,9 +174,9 @@ func toMap(params []interface{}) map[string]interface{} {
 	return par
 }
 
-func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, error) {
+func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Block, error) {
 	if keyPair == nil {
-		keyPair = ch.OriginatorPrivateKey
+		keyPair = ch.OriginatorKeyPair
 	}
 	L1BaseTokens := ch.Env.L1BaseTokens(keyPair.Address())
 	if L1BaseTokens == 0 {
@@ -186,7 +186,7 @@ func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*
 	keyPair, senderAddr := ch.requestSender(req, keyPair)
 	unspentOutputs := ch.Env.utxoDB.GetUnspentOutputs(keyPair.Address())
 	reqParams := req.Build(ch.ChainID.AsAddress())
-	tx, err := transaction.NewRequestTransaction(
+	block, err := transaction.NewRequestTransaction(
 		keyPair,
 		senderAddr,
 		unspentOutputs,
@@ -195,20 +195,21 @@ func (ch *Chain) createRequestTx(req *CallParams, keyPair *cryptolib.KeyPair) (*
 		ch.Env.SlotIndex(),
 		ch.Env.disableAutoAdjustStorageDeposit,
 		testutil.L1APIProvider,
+		ch.Env.BlockIssuance(),
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	if tx.Transaction.Outputs[0].BaseTokenAmount() == 0 {
+	if util.TxFromBlock(block).Transaction.Outputs[0].BaseTokenAmount() == 0 {
 		return nil, errors.New("createRequestTx: amount == 0. Consider: solo.InitOptions{AutoAdjustStorageDeposit: true}")
 	}
-	return tx, err
+	return block, err
 }
 
 func (ch *Chain) requestSigner(keyPair *cryptolib.KeyPair) *cryptolib.KeyPair {
 	if keyPair == nil {
-		keyPair = ch.OriginatorPrivateKey
+		keyPair = ch.OriginatorKeyPair
 	}
 	return keyPair
 }
@@ -228,11 +229,11 @@ func (ch *Chain) requestFromParams(req *CallParams, keyPair *cryptolib.KeyPair) 
 	ch.Env.ledgerMutex.Lock()
 	defer ch.Env.ledgerMutex.Unlock()
 
-	tx, err := ch.createRequestTx(req, keyPair)
+	block, err := ch.createRequestTx(req, keyPair)
 	if err != nil {
 		return nil, err
 	}
-	reqs, err := isc.RequestsInTransaction(tx.Transaction)
+	reqs, err := isc.RequestsInTransaction(util.TxFromBlock(block).Transaction)
 	require.NoError(ch.Env.T, err)
 
 	for _, r := range reqs[ch.ChainID] {
@@ -245,21 +246,21 @@ func (ch *Chain) requestFromParams(req *CallParams, keyPair *cryptolib.KeyPair) 
 // RequestFromParamsToLedger creates transaction with one request based on parameters and sigScheme
 // Then it adds it to the ledger, atomically.
 // Locking on the mutex is needed to prevent mess when several goroutines work on the same address
-func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, isc.RequestID, error) {
+func (ch *Chain) RequestFromParamsToLedger(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Block, isc.RequestID, error) {
 	ch.Env.ledgerMutex.Lock()
 	defer ch.Env.ledgerMutex.Unlock()
 
-	tx, err := ch.createRequestTx(req, keyPair)
+	block, err := ch.createRequestTx(req, keyPair)
 	if err != nil {
 		return nil, isc.RequestID{}, err
 	}
-	err = ch.Env.AddToLedger(tx)
+	err = ch.Env.AddToLedger(block)
 	// once we created transaction successfully, it should be added to the ledger smoothly
 	require.NoError(ch.Env.T, err)
-	txid, err := tx.Transaction.ID()
+	txid, err := util.TxFromBlock(block).Transaction.ID()
 	require.NoError(ch.Env.T, err)
 
-	return tx, isc.NewRequestID(txid, 0), nil
+	return block, isc.NewRequestID(txid, 0), nil
 }
 
 // PostRequestSync posts a request synchronously sent by the test program to the smart contract on the same or another chain:
@@ -285,18 +286,18 @@ func (ch *Chain) PostRequestSync(req *CallParams, keyPair *cryptolib.KeyPair) (d
 
 func (ch *Chain) PostRequestOffLedger(req *CallParams, keyPair *cryptolib.KeyPair) (dict.Dict, error) {
 	if keyPair == nil {
-		keyPair = ch.OriginatorPrivateKey
+		keyPair = ch.OriginatorKeyPair
 	}
 	r := req.NewRequestOffLedger(ch, keyPair)
 	return ch.RunOffLedgerRequest(r)
 }
 
-func (ch *Chain) PostRequestSyncTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, dict.Dict, error) {
-	tx, receipt, res, err := ch.PostRequestSyncExt(req, keyPair)
+func (ch *Chain) PostRequestSyncTx(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Block, dict.Dict, error) {
+	block, receipt, res, err := ch.PostRequestSyncExt(req, keyPair)
 	if err != nil {
-		return tx, res, err
+		return block, res, err
 	}
-	return tx, res, ch.ResolveVMError(receipt.Error).AsGoError()
+	return block, res, ch.ResolveVMError(receipt.Error).AsGoError()
 }
 
 // LastReceipt returns the receipt for the latest request processed by the chain, will return nil if the last block is empty
@@ -309,19 +310,19 @@ func (ch *Chain) LastReceipt() *isc.Receipt {
 	return blocklogReceipt.ToISCReceipt(ch.ResolveVMError(blocklogReceipt.Error))
 }
 
-func (ch *Chain) PostRequestSyncExt(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.SignedTransaction, *blocklog.RequestReceipt, dict.Dict, error) {
+func (ch *Chain) PostRequestSyncExt(req *CallParams, keyPair *cryptolib.KeyPair) (*iotago.Block, *blocklog.RequestReceipt, dict.Dict, error) {
 	defer ch.logRequestLastBlock()
 
-	tx, _, err := ch.RequestFromParamsToLedger(req, keyPair)
+	block, _, err := ch.RequestFromParamsToLedger(req, keyPair)
 	require.NoError(ch.Env.T, err)
-	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(util.TxFromBlock(block).Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "post")
 	if len(results) == 0 {
-		return tx, nil, nil, errors.New("request has been skipped")
+		return block, nil, nil, errors.New("request has been skipped")
 	}
 	res := results[0]
-	return tx, res.Receipt, res.Return, nil
+	return block, res.Receipt, res.Return, nil
 }
 
 // EstimateGasOnLedger executes the given on-ledger request without committing
@@ -347,7 +348,7 @@ func (ch *Chain) EstimateGasOnLedger(req *CallParams, keyPair *cryptolib.KeyPair
 func (ch *Chain) EstimateGasOffLedger(req *CallParams, keyPair *cryptolib.KeyPair) (dict.Dict, *blocklog.RequestReceipt, error) {
 	reqCopy := *req
 	if keyPair == nil {
-		keyPair = ch.OriginatorPrivateKey
+		keyPair = ch.OriginatorKeyPair
 	}
 	r := reqCopy.NewRequestOffLedger(ch, keyPair)
 	res := ch.estimateGas(r)

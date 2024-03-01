@@ -18,6 +18,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 	"github.com/iotaledger/wasp/packages/vm/vmtypes"
@@ -99,23 +100,23 @@ func (ch *Chain) AllNodesMultiClient() *multiclient.MultiClient {
 	return multiclient.New(resolver, ch.AllAPIHosts(), ch.Cluster.l1.APIProvider().LatestAPI()) //.WithLogFunc(ch.Cluster.t.Logf)
 }
 
-func (ch *Chain) DeployContract(name, progHashStr string, initParams dict.Dict) (*iotago.SignedTransaction, error) {
+func (ch *Chain) DeployContract(name, progHashStr string, initParams dict.Dict) (*iotago.Block, error) {
 	programHash, err := hashing.HashValueFromHex(progHashStr)
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := ch.OriginatorClient().PostRequest(
+	block, err := ch.OriginatorClient().PostRequest(
 		root.FuncDeployContract.Message(name, programHash, initParams),
 	)
 	if err != nil {
 		return nil, err
 	}
-	_, err = ch.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(ch.ChainID, tx, false, 30*time.Second)
+	_, err = ch.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(ch.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	if err != nil {
 		return nil, err
 	}
-	return tx, nil
+	return block, nil
 }
 
 func (ch *Chain) DeployWasmContract(name string, progBinary []byte, initParams dict.Dict) (hashing.HashValue, error) {
@@ -138,13 +139,13 @@ func (ch *Chain) DeployWasmContract(name string, progBinary []byte, initParams d
 	}
 	fmt.Printf("---- blob installed correctly len = %d\n", len(progBinaryBack))
 
-	tx, err := ch.OriginatorClient().PostRequest(
+	block, err := ch.OriginatorClient().PostRequest(
 		root.FuncDeployContract.Message(name, programHash, initParams),
 	)
 	if err != nil {
 		return hashing.NilHash, err
 	}
-	_, err = ch.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(ch.ChainID, tx, false, 30*time.Second)
+	_, err = ch.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(ch.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	if err != nil {
 		return hashing.NilHash, err
 	}

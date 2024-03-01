@@ -6,8 +6,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
+	hivedb "github.com/iotaledger/hive.go/db"
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/iota.go/v4/tpkg"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/database"
@@ -67,21 +68,23 @@ func simulateRunOutput(t *testing.T, makeOutput func(isc.ChainID) (iotago.Output
 
 	// create the AO for a new chain
 	chainCreator := cryptolib.KeyPairFromSeed(cryptolib.SeedFromBytes([]byte("foobar")))
-	_, chainOutputs, chainID, err := origin.NewChainOriginTransaction(
+	_, chainOutputs, _, chainID, err := origin.NewChainOriginTransaction(
 		chainCreator,
-		chainCreator.Address(),
+		chainCreator.GetPublicKey(),
 		chainCreator.Address(),
 		10*isc.Million,
-		0,
 		nil,
 		iotago.OutputSet{
-			iotago.OutputID{}: &iotago.BasicOutput{
+			iotago.OutputID{}: &iotago.AccountOutput{
 				Amount: 1000 * isc.Million,
 			},
 		},
 		0,
 		0,
 		testutil.L1APIProvider,
+		&api.IssuanceBlockHeaderResponse{
+			LatestCommitment: &iotago.Commitment{},
+		},
 		testutil.TokenInfo,
 	)
 	require.NoError(t, err)

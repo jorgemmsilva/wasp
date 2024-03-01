@@ -42,6 +42,7 @@ type ChainOutputs struct {
 	accountOutputID iotago.OutputID
 }
 
+// TODO this doesn't make sense anymore since the accountOutput is not owned by the chain...
 func NewChainOutputs(
 	AnchorOutput *iotago.AnchorOutput,
 	anchorOutputID iotago.OutputID,

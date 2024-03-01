@@ -52,7 +52,6 @@
 package cons
 
 import (
-	"crypto/ed25519"
 	"encoding/binary"
 	"fmt"
 	"time"
@@ -74,7 +73,6 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/tcrypto"
-	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/processors"
@@ -617,46 +615,47 @@ func (c *consImpl) uponVMOutputReceived(vmResult *vm.VMTaskResult) gpa.OutMessag
 
 // Everything is ready for the output TX, produce it.
 func (c *consImpl) uponTXInputsReady(vmResult *vm.VMTaskResult, block state.Block, signature []byte) gpa.OutMessages {
-	resultTx := vmResult.Transaction
-	publicKey := c.dkShare.GetSharedPublic()
-	var signatureArray [ed25519.SignatureSize]byte
-	copy(signatureArray[:], signature)
-	signatureForUnlock := &iotago.Ed25519Signature{
-		PublicKey: publicKey.AsKey(),
-		Signature: signatureArray,
-	}
+	panic("TODO rewrite uponTXInputsReady")
+	// resultTx := vmResult.Transaction
+	// publicKey := c.dkShare.GetSharedPublic()
+	// var signatureArray [ed25519.SignatureSize]byte
+	// copy(signatureArray[:], signature)
+	// signatureForUnlock := &iotago.Ed25519Signature{
+	// 	PublicKey: publicKey.AsKey(),
+	// 	Signature: signatureArray,
+	// }
 
-	resultInputs, err := resultTx.Inputs()
-	if err != nil {
-		panic(fmt.Errorf("cannot get inputs from result TX: %w", err))
-	}
+	// resultInputs, err := resultTx.Inputs()
+	// if err != nil {
+	// 	panic(fmt.Errorf("cannot get inputs from result TX: %w", err))
+	// }
 
-	// TODO: <lmoe> This is most likely just trash :D
-	tx := &iotago.SignedTransaction{
-		Transaction: &iotago.Transaction{
-			TransactionEssence: resultTx.TransactionEssence,
-		},
-		Unlocks: transaction.MakeSignatureAndReferenceUnlocks(len(resultInputs), signatureForUnlock),
-	}
+	// // TODO: <lmoe> This is most likely just trash :D
+	// tx := &iotago.SignedTransaction{
+	// 	Transaction: &iotago.Transaction{
+	// 		TransactionEssence: resultTx.TransactionEssence,
+	// 	},
+	// 	Unlocks: transaction.MakeSignatureAndReferenceUnlocks(len(resultInputs), signatureForUnlock),
+	// }
 
-	txID, err := tx.ID()
-	if err != nil {
-		panic(fmt.Errorf("cannot get ID from the produced TX: %w", err))
-	}
-	chained, err := isc.ChainOutputsFromTx(tx.Transaction, c.chainID.AsAddress())
-	if err != nil {
-		panic(fmt.Errorf("cannot get AnchorOutput from produced TX: %w", err))
-	}
-	c.output.Result = &Result{
-		Transaction:      tx,
-		BaseAnchorOutput: vmResult.Task.Inputs.AnchorOutputID,
-		NextAnchorOutput: chained,
-		Block:            block,
-	}
-	c.output.Status = Completed
-	c.log.LogInfof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.Inputs.AnchorOutputID.ToHex())
-	c.term.haveOutputProduced()
-	return nil
+	// txID, err := tx.ID()
+	// if err != nil {
+	// 	panic(fmt.Errorf("cannot get ID from the produced TX: %w", err))
+	// }
+	// chained, err := isc.ChainOutputsFromTx(tx.Transaction, c.chainID.AsAddress())
+	// if err != nil {
+	// 	panic(fmt.Errorf("cannot get AnchorOutput from produced TX: %w", err))
+	// }
+	// c.output.Result = &Result{
+	// 	Transaction:      tx,
+	// 	BaseAnchorOutput: vmResult.Task.Inputs.AnchorOutputID,
+	// 	NextAnchorOutput: chained,
+	// 	Block:            block,
+	// }
+	// c.output.Status = Completed
+	// c.log.LogInfof("Terminating consensus with status=Completed, produced tx.ID=%v, nextAO=%v, baseAO.ID=%v", txID.ToHex(), chained, vmResult.Task.Inputs.AnchorOutputID.ToHex())
+	// c.term.haveOutputProduced()
+	// return nil
 }
 
 ////////////////////////////////////////////////////////////////////////////////

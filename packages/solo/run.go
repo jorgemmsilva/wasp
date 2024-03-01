@@ -102,7 +102,16 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 		ch.settleStateTransition(tx, res.StateDraft)
 	}
 
-	err = ch.Env.AddToLedger(tx)
+	block, err := transaction.BlockFromTx(
+		testutil.L1API,
+		ch.Env.BlockIssuance(),
+		tx,
+		ch.ChainBlockIssuer,
+		ch.StateControllerKeyPair,
+	)
+	require.NoError(ch.Env.T, err)
+
+	err = ch.Env.AddToLedger(block)
 	require.NoError(ch.Env.T, err)
 
 	if res.RotationAddress != nil {

@@ -18,7 +18,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
-	hivedb "github.com/iotaledger/hive.go/kvstore/database"
+	hivedb "github.com/iotaledger/hive.go/db"
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/hexutil"
 	"github.com/iotaledger/wasp/components/app"
@@ -89,7 +89,7 @@ func createL1Accounts(chain *solo.Chain) []iotago.Address {
 	for i := 1; i < 10; i++ { // index 0 is chain owner
 		seed := chain.Env.NewSeedFromIndex(i)
 		kp := cryptolib.KeyPairFromSeed(*seed)
-		_, err := chain.Env.GetFundsFromFaucet(kp.Address())
+		_, err := chain.Env.NewWalletWithFundsFromFaucet(kp.Address())
 		log.Check(err)
 		log.Check(chain.DepositAssetsToL2(
 			isc.NewAssetsBaseTokens(chain.Env.L1BaseTokens(kp.Address())/2),

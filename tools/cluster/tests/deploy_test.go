@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
 	"github.com/iotaledger/wasp/packages/vm/core/root"
 )
@@ -70,10 +71,10 @@ func testDeployContractAndSpawn(t *testing.T, env *ChainEnv) {
 	hnameNew := isc.Hn(nameNew)
 	// send 'spawn' request to the SC which was just deployed
 	par := chainclient.NewPostRequestParams().WithBaseTokens(100)
-	tx, err := env.Chain.OriginatorClient().PostRequest(inccounter.FuncSpawn.Message(nameNew), *par)
+	block, err := env.Chain.OriginatorClient().PostRequest(inccounter.FuncSpawn.Message(nameNew), *par)
 	require.NoError(t, err)
 
-	receipts, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessed(env.Chain.ChainID, tx, false, 30*time.Second)
+	receipts, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessed(env.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(t, err)
 	require.Len(t, receipts, 1)
 

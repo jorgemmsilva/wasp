@@ -25,6 +25,7 @@ import (
 
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/iota.go/v4/api"
+	"github.com/iotaledger/iota.go/v4/builder"
 	"github.com/iotaledger/wasp/packages/chain/chaintypes"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/evm/evmutil"
@@ -40,6 +41,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/util/rwutil"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
@@ -139,7 +141,7 @@ func (ch *Chain) SetGasLimits(user *cryptolib.KeyPair, gl *gas.Limits) {
 // Requires at least 2 x gasFeeEstimate to be on sender's L2 account
 func (ch *Chain) UploadBlob(user *cryptolib.KeyPair, fields dict.Dict) (ret hashing.HashValue, err error) {
 	if user == nil {
-		user = ch.OriginatorPrivateKey
+		user = ch.OriginatorKeyPair
 	}
 
 	expectedHash := blob.GetBlobHash(fields)
@@ -464,21 +466,83 @@ func (ch *Chain) GetAllowedStateControllerAddresses() []iotago.Address {
 // RotateStateController rotates the chain to the new controller address.
 // We assume self-governed chain here.
 // Mostly use for the testing of committee rotation logic, otherwise not much needed for smart contract testing
-func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyPair, ownerKeyPair *cryptolib.KeyPair) error {
+func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyPair, senderKeyPair *cryptolib.KeyPair) error {
+	if senderKeyPair == nil {
+		senderKeyPair = ch.OriginatorKeyPair
+	}
+	ownerUTXOs := ch.Env.GetUnspentOutputs(senderKeyPair.Address())
+	ownerAccountOutputID, ownerAccountOutput := util.AccountOutputFromOutputs(ownerUTXOs)
+	txBuilder := builder.NewTransactionBuilder(testutil.L1API, senderKeyPair)
+	// use the owner account to issue the block
+	txBuilder.AddInput(&builder.TxInput{
+		UnlockTarget: senderKeyPair.Address(),
+		InputID:      ownerAccountOutputID,
+		Input:        ownerAccountOutput,
+	})
+	newStateControllerAccountOutput := &iotago.AccountOutput{
+		Amount:         0,
+		AccountID:      iotago.EmptyAccountID,
+		FoundryCounter: 0,
+		UnlockConditions: []iotago.AccountOutputUnlockCondition{
+			&iotago.AddressUnlockCondition{
+				Address: newStateKeyPair.Address(),
+			},
+		},
+		Features: []iotago.AccountOutputFeature{
+			&iotago.BlockIssuerFeature{
+				ExpirySlot: math.MaxUint32,
+				BlockIssuerKeys: []iotago.BlockIssuerKey{
+					iotago.Ed25519PublicKeyHashBlockIssuerKeyFromPublicKey(newStateKeyPair.GetPublicKey().AsHiveEd25519PubKey()),
+				},
+			},
+		},
+	}
+	newStateControllerAccountOutput.Amount = lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(newStateControllerAccountOutput))
+	txBuilder.AddOutput(newStateControllerAccountOutput)
+
+	// add the next owner account output
+	newOwnerAccountOutput := ownerAccountOutput.Clone().(*iotago.AccountOutput)
+	newOwnerAccountOutput.Amount = ownerAccountOutput.Amount - newStateControllerAccountOutput.Amount
+	newOwnerAccountOutput.Mana = 0
+	txBuilder.AddOutput(newOwnerAccountOutput)
+
+	block, err := transaction.FinalizeTxAndBuildBlock(
+		testutil.L1API,
+		txBuilder,
+		ch.Env.BlockIssuance(),
+		1, // store the mana in the owners account
+		ownerAccountOutput.AccountID,
+		senderKeyPair,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = ch.Env.AddToLedger(block)
+	if err != nil {
+		return err
+	}
+
+	// update the chain block issuer
+	stateControllerAccountIssuerOutputID := iotago.OutputIDFromTransactionIDAndIndex(lo.Must(util.TxFromBlock(block).Transaction.ID()), 0)
+
+	//
+	// set the new state controller in the chain state
 	req := NewCallParams(governance.FuncRotateStateController.Message(newStateAddr)).
 		WithMaxAffordableGasBudget()
-	result := ch.postRequestSyncTxSpecial(req, ownerKeyPair)
+	result := ch.postRequestSyncTxSpecial(req, senderKeyPair)
 	if result.Receipt.Error == nil {
 		ch.StateControllerAddress = newStateAddr
 		ch.StateControllerKeyPair = newStateKeyPair
+		ch.ChainBlockIssuer = iotago.AccountIDFromOutputID(stateControllerAccountIssuerOutputID)
 	}
 	return ch.ResolveVMError(result.Receipt.Error).AsGoError()
 }
 
 func (ch *Chain) postRequestSyncTxSpecial(req *CallParams, keyPair *cryptolib.KeyPair) *vm.RequestResult {
-	tx, _, err := ch.RequestFromParamsToLedger(req, keyPair)
+	block, _, err := ch.RequestFromParamsToLedger(req, keyPair)
 	require.NoError(ch.Env.T, err)
-	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(util.TxFromBlock(block).Transaction, ch.ChainID)
 	require.NoError(ch.Env.T, err)
 	results := ch.RunRequestsSync(reqs, "postSpecial")
 	return results[0]
@@ -507,19 +571,17 @@ func (ch *Chain) GetL2FundsFromFaucet(agentID isc.AgentID, baseTokens ...iotago.
 	if len(baseTokens) > 0 {
 		amount = baseTokens[0]
 	} else {
-		amount = utxodb.FundsFromFaucetAmount - TransferAllowanceToGasBudgetBaseTokens
+		amount = utxodb.FundsFromFaucetAmount - TransferAllowanceToGasBudgetBaseTokens - TransferAccountOutputSD
 	}
 
-	// deterministically find a L1 address that has 0 balance on L2
+	// deterministically find a L1 address that has 0 balance on L1 and L2
 	walletKey, _ := func() (*cryptolib.KeyPair, iotago.Address) {
 		masterSeed := []byte("GetL2FundsFromFaucet")
 		for i := uint32(0); ; i++ {
 			ss := cryptolib.SubSeed(masterSeed, i, testutil.L1API.ProtocolParameters().Bech32HRP())
 			key, addr := ch.Env.NewKeyPair(&ss)
-			if ch.L2BaseTokens(isc.NewAgentID(addr)) == 0 {
-				// need some extra amount to store excess mana in TransferAllowanceTo
-				fundsFromUtxodb := max(amount*2, utxodb.FundsFromFaucetAmount)
-				_, err := ch.Env.GetFundsFromFaucet(addr, fundsFromUtxodb)
+			if ch.L2BaseTokens(isc.NewAgentID(addr)) == 0 && ch.Env.L1Assets(addr).IsEmpty() {
+				_, _, err := ch.Env.utxoDB.NewWalletWithFundsFromFaucet(key)
 				require.NoError(ch.Env.T, err)
 				return key, addr
 			}

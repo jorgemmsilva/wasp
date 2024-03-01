@@ -753,7 +753,7 @@ type testEnv struct {
 	peeringNetwork   *testutil.PeeringNetwork
 	networkProviders []peering.NetworkProvider
 	tcl              *testchain.TestChainLedger
-	cmtAddress       iotago.Address
+	cmtPubKey        *cryptolib.PublicKey
 	chainID          isc.ChainID
 	originAO         *isc.ChainOutputs
 	mempools         []mempool.Mempool
@@ -768,7 +768,7 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	// Create ledger accounts.
 	te.utxoDB = utxodb.New(testutil.L1API)
 	te.governor = cryptolib.NewKeyPair()
-	_, err := te.utxoDB.GetFundsFromFaucet(te.governor.Address())
+	_, _, err := te.utxoDB.NewWalletWithFundsFromFaucet(te.governor)
 	require.NoError(t, err)
 	//
 	// Create a fake network and keys for the tests.
@@ -790,9 +790,9 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 		testlogger.WithLevel(te.log, log.LevelWarning),
 	)
 	te.networkProviders = te.peeringNetwork.NetworkProviders()
-	te.cmtAddress, _ = testpeers.SetupDkgTrivial(t, n, f, te.peerIdentities, nil)
+	te.cmtPubKey, _ = testpeers.SetupDkgTrivial(t, n, f, te.peerIdentities, nil)
 	te.tcl = testchain.NewTestChainLedger(t, te.utxoDB, te.governor)
-	_, te.originAO, te.chainID = te.tcl.MakeTxChainOrigin(te.cmtAddress)
+	_, te.originAO, te.chainID = te.tcl.MakeTxChainOrigin(te.cmtPubKey)
 	//
 	// Initialize the nodes.
 	te.mempools = make([]mempool.Mempool, len(te.peerIdentities))

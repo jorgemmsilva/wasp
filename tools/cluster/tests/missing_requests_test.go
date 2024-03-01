@@ -12,6 +12,7 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -36,9 +37,9 @@ func TestMissingRequests(t *testing.T) {
 
 	// deposit funds before sending the off-ledger request
 	chClient := chainclient.New(clu.L1Client(), clu.WaspClient(0), chainID, userWallet)
-	reqTx, err := chClient.DepositFunds(100)
+	block, err := chClient.DepositFunds(100)
 	require.NoError(t, err)
-	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chainID, reqTx, false, 30*time.Second)
+	_, err = chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(t, err)
 
 	// TODO: Validate offleder logic

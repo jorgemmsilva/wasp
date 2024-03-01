@@ -18,6 +18,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -68,12 +69,12 @@ func testEstimateGasOnLedger(t *testing.T, env *ChainEnv) {
 	gasBudget := parseGasUnits(estimatedReceipt.GasBurned)
 	par.WithGasBudget(gasBudget)
 
-	tx, err := client.PostRequest(
+	block, err := client.PostRequest(
 		accounts.FuncTransferAllowanceTo.Message(isc.NewAgentID(&iotago.Ed25519Address{})),
 		par,
 	)
 	require.NoError(t, err)
-	recs, err := env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 10*time.Second)
+	recs, err := env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 10*time.Second)
 	require.NoError(t, err)
 	require.Equal(t, recs[0].GasBurned, estimatedReceipt.GasBurned)
 	require.Equal(t, recs[0].GasFeeCharged, estimatedReceipt.GasFeeCharged)
@@ -138,9 +139,9 @@ func testEstimateGasOnLedgerNFT(t *testing.T, env *ChainEnv) {
 	gasBudget := parseGasUnits(estimatedReceipt.GasBurned)
 	par.WithGasBudget(gasBudget)
 
-	tx, err := client.PostRequest(accounts.FuncTransferAllowanceTo.Message(targetAgentID), par)
+	block, err := client.PostRequest(accounts.FuncTransferAllowanceTo.Message(targetAgentID), par)
 	require.NoError(t, err)
-	recs, err := env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 10*time.Second)
+	recs, err := env.Clu.MultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 10*time.Second)
 	require.NoError(t, err)
 	require.Equal(t, recs[0].GasBurned, estimatedReceipt.GasBurned)
 	require.Equal(t, recs[0].GasFeeCharged, estimatedReceipt.GasFeeCharged)

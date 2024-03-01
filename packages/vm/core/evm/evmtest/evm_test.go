@@ -189,7 +189,7 @@ func TestGasRatio(t *testing.T) {
 	require.Equal(t, gas.DefaultEVMGasRatio, env.getEVMGasRatio())
 
 	// current owner is able to set a new gasRatio
-	err = env.setEVMGasRatio(newGasRatio, iscCallOptions{wallet: env.Chain.OriginatorPrivateKey})
+	err = env.setEVMGasRatio(newGasRatio, iscCallOptions{wallet: env.Chain.OriginatorKeyPair})
 	require.NoError(t, err)
 	require.Equal(t, newGasRatio, env.getEVMGasRatio())
 
@@ -206,7 +206,7 @@ func TestGasLimit(t *testing.T) {
 	storage := env.deployStorageContract(ethKey)
 
 	// set a gas ratio such that evm gas cost in base tokens is larger than storage deposit cost
-	err := env.setEVMGasRatio(util.Ratio32{A: 10, B: 1}, iscCallOptions{wallet: env.Chain.OriginatorPrivateKey})
+	err := env.setEVMGasRatio(util.Ratio32{A: 10, B: 1}, iscCallOptions{wallet: env.Chain.OriginatorKeyPair})
 	require.NoError(t, err)
 
 	// estimate gas by sending a valid tx
@@ -235,7 +235,7 @@ func TestNotEnoughISCGas(t *testing.T) {
 	// only the owner can call the setEVMGasRatio endpoint
 	// set the ISC gas ratio VERY HIGH
 	newGasRatio := util.Ratio32{A: gas.DefaultEVMGasRatio.A * 500, B: gas.DefaultEVMGasRatio.B}
-	err = env.setEVMGasRatio(newGasRatio, iscCallOptions{wallet: env.Chain.OriginatorPrivateKey})
+	err = env.setEVMGasRatio(newGasRatio, iscCallOptions{wallet: env.Chain.OriginatorKeyPair})
 	require.NoError(t, err)
 	require.Equal(t, newGasRatio, env.getEVMGasRatio())
 
@@ -857,9 +857,9 @@ func TestSendNFT(t *testing.T) {
 	iscTest := env.deployISCTestContract(ethKey)
 
 	metadata := iotago.MetadataFeatureEntries{"": []byte("foobar")}
-	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorPrivateKey, env.Chain.OriginatorAddress, metadata)
+	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorKeyPair, env.Chain.OriginatorAddress, metadata)
 	require.NoError(t, err)
-	env.Chain.MustDepositNFT(nft, ethAgentID, env.Chain.OriginatorPrivateKey)
+	env.Chain.MustDepositNFT(nft, ethAgentID, env.Chain.OriginatorKeyPair)
 
 	const storageDeposit iotago.BaseToken = 100_000
 
@@ -908,9 +908,9 @@ func TestERC721NFTs(t *testing.T) {
 	}
 
 	metadata := iotago.MetadataFeatureEntries{"": []byte("foobar")}
-	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorPrivateKey, env.Chain.OriginatorAddress, metadata)
+	nft, _, err := env.solo.MintNFTL1(env.Chain.OriginatorKeyPair, env.Chain.OriginatorAddress, metadata)
 	require.NoError(t, err)
-	env.Chain.MustDepositNFT(nft, ethAgentID, env.Chain.OriginatorPrivateKey)
+	env.Chain.MustDepositNFT(nft, ethAgentID, env.Chain.OriginatorKeyPair)
 
 	{
 		var n *big.Int
@@ -1422,7 +1422,7 @@ func TestERC20NativeTokensWithExternalFoundry(t *testing.T) {
 	require.NoError(t, err)
 
 	// need an alias to create a foundry; the easiest way is to create a "disposable" ISC chain
-	foundryChain, _ := env.solo.NewChainExt(foundryOwner, 0, 0, "foundryChain")
+	foundryChain, _ := env.solo.NewChainExt(foundryOwner, 0, "foundryChain")
 	// use an ethereum address to create the foundry
 	ethKey, ethAddr := foundryChain.EthereumAccountByIndexWithL2Funds(1)
 
@@ -2251,7 +2251,7 @@ func TestCaller(t *testing.T) {
 	err := env.Chain.TransferAllowanceTo(
 		isc.NewAssetsBaseTokens(42),
 		isc.NewEthereumAddressAgentID(env.Chain.ChainID, iscTest.address),
-		env.Chain.OriginatorPrivateKey,
+		env.Chain.OriginatorKeyPair,
 	)
 	require.NoError(t, err)
 

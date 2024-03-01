@@ -85,7 +85,7 @@ func (e *clusterTestEnv) newEthereumAccountWithL2Funds(baseTokens ...iotago.Base
 	} else {
 		amount = e.Clu.L1BaseTokens(walletAddr) - transferAllowanceToGasBudgetBaseTokens
 	}
-	tx, err := e.Chain.Client(walletKey).PostRequest(
+	block, err := e.Chain.Client(walletKey).PostRequest(
 		accounts.FuncTransferAllowanceTo.Message(isc.NewEthereumAddressAgentID(e.Chain.ChainID, ethAddr)),
 		chainclient.PostRequestParams{
 			Transfer:  isc.NewAssets(amount+transferAllowanceToGasBudgetBaseTokens, nil),
@@ -95,7 +95,7 @@ func (e *clusterTestEnv) newEthereumAccountWithL2Funds(baseTokens ...iotago.Base
 	require.NoError(e.T, err)
 
 	// We have to wait not only for the committee to process the request, but also for access nodes to get that info.
-	_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = e.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(e.T, err)
 
 	return ethKey, ethAddr
@@ -133,9 +133,9 @@ func TestEVMJsonRPCZeroGasFee(t *testing.T) {
 		B: 0,
 	}
 	govClient := e.Chain.Client(e.Chain.OriginatorKeyPair)
-	reqTx, err := govClient.PostRequest(governance.FuncSetFeePolicy.Message(fp1))
+	reqBlock, err := govClient.PostRequest(governance.FuncSetFeePolicy.Message(fp1))
 	require.NoError(t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(reqBlock), false, 30*time.Second)
 	require.NoError(t, err)
 
 	d, err := govClient.CallView(context.Background(), governance.ViewGetFeePolicy.Message())

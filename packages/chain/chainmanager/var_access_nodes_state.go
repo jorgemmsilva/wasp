@@ -33,7 +33,7 @@ type varAccessNodeStateImpl struct {
 	tipAO     *isc.ChainOutputs                                              // Will point to the latest known good state while the chain don't have the current good state.
 	confirmed *isc.ChainOutputs                                              // Latest known confirmed AO.
 	pending   *shrinkingmap.ShrinkingMap[uint32, []*varAccessNodeStateEntry] // A set of unconfirmed outputs (StateIndex => TX).
-	log       log.Logger                                                 // Will write this just for the alignment.
+	log       log.Logger                                                     // Will write this just for the alignment.
 }
 
 type varAccessNodeStateEntry struct {

@@ -111,8 +111,8 @@ func (s *L1Starter) StartPrivtangleIfNecessary(log LogFunc) {
 	s.Cleanup(log) // cleanup, just in case something is lingering from a previous execution
 
 	// Generate a new snapshot (this is needed, because we cannot re-use snapshots)
-	snapshotOpts := presets.Base
-	snapshotOpts = append(snapshotOpts, presets.Docker...)
+	snapshotOpts := presets.SnapshotOptionsBase
+	snapshotOpts = append(snapshotOpts, presets.SnapshotOptionsDocker...)
 	genesisSeed := lo.Must(hexutil.DecodeHex("0x5f4ce0a4a8508dae854d996404ca7168478258c82e38f379d8ec4692ea9ecee6"))
 	keyManager := lo.Must(wallet.NewKeyManager(genesisSeed, wallet.DefaultIOTAPath))
 	snapshotOpts = append(snapshotOpts, snapshotcreator.WithGenesisKeyManager(keyManager))

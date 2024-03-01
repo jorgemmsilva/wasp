@@ -17,6 +17,8 @@ type ExternalWallet struct {
 	CoinType     types.CoinType
 }
 
+var _ cryptolib.VariantKeyPair = &ExternalWallet{}
+
 func NewExternalWallet(secretManager *walletsdk.SecretManager, addressIndex int, bech32Hrp string, coinType types.CoinType) *ExternalWallet {
 	return &ExternalWallet{
 		secretManager: secretManager,
@@ -90,4 +92,14 @@ func (l *ExternalWallet) AsAddressSigner() iotago.AddressSigner {
 func (l *ExternalWallet) AddressKeysForEd25519Address(addr *iotago.Ed25519Address) iotago.AddressKeys {
 	// Not required, as we override the address signer above, and address keys are not used there.
 	return iotago.AddressKeys{}
+}
+
+// EmptySignatureForAddress implements cryptolib.VariantKeyPair.
+func (l *ExternalWallet) EmptySignatureForAddress(addr iotago.Address) (signature iotago.Signature, err error) {
+	panic("unimplemented")
+}
+
+// SignerUIDForAddress implements cryptolib.VariantKeyPair.
+func (l *ExternalWallet) SignerUIDForAddress(addr iotago.Address) (iotago.Identifier, error) {
+	panic("unimplemented")
 }

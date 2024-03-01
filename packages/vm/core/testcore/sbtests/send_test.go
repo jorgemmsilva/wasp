@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/testcore/sbtests/sbtestsc"
@@ -55,10 +56,10 @@ func testSeveralOutputsInASingleCall(t *testing.T, w bool) {
 		AddAllowanceBaseTokens(allowance).
 		AddBaseTokens(allowance + 1*isc.Million).
 		WithGasBudget(math.MaxUint64)
-	tx, _, err := ch.PostRequestSyncTx(req, wallet)
+	block, _, err := ch.PostRequestSyncTx(req, wallet)
 	require.NoError(t, err)
 
-	storageDeposit := tx.Transaction.Outputs[0].BaseTokenAmount()
+	storageDeposit := util.TxFromBlock(block).Transaction.Outputs[0].BaseTokenAmount()
 	ch.Env.AssertL1BaseTokens(walletAddr, beforeWallet.AssetsL1.BaseTokens+allowance-storageDeposit)
 }
 

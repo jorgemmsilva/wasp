@@ -13,6 +13,7 @@ import (
 	"github.com/iotaledger/wasp/clients/chainclient"
 	"github.com/iotaledger/wasp/packages/hashing"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
 )
 
@@ -58,9 +59,9 @@ func testBlobStoreSmallBlob(t *testing.T, e *ChainEnv) {
 	require.NoError(t, err)
 
 	chClient := chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), e.Chain.ChainID, myWallet)
-	reqTx, err := chClient.PostRequest(blob.FuncStoreBlob.Message(fv))
+	reqBlock, err := chClient.PostRequest(blob.FuncStoreBlob.Message(fv))
 	require.NoError(t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(reqBlock), false, 30*time.Second)
 	require.NoError(t, err)
 
 	sizes := e.getBlobInfo(expectedHash)
@@ -96,9 +97,9 @@ func testBlobStoreManyBlobsNoEncoding(t *testing.T, e *ChainEnv) {
 
 	chClient := chainclient.New(e.Clu.L1Client(), e.Clu.WaspClient(0), e.Chain.ChainID, myWallet)
 
-	reqTx, err := chClient.DepositFunds(100)
+	reqBlock, err := chClient.DepositFunds(100)
 	require.NoError(t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, reqTx, false, 30*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(reqBlock), false, 30*time.Second)
 	require.NoError(t, err)
 
 	expectedHash, _, receipt, err := chClient.UploadBlob(context.Background(), fv)

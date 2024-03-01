@@ -132,7 +132,7 @@ func (reqctx *requestContext) checkReasonUnlockable() error {
 		if !ok {
 			return errors.New("output is not unlockable")
 		}
-	case iotago.TransIndepIdentOutput:
+	case iotago.OwnerTransitionIndependentOutput:
 		if !out.UnlockableBy(
 			reqctx.vm.ChainID().AsAddress(),
 			pastBoundedSlotIndex,

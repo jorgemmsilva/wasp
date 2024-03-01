@@ -42,8 +42,8 @@ func setupChain(t *testing.T, keyPairOriginator *cryptolib.KeyPair) (*solo.Solo,
 		GasBurnLogEnabled:        true,
 	}).
 		WithNativeContract(sbtestsc.Processor)
-	chain, _ := env.NewChainExt(keyPairOriginator, 10_000, 0, "chain1")
-	err := chain.SendFromL1ToL2AccountBaseTokens(1000, utxodb.FundsFromFaucetAmount/2, chain.OriginatorAgentID, chain.OriginatorPrivateKey)
+	chain, _ := env.NewChainExt(keyPairOriginator, 10_000, "chain1")
+	err := chain.SendFromL1ToL2AccountBaseTokens(1000, utxodb.FundsFromFaucetAmount/2, chain.OriginatorAgentID, chain.OriginatorKeyPair)
 	require.NoError(t, err)
 	return env, chain
 }

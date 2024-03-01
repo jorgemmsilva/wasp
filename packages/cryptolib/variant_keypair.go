@@ -11,5 +11,5 @@ type VariantKeyPair interface {
 	AsAddressSigner() iotago.AddressSigner
 	AddressKeysForEd25519Address(addr *iotago.Ed25519Address) iotago.AddressKeys
 	SignBytes(data []byte) []byte
-	Sign(addr iotago.Address, msg []byte) (signature iotago.Signature, err error)
+	iotago.AddressSigner
 }

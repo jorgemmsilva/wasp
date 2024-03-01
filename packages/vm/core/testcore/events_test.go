@@ -15,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/kv/dict"
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/blocklog"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
@@ -53,12 +54,12 @@ func setupTest(t *testing.T) *solo.Chain {
 	limits := ch.GetGasLimits()
 	limits.MaxGasPerBlock = math.MaxUint64
 	limits.MaxGasPerRequest = math.MaxUint64
-	ch.SetGasLimits(ch.OriginatorPrivateKey, limits)
+	ch.SetGasLimits(ch.OriginatorKeyPair, limits)
 
 	// set gas very cheap
 	fp := ch.GetGasFeePolicy()
 	fp.GasPerToken.A = 1000000
-	ch.SetGasFeePolicy(ch.OriginatorPrivateKey, fp)
+	ch.SetGasFeePolicy(ch.OriginatorKeyPair, fp)
 
 	ch.MustDepositBaseTokensToL2(10_000_000, nil)
 	return ch
@@ -86,12 +87,12 @@ func TestManyEvents(t *testing.T) {
 
 	postEvents := func(n uint32) (gas.GasUnits, error) {
 		// post a request that issues too many events (nEvents)
-		tx, _, err := ch.PostRequestSyncTx(
+		block, _, err := ch.PostRequestSyncTx(
 			solo.NewCallParams(funcManyEvents.Message(dict.Dict{"n": codec.Uint32.Encode(n)})).
 				WithMaxAffordableGasBudget(),
 			nil,
 		)
-		return getBurnedGas(ch, tx.Transaction, err)
+		return getBurnedGas(ch, util.TxFromBlock(block).Transaction, err)
 	}
 
 	gas1000, err := postEvents(1000)
@@ -119,12 +120,12 @@ func TestEventTooLarge(t *testing.T) {
 
 	postEvent := func(n uint32) (gas.GasUnits, error) {
 		// post a request that issues too many events (nEvents)
-		tx, _, err := ch.PostRequestSyncTx(
+		block, _, err := ch.PostRequestSyncTx(
 			solo.NewCallParams(funcBigEvent.Message(dict.Dict{"n": codec.Uint32.Encode(n)})).
 				WithMaxAffordableGasBudget(),
 			nil,
 		)
-		return getBurnedGas(ch, tx.Transaction, err)
+		return getBurnedGas(ch, util.TxFromBlock(block).Transaction, err)
 	}
 
 	gas1k, err := postEvent(100_000)
@@ -140,12 +141,12 @@ func TestEventTooLarge(t *testing.T) {
 }
 
 func incrementSCCounter(t *testing.T, ch *solo.Chain) isc.RequestID {
-	tx, _, err := ch.PostRequestSyncTx(
+	block, _, err := ch.PostRequestSyncTx(
 		solo.NewCallParams(inccounter.FuncIncCounter.Message(nil)).WithGasBudget(math.MaxUint64),
 		nil,
 	)
 	require.NoError(t, err)
-	reqs, err := ch.Env.RequestsForChain(tx.Transaction, ch.ChainID)
+	reqs, err := ch.Env.RequestsForChain(util.TxFromBlock(block).Transaction, ch.ChainID)
 	require.NoError(t, err)
 	return reqs[0].ID()
 }

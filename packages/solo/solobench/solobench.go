@@ -10,6 +10,7 @@ import (
 	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/solo"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 type Func func(b *testing.B, chain *solo.Chain, reqs []*solo.CallParams, keyPair *cryptolib.KeyPair)
@@ -26,10 +27,10 @@ func RunBenchmarkSync(b *testing.B, chain *solo.Chain, reqs []*solo.CallParams, 
 // RunBenchmarkAsync processes requests asynchronously, producing 1 block per many requests
 func RunBenchmarkAsync(b *testing.B, chain *solo.Chain, reqs []*solo.CallParams, keyPair *cryptolib.KeyPair) {
 	_ = keyPair
-	txs := make([]*iotago.SignedTransaction, b.N)
+	blocks := make([]*iotago.Block, b.N)
 	for i := 0; i < b.N; i++ {
 		var err error
-		txs[i], _, err = chain.RequestFromParamsToLedger(reqs[i], nil)
+		blocks[i], _, err = chain.RequestFromParamsToLedger(reqs[i], nil)
 		require.NoError(b, err)
 	}
 
@@ -37,7 +38,7 @@ func RunBenchmarkAsync(b *testing.B, chain *solo.Chain, reqs []*solo.CallParams,
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		go chain.Env.EnqueueRequests(txs[i])
+		go chain.Env.EnqueueRequests(util.TxFromBlock(blocks[i]))
 	}
 	require.True(b, chain.WaitForRequestsThrough(b.N, 20*time.Second))
 }

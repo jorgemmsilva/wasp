@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/clients/apiextensions"
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 // TODO deprecate, or refactor to use the WASM-based inccounter
@@ -24,10 +25,10 @@ func (e *ChainEnv) deployNativeIncCounterSC(initCounter ...int64) {
 	}
 	programHash := inccounter.Contract.ProgramHash
 
-	tx, err := e.Chain.DeployContract(inccounter.Contract.Name, programHash.String(), inccounter.InitParams(counterStartValue))
+	block, err := e.Chain.DeployContract(inccounter.Contract.Name, programHash.String(), inccounter.InitParams(counterStartValue))
 	require.NoError(e.t, err)
 
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessed(e.Chain.ChainID, tx, false, 10*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessed(e.Chain.ChainID, util.TxFromBlock(block), false, 10*time.Second)
 	require.NoError(e.t, err)
 
 	blockIndex, err := e.Chain.BlockIndex()
@@ -71,7 +72,7 @@ func (e *ChainEnv) deployNativeIncCounterSC(initCounter ...int64) {
 		require.NoError(e.t, err2)
 		require.EqualValues(e.t, counterStartValue, counterValue)
 	}
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 10*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 10*time.Second)
 	require.NoError(e.t, err)
 }
 

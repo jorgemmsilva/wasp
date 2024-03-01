@@ -14,6 +14,7 @@ import (
 	"github.com/iotaledger/wasp/contracts/native/inccounter"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/kv/codec"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/corecontracts"
@@ -36,12 +37,12 @@ func setupContract(env *ChainEnv) *contractWithMessageCounterEnv {
 
 	// deposit funds onto the contract account, so it can post a L1 request
 	contractAgentID := isc.NewContractAgentID(env.Chain.ChainID, inccounter.Contract.Hname())
-	tx, err := env.NewChainClient().PostRequest(accounts.FuncTransferAllowanceTo.Message(contractAgentID), chainclient.PostRequestParams{
+	block, err := env.NewChainClient().PostRequest(accounts.FuncTransferAllowanceTo.Message(contractAgentID), chainclient.PostRequestParams{
 		Transfer:  isc.NewAssetsBaseTokens(1_500_000),
 		Allowance: isc.NewAssetsBaseTokens(1_000_000),
 	})
 	require.NoError(env.t, err)
-	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 30*time.Second)
+	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 	require.NoError(env.t, err)
 
 	return &contractWithMessageCounterEnv{contractEnv: cEnv}
@@ -53,11 +54,11 @@ func (e *contractWithMessageCounterEnv) postRequest(contract, entryPoint isc.Hna
 	if transfer != nil {
 		b = transfer
 	}
-	tx, err := e.NewChainClient().PostRequest(isc.NewMessage(contract, entryPoint, codec.MakeDict(params)), chainclient.PostRequestParams{
+	block, err := e.NewChainClient().PostRequest(isc.NewMessage(contract, entryPoint, codec.MakeDict(params)), chainclient.PostRequestParams{
 		Transfer: b,
 	})
 	require.NoError(e.t, err)
-	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 60*time.Second)
+	_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 60*time.Second)
 	require.NoError(e.t, err)
 }
 
@@ -103,9 +104,9 @@ func testInvalidEntrypoint(t *testing.T, env *ChainEnv) {
 	numRequests := 6
 	entryPoint := isc.Hn("nothing")
 	for i := 0; i < numRequests; i++ {
-		tx, err := e.NewChainClient().PostRequest(isc.NewMessage(inccounter.Contract.Hname(), entryPoint))
+		block, err := e.NewChainClient().PostRequest(isc.NewMessage(inccounter.Contract.Hname(), entryPoint))
 		require.NoError(t, err)
-		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessed(e.Chain.ChainID, tx, false, 30*time.Second)
+		receipts, err := e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessed(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(receipts))
 		require.Contains(t, *receipts[0].ErrorMessage, vm.ErrTargetEntryPointNotFound.MessageFormat())
@@ -123,9 +124,9 @@ func testIncrement(t *testing.T, env *ChainEnv) {
 
 	entryPoint := isc.Hn("increment")
 	for i := 0; i < numRequests; i++ {
-		tx, err := e.NewChainClient().PostRequest(isc.NewMessage(inccounter.Contract.Hname(), entryPoint))
+		block, err := e.NewChainClient().PostRequest(isc.NewMessage(inccounter.Contract.Hname(), entryPoint))
 		require.NoError(t, err)
-		_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, tx, false, 30*time.Second)
+		_, err = e.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(e.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 		require.NoError(t, err)
 	}
 

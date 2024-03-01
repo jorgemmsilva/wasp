@@ -32,25 +32,25 @@ func TestOffLedgerOrdering(t *testing.T) {
 	cmtKP := cryptolib.NewKeyPair()
 	utxoDB := utxodb.New(testutil.L1API)
 	originator := cryptolib.NewKeyPair()
-	_, err := utxoDB.GetFundsFromFaucet(originator.Address())
+	_, _, err := utxoDB.NewWalletWithFundsFromFaucet(originator)
 	require.NoError(t, err)
 	outputs := utxoDB.GetUnspentOutputs(originator.Address())
 
-	originTX, _, chainID, err := origin.NewChainOriginTransaction(
+	originTX, _, _, chainID, err := origin.NewChainOriginTransaction(
 		originator,
-		cmtKP.Address(),
+		cmtKP.GetPublicKey(),
 		originator.Address(),
-		0,
 		0,
 		nil,
 		outputs,
 		testutil.L1API.TimeProvider().SlotFromTime(time.Now()),
 		allmigrations.DefaultScheme.LatestSchemaVersion(),
 		testutil.L1APIProvider,
+		utxoDB.BlockIssuance(),
 		testutil.TokenInfo,
 	)
 	require.NoError(t, err)
-	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(originTX.Transaction)
+	stateAnchor, anchorOutput, err := transaction.GetAnchorFromTransaction(util.TxFromBlock(originTX).Transaction)
 	require.NoError(t, err)
 	ao0 := isc.NewChainOutputs(anchorOutput, stateAnchor.OutputID, nil, iotago.OutputID{})
 	//

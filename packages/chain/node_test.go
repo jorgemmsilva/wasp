@@ -38,6 +38,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testpeers"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/coreprocessors"
 )
@@ -101,7 +102,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 		}
 	}()
 
-	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(te.originTx.Transaction)
+	deployBaseAnchor, deployBaseAONoID, err := transaction.GetAnchorFromTransaction(util.TxFromBlock(te.originBlock).Transaction)
 	require.NoError(t, err)
 	deployBaseAO := isc.NewChainOutputs(deployBaseAONoID, deployBaseAnchor.OutputID, nil, iotago.OutputID{})
 	for _, tnc := range te.nodeConns {
@@ -132,8 +133,7 @@ func testNodeBasic(t *testing.T, n, f int, reliable bool, timeout time.Duration)
 
 	//
 	// Create SC Client account with some deposit
-	scClient := cryptolib.NewKeyPair()
-	_, err = te.utxoDB.GetFundsFromFaucet(scClient.Address(), 150_000_000)
+	scClient, _, err := te.utxoDB.NewWalletWithFundsFromFaucet()
 	require.NoError(t, err)
 	depositReqs := te.tcl.MakeTxAccountsDeposit(scClient)
 	sendAndAwait(depositReqs, 1, "depositReqs")
@@ -393,10 +393,10 @@ type testEnv struct {
 	peeringNetwork   *testutil.PeeringNetwork
 	networkProviders []peering.NetworkProvider
 	tcl              *testchain.TestChainLedger
-	cmtAddress       iotago.Address
+	cmtPubKey        *cryptolib.PublicKey
 	chainID          isc.ChainID
 	originAO         *isc.ChainOutputs
-	originTx         *iotago.SignedTransaction
+	originBlock      *iotago.Block
 	nodeConns        []*testNodeConn
 	nodes            []chaintypes.Chain
 }
@@ -410,9 +410,9 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	te.utxoDB = utxodb.New(testutil.L1API)
 	te.governor = cryptolib.NewKeyPair()
 	te.originator = cryptolib.NewKeyPair()
-	_, err := te.utxoDB.GetFundsFromFaucet(te.governor.Address())
+	_, _, err := te.utxoDB.NewWalletWithFundsFromFaucet(te.governor)
 	require.NoError(t, err)
-	_, err = te.utxoDB.GetFundsFromFaucet(te.originator.Address())
+	_, _, err = te.utxoDB.NewWalletWithFundsFromFaucet(te.originator)
 	require.NoError(t, err)
 	//
 	// Create a fake network and keys for the tests.
@@ -435,9 +435,9 @@ func newEnv(t *testing.T, n, f int, reliable bool) *testEnv {
 	)
 	te.networkProviders = te.peeringNetwork.NetworkProviders()
 	var dkShareProviders []registry.DKShareRegistryProvider
-	te.cmtAddress, dkShareProviders = testpeers.SetupDkgTrivial(t, n, f, te.peerIdentities, nil)
+	te.cmtPubKey, dkShareProviders = testpeers.SetupDkgTrivial(t, n, f, te.peerIdentities, nil)
 	te.tcl = testchain.NewTestChainLedger(t, te.utxoDB, te.originator)
-	te.originTx, te.originAO, te.chainID = te.tcl.MakeTxChainOrigin(te.cmtAddress)
+	te.originBlock, te.originAO, te.chainID = te.tcl.MakeTxChainOrigin(te.cmtPubKey)
 	//
 	// Initialize the nodes.
 	te.nodeConns = make([]*testNodeConn, len(te.peerIdentities))

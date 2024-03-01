@@ -20,6 +20,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
 	"github.com/iotaledger/wasp/packages/transaction"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/migrations/allmigrations"
 )
 
@@ -35,46 +36,48 @@ func TestOrigin(t *testing.T) {
 
 func TestCreateOrigin(t *testing.T) {
 	var u *utxodb.UtxoDB
+	var originBlock *iotago.Block
 	var originTx *iotago.SignedTransaction
 	var userKey *cryptolib.KeyPair
-	var userAddr, stateAddr *iotago.Ed25519Address
+	var userAddr *iotago.Ed25519Address
+	var statePubKey *cryptolib.PublicKey
 	var err error
 	var chainID isc.ChainID
 	var originTxID iotago.TransactionID
 
 	initTest := func() {
 		u = utxodb.New(testutil.L1API)
-		userKey = cryptolib.NewKeyPair()
+		userKey, _, err = u.NewWalletWithFundsFromFaucet()
+		require.NoError(t, err)
 		userAddr = userKey.GetPublicKey().AsEd25519Address()
-		_, err2 := u.GetFundsFromFaucet(userAddr)
-		require.NoError(t, err2)
 
 		stateKey := cryptolib.NewKeyPair()
-		stateAddr = stateKey.GetPublicKey().AsEd25519Address()
+		statePubKey = stateKey.GetPublicKey()
 
 		require.EqualValues(t, utxodb.FundsFromFaucetAmount, u.GetAddressBalanceBaseTokens(userAddr))
-		require.EqualValues(t, 0, u.GetAddressBalanceBaseTokens(stateAddr))
+		require.EqualValues(t, 0, u.GetAddressBalanceBaseTokens(statePubKey.AsEd25519Address()))
 	}
 	createOrigin := func() {
 		allOutputs := u.GetUnspentOutputs(userAddr)
 
-		originTx, _, chainID, err = origin.NewChainOriginTransaction(
+		originBlock, _, _, chainID, err = origin.NewChainOriginTransaction(
 			userKey,
-			stateAddr,
-			stateAddr,
-			1000,
+			statePubKey,
+			userAddr,
 			1000,
 			nil,
 			allOutputs,
 			u.SlotIndex(),
 			allmigrations.DefaultScheme.LatestSchemaVersion(),
 			testutil.L1APIProvider,
+			u.BlockIssuance(),
 			testutil.TokenInfo,
 		)
 		require.NoError(t, err)
 
-		err = u.AddToLedger(originTx)
+		err = u.AddToLedger(originBlock)
 		require.NoError(t, err)
+		originTx = util.TxFromBlock(originBlock)
 
 		originTxID, err = originTx.Transaction.ID()
 		require.NoError(t, err)
@@ -97,8 +100,8 @@ func TestCreateOrigin(t *testing.T) {
 		require.True(t, anchor.IsOrigin)
 		require.EqualValues(t, chainID, anchor.ChainID)
 		require.EqualValues(t, 0, anchor.StateIndex)
-		require.True(t, stateAddr.Equal(anchor.StateController))
-		require.True(t, stateAddr.Equal(anchor.GovernanceController))
+		require.True(t, statePubKey.AsEd25519Address().Equal(anchor.StateController))
+		require.True(t, userAddr.Equal(anchor.GovernanceController))
 
 		// only one output is expected in the ledger under the address of chainID
 		outs := u.GetUnspentOutputs(chainID.AsAddress())
@@ -112,11 +115,12 @@ func TestCreateOrigin(t *testing.T) {
 		createOrigin()
 
 		chainBaseTokens := originTx.Transaction.Outputs[0].BaseTokenAmount()
+		accOutputBaseTokens := originTx.Transaction.Outputs[1].BaseTokenAmount()
 
 		t.Logf("chainBaseTokens: %d", chainBaseTokens)
 
-		require.EqualValues(t, utxodb.FundsFromFaucetAmount-chainBaseTokens, int(u.GetAddressBalanceBaseTokens(userAddr)))
-		require.EqualValues(t, 0, u.GetAddressBalanceBaseTokens(stateAddr))
+		require.EqualValues(t, utxodb.FundsFromFaucetAmount-chainBaseTokens-accOutputBaseTokens, int(u.GetAddressBalanceBaseTokens(userAddr)))
+		require.EqualValues(t, accOutputBaseTokens, u.GetAddressBalanceBaseTokens(statePubKey.AsEd25519Address()))
 		allOutputs := u.GetUnspentOutputs(chainID.AsAddress())
 		require.EqualValues(t, 1, len(allOutputs))
 	})

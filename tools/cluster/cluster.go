@@ -190,16 +190,16 @@ func (clu *Cluster) DeployDefaultChain() (*Chain, error) {
 	return clu.DeployChainWithDKG(committee, committee, uint16(quorum))
 }
 
-func (clu *Cluster) InitDKG(committeeNodeCount int) ([]int, iotago.Address, error) {
+func (clu *Cluster) InitDKG(committeeNodeCount int) ([]int, *cryptolib.PublicKey, error) {
 	cmt := util.MakeRange(0, committeeNodeCount-1) // End is inclusive for some reason.
 	quorum := uint16((2*len(cmt))/3 + 1)
 
-	address, err := clu.RunDKG(cmt, quorum)
+	pubKey, err := clu.RunDKG(cmt, quorum)
 
-	return cmt, address, err
+	return cmt, pubKey, err
 }
 
-func (clu *Cluster) RunDKG(committeeNodes []int, threshold uint16, timeout ...time.Duration) (iotago.Address, error) {
+func (clu *Cluster) RunDKG(committeeNodes []int, threshold uint16, timeout ...time.Duration) (*cryptolib.PublicKey, error) {
 	if threshold == 0 {
 		threshold = (uint16(len(committeeNodes))*2)/3 + 1
 	}
@@ -223,14 +223,14 @@ func (clu *Cluster) RunDKG(committeeNodes []int, threshold uint16, timeout ...ti
 }
 
 func (clu *Cluster) DeployChainWithDKG(allPeers, committeeNodes []int, quorum uint16, blockKeepAmount ...int32) (*Chain, error) {
-	stateAddr, err := clu.RunDKG(committeeNodes, quorum)
+	stateControllerPubKey, err := clu.RunDKG(committeeNodes, quorum)
 	if err != nil {
 		return nil, err
 	}
-	return clu.DeployChain(allPeers, committeeNodes, quorum, stateAddr, blockKeepAmount...)
+	return clu.DeployChain(allPeers, committeeNodes, quorum, stateControllerPubKey, blockKeepAmount...)
 }
 
-func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, stateAddr iotago.Address, blockKeepAmount ...int32) (*Chain, error) {
+func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, stateControllerPubKey *cryptolib.PublicKey, blockKeepAmount ...int32) (*Chain, error) {
 	if len(allPeers) == 0 {
 		allPeers = clu.Config.AllNodes()
 	}
@@ -278,9 +278,8 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 			Prefix:            "[cluster] ",
 			InitParams:        initParams,
 		},
-		stateAddr,
-		stateAddr,
-		0,
+		stateControllerPubKey,
+		stateControllerPubKey.AsEd25519Address(),
 		0,
 		clu.L1Client().APIProvider().LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 	)
@@ -320,7 +319,7 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 		fmt.Printf("waiting until nodes receive the origin output.. DONE\n")
 	}
 
-	chain.StateAddress = stateAddr
+	chain.StateAddress = stateControllerPubKey.AsEd25519Address()
 	chain.ChainID = chainID
 
 	// After a rotation other nodes can become access nodes,
@@ -331,22 +330,22 @@ func (clu *Cluster) DeployChain(allPeers, committeeNodes []int, quorum uint16, s
 func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 	//
 	// Register all nodes as access nodes.
-	addAccessNodesTxs := make([]*iotago.SignedTransaction, len(accessNodes))
+	addAccessNodesBlocks := make([]*iotago.Block, len(accessNodes))
 	for i, a := range accessNodes {
-		tx, err := clu.addAccessNode(a, chain)
+		block, err := clu.addAccessNode(a, chain)
 		if err != nil {
 			return err
 		}
-		addAccessNodesTxs[i] = tx
+		addAccessNodesBlocks[i] = block
 		time.Sleep(100 * time.Millisecond) // give some time for the indexer to catch up, otherwise it might not find the user outputs...
 	}
 
 	peers := multiclient.New(clu.WaspClientFromHostName, chain.CommitteeAPIHosts(), clu.l1.APIProvider().LatestAPI())
 
-	for _, tx := range addAccessNodesTxs {
+	for _, block := range addAccessNodesBlocks {
 		// ---------- wait until the requests are processed in all committee nodes
 
-		if _, err := peers.WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, tx, true, 5*time.Second); err != nil {
+		if _, err := peers.WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, util.TxFromBlock(block), true, 5*time.Second); err != nil {
 			return fmt.Errorf("WaitAddAccessNode: %w", err)
 		}
 	}
@@ -370,11 +369,11 @@ func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 	scParams := chainclient.NewPostRequestParams().WithBaseTokens(1 * isc.Million)
 	govClient := chain.Client(chain.OriginatorKeyPair)
 
-	tx, err := govClient.PostRequest(governance.FuncChangeAccessNodes.Message(scArgs), *scParams)
+	block, err := govClient.PostRequest(governance.FuncChangeAccessNodes.Message(scArgs), *scParams)
 	if err != nil {
 		return err
 	}
-	_, err = peers.WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, tx, true, 30*time.Second)
+	_, err = peers.WaitUntilAllRequestsProcessedSuccessfully(chain.ChainID, util.TxFromBlock(block), true, 30*time.Second)
 	if err != nil {
 		return err
 	}
@@ -385,7 +384,7 @@ func (clu *Cluster) addAllAccessNodes(chain *Chain, accessNodes []int) error {
 // addAccessNode introduces node at accessNodeIndex as an access node to the chain.
 // This is done by activating the chain on the node and asking the governance contract
 // to consider it as an access node.
-func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.SignedTransaction, error) {
+func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Block, error) {
 	waspClient := clu.WaspClient(accessNodeIndex)
 	if err := apilib.ActivateChainOnNodes(clu.WaspClientFromHostName, clu.Config.APIHosts([]int{accessNodeIndex}), chain.ChainID, clu.l1.APIProvider().LatestAPI()); err != nil {
 		return nil, err
@@ -426,7 +425,7 @@ func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Si
 	}
 
 	govClient := chain.Client(validatorKeyPair)
-	tx, err := govClient.PostRequest(
+	block, err := govClient.PostRequest(
 		governance.FuncAddCandidateNode.Message(&scArgs),
 		*chainclient.NewPostRequestParams().WithBaseTokens(1000),
 	)
@@ -434,13 +433,13 @@ func (clu *Cluster) addAccessNode(accessNodeIndex int, chain *Chain) (*iotago.Si
 		return nil, err
 	}
 
-	txID, err := tx.ID()
+	txID, err := block.ID()
 	if err != nil {
 		return nil, err
 	}
 
 	fmt.Printf("[cluster] Governance::AddCandidateNode, Posted TX, id=%v, args=%+v\n", txID, scArgs)
-	return tx, nil
+	return block, nil
 }
 
 func (clu *Cluster) IsNodeUp(i int) bool {
@@ -872,8 +871,12 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}
+	blockIssuance, err := clu.l1.APIProvider().BlockIssuance(context.TODO())
+	if err != nil {
+		return iotago.OutputID{}, nil, err
+	}
 	apiProvider := clu.l1.APIProvider()
-	tx, err := transaction.NewMintNFTsTransaction(
+	block, err := transaction.NewMintNFTsTransaction(
 		issuerKeypair,
 		nil,
 		target,
@@ -883,17 +886,14 @@ func (clu *Cluster) MintL1NFT(immutableMetadata []byte, target iotago.Address, i
 		outputsSet,
 		apiProvider.LatestAPI().TimeProvider().SlotFromTime(time.Now()),
 		apiProvider,
+		blockIssuance,
 	)
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}
 
-	blockIssuerID, err := util.BlockIssuerFromOutputs(outputsSet)
-	if err != nil {
-		return iotago.OutputID{}, nil, err
-	}
-
-	_, err = clu.l1.PostTxAndWaitUntilConfirmation(tx, blockIssuerID, issuerKeypair)
+	tx := util.TxFromBlock(block)
+	err = clu.l1.PostBlockAndWaitUntilConfirmation(block)
 	if err != nil {
 		return iotago.OutputID{}, nil, err
 	}

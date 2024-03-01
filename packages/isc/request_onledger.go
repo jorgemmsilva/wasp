@@ -238,11 +238,11 @@ func (req *onLedgerRequestData) String(bech32HRP iotago.NetworkPrefix) string {
 func (req *onLedgerRequestData) TargetAddress() iotago.Address {
 	switch out := req.output.(type) {
 	case *iotago.BasicOutput:
-		return out.Ident()
+		return out.Owner()
 	case *iotago.FoundryOutput:
-		return out.Ident()
+		return out.Owner()
 	case *iotago.NFTOutput:
-		return out.Ident()
+		return out.Owner()
 	case *iotago.AnchorOutput:
 		return out.AnchorID.ToAddress()
 	default:

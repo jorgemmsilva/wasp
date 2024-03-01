@@ -19,6 +19,7 @@ import (
 	"github.com/iotaledger/wasp/packages/testutil/testdbhash"
 	"github.com/iotaledger/wasp/packages/testutil/testmisc"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm"
 	"github.com/iotaledger/wasp/packages/vm/core/accounts"
 	"github.com/iotaledger/wasp/packages/vm/core/blob"
@@ -41,17 +42,17 @@ func TestInitLoad(t *testing.T) {
 	env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
 	user, userAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(12))
 	env.AssertL1BaseTokens(userAddr, utxodb.FundsFromFaucetAmount)
-	originAmount := 10 * isc.Million
-	ch, _ := env.NewChainExt(user, originAmount, initMana, "chain1")
+	originAmount := 50 * isc.Million
+	ch, tx := env.NewChainExt(user, originAmount, "chain1")
 
-	cassets := ch.L2CommonAccountAssets()
+	chainAssets := ch.L2CommonAccountAssets()
 	require.EqualValues(t,
-		originAmount-lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput)),
-		cassets.BaseTokens)
-	require.EqualValues(t, 0, len(cassets.NativeTokens))
+		originAmount-lo.Must(testutil.L1API.StorageScoreStructure().MinDeposit(ch.GetChainOutputsFromL1().AnchorOutput))-tx.Transaction.Outputs[1].BaseTokenAmount(), // the account output is on index 1 of the outputs
+		chainAssets.BaseTokens)
+	require.EqualValues(t, 0, len(chainAssets.NativeTokens))
 
 	t.Logf("common base tokens: %d", ch.L2CommonAccountBaseTokens())
-	require.True(t, cassets.BaseTokens >= governance.DefaultMinBaseTokensOnCommonAccount)
+	require.True(t, chainAssets.BaseTokens >= governance.DefaultMinBaseTokensOnCommonAccount)
 
 	testdbhash.VerifyDBHash(env, t.Name())
 }
@@ -64,7 +65,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 	require.EqualValues(t, env.L1Ledger().Supply(), assets.BaseTokens)
 
 	// create chain
-	ch, _ := env.NewChainExt(nil, 10*isc.Million, initMana, "chain1")
+	ch, _ := env.NewChainExt(nil, 50*isc.Million, "chain1")
 
 	// get all native tokens. Must be empty
 	nativeTokenIDs := ch.GetOnChainTokenIDs()
@@ -72,7 +73,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 
 	// all goes to storage deposit and to total base tokens on chain
 	// what has left on L1 address
-	env.AssertL1BaseTokens(ch.OriginatorAddress, utxodb.FundsFromFaucetAmount-10*isc.Million)
+	env.AssertL1BaseTokens(ch.OriginatorAddress, utxodb.FundsFromFaucetAmount-50*isc.Million)
 
 	// check if there's a single anchor output on chain's address
 	chainOutputs := ch.GetChainOutputsFromL1()
@@ -107,7 +108,7 @@ func TestLedgerBaseConsistency(t *testing.T) {
 func TestNoTargetPostOnLedger(t *testing.T) {
 	t.Run("no contract,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
+		ch, _ := env.NewChainExt(nil, 0, "chain")
 		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1APIProvider)
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
@@ -118,7 +119,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 
 		req := solo.NewCallParamsEx("dummyContract", "dummyEP").
 			WithGasBudget(100_000)
-		reqTx, _, err := ch.PostRequestSyncTx(req, nil)
+		reqBlock, _, err := ch.PostRequestSyncTx(req, nil)
 		// expecting specific error
 		require.Contains(t, err.Error(), vm.ErrContractNotFound.Create(isc.Hn("dummyContract")).Error())
 
@@ -130,7 +131,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
-		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
+		reqStorageDeposit := GetStorageDeposit(util.TxFromBlock(reqBlock).Transaction)[0]
 
 		// total base tokens on chain increase by the storage deposit from the request tx
 		require.EqualValues(t, int(totalBaseTokensBefore+reqStorageDeposit-changeInAOminCommonAccountBalance), int(totalBaseTokensAfter))
@@ -143,7 +144,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	})
 	t.Run("no contract,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
+		ch, _ := env.NewChainExt(nil, 0, "chain")
 		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1APIProvider)
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
@@ -158,7 +159,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 
 		req := solo.NewCallParamsEx("dummyContract", "dummyEP").
 			WithGasBudget(100_000)
-		reqTx, _, err := ch.PostRequestSyncTx(req, senderKeyPair)
+		reqBlock, _, err := ch.PostRequestSyncTx(req, senderKeyPair)
 		// expecting specific error
 		require.Contains(t, err.Error(), vm.ErrContractNotFound.Create(isc.Hn("dummyContract")).Error())
 
@@ -170,7 +171,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
-		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
+		reqStorageDeposit := GetStorageDeposit(util.TxFromBlock(reqBlock).Transaction)[0]
 		rec := ch.LastReceipt()
 
 		// total base tokens on chain increase by the storage deposit from the request tx
@@ -188,7 +189,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	})
 	t.Run("no EP,originator==user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
+		ch, _ := env.NewChainExt(nil, 0, "chain")
 		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1APIProvider)
 
 		totalBaseTokensBefore := ch.L2TotalBaseTokens()
@@ -199,14 +200,14 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 
 		req := solo.NewCallParamsEx(root.Contract.Name, "dummyEP").
 			WithGasBudget(100_000)
-		reqTx, _, err := ch.PostRequestSyncTx(req, nil)
+		reqBlock, _, err := ch.PostRequestSyncTx(req, nil)
 		// expecting specific error
 		require.Contains(t, err.Error(), vm.ErrTargetEntryPointNotFound.Error())
 
 		totalBaseTokensAfter := ch.L2TotalBaseTokens()
 		commonAccountBaseTokensAfter := ch.L2CommonAccountBaseTokens()
 
-		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
+		reqStorageDeposit := GetStorageDeposit(util.TxFromBlock(reqBlock).Transaction)[0]
 
 		// AO minCommonAccountBalance changes from block 0 to block 1 because the statemedata grows
 		newSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1APIProvider)
@@ -224,7 +225,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 	})
 	t.Run("no EP,originator!=user", func(t *testing.T) {
 		env := solo.New(t, &solo.InitOptions{AutoAdjustStorageDeposit: true})
-		ch, _ := env.NewChainExt(nil, 0, initMana, "chain")
+		ch, _ := env.NewChainExt(nil, 0, "chain")
 		oldSD := ch.GetChainOutputsFromL1().StorageDeposit(testutil.L1APIProvider)
 
 		senderKeyPair, senderAddr := env.NewKeyPairWithFunds(env.NewSeedFromIndex(10))
@@ -239,7 +240,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 
 		req := solo.NewCallParamsEx(root.Contract.Name, "dummyEP").
 			WithGasBudget(100_000)
-		reqTx, _, err := ch.PostRequestSyncTx(req, senderKeyPair)
+		reqBlock, _, err := ch.PostRequestSyncTx(req, senderKeyPair)
 		// expecting specific error
 		require.Contains(t, err.Error(), vm.ErrTargetEntryPointNotFound.Error())
 
@@ -251,7 +252,7 @@ func TestNoTargetPostOnLedger(t *testing.T) {
 		require.Greater(t, newSD, oldSD)
 		changeInAOminCommonAccountBalance := newSD - oldSD
 
-		reqStorageDeposit := GetStorageDeposit(reqTx.Transaction)[0]
+		reqStorageDeposit := GetStorageDeposit(util.TxFromBlock(reqBlock).Transaction)[0]
 		rec := ch.LastReceipt()
 		// total base tokens on chain increase by the storage deposit from the request tx
 		require.EqualValues(t, int(totalBaseTokensBefore+reqStorageDeposit-changeInAOminCommonAccountBalance), int(totalBaseTokensAfter))
@@ -465,12 +466,6 @@ func TestDeployNativeContract(t *testing.T) {
 
 	err := ch.DepositBaseTokensToL2(10_000, senderKeyPair)
 	require.NoError(t, err)
-
-	// get more base tokens for originator
-	originatorBalance := env.L1Assets(ch.OriginatorAddress).BaseTokens
-	_, err = env.L1Ledger().GetFundsFromFaucet(ch.OriginatorAddress)
-	require.NoError(t, err)
-	env.AssertL1BaseTokens(ch.OriginatorAddress, originatorBalance+utxodb.FundsFromFaucetAmount)
 
 	req := solo.NewCallParams(root.FuncGrantDeployPermission.Message(isc.NewAgentID(senderAddr))).
 		AddBaseTokens(100_000).

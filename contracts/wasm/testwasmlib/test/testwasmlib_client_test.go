@@ -145,7 +145,7 @@ func setupClientDisposable(t testing.TB) *wasmclient.WasmClientContext {
 func setupClientSolo(t testing.TB) *wasmclient.WasmClientContext {
 	ctx := wasmsolo.NewSoloContext(t, testwasmlib.ScName, testwasmlibimpl.OnDispatch)
 	chainID := ctx.Chain.ChainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP())
-	keyPair := iscclient.KeyPairFromSeed(ctx.Chain.OriginatorPrivateKey.GetPrivateKey().AsBytes()[:32])
+	keyPair := iscclient.KeyPairFromSeed(ctx.Chain.OriginatorKeyPair.GetPrivateKey().AsBytes()[:32])
 
 	// use Solo as fake Wasp cluster
 	return newClient(t, wasmsolo.NewSoloClientService(ctx, chainID), keyPair)

@@ -123,7 +123,7 @@ func RequestIsExpired(req OnLedgerRequest, currentSlotIndex iotago.SlotIndex) bo
 }
 
 func RequestIsUnlockable(req OnLedgerRequest, chainAddress iotago.Address, pastBoundedSlotIndex, futureBoundedSlotIndex iotago.SlotIndex) bool {
-	output, _ := req.Output().(iotago.TransIndepIdentOutput)
+	output, _ := req.Output().(iotago.OwnerTransitionIndependentOutput)
 	return output.UnlockableBy(chainAddress, pastBoundedSlotIndex, futureBoundedSlotIndex)
 }
 

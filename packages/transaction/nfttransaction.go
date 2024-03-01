@@ -2,23 +2,25 @@ package transaction
 
 import (
 	iotago "github.com/iotaledger/iota.go/v4"
+	"github.com/iotaledger/iota.go/v4/api"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/util"
 )
 
 func NewMintNFTsTransaction(
-	issuerKeyPair cryptolib.VariantKeyPair,
+	nftIssuerKeyPair cryptolib.VariantKeyPair,
 	collectionOutputID *iotago.OutputID,
 	target iotago.Address,
 	immutableMetadata []iotago.MetadataFeatureEntries,
 	unspentOutputs iotago.OutputSet,
 	creationSlot iotago.SlotIndex,
 	l1APIProvider iotago.APIProvider,
-) (*iotago.SignedTransaction, error) {
-	senderAddress := issuerKeyPair.Address()
+	blockIssuance *api.IssuanceBlockHeaderResponse,
+) (*iotago.Block, error) {
+	senderAddress := nftIssuerKeyPair.Address()
 
 	outputAssets := NewEmptyAssetsWithMana()
-	var outputs iotago.TxEssenceOutputs
+	var outputs []iotago.Output
 
 	var issuerAddress iotago.Address = senderAddress
 	nftsOut := make(map[iotago.NFTID]bool)
@@ -63,7 +65,7 @@ func NewMintNFTsTransaction(
 		})
 	}
 
-	inputIDs, remainder, err := ComputeInputsAndRemainder(
+	inputs, remainder, blockIssuerAccountID, err := ComputeInputsAndRemainder(
 		senderAddress,
 		unspentOutputs,
 		outputAssets,
@@ -75,11 +77,12 @@ func NewMintNFTsTransaction(
 	}
 	outputs = append(outputs, remainder...)
 
-	return CreateAndSignTx(
-		issuerKeyPair,
-		inputIDs.UTXOInputs(),
-		outputs,
-		creationSlot,
+	return FinalizeTxAndBuildBlock(
 		l1API,
+		TxBuilderFromInputsAndOutputs(l1API, inputs, outputs, nftIssuerKeyPair),
+		blockIssuance,
+		len(outputs)-1, // store mana in the last output
+		blockIssuerAccountID,
+		nftIssuerKeyPair,
 	)
 }

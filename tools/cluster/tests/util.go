@@ -316,12 +316,12 @@ func setupNativeInccounterTest(t *testing.T, clusterSize int, committee []int, d
 		dirName: dirname,
 	})
 
-	addr, err := clu.RunDKG(committee, quorum)
+	pubKey, err := clu.RunDKG(committee, quorum)
 	require.NoError(t, err)
 
-	t.Logf("generated state address: %s", addr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	t.Logf("generated state address: %s", pubKey.AsEd25519Address().Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
-	chain, err := clu.DeployChain(clu.Config.AllNodes(), committee, quorum, addr)
+	chain, err := clu.DeployChain(clu.Config.AllNodes(), committee, quorum, pubKey)
 	require.NoError(t, err)
 	t.Logf("deployed chainID: %s", chain.ChainID)
 

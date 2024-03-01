@@ -11,9 +11,9 @@ import (
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 
-	iotago "github.com/iotaledger/iota.go/v4"
 	"github.com/iotaledger/wasp/clients/apiclient"
 	"github.com/iotaledger/wasp/packages/apilib"
+	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/util/byz_quorum"
 	"github.com/iotaledger/wasp/tools/wasp-cli/cli/cliclients"
 	"github.com/iotaledger/wasp/tools/wasp-cli/log"
@@ -44,7 +44,7 @@ func initRunDKGCmd() *cobra.Command {
 	return cmd
 }
 
-func doDKG(node string, peers []string, quorum int) iotago.Address {
+func doDKG(node string, peers []string, quorum int) *cryptolib.PublicKey {
 	client := cliclients.WaspClient(node)
 	nodeInfo, _, err := client.NodeApi.GetPeeringIdentity(context.Background()).Execute() //nolint:bodyclose // false positive
 	log.Check(err)
@@ -96,7 +96,7 @@ func doDKG(node string, peers []string, quorum int) iotago.Address {
 		log.Fatal("quorum needs to be at least (2/3)+1 of committee size")
 	}
 
-	stateControllerAddr, err := apilib.RunDKG(client, committeePubKeys, uint16(quorum))
+	stateControllerPubKey, err := apilib.RunDKG(client, committeePubKeys, uint16(quorum))
 	log.Check(err)
 
 	committeeMembersStr := ""
@@ -106,10 +106,10 @@ func doDKG(node string, peers []string, quorum int) iotago.Address {
 
 	fmt.Fprintf(os.Stdout,
 		"DKG successful\nAddress: %s\n* committee size = %v\n* quorum = %v\n* members: %s\n",
-		stateControllerAddr.Bech32(cliclients.API().ProtocolParameters().Bech32HRP()),
+		stateControllerPubKey.AsEd25519Address().Bech32(cliclients.API().ProtocolParameters().Bech32HRP()),
 		len(committeePubKeys),
 		quorum,
 		committeeMembersStr,
 	)
-	return stateControllerAddr
+	return stateControllerPubKey
 }

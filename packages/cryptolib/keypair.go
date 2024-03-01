@@ -12,6 +12,8 @@ type KeyPair struct {
 	publicKey  *PublicKey
 }
 
+var _ VariantKeyPair = &KeyPair{}
+
 // NewKeyPair creates a new key pair with a randomly generated seed
 func NewKeyPair() *KeyPair {
 	privateKey := NewPrivateKey()
@@ -85,4 +87,14 @@ func (k *KeyPair) Write(w io.Writer) error {
 	ww.Write(k.publicKey)
 	ww.Write(k.privateKey)
 	return ww.Err
+}
+
+// EmptySignatureForAddress implements VariantKeyPair. // TODO just re-using the code from iota.go in-memory signer - re-evalue if refactor is necessary
+func (k *KeyPair) EmptySignatureForAddress(addr iotago.Address) (signature iotago.Signature, err error) {
+	return iotago.NewInMemoryAddressSignerFromEd25519PrivateKeys(k.privateKey.key).EmptySignatureForAddress(addr)
+}
+
+// SignerUIDForAddress implements VariantKeyPair. // TODO just re-using the code from iota.go in-memory signer - re-evalue if refactor is necessary
+func (k *KeyPair) SignerUIDForAddress(addr iotago.Address) (iotago.Identifier, error) {
+	return iotago.NewInMemoryAddressSignerFromEd25519PrivateKeys(k.privateKey.key).SignerUIDForAddress(addr)
 }

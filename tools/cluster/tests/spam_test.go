@@ -26,6 +26,7 @@ import (
 	"github.com/iotaledger/wasp/packages/solo"
 	"github.com/iotaledger/wasp/packages/testutil"
 	"github.com/iotaledger/wasp/packages/testutil/utxodb"
+	"github.com/iotaledger/wasp/packages/util"
 )
 
 // executed in cluster_test.go
@@ -39,7 +40,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 	numAccounts := numRequests / 10
 	numRequestsPerAccount := numRequests / numAccounts
 	errCh := make(chan error, numRequests)
-	txCh := make(chan *iotago.SignedTransaction, numRequests)
+	blockCh := make(chan *iotago.Block, numRequests)
 	for i := 0; i < numAccounts; i++ {
 		createWalletRetries := 0
 
@@ -64,7 +65,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 			for i := 0; i < numRequestsPerAccount; i++ {
 				retries := 0
 				for {
-					tx, err := chainClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
+					block, err := chainClient.PostRequest(inccounter.FuncIncCounter.Message(nil))
 					if err != nil {
 						if retries >= 5 {
 							errCh <- fmt.Errorf("failed to issue tx, an error 5 times, %w", err)
@@ -81,7 +82,7 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 						return
 					}
 					errCh <- err
-					txCh <- tx
+					blockCh <- block
 					break
 				}
 				time.Sleep(200 * time.Millisecond) // give time for the indexer to get the new UTXOs (so we don't issue conflicting txs)
@@ -98,8 +99,8 @@ func testSpamOnledger(t *testing.T, env *ChainEnv) {
 	}
 
 	for i := 0; i < numRequests; i++ {
-		tx := <-txCh
-		_, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 30*time.Second)
+		block := <-blockCh
+		_, err := env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 		require.NoError(t, err)
 	}
 
@@ -212,9 +213,9 @@ func testSpamCallViewWasm(t *testing.T, env *ChainEnv) {
 	client := env.Chain.Client(wallet)
 	{
 		// increment counter once
-		tx, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
+		block, err := client.PostRequest(inccounter.FuncIncCounter.Message(nil))
 		require.NoError(t, err)
-		_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, tx, false, 30*time.Second)
+		_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
 		require.NoError(t, err)
 	}
 

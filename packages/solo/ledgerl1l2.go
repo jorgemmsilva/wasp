@@ -139,6 +139,7 @@ type foundryParams struct {
 const (
 	SendToL2AccountGasBudgetBaseTokens     = 1 * isc.Million
 	TransferAllowanceToGasBudgetBaseTokens = 1 * isc.Million
+	TransferAccountOutputSD                = 50_0000
 )
 
 func (ch *Chain) NewFoundryParams(maxSupply *big.Int) *foundryParams { //nolint:revive
@@ -173,7 +174,7 @@ func (fp *foundryParams) CreateFoundry() (uint32, iotago.NativeTokenID, error) {
 	if fp.sch != nil {
 		sch = &fp.sch
 	}
-	user := fp.ch.OriginatorPrivateKey
+	user := fp.ch.OriginatorKeyPair
 	if fp.user != nil {
 		user = fp.user
 	}
@@ -214,7 +215,7 @@ func (ch *Chain) MintTokens(sn uint32, amount *big.Int, user *cryptolib.KeyPair)
 
 	req.WithGasBudget(rec.GasBurned)
 	if user == nil {
-		user = ch.OriginatorPrivateKey
+		user = ch.OriginatorKeyPair
 	}
 	_, err = ch.PostRequestSync(req, user)
 	return err
@@ -227,7 +228,7 @@ func (ch *Chain) DestroyTokensOnL2(nativeTokenID iotago.NativeTokenID, amount *b
 		WithMaxAffordableGasBudget()
 
 	if user == nil {
-		user = ch.OriginatorPrivateKey
+		user = ch.OriginatorKeyPair
 	}
 	_, err := ch.PostRequestSync(req, user)
 	return err
@@ -240,7 +241,7 @@ func (ch *Chain) DestroyTokensOnL1(nativeTokenID iotago.NativeTokenID, amount *b
 	req.AddNativeTokens(nativeTokenID, amount)
 	req.AddAllowanceNativeTokens(nativeTokenID, amount)
 	if user == nil {
-		user = ch.OriginatorPrivateKey
+		user = ch.OriginatorKeyPair
 	}
 	_, err := ch.PostRequestSync(req, user)
 	return err

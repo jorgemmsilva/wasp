@@ -81,9 +81,12 @@ type chainData struct {
 	// ChainID is the ID of the chain (in this version alias of the ChainAddress)
 	ChainID isc.ChainID
 
-	// OriginatorPrivateKey the key pair used to create the chain (origin transaction).
+	// ChainBlockIssuer is the accountID of the account output used by the committee to issue blocks
+	ChainBlockIssuer iotago.AccountID
+
+	// OriginatorKeyPair the key pair used to create the chain (origin transaction).
 	// It is a default key pair in many of Solo calls which require private key.
-	OriginatorPrivateKey *cryptolib.KeyPair
+	OriginatorKeyPair *cryptolib.KeyPair
 
 	// ValidatorFeeTarget is the agent ID to which all fees are accrued. By default, it is equal to OriginatorAgentID
 	ValidatorFeeTarget isc.AgentID
@@ -286,7 +289,7 @@ func (env *Solo) WithNativeContract(c *coreutil.ContractProcessor) *Solo {
 
 // NewChain deploys new default chain instance.
 func (env *Solo) NewChain(depositFundsForOriginator ...bool) *Chain {
-	ret, _ := env.NewChainExt(nil, 0, 0, "chain1")
+	ret, _ := env.NewChainExt(nil, 0, "chain1")
 	if len(depositFundsForOriginator) == 0 || depositFundsForOriginator[0] {
 		// deposit some tokens for the chain originator
 		err := ret.DepositAssetsToL2(isc.NewAssetsBaseTokens(5*isc.Million), nil)
@@ -298,7 +301,6 @@ func (env *Solo) NewChain(depositFundsForOriginator ...bool) *Chain {
 func (env *Solo) deployChain(
 	chainOriginator *cryptolib.KeyPair,
 	initBaseTokens iotago.BaseToken,
-	initMana iotago.Mana,
 	name string,
 	originParams ...dict.Dict,
 ) (chainData, *iotago.SignedTransaction) {
@@ -306,8 +308,7 @@ func (env *Solo) deployChain(
 
 	if chainOriginator == nil {
 		chainOriginator = env.NewKeyPairFromIndex(-1000 + len(env.chains)) // making new originator for each new chain
-		originatorAddr := chainOriginator.GetPublicKey().AsEd25519Address()
-		_, err := env.utxoDB.GetFundsFromFaucet(originatorAddr)
+		_, _, err := env.utxoDB.NewWalletWithFundsFromFaucet(chainOriginator)
 		require.NoError(env.T, err)
 	}
 
@@ -323,7 +324,7 @@ func (env *Solo) deployChain(
 	}
 
 	stateControllerKey := env.NewKeyPairFromIndex(-1) // leaving positive indices to user
-	stateControllerAddr := stateControllerKey.GetPublicKey().AsEd25519Address()
+	stateControllerPubKey := stateControllerKey.GetPublicKey()
 
 	originatorAddr := chainOriginator.GetPublicKey().AsEd25519Address()
 	originatorAgentID := isc.NewAgentID(originatorAddr)
@@ -331,31 +332,33 @@ func (env *Solo) deployChain(
 	initialL1Balance := env.L1BaseTokens(originatorAddr)
 
 	outs := env.utxoDB.GetUnspentOutputs(originatorAddr)
-	originTx, chainOutputs, chainID, err := origin.NewChainOriginTransaction(
+	originBlock, chainOutputs, chainBlockIssuerAccountID, chainID, err := origin.NewChainOriginTransaction(
 		chainOriginator,
-		stateControllerAddr,
-		stateControllerAddr,
+		stateControllerPubKey,
+		stateControllerPubKey.AsEd25519Address(),
 		initBaseTokens, // will be adjusted to min storage deposit + DefaultMinBaseTokensOnCommonAccount
-		initMana,
 		initParams,
 		outs,
 		env.SlotIndex(),
-		0, // TODO could be the latest instead ? :thinking:
+		0,
 		testutil.L1APIProvider,
+		env.utxoDB.BlockIssuance(),
 		testutil.TokenInfo,
 	)
 	require.NoError(env.T, err)
 
+	originTx := util.TxFromBlock(originBlock)
 	anchor, _, err := transaction.GetAnchorFromTransaction(originTx.Transaction)
 	require.NoError(env.T, err)
 
-	err = env.AddToLedger(originTx)
+	err = env.AddToLedger(originBlock)
 	require.NoError(env.T, err)
-	env.AssertL1BaseTokens(originatorAddr, initialL1Balance-anchor.Deposit)
+	accountOutputSD := originTx.Transaction.Outputs[1].BaseTokenAmount()
+	env.AssertL1BaseTokens(originatorAddr, initialL1Balance-anchor.Deposit-accountOutputSD)
 
 	env.logger.LogInfof("deploying new chain '%s'. ID: %s, state controller address: %s",
-		name, chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
-	env.logger.LogInfof("     chain '%s'. state controller address: %s", chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), stateControllerAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+		name, chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), stateControllerPubKey.AsEd25519Address().Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
+	env.logger.LogInfof("     chain '%s'. state controller address: %s", chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), stateControllerPubKey.AsEd25519Address().Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 	env.logger.LogInfof("     chain '%s'. originator address: %s", chainID.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()), originatorAddr.Bech32(testutil.L1API.ProtocolParameters().Bech32HRP()))
 
 	chainDB := env.getDB(dbKindChainState, chainID)
@@ -373,8 +376,9 @@ func (env *Solo) deployChain(
 	return chainData{
 		Name:                   name,
 		ChainID:                chainID,
+		ChainBlockIssuer:       chainBlockIssuerAccountID,
 		StateControllerKeyPair: stateControllerKey,
-		OriginatorPrivateKey:   chainOriginator,
+		OriginatorKeyPair:      chainOriginator,
 		ValidatorFeeTarget:     originatorAgentID,
 		db:                     chainDB,
 	}, originTx
@@ -401,14 +405,12 @@ func (env *Solo) getDB(kind dbKind, chainID isc.ChainID) kvstore.KVStore {
 func (env *Solo) NewChainExt(
 	chainOriginator *cryptolib.KeyPair,
 	initBaseTokens iotago.BaseToken,
-	initMana iotago.Mana,
 	name string,
 	originParams ...dict.Dict,
 ) (*Chain, *iotago.SignedTransaction) {
 	chData, originTx := env.deployChain(
 		chainOriginator,
 		initBaseTokens,
-		initMana,
 		name,
 		originParams...,
 	)
@@ -425,8 +427,8 @@ func (env *Solo) addChain(chData chainData) *Chain {
 	ch := &Chain{
 		chainData:              chData,
 		StateControllerAddress: chData.StateControllerKeyPair.GetPublicKey().AsEd25519Address(),
-		OriginatorAddress:      chData.OriginatorPrivateKey.GetPublicKey().AsEd25519Address(),
-		OriginatorAgentID:      isc.NewAgentID(chData.OriginatorPrivateKey.GetPublicKey().AsEd25519Address()),
+		OriginatorAddress:      chData.OriginatorKeyPair.GetPublicKey().AsEd25519Address(),
+		OriginatorAgentID:      isc.NewAgentID(chData.OriginatorKeyPair.GetPublicKey().AsEd25519Address()),
 		Env:                    env,
 		store:                  indexedstore.New(state.NewStoreWithUniqueWriteMutex(chData.db)),
 		proc:                   processors.MustNew(env.processorConfig),
@@ -441,12 +443,13 @@ func (env *Solo) addChain(chData chainData) *Chain {
 
 // AddToLedger adds (synchronously confirms) transaction to the UTXODB ledger. Return error if it is
 // invalid or double spend
-func (env *Solo) AddToLedger(tx *iotago.SignedTransaction) error {
+func (env *Solo) AddToLedger(block *iotago.Block) error {
+	tx := util.TxFromBlock(block)
 	env.logger.LogDebugf("adding tx to L1 (ID: %s) %s",
 		lo.Must(tx.Transaction.ID()).ToHex(),
 		string(lo.Must(testutil.L1API.JSONEncode(tx))),
 	)
-	return env.utxoDB.AddToLedger(tx)
+	return env.utxoDB.AddToLedger(block)
 }
 
 // RequestsForChain parses the transaction and returns all requests contained in it which have chainID as the target
@@ -641,7 +644,7 @@ func (env *Solo) MintNFTL1(issuer *cryptolib.KeyPair, target iotago.Address, imm
 func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, collectionOutputID *iotago.OutputID, immutableMetadata []iotago.MetadataFeatureEntries) ([]*isc.NFT, []*NFTMintedInfo, error) {
 	allOuts := env.utxoDB.GetUnspentOutputs(issuer.Address())
 
-	tx, err := transaction.NewMintNFTsTransaction(
+	block, err := transaction.NewMintNFTsTransaction(
 		issuer,
 		collectionOutputID,
 		target,
@@ -649,16 +652,17 @@ func (env *Solo) MintNFTsL1(issuer *cryptolib.KeyPair, target iotago.Address, co
 		allOuts,
 		env.SlotIndex(),
 		testutil.L1APIProvider,
+		env.BlockIssuance(),
 	)
 	if err != nil {
 		return nil, nil, err
 	}
-	err = env.AddToLedger(tx)
+	err = env.AddToLedger(block)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	outSet, err := tx.Transaction.OutputsSet()
+	outSet, err := util.TxFromBlock(block).Transaction.OutputsSet()
 	if err != nil {
 		return nil, nil, err
 	}
@@ -699,6 +703,7 @@ func (env *Solo) SendL1(targetAddress iotago.Address, fts *isc.FungibleTokens, w
 		env.SlotIndex(),
 		env.disableAutoAdjustStorageDeposit,
 		env.L1APIProvider(),
+		env.BlockIssuance(),
 	)
 	require.NoError(env.T, err)
 	err = env.AddToLedger(tx)
@@ -711,4 +716,8 @@ func (env *Solo) L1APIProvider() iotago.APIProvider {
 
 func (env *Solo) TokenInfo() *api.InfoResBaseToken {
 	return testutil.TokenInfo
+}
+
+func (env *Solo) BlockIssuance() *api.IssuanceBlockHeaderResponse {
+	return env.utxoDB.BlockIssuance()
 }

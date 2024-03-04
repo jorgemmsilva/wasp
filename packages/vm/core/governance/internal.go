@@ -44,11 +44,7 @@ func (s *StateReader) GetRotationAddress() iotago.Address {
 }
 
 func (s *StateReader) GetBlockIssuer() iotago.AccountID {
-	ret, err := codec.AccountID.Decode(s.state.Get(varStateControllerBlockIssuer))
-	if err != nil {
-		return iotago.EmptyAccountID
-	}
-	return ret
+	return lo.Must(codec.AccountID.Decode(s.state.Get(varStateControllerBlockIssuer), iotago.EmptyAccountID))
 }
 
 // GetChainInfo returns global variables of the chain

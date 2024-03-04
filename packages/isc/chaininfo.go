@@ -10,12 +10,13 @@ import (
 
 // ChainInfo is an API structure containing the main parameters of the chain
 type ChainInfo struct {
-	ChainID         ChainID
-	ChainAccountID  iotago.AccountID
-	ChainOwnerID    AgentID
-	GasFeePolicy    *gas.FeePolicy
-	GasLimits       *gas.Limits
-	BlockKeepAmount int32
+	ChainID            ChainID
+	ChainAccountID     iotago.AccountID
+	BlockIssuerAccount iotago.AccountID
+	ChainOwnerID       AgentID
+	GasFeePolicy       *gas.FeePolicy
+	GasLimits          *gas.Limits
+	BlockKeepAmount    int32
 
 	PublicURL string
 	Metadata  *PublicChainMetadata

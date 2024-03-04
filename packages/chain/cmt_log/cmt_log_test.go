@@ -51,13 +51,13 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 	peerPubKeys := testpeers.PublicKeys(peerIdentities)
 	//
 	// Committee.
-	committeeAddress, committeeKeyShares := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
+	committeePubKey, committeeKeyShares := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
 	//
 	// Construct the algorithm nodes.
 	gpaNodeIDs := gpa.NodeIDsFromPublicKeys(peerPubKeys)
 	gpaNodes := map[gpa.NodeID]gpa.GPA{}
 	for i := range gpaNodeIDs {
-		dkShare, err := committeeKeyShares[i].LoadDKShare(committeeAddress)
+		dkShare, err := committeeKeyShares[i].LoadDKShare(committeePubKey.AsEd25519Address())
 		require.NoError(t, err)
 		consensusStateRegistry := testutil.NewConsensusStateRegistry() // Empty store in this case.
 		cmtLogInst, err := cmt_log.New(gpaNodeIDs[i], chainID, dkShare, consensusStateRegistry, gpa.NodeIDFromPublicKey, true, -1, nil, log.NewChildLogger(fmt.Sprintf("N%v", i)))
@@ -71,7 +71,7 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 	gpaTC.PrintAllStatusStrings("Initial", t.Logf)
 	//
 	// Provide first anchor output. Consensus should be sent now.
-	ao1 := randomAnchorOutputWithID(anchorID, governor.Address(), committeeAddress, 1)
+	ao1 := randomAnchorOutputWithID(anchorID, governor.Address(), committeePubKey.AsEd25519Address(), 1)
 	t.Logf("AO1=%v", ao1)
 	gpaTC.WithInputs(inputAnchorOutputConfirmed(gpaNodes, ao1)).RunAll()
 	gpaTC.PrintAllStatusStrings("After AO1Recv", t.Logf)
@@ -82,7 +82,7 @@ func testCmtLogBasic(t *testing.T, n, f int) {
 	}
 	//
 	// Consensus results received (consumed ao1, produced ao2).
-	ao2 := randomAnchorOutputWithID(anchorID, governor.Address(), committeeAddress, 2)
+	ao2 := randomAnchorOutputWithID(anchorID, governor.Address(), committeePubKey.AsEd25519Address(), 2)
 	t.Logf("AO2=%v", ao2)
 	gpaTC.WithInputs(inputConsensusOutput(gpaNodes, cons1, ao2)).RunAll()
 	gpaTC.PrintAllStatusStrings("After gpaMsgsAO2Cons", t.Logf)

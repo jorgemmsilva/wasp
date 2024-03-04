@@ -9,6 +9,7 @@ import (
 	"github.com/iotaledger/wasp/packages/isc/coreutil"
 	"github.com/iotaledger/wasp/packages/kv/codec"
 	"github.com/iotaledger/wasp/packages/kv/dict"
+	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/packages/vm/gas"
 )
 
@@ -20,7 +21,7 @@ func IsRotateStateControllerRequest(req isc.Calldata) bool {
 
 func NewRotateRequestOffLedger(chainID isc.ChainID, newStateAddress iotago.Address, keyPair *cryptolib.KeyPair, gasBudget gas.GasUnits) isc.Request {
 	args := dict.New()
-	args.Set(coreutil.ParamStateControllerAddress, codec.Address.Encode(newStateAddress))
+	args.Set(governance.ParamStateControllerAddress, codec.Address.Encode(newStateAddress))
 	nonce := uint64(time.Now().UnixNano())
 	ret := isc.NewOffLedgerRequest(
 		chainID,

@@ -134,7 +134,10 @@ func TestRotate(t *testing.T) {
 		someAgentID := isc.NewAddressAgentID(someAddr)
 		chain.DepositAssetsToL2(isc.NewAssetsBaseTokens(10*isc.Million), someWallet)
 
-		rotationReq := solo.NewCallParams(governance.FuncRotateStateController.Message(newAddr)).
+		newBlockIssuerAccountID, err := chain.CreateNewBlockIssuer(nil, newKP.GetPublicKey())
+		require.NoError(t, err)
+
+		rotationReq := solo.NewCallParams(governance.FuncRotateStateController.Message(newAddr, newBlockIssuerAccountID)).
 			WithMaxAffordableGasBudget().NewRequestOffLedger(chain, chain.OriginatorKeyPair)
 		dummyReq := solo.NewCallParams(isc.NewMessageFromNames("dummy", "dummy")).WithNonce(0).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, someWallet)
 		dummyReq2 := solo.NewCallParams(isc.NewMessageFromNames("dummy", "dummy")).WithNonce(1).WithMaxAffordableGasBudget().NewRequestOffLedger(chain, someWallet)

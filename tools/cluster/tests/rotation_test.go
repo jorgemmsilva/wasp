@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/samber/lo"
 	"github.com/stretchr/testify/require"
 
 	iotago "github.com/iotaledger/iota.go/v4"
@@ -14,6 +15,7 @@ import (
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/vm/core/governance"
 	"github.com/iotaledger/wasp/tools/cluster"
@@ -60,7 +62,17 @@ func TestBasicRotation(t *testing.T) {
 	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 20*time.Second)
 	require.NoError(t, err)
 
-	block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(newCmtAddr))
+	block, newAccountID, err := transaction.NewAccountOutputForStateControllerTx(
+		lo.Must(env.Clu.L1Client().OutputMap(env.Chain.OriginatorAddress())),
+		env.Chain.OriginatorKeyPair,
+		newCmtPubKey,
+		env.Clu.L1Client().APIProvider(),
+		lo.Must(env.Clu.L1Client().APIProvider().BlockIssuance(context.Background())),
+	)
+	require.NoError(t, err)
+	require.NoError(t, env.Clu.L1Client().PostBlockAndWaitUntilConfirmation(block))
+
+	block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(newCmtAddr, newAccountID))
 	require.NoError(t, err)
 	mustLogRequestsInTransaction(util.TxFromBlock(block), t.Logf, "Posted request - CoreEPRotateStateController")
 	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(block), false, 20*time.Second)
@@ -120,8 +132,18 @@ func TestRotation(t *testing.T) {
 	require.NoError(t, chEnv.checkAllowedStateControllerAddressInAllNodes(rotation2.PubKey.AsEd25519Address()))
 	require.NoError(t, chEnv.waitStateControllers(rotation1.PubKey.AsEd25519Address(), 15*time.Second))
 
+	block, newAccountID, err := transaction.NewAccountOutputForStateControllerTx(
+		lo.Must(clu.L1Client().OutputMap(chain.OriginatorAddress())),
+		chain.OriginatorKeyPair,
+		rotation2.PubKey,
+		clu.L1Client().APIProvider(),
+		lo.Must(clu.L1Client().APIProvider().BlockIssuance(context.Background())),
+	)
+	require.NoError(t, err)
+	require.NoError(t, clu.L1Client().PostBlockAndWaitUntilConfirmation(block))
+
 	t.Logf("Rotating to committee %v with quorum %v and address %s", rotation2.Committee, rotation2.Quorum, rotation2.PubKey)
-	block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(rotation2.PubKey.AsEd25519Address()))
+	block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(rotation2.PubKey.AsEd25519Address(), newAccountID))
 	require.NoError(t, err)
 	require.NoError(t, chEnv.waitStateControllers(rotation2.PubKey.AsEd25519Address(), 15*time.Second))
 	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, util.TxFromBlock(block), false, 15*time.Second)
@@ -196,8 +218,19 @@ func TestRotationFromSingle(t *testing.T) {
 	require.NoError(t, chEnv.waitStateControllers(rotation1.PubKey.AsEd25519Address(), 15*time.Second))
 
 	time.Sleep(500 * time.Millisecond)
+
+	block, newAccountID, err := transaction.NewAccountOutputForStateControllerTx(
+		lo.Must(clu.L1Client().OutputMap(chain.OriginatorAddress())),
+		chain.OriginatorKeyPair,
+		rotation2.PubKey,
+		clu.L1Client().APIProvider(),
+		lo.Must(clu.L1Client().APIProvider().BlockIssuance(context.Background())),
+	)
+	require.NoError(t, err)
+	require.NoError(t, clu.L1Client().PostBlockAndWaitUntilConfirmation(block))
+
 	t.Logf("Rotating to committee %v with quorum %v and address %s", rotation2.Committee, rotation2.Quorum, rotation2.PubKey)
-	block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(rotation2.PubKey.AsEd25519Address()))
+	block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(rotation2.PubKey.AsEd25519Address(), newAccountID))
 	require.NoError(t, err)
 	require.NoError(t, chEnv.waitStateControllers(rotation2.PubKey.AsEd25519Address(), 30*time.Second))
 	_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, util.TxFromBlock(block), false, 30*time.Second)
@@ -282,7 +315,17 @@ func TestRotationMany(t *testing.T) {
 
 		waitUntil(t, chEnv.counterEquals(int64(numRequests*(i+1))), chEnv.Clu.Config.AllNodes(), 30*time.Second)
 
-		block, err := govClient.PostRequest(governance.FuncRotateStateController.Message(rotation.PubKey.AsEd25519Address()))
+		block, newAccountID, err := transaction.NewAccountOutputForStateControllerTx(
+			lo.Must(clu.L1Client().OutputMap(chain.OriginatorAddress())),
+			chain.OriginatorKeyPair,
+			rotation.PubKey,
+			clu.L1Client().APIProvider(),
+			lo.Must(clu.L1Client().APIProvider().BlockIssuance(context.Background())),
+		)
+		require.NoError(t, err)
+		require.NoError(t, clu.L1Client().PostBlockAndWaitUntilConfirmation(block))
+
+		block, err = govClient.PostRequest(governance.FuncRotateStateController.Message(rotation.PubKey.AsEd25519Address(), newAccountID))
 		require.NoError(t, err)
 		require.NoError(t, chEnv.waitStateControllers(rotation.PubKey.AsEd25519Address(), waitTimeout))
 		_, err = chEnv.Chain.AllNodesMultiClient().WaitUntilAllRequestsProcessedSuccessfully(chEnv.Chain.ChainID, util.TxFromBlock(block), false, waitTimeout)

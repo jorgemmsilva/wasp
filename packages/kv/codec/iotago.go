@@ -11,21 +11,13 @@ import (
 	"github.com/iotaledger/wasp/packages/isc"
 )
 
-var Address = NewCodec(decodeAddress, isc.AddressToBytes)
-
-func decodeAddress(b []byte) (iotago.Address, error) {
-	if len(b) == 0 {
-		return nil, errors.New("invalid Address size")
-	}
-	return isc.AddressFromBytes(b)
-}
-
 var (
 	// using hardcoded L1API, assuming that serializatin format does not change over time
 	l1API = iotago.V3API(iotago.NewV3SnapshotProtocolParameters(iotago.WithVersion(3)))
 
 	Output      = newIotagoCodec[iotago.TxEssenceOutput](l1API)
 	TokenScheme = newIotagoCodec[iotago.TokenScheme](l1API)
+	AccountID   = newIotagoCodec[iotago.AccountID](l1API)
 )
 
 func newIotagoCodec[T any](l1API iotago.API) Codec[T] {
@@ -46,6 +38,19 @@ func newIotagoCodec[T any](l1API iotago.API) Codec[T] {
 	)
 }
 
+// ----------------------------------------------------------------
+
+var Address = NewCodec(decodeAddress, isc.AddressToBytes)
+
+func decodeAddress(b []byte) (iotago.Address, error) {
+	if len(b) == 0 {
+		return nil, errors.New("invalid Address size")
+	}
+	return isc.AddressFromBytes(b)
+}
+
+// ----------------------------------------------------------------
+
 var NativeTokenID = NewCodec(decodeNativeTokenID, encodeNativeTokenID)
 
 func decodeNativeTokenID(b []byte) (ret iotago.NativeTokenID, err error) {
@@ -59,6 +64,8 @@ func decodeNativeTokenID(b []byte) (ret iotago.NativeTokenID, err error) {
 func encodeNativeTokenID(nftID iotago.NativeTokenID) []byte {
 	return nftID[:]
 }
+
+// ----------------------------------------------------------------
 
 var NFTID = NewCodec(decodeNFTID, encodeNFTID)
 

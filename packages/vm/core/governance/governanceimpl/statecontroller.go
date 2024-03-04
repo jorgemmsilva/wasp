@@ -18,7 +18,7 @@ import (
 // If it fails, nothing happens and the state has trace of the failure in the state
 // If it is successful VM takes over and replaces resulting transaction with
 // governance transition. The state of the chain remains unchanged
-func rotateStateController(ctx isc.Sandbox, newStateControllerAddr iotago.Address) dict.Dict {
+func rotateStateController(ctx isc.Sandbox, newStateControllerAddr iotago.Address, newBlockIssuer iotago.AccountID) dict.Dict {
 	ctx.RequireCallerIsChainOwner()
 	// check is address is allowed
 	state := governance.NewStateWriterFromSandbox(ctx)
@@ -33,6 +33,7 @@ func rotateStateController(ctx isc.Sandbox, newStateControllerAddr iotago.Addres
 		// VarRotateToAddress value should never persist in the state
 		ctx.Log().LogInfof("Governance::RotateStateController: newStateControllerAddress=%s", newStateControllerAddr.String())
 		state.SetRotationAddress(newStateControllerAddr)
+		state.SetBlockIssuer(newBlockIssuer)
 		return nil
 	}
 	// here the new state controller address from the request equals to the state controller address in the anchor output

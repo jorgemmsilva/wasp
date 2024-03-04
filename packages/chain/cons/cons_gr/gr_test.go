@@ -71,8 +71,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	//
 	// Create ledger accounts.
 	utxoDB := utxodb.New(testutil.L1API)
-	originator := cryptolib.NewKeyPair()
-	_, err := utxoDB.NewWalletWithFundsFromFaucet(originator.Address())
+	originator, _, err := utxoDB.NewWalletWithFundsFromFaucet()
 	require.NoError(t, err)
 	//
 	// Create a fake network and keys for the tests.
@@ -95,7 +94,7 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	)
 	defer peeringNetwork.Close()
 	networkProviders := peeringNetwork.NetworkProviders()
-	cmtAddress, dkShareProviders := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
+	cmtPubKey, dkShareProviders := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
 	//
 	// Initialize the DSS subsystem in each node / chain.
 	nodes := make([]*consGR.ConsGr, len(peerIdentities))
@@ -103,14 +102,14 @@ func testGrBasic(t *testing.T, n, f int, reliable bool) {
 	stateMgrs := make([]*testStateMgr, len(peerIdentities))
 	procConfig := coreprocessors.NewConfigWithCoreContracts().WithNativeContracts(inccounter.Processor)
 	tcl := testchain.NewTestChainLedger(t, utxoDB, originator)
-	_, originAO, chainID := tcl.MakeTxChainOrigin(cmtAddress)
+	_, originAO, chainID := tcl.MakeTxChainOrigin(cmtPubKey)
 	ctx, ctxCancel := context.WithCancel(context.Background())
 	defer ctxCancel()
 	logIndex := cmt_log.LogIndex(0)
 	chainMetricsProvider := metrics.NewChainMetricsProvider()
 	for i := range peerIdentities {
 		procCache := processors.MustNew(procConfig)
-		dkShare, err := dkShareProviders[i].LoadDKShare(cmtAddress)
+		dkShare, err := dkShareProviders[i].LoadDKShare(cmtPubKey.AsEd25519Address())
 		require.NoError(t, err)
 		chainStore := state.NewStoreWithUniqueWriteMutex(mapdb.NewMapDB())
 		_, err = origin.InitChainByAnchorOutput(chainStore, originAO, testutil.L1APIProvider, testutil.TokenInfo)

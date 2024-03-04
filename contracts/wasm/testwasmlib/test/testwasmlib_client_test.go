@@ -19,6 +19,7 @@ import (
 	"github.com/iotaledger/wasp/contracts/wasm/testwasmlib/go/testwasmlibimpl"
 	"github.com/iotaledger/wasp/packages/cryptolib"
 	"github.com/iotaledger/wasp/packages/testutil"
+	"github.com/iotaledger/wasp/packages/util"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmclient/go/wasmclient/iscclient"
 	"github.com/iotaledger/wasp/packages/wasmvm/wasmlib/go/wasmlib/coreaccounts"
@@ -97,9 +98,9 @@ func setupClientCluster(t *testing.T) *wasmclient.WasmClientContext {
 
 	// deposit funds to the on-chain account
 	chClient := chainclient.New(env.Clu.L1Client(), env.Clu.WaspClient(0), env.Chain.ChainID, wallet)
-	reqTx, err := chClient.DepositFunds(10_000_000)
+	blockTx, err := chClient.DepositFunds(10_000_000)
 	require.NoError(t, err)
-	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, reqTx, false, 30*time.Second)
+	_, err = env.Chain.CommitteeMultiClient().WaitUntilAllRequestsProcessedSuccessfully(env.Chain.ChainID, util.TxFromBlock(blockTx), false, 30*time.Second)
 	require.NoError(t, err)
 
 	// deploy the contract

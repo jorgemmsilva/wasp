@@ -26,8 +26,9 @@ var Contract = coreutil.NewContract(coreutil.CoreContractGovernance)
 
 var (
 	// state controller (entity that owns the state output via AccountAddress)
-	FuncRotateStateController = coreutil.NewEP1(Contract, coreutil.CoreEPRotateStateController,
+	FuncRotateStateController = coreutil.NewEP2(Contract, coreutil.CoreEPRotateStateController,
 		coreutil.FieldWithCodec(ParamStateControllerAddress, codec.Address),
+		coreutil.FieldWithCodec(ParamStateControllerBlockIssuer, codec.AccountID),
 	)
 	FuncAddAllowedStateControllerAddress = coreutil.NewEP1(Contract, "addAllowedStateControllerAddress",
 		coreutil.FieldWithCodec(ParamStateControllerAddress, codec.Address),
@@ -154,13 +155,15 @@ const (
 
 	// AccountID of the chain's AccountOutput.
 	// TODO: New in [iota2.0].
-	varChainAccountID = "A"
+	varChainAccountID             = "A"
+	varStateControllerBlockIssuer = "B"
 )
 
 // request parameters
 const (
 	// state controller
-	ParamStateControllerAddress          = coreutil.ParamStateControllerAddress
+	ParamStateControllerAddress          = "S"
+	ParamStateControllerBlockIssuer      = "I"
 	ParamAllowedStateControllerAddresses = "a"
 
 	// chain owner

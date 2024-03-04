@@ -121,6 +121,7 @@ type Output struct {
 }
 
 type Result struct {
+	// TODO Transaction should probably be an `*iotago.Block` instead.
 	Transaction      *iotago.SignedTransaction // The TX for committing the block.
 	BaseAnchorOutput iotago.OutputID           // AO consumed in the TX.
 	NextAnchorOutput *isc.ChainOutputs         // AO produced in the TX.

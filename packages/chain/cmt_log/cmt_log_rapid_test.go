@@ -49,14 +49,14 @@ func newCmtLogTestRapidSM(t *rapid.T) *cmtLogTestRapidSM {
 	peerPubKeys := testpeers.PublicKeys(peerIdentities)
 	//
 	// Committee.
-	committeeAddress, committeeKeyShares := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
-	sm.stateAddress = committeeAddress
+	committeePubKey, committeeKeyShares := testpeers.SetupDkgTrivial(t, n, f, peerIdentities, nil)
+	sm.stateAddress = committeePubKey.AsEd25519Address()
 	//
 	// Construct the algorithm nodes.
 	gpaNodeIDs := gpa.NodeIDsFromPublicKeys(peerPubKeys)
 	gpaNodes := map[gpa.NodeID]gpa.GPA{}
 	for i := range gpaNodeIDs {
-		dkShare, err := committeeKeyShares[i].LoadDKShare(committeeAddress)
+		dkShare, err := committeeKeyShares[i].LoadDKShare(committeePubKey.AsEd25519Address())
 		require.NoError(t, err)
 		consensusStateRegistry := testutil.NewConsensusStateRegistry() // Empty store in this case.
 		cmtLogInst, err := cmt_log.New(gpaNodeIDs[i], sm.chainID, dkShare, consensusStateRegistry, gpa.NodeIDFromPublicKey, true, -1, nil, log.NewChildLogger(fmt.Sprintf("N%v", i)))

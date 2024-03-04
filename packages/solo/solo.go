@@ -81,9 +81,6 @@ type chainData struct {
 	// ChainID is the ID of the chain (in this version alias of the ChainAddress)
 	ChainID isc.ChainID
 
-	// ChainBlockIssuer is the accountID of the account output used by the committee to issue blocks
-	ChainBlockIssuer iotago.AccountID
-
 	// OriginatorKeyPair the key pair used to create the chain (origin transaction).
 	// It is a default key pair in many of Solo calls which require private key.
 	OriginatorKeyPair *cryptolib.KeyPair
@@ -332,7 +329,7 @@ func (env *Solo) deployChain(
 	initialL1Balance := env.L1BaseTokens(originatorAddr)
 
 	outs := env.utxoDB.GetUnspentOutputs(originatorAddr)
-	originBlock, chainOutputs, chainBlockIssuerAccountID, chainID, err := origin.NewChainOriginTransaction(
+	originBlock, chainOutputs, _, chainID, err := origin.NewChainOriginTransaction(
 		chainOriginator,
 		stateControllerPubKey,
 		stateControllerPubKey.AsEd25519Address(),
@@ -376,7 +373,6 @@ func (env *Solo) deployChain(
 	return chainData{
 		Name:                   name,
 		ChainID:                chainID,
-		ChainBlockIssuer:       chainBlockIssuerAccountID,
 		StateControllerKeyPair: stateControllerKey,
 		OriginatorKeyPair:      chainOriginator,
 		ValidatorFeeTarget:     originatorAgentID,
@@ -521,6 +517,10 @@ func (ch *Chain) GetChainOutputsFromL1() *isc.ChainOutputs {
 		)
 	}
 	panic("unreachable")
+}
+
+func (ch *Chain) ChainBlockIssuer() iotago.AccountID {
+	return governance.NewStateReaderFromChainState(lo.Must(ch.LatestState(chaintypes.ActiveOrCommittedState))).GetBlockIssuer()
 }
 
 // collateBatch selects requests which are not time locked

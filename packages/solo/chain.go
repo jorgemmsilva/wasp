@@ -463,10 +463,7 @@ func (ch *Chain) GetAllowedStateControllerAddresses() []iotago.Address {
 	return lo.Must(governance.ViewGetAllowedStateControllerAddresses.Output.Decode(res))
 }
 
-// RotateStateController rotates the chain to the new controller address.
-// We assume self-governed chain here.
-// Mostly use for the testing of committee rotation logic, otherwise not much needed for smart contract testing
-func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyPair, senderKeyPair *cryptolib.KeyPair) error {
+func (ch *Chain) CreateNewBlockIssuer(senderKeyPair *cryptolib.KeyPair, newStateControllerPubKey *cryptolib.PublicKey) (iotago.AccountID, error) {
 	if senderKeyPair == nil {
 		senderKeyPair = ch.OriginatorKeyPair
 	}
@@ -485,14 +482,14 @@ func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyP
 		FoundryCounter: 0,
 		UnlockConditions: []iotago.AccountOutputUnlockCondition{
 			&iotago.AddressUnlockCondition{
-				Address: newStateKeyPair.Address(),
+				Address: newStateControllerPubKey.AsEd25519Address(),
 			},
 		},
 		Features: []iotago.AccountOutputFeature{
 			&iotago.BlockIssuerFeature{
 				ExpirySlot: math.MaxUint32,
 				BlockIssuerKeys: []iotago.BlockIssuerKey{
-					iotago.Ed25519PublicKeyHashBlockIssuerKeyFromPublicKey(newStateKeyPair.GetPublicKey().AsHiveEd25519PubKey()),
+					iotago.Ed25519PublicKeyHashBlockIssuerKeyFromPublicKey(newStateControllerPubKey.AsHiveEd25519PubKey()),
 				},
 			},
 		},
@@ -515,26 +512,41 @@ func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyP
 		senderKeyPair,
 	)
 	if err != nil {
-		return err
+		return iotago.EmptyAccountID, err
 	}
 
 	err = ch.Env.AddToLedger(block)
 	if err != nil {
-		return err
+		return iotago.EmptyAccountID, err
 	}
 
 	// update the chain block issuer
 	stateControllerAccountIssuerOutputID := iotago.OutputIDFromTransactionIDAndIndex(lo.Must(util.TxFromBlock(block).Transaction.ID()), 0)
 
+	return iotago.AccountIDFromOutputID(stateControllerAccountIssuerOutputID), nil
+}
+
+// RotateStateController rotates the chain to the new controller address.
+// We assume self-governed chain here.
+// Mostly use for the testing of committee rotation logic, otherwise not much needed for smart contract testing
+func (ch *Chain) RotateStateController(newStateAddr iotago.Address, newStateKeyPair, senderKeyPair *cryptolib.KeyPair) error {
+	if senderKeyPair == nil {
+		senderKeyPair = ch.OriginatorKeyPair
+	}
+
+	newBlockIssuerAccountID, err := ch.CreateNewBlockIssuer(senderKeyPair, newStateKeyPair.GetPublicKey())
+	if err != nil {
+		return err
+	}
+
 	//
 	// set the new state controller in the chain state
-	req := NewCallParams(governance.FuncRotateStateController.Message(newStateAddr)).
+	req := NewCallParams(governance.FuncRotateStateController.Message(newStateAddr, newBlockIssuerAccountID)).
 		WithMaxAffordableGasBudget()
 	result := ch.postRequestSyncTxSpecial(req, senderKeyPair)
 	if result.Receipt.Error == nil {
 		ch.StateControllerAddress = newStateAddr
 		ch.StateControllerKeyPair = newStateKeyPair
-		ch.ChainBlockIssuer = iotago.AccountIDFromOutputID(stateControllerAccountIssuerOutputID)
 	}
 	return ch.ResolveVMError(result.Receipt.Error).AsGoError()
 }

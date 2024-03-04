@@ -8,10 +8,12 @@ import (
 
 	"github.com/iotaledger/hive.go/log"
 	"github.com/iotaledger/hive.go/serializer/v2/serix"
+	iotago "github.com/iotaledger/iota.go/v4"
 
 	"github.com/iotaledger/wasp/packages/isc"
 	"github.com/iotaledger/wasp/packages/isc/rotate"
 	"github.com/iotaledger/wasp/packages/kv"
+	"github.com/iotaledger/wasp/packages/origin"
 	"github.com/iotaledger/wasp/packages/state"
 	"github.com/iotaledger/wasp/packages/transaction"
 	"github.com/iotaledger/wasp/packages/util"
@@ -128,9 +130,24 @@ func (vmctx *vmContext) init(prevL1Commitment *state.L1Commitment) {
 
 	// save the AccountID of the AccountOutput
 	if id, out, ok := vmctx.task.Inputs.AccountOutput(); ok {
+		// TODO this only needs to be done ONCE, right? Not every block
 		vmctx.withStateUpdate(func(chainState kv.KVStore) {
 			governance.NewStateWriter(governance.Contract.StateSubrealm(chainState)).SetChainAccountID(
 				util.AccountIDFromAccountOutput(out, id),
+			)
+		})
+	}
+
+	// save the BlockIssuerAccountID only when transitioning from the origin block
+	if vmctx.task.Inputs.AnchorOutput.StateIndex == 0 {
+		vmctx.withStateUpdate(func(chainState kv.KVStore) {
+			txID, _, err := iotago.TransactionIDFromBytes(vmctx.task.Inputs.AnchorOutputID[:])
+			if err != nil {
+				panic(err)
+			}
+			accOutputID := iotago.OutputIDFromTransactionIDAndIndex(txID, uint16(origin.OriginTxAccountOutputIndex))
+			governance.NewStateWriter(governance.Contract.StateSubrealm(chainState)).SetBlockIssuer(
+				iotago.AccountIDFromOutputID(accOutputID),
 			)
 		})
 	}

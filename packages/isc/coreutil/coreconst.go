@@ -39,10 +39,9 @@ var (
 
 // the global names used in 'blocklog' contract and in 'state' package
 const (
-	StateVarTimestamp           = "T" // covered in TestGetEvents
-	StateVarBlockIndex          = "I" // covered in TestGetEvents
-	StateVarPrevL1Commitment    = "H" // covered in TestGetEvents // TODO [iota2.0]: first 2.0 block will have a pre-2.0 PrevL1Commitment?
-	ParamStateControllerAddress = "S"
+	StateVarTimestamp        = "T" // covered in TestGetEvents
+	StateVarBlockIndex       = "I" // covered in TestGetEvents
+	StateVarPrevL1Commitment = "H" // covered in TestGetEvents // TODO [iota2.0]: first 2.0 block will have a pre-2.0 PrevL1Commitment?
 )
 
 // used in 'state' package as key for timestamp and block index

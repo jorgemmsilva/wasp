@@ -106,7 +106,7 @@ func (ch *Chain) runRequestsNolock(reqs []isc.Request, trace string) (results []
 		testutil.L1API,
 		ch.Env.BlockIssuance(),
 		tx,
-		ch.ChainBlockIssuer,
+		ch.ChainBlockIssuer(),
 		ch.StateControllerKeyPair,
 	)
 	require.NoError(ch.Env.T, err)

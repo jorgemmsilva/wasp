@@ -2,7 +2,6 @@ package origin
 
 import (
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/samber/lo"
@@ -55,6 +54,7 @@ const (
 	ParamEVMChainID      = "a"
 	ParamBlockKeepAmount = "b"
 	ParamChainOwner      = "c"
+	ParamBlockIssuer     = "i"
 	ParamWaspVersion     = "d"
 )
 
@@ -163,6 +163,11 @@ func calcStateMetadata(
 	return s.Bytes()
 }
 
+var (
+	OriginTxAnchorOutputIndex  = 0
+	OriginTxAccountOutputIndex = 1
+)
+
 // NewChainOriginTransaction creates new origin transaction for the self-governed chain
 // returns the transaction and newly minted chain ID
 // deposit - these tokens will cover minSD of the anchorOutput + minSD of the AccountOutput + governance.DefaultMinBaseTokensOnCommonAccount. If not enough, a higher value will be used
@@ -194,26 +199,8 @@ func NewChainOriginTransaction(
 	l1API := l1APIProvider.APIForSlot(creationSlot)
 
 	//
-	// create an account output for the committee (with minSD)
-	accountOutput := &iotago.AccountOutput{
-		Amount:         0,
-		AccountID:      iotago.EmptyAccountID,
-		FoundryCounter: 0,
-		UnlockConditions: []iotago.AccountOutputUnlockCondition{
-			&iotago.AddressUnlockCondition{
-				Address: stateControllerPubKey.AsEd25519Address(),
-			},
-		},
-		Features: []iotago.AccountOutputFeature{
-			&iotago.BlockIssuerFeature{
-				ExpirySlot: math.MaxUint32,
-				BlockIssuerKeys: []iotago.BlockIssuerKey{
-					iotago.Ed25519PublicKeyHashBlockIssuerKeyFromPublicKey(stateControllerPubKey.AsHiveEd25519PubKey()),
-				},
-			},
-		},
-	}
-	accountOutput.Amount = lo.Must(l1API.StorageScoreStructure().MinDeposit(accountOutput))
+	// create an account output for the committee
+	accountOutput := transaction.NewAccountOutputForStateController(l1API, stateControllerPubKey)
 
 	//
 	// add the anchor output for the chain
@@ -259,7 +246,10 @@ func NewChainOriginTransaction(
 	if err != nil {
 		return nil, nil, iotago.EmptyAccountID, isc.ChainID{}, err
 	}
-	outputs := []iotago.Output{anchorOutput, accountOutput} // anchor is output index 0
+	// NOTE the outputs order is important, the first vm run expects 0-Anchor, 1-StateControllerBlockIssuerAccountOutput
+	outputs := make([]iotago.Output, 2)
+	outputs[OriginTxAnchorOutputIndex] = anchorOutput
+	outputs[OriginTxAccountOutputIndex] = accountOutput
 	outputs = append(outputs, remainder...)
 
 	block, err := transaction.FinalizeTxAndBuildBlock(
